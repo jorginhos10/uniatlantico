@@ -35,8 +35,8 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
                 <!-- Logo a la izquierda -->
                 <div class="headerLeft">
                     <div class="logoHeader">
-                        <i class="fas fa-utensils"></i>
-                        <span>CHEFCONTROL</span>
+                        <i class="fas fa-university"></i>
+                        <span>UNIVERSIDAD DEL ATLANTICO</span>
                     </div>
                 </div>
 

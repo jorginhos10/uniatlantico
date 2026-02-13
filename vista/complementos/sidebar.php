@@ -79,13 +79,34 @@ define('PERMISO_PERMISOS_ID', 7);     // gestionar_permisos
                 </li>
             <?php endif; ?>
             
-            <!-- Recetas - Permiso ID: 2 (gestionar_recetas) -->
+            <!-- Formato FOR-DE-144 con submenú - Permiso ID: 2 (gestionar_recetas) -->
             <?php if (tienePermisoPorId(PERMISO_RECETAS_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo ($paginaActual ?? '') === 'recetas' ? 'active' : ''; ?>">
-                    <a href="<?php echo $basePath; ?>/recetas" class="navLink" data-tooltip="Recetas">
+                <li class="navItem dropdown <?php echo ($paginaActual ?? '') === 'recetas' || ($paginaActual ?? '') === 'formatos' ? 'active' : ''; ?>">
+                    <a href="javascript:void(0)" class="navLink" data-tooltip="Formatos">
                         <i class="fas fa-book"></i>
                         <span>Formato FOR-DE-144</span>
+                        <i class="fas fa-chevron-down dropdown-arrow"></i>
                     </a>
+                    <ul class="submenu">
+                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'ver-formatos' ? 'active' : ''; ?>">
+                            <a href="<?php echo $basePath; ?>/FOR-DE-144">
+                                <i class="fas fa-list"></i>
+                                <span>Ver Formatos</span>
+                            </a>
+                        </li>
+                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'plantillas' ? 'active' : ''; ?>">
+                            <a href="<?php echo $basePath; ?>/recetas/plantillas">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Plantillas</span>
+                            </a>
+                        </li>
+                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'historial' ? 'active' : ''; ?>">
+                            <a href="<?php echo $basePath; ?>/recetas/historial">
+                                <i class="fas fa-history"></i>
+                                <span>Historial</span>
+                            </a>
+                        </li>
+                    </ul>
                 </li>
             <?php endif; ?>
             

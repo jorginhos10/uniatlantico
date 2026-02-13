@@ -30,7 +30,7 @@ body {
     background-position: center;
     background-repeat: no-repeat;
 
-    filter: blur(3px);
+    /*filter: blur(3px);*/
     z-index: -10;
 }
 
@@ -173,7 +173,7 @@ flex-direction: column;
 align-items: center;
 }
 .containerDivIdentidad img{
-    width: 100px;
+    width: 70%;
     margin-top: -3%;
     margin-bottom: 6%;
 }

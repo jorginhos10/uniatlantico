@@ -178,7 +178,7 @@ class proveedorModel {
             
             // Si no hay categorías, devolver las básicas
             if (empty($resultados)) {
-                $resultados = ['cocina', 'inventario', 'mesero', 'admin'];
+                $resultados = ['cocina', 'inventario', 'mesero', 'admin','calidad'];
             }
             
             error_log("Categorías obtenidas de DB: " . implode(", ", $resultados));
@@ -186,7 +186,7 @@ class proveedorModel {
         } catch (PDOException $e) {
             error_log("Error obteniendo categorías: " . $e->getMessage());
             // Devolver categorías por defecto si hay error
-            return ['cocina', 'inventario', 'mesero', 'admin'];
+            return ['cocina', 'inventario', 'mesero', 'admin','calidad'];
         }
     }
 }

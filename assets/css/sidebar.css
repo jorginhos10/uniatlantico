@@ -106,6 +106,7 @@
     margin-bottom: 5px;
     white-space: nowrap;
     overflow: hidden;
+    position: relative;
 }
 
 .navItem:hover {
@@ -138,9 +139,89 @@
     opacity: 0;
     transform: translateX(-10px);
     transition: all 0.3s ease 0.1s;
+    flex-grow: 1;
 }
 
 .sidebar:hover .navLink span {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Flecha para dropdown */
+.dropdown-arrow {
+    font-size: 12px;
+    margin-left: auto;
+    transition: transform 0.3s ease;
+    opacity: 0;
+}
+
+.sidebar:hover .dropdown-arrow {
+    opacity: 1;
+}
+
+/* Submenu */
+.submenu {
+    list-style: none;
+    padding-left: 30px;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    margin-top: 5px;
+}
+
+/* Mostrar submenu al hacer hover en el navItem padre */
+.navItem.dropdown:hover .submenu {
+    max-height: 500px; /* Ajusta según la cantidad de elementos */
+}
+
+/* Rotar flecha cuando está abierto */
+.navItem.dropdown:hover .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.submenu-item {
+    padding: 8px 0;
+    border-left: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.submenu-item:hover {
+    border-left-color: #3498db;
+}
+
+.submenu-item.active {
+    border-left-color: #3498db;
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.submenu-item a {
+    color: #bdc3c7;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 5px 0;
+    transition: color 0.2s;
+}
+
+.submenu-item:hover a {
+    color: #ecf0f1;
+}
+
+.submenu-item i {
+    width: 16px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.submenu-item span {
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: all 0.3s ease 0.1s;
+}
+
+.sidebar:hover .submenu-item span {
     opacity: 1;
     transform: translateX(0);
 }
@@ -225,6 +306,7 @@
         border-top: 4px solid transparent;
         margin-bottom: 0;
         padding: 10px;
+        position: relative;
     }
     
     .navItem:hover,
@@ -244,6 +326,49 @@
     }
     
     .navLink span {
+        opacity: 1;
+        transform: none;
+    }
+    
+    .dropdown-arrow {
+        display: none; /* Ocultar flecha en móvil */
+    }
+    
+    /* Submenu para móvil */
+    .submenu {
+        position: absolute;
+        bottom: 100%;
+        left: 0;
+        background: #2c3e50;
+        width: 180px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-height: 0;
+        overflow: hidden;
+        padding-left: 0;
+        margin-top: 0;
+    }
+    
+    .navItem.dropdown:hover .submenu {
+        max-height: 400px;
+    }
+    
+    .submenu-item {
+        padding: 10px 15px;
+        border-left: none;
+        border-bottom: 1px solid #34495e;
+    }
+    
+    .submenu-item:last-child {
+        border-bottom: none;
+    }
+    
+    .submenu-item a {
+        font-size: 12px;
+        gap: 10px;
+    }
+    
+    .submenu-item span {
         opacity: 1;
         transform: none;
     }

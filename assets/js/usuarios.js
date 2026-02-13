@@ -273,6 +273,7 @@ class UsuariosManager {
                                         <option value="inventario">Inventario</option>
                                         <option value="mesero">Mesero</option>
                                         <option value="admin">Administrador</option>
+                                        <option value="admin">Calidad</option>
                                     </select>
                                 </div>
                                 
