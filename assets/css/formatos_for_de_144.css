@@ -568,3 +568,209 @@
         padding: 20px;
     }
 }
+
+/* Estilos adicionales para los campos de tiempo - Agregar al final del archivo CSS existente */
+
+.opciones-tiempo {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.opcion-radio {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.opcion-radio input[type="radio"] {
+    width: auto;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.opcion-radio label {
+    display: inline;
+    font-weight: normal;
+    color: #2c3e50;
+    cursor: pointer;
+    font-size: 15px;
+}
+
+.opcion-radio small {
+    display: block;
+    margin-left: 24px;
+    color: #7f8c8d;
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+.campos-fecha {
+    margin-top: 15px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #4CAF50;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.1);
+    animation: slideDown 0.3s ease;
+}
+
+.campos-fecha .form-group {
+    margin-bottom: 15px;
+}
+
+.campos-fecha .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.badge-tiempo {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.badge-sin-restricciones {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+
+.badge-activo {
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #90caf9;
+}
+
+.badge-proximamente {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffb74d;
+}
+
+.badge-cerrado {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
+.info-tiempo {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+    font-size: 12px;
+}
+
+.info-tiempo i {
+    color: #4CAF50;
+    font-size: 12px;
+}
+
+.fecha-texto {
+    color: #5d6d7e;
+    font-size: 11px;
+}
+
+.card.disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    background: #f5f5f5;
+}
+
+.card.disabled:hover {
+    transform: none;
+    border-color: #e0e0e0;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.card.disabled .card-header {
+    background: linear-gradient(90deg, #f0f0f0 0%, #e0e0e0 100%);
+}
+
+.card.disabled .badge {
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+}
+
+/* Animación para los campos de fecha */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* Estilos para acciones en tarjetas */
+.acciones-tarjeta {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-editar {
+    background: none;
+    border: none;
+    color: #95a5a6;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-editar:hover {
+    background: #e8f0fe;
+    color: #3498db;
+    transform: scale(1.1);
+}
+
+.btn-eliminar {
+    background: none;
+    border: none;
+    color: #95a5a6;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 8px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-eliminar:hover {
+    background: #ffeaea;
+    color: #ff6b6b;
+    transform: scale(1.1);
+}
+
+/* Responsive para móviles */
+@media (max-width: 480px) {
+    .btn-editar, .btn-eliminar {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        padding: 6px;
+    }
+    
+    .acciones-tarjeta {
+        gap: 4px;
+    }
+}

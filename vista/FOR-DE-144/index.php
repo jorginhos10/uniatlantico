@@ -1,717 +1,421 @@
 <?php
-// vista/dashboard/index.php
-
-// 🔐 INCLUIR SEGURIDAD - Redirige si no hay sesión
-require_once __DIR__ . '/../../config/security.php';
-
-// Configurar variables para el header
-$titulo = 'Dashboard - CHEFCONTROL';
-$tituloHeader = 'Bienvenido, ' . $_SESSION['usuario_nombre'] . '!';
-$subtituloHeader = 'Panel de control principal';
-$paginaActual = 'dashboard';
-
-// Incluir header
-require_once __DIR__ . '/../complementos/header.php';
+// vista/FOR-DE-144/index.php - VERSIÓN COMPLETA CON TARJETAS CLIQUEABLES
 ?>
-
-
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOR-DE-144 - Gestión de Formularios</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
+    <title>Formatos FOR-DE-144</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <style>
-        :root {
-            --color-primary: #2C3E50;
-            --color-primary-light: #34495E;
-            --color-primary-dark: #1A252F;
-            --color-accent: #3498DB;
-            --color-text: #333333;
-            --color-text-light: #7F8C8D;
-            --color-bg: #F8F9FA;
-            --color-white: #FFFFFF;
-            --color-success: #27AE60;
-            --color-warning: #F39C12;
-            --color-danger: #E74C3C;
-        }
-        
-        body {
-            background-color: var(--color-bg);
-            color: var(--color-text);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-        }
-        
-        .card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 25px;
-            padding: 25px 0;
-        }
-        
-        .formulario-card {
-            background: var(--color-white);
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
-            padding: 25px;
-            transition: all 0.3s ease;
-            height: 280px;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            border-left: 4px solid var(--color-primary);
-        }
-        
-        .formulario-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(44, 62, 80, 0.15);
-            border-left-color: var(--color-accent);
-        }
-        
-        .formulario-add {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-            color: var(--color-white);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            border: 2px dashed rgba(255, 255, 255, 0.3);
-        }
-        
-        .formulario-add:hover {
-            background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
-            border-color: rgba(255, 255, 255, 0.5);
-        }
-        
-        .add-icon {
-            font-size: 70px;
-            opacity: 0.9;
-            margin-bottom: 15px;
-        }
-        
-        .formulario-titulo {
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--color-primary);
-            border-bottom: 2px solid #F0F3F4;
-            padding-bottom: 8px;
-        }
-        
-        .formulario-descripcion {
-            color: var(--color-text-light);
-            flex-grow: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.95rem;
-            line-height: 1.5;
-        }
-        
-        .formulario-fecha {
-            font-size: 0.8rem;
-            color: var(--color-text-light);
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #ECF0F1;
-        }
-        
-        /* Modal Styles */
-        .modal-content {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
-        }
-        
-        .modal-header {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            color: var(--color-white);
-            border-radius: 12px 12px 0 0;
-            padding: 20px 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .modal-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            border: none;
-            padding: 10px 30px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
-        }
-        
-        .btn-secondary {
-            background: #95A5A6;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        
-        .btn-secondary:hover {
-            background: #7F8C8D;
-        }
-        
-        .btn-warning {
-            background: var(--color-warning);
-            border: none;
-        }
-        
-        .btn-danger {
-            background: var(--color-danger);
-            border: none;
-        }
-        
-        .btn-close-white {
-            filter: invert(1) brightness(2);
-            opacity: 0.8;
-        }
-        
-        .btn-close-white:hover {
-            opacity: 1;
-        }
-        
-        .form-control:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.25);
-        }
-        
-        #formulariosContainer {
-            min-height: 450px;
-        }
-        
-        .btn-actions {
-            margin-top: 15px;
-        }
-        
-        .badge {
-            padding: 6px 12px;
-            font-weight: 500;
-            border-radius: 20px;
-        }
-        
-        .badge.bg-success {
-            background-color: var(--color-success) !important;
-        }
-        
-        .badge.bg-secondary {
-            background-color: #95A5A6 !important;
-        }
-        
-        .alert-info {
-            background-color: #D6EAF8;
-            border-color: #AED6F1;
-            color: var(--color-primary);
-        }
-        
-        .header-section {
-            background: var(--color-white);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
-            border-left: 5px solid var(--color-primary);
-        }
-        
-        .header-title {
-            color: var(--color-primary);
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-        
-        .header-subtitle {
-            color: var(--color-text-light);
-            font-size: 1.1rem;
-        }
-        
-        .header-icon {
-            font-size: 2.5rem;
-            color: var(--color-primary);
-            margin-bottom: 15px;
-        }
-        
-        /* Animaciones */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .formulario-card {
-            animation: fadeIn 0.5s ease-out;
-        }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .card-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-            
-            .header-section {
-                padding: 20px;
-            }
-        }
-        
-        /* Estilos para los modales */
-        .modal-body {
-            padding: 25px;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: var(--color-primary);
-            margin-bottom: 8px;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 6px;
-            border: 1px solid #BDC3C7;
-            padding: 10px 15px;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.15);
-        }
-        
-        .invalid-feedback {
-            color: var(--color-danger);
-            font-size: 0.85rem;
-        }
-        
-        .alert {
-            border-radius: 8px;
-            border: none;
-            padding: 15px;
-        }
-        
-        .alert-info {
-            background-color: #E8F4FC;
-            color: var(--color-primary);
-        }
-    </style>
+    <link rel="stylesheet" href="assets/css/formatos_for_de_144.css">
 </head>
 <body>
-    <div class="container-fluid">
-        <!-- Encabezado -->
-        <div class="header-section">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <div class="header-icon">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <h1 class="header-title">FOR-DE-144 - Gestión de Formularios</h1>
-                    <p class="header-subtitle">Crea, edita y gestiona tus formularios de manera eficiente</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="text-muted">
-                        <small><i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y'); ?></small>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="formatos-container">
         
-        <div id="formulariosContainer" class="card-grid">
-            <!-- Card para agregar nuevo formulario -->
-            <div class="formulario-card formulario-add" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-                <div>
-                    <i class="fas fa-plus-circle add-icon"></i>
-                    <h3 class="mt-3">Nuevo Formulario</h3>
-                    <p class="mb-0">Haz clic para crear un nuevo formulario</p>
-                </div>
+        <!-- Mensajes de sesión -->
+        <?php if (isset($_SESSION['mensaje'])): ?>
+            <div class="mensaje-exito">
+                <i class="fas fa-check-circle"></i>
+                <?= $_SESSION['mensaje'] ?>
             </div>
-            
-            <!-- Los formularios existentes se cargarán aquí -->
-            <?php 
-            if (isset($formularios) && is_array($formularios) && count($formularios) > 0): 
-                foreach ($formularios as $formulario): 
-                    $fecha = new DateTime($formulario['fecha_creacion']);
-                    $fechaFormateada = $fecha->format('d/m/Y H:i');
-            ?>
-     
-            <div class="formulario-card" id="formulario-<?php echo $formulario['id']; ?>">
-                <div class="formulario-titulo"><?php echo htmlspecialchars($formulario['titulo']); ?></div>
-                <div class="formulario-descripcion"><?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?></div>
-                <div class="formulario-fecha">
-                    <i class="far fa-clock me-1"></i>Creado: <?php echo $fechaFormateada; ?>
+            <?php unset($_SESSION['mensaje']); ?>
+        <?php endif; ?>
+
+        <?php if (isset($_SESSION['error'])): ?>
+            <div class="mensaje-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <?= $_SESSION['error'] ?>
+            </div>
+            <?php unset($_SESSION['error']); ?>
+        <?php endif; ?>
+
+        <!-- Cabecera -->
+        <div class="formatos-header">
+            <h2>
+                <i class="fas fa-file-alt"></i>
+                Formatos FOR-DE-144
+            </h2>
+
+        </div>
+
+        <!-- Grid de tarjetas -->
+        <div class="cards-grid">
+            <!-- Tarjeta para agregar nuevo -->
+            <div class="card card-agregar" onclick="FormatoForDe144.abrirPopupCrear()">
+                <div class="card-icon">
+                    <i class="fas fa-plus-circle"></i>
                 </div>
-                <div class="mt-3 d-flex justify-content-between align-items-center">
-                    <span class="badge <?php echo $formulario['estado'] == 1 ? 'bg-success' : 'bg-secondary'; ?>">
-                        <i class="fas fa-<?php echo $formulario['estado'] == 1 ? 'check-circle' : 'times-circle'; ?> me-1"></i>
-                        <?php echo $formulario['estado'] == 1 ? 'Activo' : 'Inactivo'; ?>
-                    </span>
-                    <div class="btn-actions">
-                        <button class="btn btn-sm btn-success me-2" onclick="window.location.href='modulo144/?id=<?php echo $formulario['id']; ?>'" 
-                                title="Ver formulario">
-                            <i class="fas fa-eye me-1"></i>Ver
-                        </button>
-                        <button class="btn btn-sm btn-warning me-2" onclick="editarFormulario(<?php echo $formulario['id']; ?>)" 
-                                title="Editar formulario">
-                            <i class="fas fa-edit me-1"></i>Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)" 
-                                title="Eliminar formulario">
-                            <i class="fas fa-trash me-1"></i>Eliminar
-                        </button>
+                <h3>Crear Nuevo</h3>
+                <p>Agrega un nuevo formato FOR-DE-144</p>
+            </div>
+
+            <!-- Tarjetas de formatos existentes -->
+            <?php if (!empty($formularios)): ?>
+                <?php foreach ($formularios as $formato): ?>
+                    <div class="card <?= $formato['disponible'] ? 'clickable' : 'disabled' ?>" 
+                         onclick="window.location.href='yodecido/?id=<?= $formato['id'] ?>'">
+                        
+                        <div class="card-header">
+                            <span class="badge">
+                                <i class="fas fa-hashtag"></i> ID: <?= $formato['id'] ?>
+                            </span>
+                            <div class="acciones-tarjeta">
+                                <button class="btn-editar" onclick="event.stopPropagation(); FormatoForDe144.abrirPopupEditar(<?= htmlspecialchars(json_encode($formato)) ?>)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-eliminar" onclick="event.stopPropagation(); FormatoForDe144.confirmarEliminar(<?= $formato['id'] ?>, '<?= htmlspecialchars($formato['titulo']) ?>')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h4><?= htmlspecialchars($formato['titulo']) ?></h4>
+                            <p class="descripcion"><?= htmlspecialchars($formato['descripcion'] ?? 'Sin descripción') ?></p>
+                            
+                            <!-- Información de tiempo -->
+                            <div class="info-tiempo">
+                                <?php if (empty($formato['fecha_inicio']) && empty($formato['fecha_cierre'])): ?>
+                                    <span class="badge-tiempo badge-sin-restricciones">
+                                        <i class="fas fa-infinity"></i> Sin restricciones
+                                    </span>
+                                <?php else: ?>
+                                    <?php if ($formato['estado_tiempo'] === 'activo'): ?>
+                                        <span class="badge-tiempo badge-activo">
+                                            <i class="fas fa-check-circle"></i> Activo
+                                        </span>
+                                    <?php elseif ($formato['estado_tiempo'] === 'proximamente'): ?>
+                                        <span class="badge-tiempo badge-proximamente">
+                                            <i class="fas fa-clock"></i> Próximamente
+                                        </span>
+                                    <?php elseif ($formato['estado_tiempo'] === 'cerrado'): ?>
+                                        <span class="badge-tiempo badge-cerrado">
+                                            <i class="fas fa-lock"></i> Cerrado
+                                        </span>
+                                    <?php endif; ?>
+                                    
+                                    <div class="fecha-texto">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <?= date('d/m/Y', strtotime($formato['fecha_inicio'])) ?> - 
+                                        <?= date('d/m/Y', strtotime($formato['fecha_cierre'])) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer">
+                            <i class="fas fa-clock"></i>
+                            Creado: <?= date('d/m/Y H:i', strtotime($formato['fecha_creacion'])) ?>
+                        </div>
                     </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <div class="no-formatos">
+                    <i class="fas fa-folder-open"></i>
+                    <p>No hay formatos creados todavía</p>
                 </div>
-            </div>
-   
-            <?php 
-                endforeach; 
-            else: 
-            ?>
-            <div class="col-12">
-                <div class="alert alert-info text-center">
-                    <i class="fas fa-info-circle fa-2x mb-3"></i>
-                    <h4>No hay formularios registrados</h4>
-                    <p class="mb-0">Comienza creando tu primer formulario haciendo clic en el card de arriba</p>
-                </div>
-            </div>
             <?php endif; ?>
         </div>
     </div>
-    
-    <!-- Modal para agregar formulario -->
-    <div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalAgregarLabel">
-                        <i class="fas fa-plus-circle me-2"></i>Nuevo Formulario
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="formAgregarFormulario">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="titulo" class="form-label">Título del Formulario *</label>
-                            <input type="text" class="form-control" id="titulo" name="titulo" required 
-                                   placeholder="Ingresa un título descriptivo para el formulario">
-                            <div class="invalid-feedback">El título es obligatorio</div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="descripcion" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" 
-                                      rows="4" placeholder="Describe el propósito o contenido del formulario (opcional)"></textarea>
-                            <div class="form-text">Puedes agregar detalles sobre qué información contiene este formulario.</div>
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <small>
-                                <i class="fas fa-info-circle me-1"></i>
-                                El formulario se registrará con la fecha y hora actual automáticamente.
-                            </small>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Guardar Formulario
-                        </button>
-                    </div>
-                </form>
+
+    <!-- POPUP: Crear Nuevo Formato -->
+    <div id="popupCrear" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3>
+                    <i class="fas fa-plus-circle" style="color: #4CAF50;"></i>
+                    Nuevo Formato
+                </h3>
+                <button class="cerrar" onclick="FormatoForDe144.cerrarPopup()">&times;</button>
             </div>
-        </div>
-    </div>
-    
-    <!-- Modal para editar formulario -->
-    <div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalEditarLabel">
-                        <i class="fas fa-edit me-2"></i>Editar Formulario
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="formEditarFormulario">
-                    <input type="hidden" id="formularioIdEditar" name="id">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="tituloEditar" class="form-label">Título del Formulario *</label>
-                            <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
-                            <div class="invalid-feedback">El título es obligatorio</div>
-                        </div>
-                        
-                        <div class="mb-4">
-                            <label for="descripcionEditar" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="4"></textarea>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="estadoEditar" class="form-label">Estado del Formulario</label>
-                            <select class="form-control" id="estadoEditar" name="estado">
-                                <option value="1">Activo</option>
-                                <option value="0">Inactivo</option>
-                            </select>
-                            <div class="form-text">Los formularios inactivos no aparecerán en el listado principal.</div>
-                        </div>
+            
+            <form id="formNuevoFormato" action="index.php?controller=FORDE144&action=crear" method="POST">
+                <div class="popup-body">
+                    <div class="form-group">
+                        <label for="titulo">Título del Formato *</label>
+                        <input type="text" id="titulo" name="titulo" placeholder="Ej: Formato de evaluación mensual" required>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Cancelar
-                        </button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-1"></i>Actualizar Formulario
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
-    <script>
-        $(document).ready(function() {
-            const basePath = '<?php echo Config::getBasePath(); ?>';
-            
-            // Manejar envío del formulario de agregar
-            $('#formAgregarFormulario').on('submit', function(e) {
-                e.preventDefault();
-                
-                if (!$(this)[0].checkValidity()) {
-                    $(this).addClass('was-validated');
-                    return;
-                }
-                
-                const formData = $(this).serialize();
-                const submitBtn = $(this).find('button[type="submit"]');
-                const originalText = submitBtn.html();
-                submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...');
-                submitBtn.prop('disabled', true);
-                
-                $.ajax({
-                    url: basePath + '/FOR-DE-144?action=crearFormulario',
-                    type: 'POST',
-                    data: formData,
-                    dataType: 'json',
-                    success: function(response) {
-                        submitBtn.html(originalText);
-                        submitBtn.prop('disabled', false);
-                        
-                        if (response.success) {
-                            $('#modalAgregar').modal('hide');
-                            $('#formAgregarFormulario')[0].reset();
-                            $('#formAgregarFormulario').removeClass('was-validated');
-                            
-                            showMessage('success', 'Formulario creado exitosamente');
-                            setTimeout(() => location.reload(), 1200);
-                        } else {
-                            showMessage('error', 'Error: ' + response.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        submitBtn.html(originalText);
-                        submitBtn.prop('disabled', false);
-                        showMessage('error', 'Error al conectar con el servidor');
-                        console.error('Error:', error);
-                    }
-                });
-            });
-            
-            // Manejar envío del formulario de editar
-            $('#formEditarFormulario').on('submit', function(e) {
-                e.preventDefault();
-                
-                if (!$(this)[0].checkValidity()) {
-                    $(this).addClass('was-validated');
-                    return;
-                }
-                
-                const formData = $(this).serialize();
-                const submitBtn = $(this).find('button[type="submit"]');
-                const originalText = submitBtn.html();
-                submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...');
-                submitBtn.prop('disabled', true);
-                
-                $.ajax({
-                    url: basePath + '/FOR-DE-144?action=editar',
-                    type: 'POST',
-                    data: formData,
-                    dataType: 'json',
-                    success: function(response) {
-                        submitBtn.html(originalText);
-                        submitBtn.prop('disabled', false);
-                        
-                        if (response.success) {
-                            $('#modalEditar').modal('hide');
-                            showMessage('success', 'Formulario actualizado exitosamente');
-                            setTimeout(() => location.reload(), 1200);
-                        } else {
-                            showMessage('error', 'Error: ' + response.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        submitBtn.html(originalText);
-                        submitBtn.prop('disabled', false);
-                        showMessage('error', 'Error al conectar con el servidor');
-                        console.error('Error:', error);
-                    }
-                });
-            });
-        });
-        
-        // Función para mostrar mensajes
-        function showMessage(type, text) {
-            $('.alert-message').remove();
-            
-            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-            const title = type === 'success' ? 'Éxito' : 'Error';
-            
-            const message = `
-                <div class="alert-message alert ${alertClass} alert-dismissible fade show position-fixed" 
-                     style="top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${icon} fa-2x me-3"></i>
-                        <div>
-                            <h6 class="mb-1">${title}</h6>
-                            <p class="mb-0">${text}</p>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            
-            $('body').append(message);
-            
-            setTimeout(() => {
-                $('.alert-message').alert('close');
-            }, 5000);
-        }
-        
-        // Función para eliminar formulario
-        function eliminarFormulario(id) {
-            Swal.fire({
-                title: '¿Estás seguro?',
-                text: "Esta acción eliminará el formulario. No podrás revertir esto.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#2C3E50',
-                cancelButtonColor: '#95A5A6',
-                confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const basePath = '<?php echo Config::getBasePath(); ?>';
                     
-                    $.ajax({
-                        url: basePath + '/FOR-DE-144?action=eliminar',
-                        type: 'POST',
-                        data: { id: id },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                showMessage('success', 'Formulario eliminado exitosamente');
-                                setTimeout(() => location.reload(), 1200);
-                            } else {
-                                showMessage('error', 'Error: ' + response.message);
-                            }
-                        },
-                        error: function() {
-                            showMessage('error', 'Error al conectar con el servidor');
-                        }
-                    });
-                }
-            });
-        }
-        
-        // Función para editar formulario
-        function editarFormulario(id) {
-            const basePath = '<?php echo Config::getBasePath(); ?>';
-            
-            $('#modalEditar .modal-body').html(`
-                <div class="text-center p-5">
-                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                        <span class="visually-hidden">Cargando...</span>
+                    <div class="form-group">
+                        <label for="descripcion">Descripción</label>
+                        <textarea id="descripcion" name="descripcion" placeholder="Describe el propósito de este formato..."></textarea>
                     </div>
-                    <p class="mt-3">Cargando información del formulario...</p>
+
+                    <div class="form-group">
+                        <label>Configuración de Tiempo</label>
+                        <div class="opciones-tiempo">
+                            <div class="opcion-radio">
+                                <input type="radio" name="tipo_tiempo" id="sin_restricciones" value="sin_restricciones" checked>
+                                <label for="sin_restricciones">
+                                    <i class="fas fa-infinity"></i> Sin restricciones de tiempo
+                                </label>
+                                <small>El formato estará disponible permanentemente</small>
+                            </div>
+                            
+                            <div class="opcion-radio">
+                                <input type="radio" name="tipo_tiempo" id="con_restricciones" value="con_restricciones">
+                                <label for="con_restricciones">
+                                    <i class="fas fa-calendar-alt"></i> Con período definido
+                                </label>
+                                <small>El formato solo estará disponible en las fechas seleccionadas</small>
+                            </div>
+
+                            <div id="camposFecha" class="campos-fecha" style="display: none;">
+                                <div class="form-group">
+                                    <label for="fecha_inicio">Fecha de Apertura</label>
+                                    <input type="datetime-local" id="fecha_inicio" name="fecha_inicio">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="fecha_cierre">Fecha de Cierre</label>
+                                    <input type="datetime-local" id="fecha_cierre" name="fecha_cierre">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            `);
-            $('#modalEditar').modal('show');
+                
+                <div class="popup-footer">
+                    <button type="button" class="btn-cancelar" onclick="FormatoForDe144.cerrarPopup()">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-guardar">
+                        <i class="fas fa-save"></i>
+                        Guardar Formato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- POPUP: Editar Formato -->
+    <div id="popupEditar" class="popup-overlay">
+        <div class="popup">
+            <div class="popup-header">
+                <h3>
+                    <i class="fas fa-edit" style="color: #3498db;"></i>
+                    Editar Formato
+                </h3>
+                <button class="cerrar" onclick="FormatoForDe144.cerrarPopupEditar()">&times;</button>
+            </div>
             
-            $.ajax({
-                url: basePath + '/FOR-DE-144?action=getFormulario&id=' + id,
-                type: 'GET',
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success && response.formulario) {
-                        const formulario = response.formulario;
-                        
-                        $('#modalEditar .modal-body').html(`
-                            <input type="hidden" id="formularioIdEditar" name="id">
-                            <div class="mb-3">
-                                <label for="tituloEditar" class="form-label">Título del Formulario *</label>
-                                <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
-                                <div class="invalid-feedback">El título es obligatorio</div>
+            <form id="formEditarFormato" action="index.php?controller=FORDE144&action=editar" method="POST">
+                <input type="hidden" id="edit_id" name="id">
+                
+                <div class="popup-body">
+                    <div class="form-group">
+                        <label for="edit_titulo">Título del Formato *</label>
+                        <input type="text" id="edit_titulo" name="titulo" placeholder="Ej: Formato de evaluación mensual" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="edit_descripcion">Descripción</label>
+                        <textarea id="edit_descripcion" name="descripcion" placeholder="Describe el propósito de este formato..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Configuración de Tiempo</label>
+                        <div class="opciones-tiempo">
+                            <div class="opcion-radio">
+                                <input type="radio" name="edit_tipo_tiempo" id="edit_sin_restricciones" value="sin_restricciones" checked>
+                                <label for="edit_sin_restricciones">
+                                    <i class="fas fa-infinity"></i> Sin restricciones de tiempo
+                                </label>
+                                <small>El formato estará disponible permanentemente</small>
                             </div>
-                            <div class="mb-4">
-                                <label for="descripcionEditar" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="4"></textarea>
+                            
+                            <div class="opcion-radio">
+                                <input type="radio" name="edit_tipo_tiempo" id="edit_con_restricciones" value="con_restricciones">
+                                <label for="edit_con_restricciones">
+                                    <i class="fas fa-calendar-alt"></i> Con período definido
+                                </label>
+                                <small>El formato solo estará disponible en las fechas seleccionadas</small>
                             </div>
-                            <div class="mb-3">
-                                <label for="estadoEditar" class="form-label">Estado del Formulario</label>
-                                <select class="form-control" id="estadoEditar" name="estado">
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
-                                <div class="form-text">Los formularios inactivos no aparecerán en el listado principal.</div>
+
+                            <div id="edit_camposFecha" class="campos-fecha" style="display: none;">
+                                <div class="form-group">
+                                    <label for="edit_fecha_inicio">Fecha de Apertura</label>
+                                    <input type="datetime-local" id="edit_fecha_inicio" name="fecha_inicio">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="edit_fecha_cierre">Fecha de Cierre</label>
+                                    <input type="datetime-local" id="edit_fecha_cierre" name="fecha_cierre">
+                                </div>
                             </div>
-                        `);
-                        
-                        $('#formularioIdEditar').val(formulario.id);
-                        $('#tituloEditar').val(formulario.titulo);
-                        $('#descripcionEditar').val(formulario.descripcion);
-                        $('#estadoEditar').val(formulario.estado);
-                    } else {
-                        $('#modalEditar').modal('hide');
-                        showMessage('error', 'Error al cargar el formulario: ' + (response.message || 'Error desconocido'));
-                    }
-                },
-                error: function() {
-                    $('#modalEditar').modal('hide');
-                    showMessage('error', 'Error al conectar con el servidor');
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="popup-footer">
+                    <button type="button" class="btn-cancelar" onclick="FormatoForDe144.cerrarPopupEditar()">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-guardar" style="background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);">
+                        <i class="fas fa-save"></i>
+                        Actualizar Formato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- POPUP: Confirmar Eliminación -->
+    <div id="popupConfirmar" class="popup-overlay">
+        <div class="popup popup-small">
+            <div class="popup-header">
+                <h3>
+                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
+                    Confirmar Eliminación
+                </h3>
+                <button class="cerrar" onclick="FormatoForDe144.cerrarConfirmar()">&times;</button>
+            </div>
+            
+            <div class="popup-body">
+                <p id="mensajeConfirmacion" style="font-size: 16px; line-height: 1.6; color: #2c3e50;">
+                    ¿Estás seguro de eliminar este formato?
+                </p>
+                <p style="color: #e74c3c; font-size: 14px; margin-top: 10px;">
+                    <i class="fas fa-info-circle"></i> Esta acción no se puede deshacer.
+                </p>
+            </div>
+            
+            <div class="popup-footer">
+                <button class="btn-cancelar" onclick="FormatoForDe144.cerrarConfirmar()">
+                    <i class="fas fa-times"></i>
+                    Cancelar
+                </button>
+                <button id="btnEliminarConfirmar" class="btn-eliminar-popup">
+                    <i class="fas fa-trash-alt"></i>
+                    Sí, Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <meta name="base-path" content="<?= dirname($_SERVER['SCRIPT_NAME']) ?>">
+    
+    <script src="assets/js/formatos_for_de_144.js"></script>
+    <script>
+        // Configurar el popup de creación
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle campos de fecha en popup de creación
+            const sinRestricciones = document.getElementById('sin_restricciones');
+            const conRestricciones = document.getElementById('con_restricciones');
+            const camposFecha = document.getElementById('camposFecha');
+            const fechaInicio = document.getElementById('fecha_inicio');
+            const fechaCierre = document.getElementById('fecha_cierre');
+
+            function toggleCamposFecha() {
+                if (conRestricciones.checked) {
+                    camposFecha.style.display = 'block';
+                    fechaInicio.required = true;
+                    fechaCierre.required = true;
+                    
+                    // Establecer fecha mínima por defecto (hoy)
+                    const hoy = new Date().toISOString().slice(0, 16);
+                    fechaInicio.min = hoy;
+                    fechaCierre.min = hoy;
+                } else {
+                    camposFecha.style.display = 'none';
+                    fechaInicio.required = false;
+                    fechaCierre.required = false;
+                    fechaInicio.value = '';
+                    fechaCierre.value = '';
+                }
+            }
+
+            sinRestricciones.addEventListener('change', toggleCamposFecha);
+            conRestricciones.addEventListener('change', toggleCamposFecha);
+
+            // Validar que fecha cierre sea mayor a fecha inicio
+            fechaInicio.addEventListener('change', function() {
+                fechaCierre.min = this.value;
+                if (fechaCierre.value && fechaCierre.value < this.value) {
+                    fechaCierre.value = this.value;
                 }
             });
-        }
-        
-        // Agregar SweetAlert2 para mejores diálogos
-        if (typeof Swal === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-            script.onload = function() {
-                console.log('SweetAlert2 cargado');
-            };
-            document.head.appendChild(script);
-        }
+
+            // Toggle campos de fecha en popup de edición
+            const editSinRestricciones = document.getElementById('edit_sin_restricciones');
+            const editConRestricciones = document.getElementById('edit_con_restricciones');
+            const editCamposFecha = document.getElementById('edit_camposFecha');
+            const editFechaInicio = document.getElementById('edit_fecha_inicio');
+            const editFechaCierre = document.getElementById('edit_fecha_cierre');
+
+            function toggleEditCamposFecha() {
+                if (editConRestricciones && editConRestricciones.checked) {
+                    editCamposFecha.style.display = 'block';
+                    editFechaInicio.required = true;
+                    editFechaCierre.required = true;
+                    
+                    // Establecer fecha mínima por defecto (hoy)
+                    const hoy = new Date().toISOString().slice(0, 16);
+                    editFechaInicio.min = hoy;
+                    editFechaCierre.min = hoy;
+                } else if (editSinRestricciones && editSinRestricciones.checked) {
+                    editCamposFecha.style.display = 'none';
+                    editFechaInicio.required = false;
+                    editFechaCierre.required = false;
+                }
+            }
+
+            if (editSinRestricciones && editConRestricciones) {
+                editSinRestricciones.addEventListener('change', toggleEditCamposFecha);
+                editConRestricciones.addEventListener('change', toggleEditCamposFecha);
+            }
+
+            // Validar que fecha cierre sea mayor a fecha inicio en popup de edición
+            if (editFechaInicio && editFechaCierre) {
+                editFechaInicio.addEventListener('change', function() {
+                    editFechaCierre.min = this.value;
+                    if (editFechaCierre.value && editFechaCierre.value < this.value) {
+                        editFechaCierre.value = this.value;
+                    }
+                });
+            }
+
+            // Validar formulario de edición
+            const formEditar = document.getElementById('formEditarFormato');
+            if (formEditar) {
+                formEditar.addEventListener('submit', function(e) {
+                    const titulo = document.getElementById('edit_titulo').value.trim();
+                    
+                    if (!titulo) {
+                        e.preventDefault();
+                        alert('Por favor, ingresa un título para el formato');
+                        document.getElementById('edit_titulo').focus();
+                        return false;
+                    }
+                    
+                    // Validar fechas si se seleccionó con restricciones
+                    if (editConRestricciones && editConRestricciones.checked) {
+                        if (!editFechaInicio.value || !editFechaCierre.value) {
+                            e.preventDefault();
+                            alert('Por favor, completa las fechas de inicio y cierre');
+                            return false;
+                        }
+                        
+                        if (new Date(editFechaInicio.value) > new Date(editFechaCierre.value)) {
+                            e.preventDefault();
+                            alert('La fecha de inicio no puede ser mayor a la fecha de cierre');
+                            return false;
+                        }
+                    }
+                    
+                    // Mostrar indicador de carga
+                    const btnGuardar = this.querySelector('.btn-guardar');
+                    if (btnGuardar) {
+                        const originalText = btnGuardar.innerHTML;
+                        btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+                        btnGuardar.disabled = true;
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
