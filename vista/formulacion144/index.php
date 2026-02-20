@@ -4,13 +4,19 @@ $basePath = Config::getBasePath();
 $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 $fecha_inicio = $formulario['fecha_inicio'] ?? null;
 $fecha_actual = date('Y-m-d H:i:s');
+
+// Determinar qué vista estamos mostrando (formulación o seguimiento)
+$es_seguimiento = isset($_GET['tipo']) && $_GET['tipo'] == 'seguimiento';
+$titulo_pagina = $es_seguimiento ? 'SEGUIMIENTO 144' : 'FORMULACIÓN 144';
+$icono_pagina = $es_seguimiento ? 'fa-chart-line' : 'fa-clipboard-list';
+$color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FORMULACIÓN 144 - <?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></title>
+    <title><?php echo $titulo_pagina; ?> - <?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -35,7 +41,7 @@ $fecha_actual = date('Y-m-d H:i:s');
         }
         
         .header-info {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            background: linear-gradient(135deg, <?php echo $color_pagina; ?> 0%, <?php echo $es_seguimiento ? '#2980B9' : '#34495E'; ?> 100%);
             color: white;
             padding: 30px;
             border-radius: 15px;
@@ -43,7 +49,6 @@ $fecha_actual = date('Y-m-d H:i:s');
             box-shadow: 0 8px 20px rgba(44,62,80,0.2);
         }
         
-        /* ============= CONTADOR REGRESIVO ============= */
         .countdown-container {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
@@ -114,7 +119,6 @@ $fecha_actual = date('Y-m-d H:i:s');
         .fecha-item i {
             margin-right: 5px;
         }
-        /* ============================================ */
         
         .section-card {
             background: white;
@@ -122,11 +126,11 @@ $fecha_actual = date('Y-m-d H:i:s');
             padding: 25px;
             margin-bottom: 30px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            border-left: 5px solid var(--color-primary);
+            border-left: 5px solid <?php echo $color_pagina; ?>;
         }
         
         .section-title {
-            color: var(--color-primary);
+            color: <?php echo $color_pagina; ?>;
             font-weight: 700;
             margin-bottom: 20px;
             display: flex;
@@ -141,15 +145,12 @@ $fecha_actual = date('Y-m-d H:i:s');
             padding: 20px;
             margin-bottom: 15px;
             transition: all 0.3s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .item-card:hover {
             transform: translateY(-3px);
             box-shadow: 0 8px 15px rgba(44,62,80,0.1);
-            border-left: 4px solid var(--color-primary);
+            border-left: 4px solid <?php echo $color_pagina; ?>;
         }
         
         .btn-success {
@@ -209,29 +210,13 @@ $fecha_actual = date('Y-m-d H:i:s');
             background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
         }
         
-        .estado-expirado {
-            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
-        }
-        
-        .estado-no-iniciado {
-            background: linear-gradient(135deg, #F39C12 0%, #E67E22 100%);
-        }
-        
-        .estado-vigente {
-            background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);
-        }
-        
-        .estado-sin-fechas {
-            background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
-        }
-        
         .modal-content {
             border-radius: 15px;
             border: none;
         }
         
         .modal-header {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            background: linear-gradient(135deg, <?php echo $color_pagina; ?> 0%, <?php echo $es_seguimiento ? '#2980B9' : '#34495E'; ?> 100%);
             color: white;
             border-radius: 15px 15px 0 0;
             padding: 20px;
@@ -244,13 +229,13 @@ $fecha_actual = date('Y-m-d H:i:s');
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: var(--color-primary);
+            border-color: <?php echo $color_pagina; ?>;
             box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
         }
         
         .form-label {
             font-weight: 600;
-            color: var(--color-primary);
+            color: <?php echo $color_pagina; ?>;
             margin-bottom: 8px;
         }
         
@@ -265,17 +250,31 @@ $fecha_actual = date('Y-m-d H:i:s');
             margin-bottom: 15px;
         }
         
+        .readonly-field {
+            background-color: #e9ecef;
+            opacity: 0.9;
+            cursor: not-allowed;
+        }
+        
+        .seguimiento-badge {
+            background: <?php echo $color_pagina; ?>;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            margin-left: 10px;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        
         @media (max-width: 768px) {
             .item-card {
                 flex-direction: column;
-                gap: 15px;
-            }
-            .item-actions {
-                width: 100%;
-                display: flex;
-                justify-content: center;
-                flex-wrap: wrap;
-                gap: 5px;
             }
             .countdown-box {
                 min-width: 70px;
@@ -294,7 +293,7 @@ $fecha_actual = date('Y-m-d H:i:s');
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="fas fa-clipboard-list me-3"></i>FORMULACIÓN 144
+                        <i class="fas <?php echo $icono_pagina; ?> me-3"></i><?php echo $titulo_pagina; ?>
                     </h1>
                     <h4 class="mb-0"><?php echo htmlspecialchars($formulario['titulo'] ?? 'Sin título'); ?></h4>
                     <p class="mb-0 mt-2 opacity-75">
@@ -302,7 +301,6 @@ $fecha_actual = date('Y-m-d H:i:s');
                         <?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?>
                     </p>
                     
-                    <!-- INFORMACIÓN DE FECHAS -->
                     <?php if ($fecha_inicio || $fecha_cierre): ?>
                     <div class="fechas-info mt-3">
                         <?php if ($fecha_inicio): ?>
@@ -327,13 +325,25 @@ $fecha_actual = date('Y-m-d H:i:s');
                     <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-light ms-2">
                         <i class="fas fa-arrow-left me-1"></i>Volver
                     </a>
-                    <a href="<?php echo $basePath; ?>/formulacion144/test?id=<?php echo $formulario['id']; ?>" class="btn btn-info ms-2" target="_blank">
+                    
+                    <!-- BOTONES DE NAVEGACIÓN -->
+                    <?php if ($es_seguimiento): ?>
+                        <a href="<?php echo $basePath; ?>/formulacion144/index?id=<?php echo $formulario['id']; ?>" class="btn btn-primary ms-2">
+                            <i class="fas fa-clipboard-list me-1"></i>Formulación
+                        </a>
+                    <?php else: ?>
+                        <a href="<?php echo $basePath; ?>/formulacion144/index?id=<?php echo $formulario['id']; ?>&tipo=seguimiento" class="btn btn-info ms-2">
+                            <i class="fas fa-chart-line me-1"></i>Seguimiento
+                        </a>
+                    <?php endif; ?>
+                    
+                    <a href="<?php echo $basePath; ?>/formulacion144/test?id=<?php echo $formulario['id']; ?>" class="btn btn-secondary ms-2" target="_blank">
                         <i class="fas fa-flask me-1"></i>Test
                     </a>
                 </div>
             </div>
             
-            <!-- CONTADOR REGRESIVO (SOLO SI EL FORMULARIO ESTÁ VIGENTE) -->
+            <!-- CONTADOR REGRESIVO -->
             <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
             <div class="countdown-container">
                 <div class="countdown-title">
@@ -376,13 +386,11 @@ $fecha_actual = date('Y-m-d H:i:s');
             <?php endif; ?>
         </div>
 
-        <!-- SI EL FORMULARIO NO ESTÁ VIGENTE, MOSTRAR MENSAJE Y DESHABILITAR ACCIONES -->
         <?php if (!$estado_fechas['valido']): ?>
         <div class="alert alert-warning text-center py-4 mb-4">
             <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
             <h3>Formulario no disponible</h3>
             <p class="lead"><?php echo $estado_fechas['mensaje']; ?></p>
-            <p>No es posible crear o editar borradores en este momento.</p>
             <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-primary mt-2">
                 <i class="fas fa-arrow-left me-2"></i>Ver otros formularios
             </a>
@@ -397,38 +405,57 @@ $fecha_actual = date('Y-m-d H:i:s');
                         <i class="fas fa-pen-fancy fa-2x"></i>
                         <h2 class="mb-0">Borradores</h2>
                         <span class="badge bg-secondary ms-2"><?php echo count($borradores); ?></span>
+                        
+                        <?php if (!$es_seguimiento): ?>
                         <button class="btn btn-success ms-auto" onclick="abrirModalNuevoBorrador()">
                             <i class="fas fa-plus me-1"></i>Nuevo
                         </button>
+                        <?php endif; ?>
                     </div>
 
                     <?php if (count($borradores) > 0): ?>
-                        <?php foreach ($borradores as $borrador): ?>
+                        <?php foreach ($borradores as $item): ?>
                         <div class="item-card">
-                            <div style="flex: 1;">
-                                <h5 class="mb-2"><?php echo htmlspecialchars($borrador['nombre_borrador']); ?></h5>
+                            <div>
+                                <h5 class="mb-2">
+                                    <?php echo htmlspecialchars($item['nombre_borrador'] ?? $item['nombre_seguimiento']); ?>
+                                </h5>
                                 <small class="text-muted">
                                     <i class="far fa-calendar-alt me-1"></i>
-                                    <?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
+                                    <?php echo date('d/m/Y H:i', strtotime($item['fecha_creacion'])); ?>
                                 </small>
-                                <?php if (!empty($borrador['anio'])): ?>
-                                <span class="badge bg-secondary ms-2">Año: <?php echo $borrador['anio']; ?></span>
+                                <?php if (!empty($item['anio'])): ?>
+                                <span class="badge bg-secondary ms-2">Año: <?php echo $item['anio']; ?></span>
                                 <?php endif; ?>
                                 <span class="estado-badge estado-borrador ms-2">Borrador</span>
                             </div>
                             <div class="item-actions">
-                                <button class="btn btn-sm btn-warning" onclick="editarBorrador(<?php echo $borrador['id']; ?>)">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-success" onclick="publicarBorrador(<?php echo $borrador['id']; ?>)">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger" onclick="cancelarBorrador(<?php echo $borrador['id']; ?>)">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar(<?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
+                                <?php if ($es_seguimiento): ?>
+                                    <!-- SOLO PARA SEGUIMIENTO -->
+                                    <button class="btn btn-sm btn-info" onclick="editarSeguimiento(<?php echo $item['formulacion_id']; ?>)">
+                                        <i class="fas fa-chart-line"></i> Avances
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="publicarItem(<?php echo $item['formulacion_id']; ?>)">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelarItem(<?php echo $item['formulacion_id']; ?>)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                <?php else: ?>
+                                    <!-- SOLO PARA FORMULACIÓN -->
+                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador(<?php echo $item['id']; ?>)">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-success" onclick="publicarItem(<?php echo $item['id']; ?>)">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelarItem(<?php echo $item['id']; ?>)">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar(<?php echo $item['id']; ?>, '<?php echo htmlspecialchars($item['nombre_borrador']); ?>')">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -436,7 +463,9 @@ $fecha_actual = date('Y-m-d H:i:s');
                         <div class="empty-state">
                             <i class="fas fa-file-alt"></i>
                             <h5>No hay borradores</h5>
+                            <?php if (!$es_seguimiento): ?>
                             <p class="text-muted">Haz clic en "Nuevo" para comenzar</p>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -452,23 +481,31 @@ $fecha_actual = date('Y-m-d H:i:s');
                     </div>
 
                     <?php if (count($publicados) > 0): ?>
-                        <?php foreach ($publicados as $publicado): ?>
+                        <?php foreach ($publicados as $item): ?>
                         <div class="item-card">
-                            <div style="flex: 1;">
-                                <h5 class="mb-2"><?php echo htmlspecialchars($publicado['nombre_borrador']); ?></h5>
+                            <div>
+                                <h5 class="mb-2">
+                                    <?php echo htmlspecialchars($item['nombre_borrador'] ?? $item['nombre_seguimiento']); ?>
+                                </h5>
                                 <small class="text-muted">
                                     <i class="far fa-calendar-alt me-1"></i>
-                                    <?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?>
+                                    <?php echo date('d/m/Y H:i', strtotime($item['fecha_creacion'])); ?>
                                 </small>
-                                <?php if (!empty($publicado['anio'])): ?>
-                                <span class="badge bg-secondary ms-2">Año: <?php echo $publicado['anio']; ?></span>
+                                <?php if (!empty($item['anio'])): ?>
+                                <span class="badge bg-secondary ms-2">Año: <?php echo $item['anio']; ?></span>
                                 <?php endif; ?>
                                 <span class="estado-badge estado-publicado ms-2">Publicado</span>
                             </div>
-                            <div>
-                                <button class="btn btn-sm btn-primary" onclick="verBorrador(<?php echo $publicado['id']; ?>)">
-                                    <i class="fas fa-eye"></i>
-                                </button>
+                            <div class="item-actions">
+                                <?php if ($es_seguimiento): ?>
+                                    <button class="btn btn-sm btn-info" onclick="verDetalle(<?php echo $item['formulacion_id']; ?>)">
+                                        <i class="fas fa-eye"></i> Ver
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn btn-sm btn-primary" onclick="verBorrador(<?php echo $item['id']; ?>)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -476,7 +513,6 @@ $fecha_actual = date('Y-m-d H:i:s');
                         <div class="empty-state">
                             <i class="fas fa-check-circle"></i>
                             <h5>No hay publicaciones</h5>
-                            <p class="text-muted">Los borradores aprobados aparecerán aquí</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -492,23 +528,31 @@ $fecha_actual = date('Y-m-d H:i:s');
                     </div>
 
                     <?php if (count($cancelados) > 0): ?>
-                        <?php foreach ($cancelados as $cancelado): ?>
+                        <?php foreach ($cancelados as $item): ?>
                         <div class="item-card">
-                            <div style="flex: 1;">
-                                <h5 class="mb-2"><?php echo htmlspecialchars($cancelado['nombre_borrador']); ?></h5>
+                            <div>
+                                <h5 class="mb-2">
+                                    <?php echo htmlspecialchars($item['nombre_borrador'] ?? $item['nombre_seguimiento']); ?>
+                                </h5>
                                 <small class="text-muted">
                                     <i class="far fa-calendar-alt me-1"></i>
-                                    <?php echo date('d/m/Y H:i', strtotime($cancelado['fecha_creacion'])); ?>
+                                    <?php echo date('d/m/Y H:i', strtotime($item['fecha_creacion'])); ?>
                                 </small>
-                                <?php if (!empty($cancelado['anio'])): ?>
-                                <span class="badge bg-secondary ms-2">Año: <?php echo $cancelado['anio']; ?></span>
+                                <?php if (!empty($item['anio'])): ?>
+                                <span class="badge bg-secondary ms-2">Año: <?php echo $item['anio']; ?></span>
                                 <?php endif; ?>
                                 <span class="estado-badge estado-cancelado ms-2">Cancelado</span>
                             </div>
-                            <div>
-                                <button class="btn btn-sm btn-danger" onclick="eliminarBorrador(<?php echo $cancelado['id']; ?>)">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                            <div class="item-actions">
+                                <?php if ($es_seguimiento): ?>
+                                    <button class="btn btn-sm btn-danger" onclick="eliminarItem(<?php echo $item['formulacion_id']; ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                <?php else: ?>
+                                    <button class="btn btn-sm btn-danger" onclick="eliminarItem(<?php echo $item['id']; ?>)">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>
@@ -516,7 +560,6 @@ $fecha_actual = date('Y-m-d H:i:s');
                         <div class="empty-state">
                             <i class="fas fa-times-circle"></i>
                             <h5>No hay cancelados</h5>
-                            <p class="text-muted">Los borradores cancelados aparecerán aquí</p>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -540,6 +583,7 @@ $fecha_actual = date('Y-m-d H:i:s');
                             <label class="form-label">Nombre del Borrador *</label>
                             <input type="text" class="form-control" name="nombre_borrador" required 
                                    placeholder="Ej: Planificación 2024 - V1">
+                            <small class="text-muted">Este nombre también se usará para el seguimiento</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -580,7 +624,7 @@ $fecha_actual = date('Y-m-d H:i:s');
         </div>
     </div>
 
-    <!-- MODAL FORMULARIO ESTRATÉGICO -->
+    <!-- MODAL FORMULARIO ESTRATÉGICO (PARA FORMULACIÓN) -->
     <div class="modal fade" id="modalFormularioEstrategico" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -671,13 +715,113 @@ $fecha_actual = date('Y-m-d H:i:s');
         </div>
     </div>
 
-    <!-- MODAL VER FORMULARIO -->
+    <!-- MODAL SEGUIMIENTO (PARA REGISTRAR AVANCES) -->
+    <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-chart-line me-2"></i>Registrar Avances - <span id="tituloSeguimiento"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formSeguimiento">
+                    <input type="hidden" id="seguimiento_borrador_id" name="id">
+                    <div class="modal-body">
+                        <!-- DATOS DE FORMULACIÓN (SOLO LECTURA) -->
+                        <div class="card mb-4 bg-light">
+                            <div class="card-header bg-secondary text-white">
+                                <i class="fas fa-clipboard-list me-2"></i>DATOS DE FORMULACIÓN (No editables)
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">AÑO</label>
+                                        <input type="text" class="form-control readonly-field" id="ver_anio" readonly>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">LÍNEA ESTRATÉGICA</label>
+                                        <input type="text" class="form-control readonly-field" id="ver_linea" readonly>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">OBJETIVO</label>
+                                        <textarea class="form-control readonly-field" id="ver_objetivo" rows="2" readonly></textarea>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">ESTRATEGIA</label>
+                                        <textarea class="form-control readonly-field" id="ver_estrategia" rows="2" readonly></textarea>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">MOTOR DE DESARROLLO</label>
+                                        <input type="text" class="form-control readonly-field" id="ver_motor" readonly>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">META DE RESULTADO</label>
+                                        <textarea class="form-control readonly-field" id="ver_meta" rows="2" readonly></textarea>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">PROYECTO</label>
+                                        <input type="text" class="form-control readonly-field" id="ver_proyecto" readonly>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">ACTIVIDAD DEL PROYECTO (205)</label>
+                                        <textarea class="form-control readonly-field" id="ver_actividad" rows="3" readonly></textarea>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">RESPONSABLE</label>
+                                        <input type="text" class="form-control readonly-field" id="ver_responsable" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DATOS DE SEGUIMIENTO (EDITABLES) -->
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <i class="fas fa-chart-line me-2"></i>REGISTRO DE AVANCES
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">AVANCE FÍSICO (%)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="avance_fisico" id="avance_fisico" step="0.01" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">AVANCE FINANCIERO (%)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" name="avance_financiero" id="avance_financiero" step="0.01" min="0" max="100">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label">OBSERVACIONES</label>
+                                        <textarea class="form-control" name="observaciones" id="observaciones" rows="4" placeholder="Ingrese observaciones del seguimiento..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-info">
+                            <i class="fas fa-save me-1"></i>Guardar Avances
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL VER DETALLE -->
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
+                <div class="modal-header" style="background: linear-gradient(135deg, <?php echo $color_pagina; ?> 0%, <?php echo $es_seguimiento ? '#2980B9' : '#34495E'; ?> 100%);">
                     <h5 class="modal-title">
-                        <i class="fas fa-eye me-2"></i>Ver Formulación - <span id="ver_titulo"></span>
+                        <i class="fas fa-eye me-2"></i>Ver Detalle - <span id="ver_titulo"></span>
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -696,9 +840,9 @@ $fecha_actual = date('Y-m-d H:i:s');
     <script>
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
+        const esSeguimiento = <?php echo $es_seguimiento ? 'true' : 'false'; ?>;
         
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
-        // ============= CONTADOR REGRESIVO EN TIEMPO REAL =============
         function actualizarContador() {
             const fechaCierre = new Date('<?php echo $fecha_cierre; ?>').getTime();
             const ahora = new Date().getTime();
@@ -709,8 +853,6 @@ $fecha_actual = date('Y-m-d H:i:s');
                 document.getElementById('hours').innerHTML = '00';
                 document.getElementById('minutes').innerHTML = '00';
                 document.getElementById('seconds').innerHTML = '00';
-                
-                // Recargar la página cuando expire
                 setTimeout(() => location.reload(), 3000);
                 return;
             }
@@ -726,7 +868,6 @@ $fecha_actual = date('Y-m-d H:i:s');
             document.getElementById('seconds').innerHTML = segundos.toString().padStart(2, '0');
         }
         
-        // Actualizar cada segundo
         actualizarContador();
         setInterval(actualizarContador, 1000);
         <?php endif; ?>
@@ -803,6 +944,165 @@ $fecha_actual = date('Y-m-d H:i:s');
             });
         }
 
+        function editarSeguimiento(id) {
+            $.ajax({
+                url: basePath + '/formulacion144/getBorrador?id=' + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const b = response.borrador;
+                        
+                        $('#ver_anio').val(b.anio || '');
+                        $('#ver_linea').val(b.linea_estrategica || '');
+                        $('#ver_objetivo').val(b.objetivo || '');
+                        $('#ver_estrategia').val(b.estrategia || '');
+                        $('#ver_motor').val(b.motor_desarrollo || '');
+                        $('#ver_meta').val(b.meta_resultado || '');
+                        $('#ver_proyecto').val(b.proyecto || '');
+                        $('#ver_actividad').val(b.actividad_proyecto || '');
+                        $('#ver_responsable').val(b.responsable || '');
+                        
+                        $('#seguimiento_borrador_id').val(b.id);
+                        $('#tituloSeguimiento').text(b.nombre_borrador);
+                        
+                        $.ajax({
+                            url: basePath + '/formulacion144/getSeguimiento?id=' + id,
+                            type: 'GET',
+                            dataType: 'json',
+                            success: function(resp) {
+                                if (resp.success) {
+                                    $('#avance_fisico').val(resp.seguimiento.avance_fisico || '');
+                                    $('#avance_financiero').val(resp.seguimiento.avance_financiero || '');
+                                    $('#observaciones').val(resp.seguimiento.observaciones || '');
+                                } else {
+                                    $('#avance_fisico').val('');
+                                    $('#avance_financiero').val('');
+                                    $('#observaciones').val('');
+                                }
+                            }
+                        });
+                        
+                        $('#modalSeguimiento').modal('show');
+                    }
+                }
+            });
+        }
+
+        $('#formSeguimiento').on('submit', function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: basePath + '/formulacion144/guardarSeguimiento',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Guardado!', response.message, 'success');
+                        $('#modalSeguimiento').modal('hide');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                }
+            });
+        });
+
+        $('#formFormularioEstrategico').on('submit', function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: basePath + '/formulacion144/guardar',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Guardado!', response.message, 'success');
+                        $('#modalFormularioEstrategico').modal('hide');
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                }
+            });
+        });
+
+        function publicarItem(id) {
+            Swal.fire({
+                title: '¿Publicar?',
+                text: 'Este registro pasará a estado PUBLICADO',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#27AE60',
+                confirmButtonText: 'Sí, publicar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/formulacion144/cambiarEstado',
+                        type: 'POST',
+                        data: { id: id, estado: 2 },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Publicado!', response.message, 'success');
+                                setTimeout(() => location.reload(), 1500);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function cancelarItem(id) {
+            Swal.fire({
+                title: '¿Cancelar?',
+                text: 'Este registro pasará a estado CANCELADO',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E74C3C',
+                confirmButtonText: 'Sí, cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/formulacion144/cambiarEstado',
+                        type: 'POST',
+                        data: { id: id, estado: 1 },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Cancelado!', response.message, 'success');
+                                setTimeout(() => location.reload(), 1500);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function eliminarItem(id) {
+            Swal.fire({
+                title: '¿Eliminar?',
+                text: 'Esta acción NO se puede deshacer',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#E74C3C',
+                confirmButtonText: 'Sí, eliminar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/formulacion144/eliminar',
+                        type: 'POST',
+                        data: { id: id },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Eliminado!', response.message, 'success');
+                                setTimeout(() => location.reload(), 1500);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
         function verBorrador(id) {
             $.ajax({
                 url: basePath + '/formulacion144/getBorrador?id=' + id,
@@ -832,97 +1132,58 @@ $fecha_actual = date('Y-m-d H:i:s');
             });
         }
 
-        $('#formFormularioEstrategico').on('submit', function(e) {
-            e.preventDefault();
+        function verDetalle(id) {
             $.ajax({
-                url: basePath + '/formulacion144/guardar',
-                type: 'POST',
-                data: $(this).serialize(),
+                url: basePath + '/formulacion144/getBorrador?id=' + id,
+                type: 'GET',
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        Swal.fire('¡Guardado!', response.message, 'success');
-                        $('#modalFormularioEstrategico').modal('hide');
-                        setTimeout(() => location.reload(), 1000);
+                        const b = response.borrador;
+                        $('#ver_titulo').text(b.nombre_borrador);
+                        
+                        $.ajax({
+                            url: basePath + '/formulacion144/getSeguimiento?id=' + id,
+                            type: 'GET',
+                            dataType: 'json',
+                            success: function(resp) {
+                                let html = '<div class="row">';
+                                
+                                html += '<div class="col-12"><h5 class="text-primary">DATOS DE FORMULACIÓN</h5></div>';
+                                html += '<div class="col-md-6 mb-3"><strong>AÑO:</strong><br>' + (b.anio || 'No especificado') + '</div>';
+                                html += '<div class="col-md-6 mb-3"><strong>LÍNEA ESTRATÉGICA:</strong><br>' + (b.linea_estrategica || 'No especificada') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>OBJETIVO:</strong><br>' + (b.objetivo || 'No especificado') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>ESTRATEGIA:</strong><br>' + (b.estrategia || 'No especificada') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>PROYECTO:</strong><br>' + (b.proyecto || 'No especificado') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>ACTIVIDAD DEL PROYECTO:</strong><br>' + (b.actividad_proyecto || 'No especificada') + '</div>';
+                                html += '<div class="col-md-6 mb-3"><strong>RESPONSABLE:</strong><br>' + (b.responsable || 'No especificado') + '</div>';
+                                
+                                if (resp.success) {
+                                    html += '<div class="col-12 mt-4"><h5 class="text-info">DATOS DE SEGUIMIENTO</h5></div>';
+                                    html += '<div class="col-md-6 mb-3"><strong>AVANCE FÍSICO:</strong><br>' + (resp.seguimiento.avance_fisico ? resp.seguimiento.avance_fisico + '%' : '0%') + '</div>';
+                                    html += '<div class="col-md-6 mb-3"><strong>AVANCE FINANCIERO:</strong><br>' + (resp.seguimiento.avance_financiero ? resp.seguimiento.avance_financiero + '%' : '0%') + '</div>';
+                                    html += '<div class="col-12 mb-3"><strong>OBSERVACIONES:</strong><br>' + (resp.seguimiento.observaciones || 'Sin observaciones') + '</div>';
+                                }
+                                
+                                html += '</div>';
+                                $('#ver_contenido').html(html);
+                                $('#modalVerFormulario').modal('show');
+                            },
+                            error: function() {
+                                let html = '<div class="row">';
+                                html += '<div class="col-md-6 mb-3"><strong>AÑO:</strong><br>' + (b.anio || 'No especificado') + '</div>';
+                                html += '<div class="col-md-6 mb-3"><strong>LÍNEA ESTRATÉGICA:</strong><br>' + (b.linea_estrategica || 'No especificada') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>OBJETIVO:</strong><br>' + (b.objetivo || 'No especificado') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>ESTRATEGIA:</strong><br>' + (b.estrategia || 'No especificada') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>PROYECTO:</strong><br>' + (b.proyecto || 'No especificado') + '</div>';
+                                html += '<div class="col-12 mb-3"><strong>ACTIVIDAD DEL PROYECTO:</strong><br>' + (b.actividad_proyecto || 'No especificada') + '</div>';
+                                html += '<div class="col-md-6 mb-3"><strong>RESPONSABLE:</strong><br>' + (b.responsable || 'No especificado') + '</div>';
+                                html += '</div>';
+                                $('#ver_contenido').html(html);
+                                $('#modalVerFormulario').modal('show');
+                            }
+                        });
                     }
-                }
-            });
-        });
-
-        function publicarBorrador(id) {
-            Swal.fire({
-                title: '¿Publicar borrador?',
-                text: 'Este borrador pasará a estado PUBLICADO',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#27AE60',
-                confirmButtonText: 'Sí, publicar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: basePath + '/formulacion144/cambiarEstado',
-                        type: 'POST',
-                        data: { id: id, estado: 2 },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire('¡Publicado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        function cancelarBorrador(id) {
-            Swal.fire({
-                title: '¿Cancelar borrador?',
-                text: 'Este borrador pasará a estado CANCELADO',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#E74C3C',
-                confirmButtonText: 'Sí, cancelar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: basePath + '/formulacion144/cambiarEstado',
-                        type: 'POST',
-                        data: { id: id, estado: 1 },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire('¡Cancelado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-
-        function eliminarBorrador(id) {
-            Swal.fire({
-                title: '¿Eliminar borrador?',
-                text: 'Esta acción NO se puede deshacer',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#E74C3C',
-                confirmButtonText: 'Sí, eliminar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $.ajax({
-                        url: basePath + '/formulacion144/eliminar',
-                        type: 'POST',
-                        data: { id: id },
-                        dataType: 'json',
-                        success: function(response) {
-                            if (response.success) {
-                                Swal.fire('¡Eliminado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
-                            }
-                        }
-                    });
                 }
             });
         }

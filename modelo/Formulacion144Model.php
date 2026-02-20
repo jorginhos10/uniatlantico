@@ -5,6 +5,7 @@ require_once 'config/config.php';
 class Formulacion144Model {
     private $db;
     private $table = 'formulacion_144';
+    private $table_seguimiento = 'seguimiento_144'; // Nueva tabla
 
     public function __construct() {
         $this->conectarDB();
@@ -177,6 +178,21 @@ class Formulacion144Model {
         }
     }
 
+    // ============= TEST DE TABLA SEGUIMIENTO_144 =============
+    public function testTablaSeguimiento() {
+        try {
+            $stmt = $this->db->prepare("SHOW TABLES LIKE 'seguimiento_144'");
+            $stmt->execute();
+            if ($stmt->rowCount() > 0) {
+                return ['success' => true, 'message' => '✅ Tabla seguimiento_144 existe'];
+            } else {
+                return ['success' => false, 'message' => '❌ Tabla seguimiento_144 NO existe'];
+            }
+        } catch (PDOException $e) {
+            return ['success' => false, 'message' => '❌ Error: ' . $e->getMessage()];
+        }
+    }
+
     // ============= TEST DE FORMULARIO =============
     public function testFormulario($id) {
         try {
@@ -207,6 +223,7 @@ class Formulacion144Model {
         $resultados[] = $this->testConexion();
         $resultados[] = $this->testTablaFormularios();
         $resultados[] = $this->testTabla();
+        $resultados[] = $this->testTablaSeguimiento();
         
         if ($formulario_id) {
             $resultados[] = $this->testFormulario($formulario_id);
@@ -220,6 +237,9 @@ class Formulacion144Model {
                 
                 $cancelados = $this->getCancelados($formulario_id);
                 $resultados[] = ['success' => true, 'message' => '✅ Cancelados encontrados: ' . count($cancelados)];
+                
+                $seguimientos = $this->getSeguimientos($formulario_id);
+                $resultados[] = ['success' => true, 'message' => '✅ Seguimientos encontrados: ' . count($seguimientos)];
             } catch (Exception $e) {
                 $resultados[] = ['success' => false, 'message' => '❌ Error al obtener datos: ' . $e->getMessage()];
             }
@@ -257,7 +277,26 @@ class Formulacion144Model {
         return $this->getByEstado($formulario_id, 2);
     }
 
-    // ============= CREAR BORRADOR =============
+    // ============= OBTENER SEGUIMIENTOS =============
+    public function getSeguimientos($formulario_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT s.*, f.nombre_borrador, f.anio, f.linea_estrategica, 
+                                        f.objetivo, f.estrategia, f.motor_desarrollo, f.meta_resultado,
+                                        f.proyecto, f.ponderacion_proyectos, f.actividad_proyecto,
+                                        f.ponderacion_actividades, f.responsable
+                                        FROM " . $this->table_seguimiento . " s
+                                        INNER JOIN " . $this->table . " f ON s.formulacion_id = f.id
+                                        WHERE s.formulario_id = :formulario_id 
+                                        ORDER BY s.fecha_creacion DESC");
+            $stmt->execute([':formulario_id' => $formulario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getSeguimientos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // ============= CREAR BORRADOR (MODIFICADO - AHORA CREA TAMBIÉN SEGUIMIENTO) =============
     public function crearBorrador($formulario_id, $nombre_borrador, $creado_por = 1) {
         try {
             $formulario = $this->verificarFormulario($formulario_id);
@@ -265,24 +304,58 @@ class Formulacion144Model {
                 return false;
             }
             
+            $this->db->beginTransaction();
+            
+            // Insertar en formulacion_144
             $stmt = $this->db->prepare("INSERT INTO " . $this->table . " 
                                         (formulario_id, nombre_borrador, estado, creado_por) 
                                         VALUES (:formulario_id, :nombre, 0, :creado_por)");
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':formulario_id' => $formulario_id,
                 ':nombre' => $nombre_borrador,
                 ':creado_por' => $creado_por
             ]);
+            
+            if ($result) {
+                $formulacion_id = $this->db->lastInsertId();
+                
+                // Insertar en seguimiento_144 con el mismo nombre
+                $stmt2 = $this->db->prepare("INSERT INTO " . $this->table_seguimiento . " 
+                                            (formulario_id, formulacion_id, nombre_seguimiento, estado) 
+                                            VALUES (:formulario_id, :formulacion_id, :nombre, 0)");
+                $result2 = $stmt2->execute([
+                    ':formulario_id' => $formulario_id,
+                    ':formulacion_id' => $formulacion_id,
+                    ':nombre' => $nombre_borrador
+                ]);
+                
+                if ($result2) {
+                    $this->db->commit();
+                    return true;
+                } else {
+                    $this->db->rollBack();
+                    return false;
+                }
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+            
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error crearBorrador: " . $e->getMessage());
             return false;
         }
     }
 
-    // ============= OBTENER POR ID =============
+    // ============= OBTENER POR ID (INCLUYE SEGUIMIENTO) =============
     public function getById($id) {
         try {
-            $stmt = $this->db->prepare("SELECT * FROM " . $this->table . " WHERE id = :id");
+            $stmt = $this->db->prepare("SELECT f.*, s.id as seguimiento_id, s.avance_fisico, 
+                                        s.avance_financiero, s.observaciones, s.estado as estado_seguimiento
+                                        FROM " . $this->table . " f
+                                        LEFT JOIN " . $this->table_seguimiento . " s ON f.id = s.formulacion_id
+                                        WHERE f.id = :id");
             $stmt->execute([':id' => $id]);
             return $stmt->fetch();
         } catch (PDOException $e) {
@@ -291,9 +364,12 @@ class Formulacion144Model {
         }
     }
 
-    // ============= ACTUALIZAR FORMULARIO =============
+    // ============= ACTUALIZAR FORMULARIO (MODIFICADO - SINCRONIZA NOMBRE CON SEGUIMIENTO) =============
     public function actualizar($id, $data) {
         try {
+            $this->db->beginTransaction();
+            
+            // Actualizar formulacion_144
             $sql = "UPDATE " . $this->table . " SET
                 nombre_borrador = :nombre_borrador,
                 anio = :anio,
@@ -311,7 +387,7 @@ class Formulacion144Model {
                 WHERE id = :id";
 
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':id' => $id,
                 ':nombre_borrador' => $data['nombre_borrador'],
                 ':anio' => $data['anio'] ?? null,
@@ -326,43 +402,136 @@ class Formulacion144Model {
                 ':ponderacion_actividades' => $data['ponderacion_actividades'] ?? null,
                 ':responsable' => $data['responsable'] ?? null
             ]);
+            
+            if ($result) {
+                // Sincronizar nombre en seguimiento_144
+                $stmt2 = $this->db->prepare("UPDATE " . $this->table_seguimiento . " 
+                                            SET nombre_seguimiento = :nombre 
+                                            WHERE formulacion_id = :formulacion_id");
+                $result2 = $stmt2->execute([
+                    ':formulacion_id' => $id,
+                    ':nombre' => $data['nombre_borrador']
+                ]);
+                
+                if ($result2) {
+                    $this->db->commit();
+                    return true;
+                } else {
+                    $this->db->rollBack();
+                    return false;
+                }
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+            
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error actualizar: " . $e->getMessage());
             return false;
         }
     }
 
-    // ============= CAMBIAR ESTADO =============
+    // ============= ACTUALIZAR SOLO SEGUIMIENTO =============
+    public function actualizarSeguimiento($id, $data) {
+        try {
+            $sql = "UPDATE " . $this->table_seguimiento . " SET
+                avance_fisico = :avance_fisico,
+                avance_financiero = :avance_financiero,
+                observaciones = :observaciones,
+                fecha_actualizacion = NOW()
+                WHERE formulacion_id = :formulacion_id";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute([
+                ':formulacion_id' => $id,
+                ':avance_fisico' => $data['avance_fisico'] ?? null,
+                ':avance_financiero' => $data['avance_financiero'] ?? null,
+                ':observaciones' => $data['observaciones'] ?? null
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error actualizarSeguimiento: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // ============= CAMBIAR ESTADO (MODIFICADO - TAMBIÉN CAMBIA EN SEGUIMIENTO) =============
     public function cambiarEstado($id, $estado) {
         try {
+            $this->db->beginTransaction();
+            
             $stmt = $this->db->prepare("UPDATE " . $this->table . " SET estado = :estado, fecha_actualizacion = NOW() WHERE id = :id");
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':id' => $id,
                 ':estado' => $estado
             ]);
+            
+            if ($result) {
+                $stmt2 = $this->db->prepare("UPDATE " . $this->table_seguimiento . " SET estado = :estado, fecha_actualizacion = NOW() WHERE formulacion_id = :formulacion_id");
+                $result2 = $stmt2->execute([
+                    ':formulacion_id' => $id,
+                    ':estado' => $estado
+                ]);
+                
+                if ($result2) {
+                    $this->db->commit();
+                    return true;
+                } else {
+                    $this->db->rollBack();
+                    return false;
+                }
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+            
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error cambiarEstado: " . $e->getMessage());
             return false;
         }
     }
 
-    // ============= ELIMINAR =============
+    // ============= ELIMINAR (MODIFICADO - TAMBIÉN ELIMINA SEGUIMIENTO) =============
     public function eliminar($id) {
         try {
-            $stmt = $this->db->prepare("DELETE FROM " . $this->table . " WHERE id = :id");
-            return $stmt->execute([':id' => $id]);
+            $this->db->beginTransaction();
+            
+            $stmt2 = $this->db->prepare("DELETE FROM " . $this->table_seguimiento . " WHERE formulacion_id = :formulacion_id");
+            $result2 = $stmt2->execute([':formulacion_id' => $id]);
+            
+            if ($result2) {
+                $stmt = $this->db->prepare("DELETE FROM " . $this->table . " WHERE id = :id");
+                $result = $stmt->execute([':id' => $id]);
+                
+                if ($result) {
+                    $this->db->commit();
+                    return true;
+                } else {
+                    $this->db->rollBack();
+                    return false;
+                }
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+            
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error eliminar: " . $e->getMessage());
             return false;
         }
     }
 
-    // ============= DUPLICAR BORRADOR =============
+    // ============= DUPLICAR BORRADOR (MODIFICADO - TAMBIÉN DUPLICA SEGUIMIENTO) =============
     public function duplicar($id, $nuevo_nombre, $creado_por = 1) {
         try {
             $original = $this->getById($id);
             if (!$original) return false;
             
+            $this->db->beginTransaction();
+            
+            // Duplicar en formulacion_144
             $stmt = $this->db->prepare("INSERT INTO " . $this->table . " 
                 (formulario_id, nombre_borrador, estado, creado_por, anio, linea_estrategica, 
                  objetivo, estrategia, motor_desarrollo, meta_resultado, proyecto, 
@@ -372,7 +541,7 @@ class Formulacion144Model {
                  :objetivo, :estrategia, :motor_desarrollo, :meta_resultado, :proyecto, 
                  :ponderacion_proyectos, :actividad_proyecto, :ponderacion_actividades, :responsable)");
             
-            return $stmt->execute([
+            $result = $stmt->execute([
                 ':formulario_id' => $original['formulario_id'],
                 ':nombre' => $nuevo_nombre,
                 ':creado_por' => $creado_por,
@@ -388,7 +557,34 @@ class Formulacion144Model {
                 ':ponderacion_actividades' => $original['ponderacion_actividades'],
                 ':responsable' => $original['responsable']
             ]);
+            
+            if ($result) {
+                $nuevo_id = $this->db->lastInsertId();
+                
+                // Duplicar en seguimiento_144
+                $stmt2 = $this->db->prepare("INSERT INTO " . $this->table_seguimiento . " 
+                                            (formulario_id, formulacion_id, nombre_seguimiento, estado) 
+                                            VALUES (:formulario_id, :formulacion_id, :nombre, 0)");
+                $result2 = $stmt2->execute([
+                    ':formulario_id' => $original['formulario_id'],
+                    ':formulacion_id' => $nuevo_id,
+                    ':nombre' => $nuevo_nombre
+                ]);
+                
+                if ($result2) {
+                    $this->db->commit();
+                    return true;
+                } else {
+                    $this->db->rollBack();
+                    return false;
+                }
+            } else {
+                $this->db->rollBack();
+                return false;
+            }
+            
         } catch (PDOException $e) {
+            $this->db->rollBack();
             error_log("Error duplicar: " . $e->getMessage());
             return false;
         }
