@@ -76,13 +76,14 @@ class Modulo144Model {
     public function verificarFormulario($id) {
         try {
             $stmt = $this->db->prepare("SELECT *, 
+                                        fecha_fin as fecha_cierre,
                                         NOW() as fecha_actual,
-                                        TIMESTAMPDIFF(SECOND, NOW(), fecha_cierre) as segundos_restantes,
+                                        TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) as segundos_restantes,
                                         CASE 
                                             WHEN fecha_inicio IS NOT NULL AND NOW() < fecha_inicio THEN 'no_iniciado'
-                                            WHEN fecha_cierre IS NOT NULL AND NOW() > fecha_cierre THEN 'expirado'
-                                            WHEN fecha_inicio IS NOT NULL AND fecha_cierre IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_cierre THEN 'vigente'
-                                            WHEN fecha_inicio IS NULL AND fecha_cierre IS NULL THEN 'sin_fechas'
+                                            WHEN fecha_fin IS NOT NULL AND NOW() > fecha_fin THEN 'expirado'
+                                            WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_fin THEN 'vigente'
+                                            WHEN fecha_inicio IS NULL AND fecha_fin IS NULL THEN 'sin_fechas'
                                             ELSE 'vigente'
                                         END as estado_fecha
                                         FROM formularios 
@@ -106,7 +107,7 @@ class Modulo144Model {
 
         $fecha_actual = date('Y-m-d H:i:s');
         
-        if (empty($formulario['fecha_inicio']) && empty($formulario['fecha_cierre'])) {
+        if (empty($formulario['fecha_inicio']) && empty($formulario['fecha_fin'])) {
             return [
                 'valido' => true,
                 'mensaje' => 'Sin restricción de fechas',
@@ -114,23 +115,23 @@ class Modulo144Model {
             ];
         }
 
-        if (!empty($formulario['fecha_inicio']) && !empty($formulario['fecha_cierre'])) {
+        if (!empty($formulario['fecha_inicio']) && !empty($formulario['fecha_fin'])) {
             if ($fecha_actual < $formulario['fecha_inicio']) {
                 return [
                     'valido' => false,
                     'mensaje' => 'Disponible desde: ' . date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])),
                     'clase' => 'no-iniciado'
                 ];
-            } elseif ($fecha_actual > $formulario['fecha_cierre']) {
+            } elseif ($fecha_actual > $formulario['fecha_fin']) {
                 return [
                     'valido' => false,
-                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])),
+                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
                     'clase' => 'expirado'
                 ];
             } else {
                 return [
                     'valido' => true,
-                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])),
+                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
                     'clase' => 'vigente'
                 ];
             }
@@ -299,7 +300,7 @@ class Modulo144Model {
 
     public function obtenerTodosLosFormularios() {
         try {
-            $stmt = $this->db->prepare("SELECT id, titulo, descripcion, fecha_inicio, fecha_cierre FROM formularios WHERE estado = 1 ORDER BY id DESC");
+            $stmt = $this->db->prepare("SELECT id, titulo, descripcion, fecha_inicio, fecha_fin FROM formularios WHERE estado = 1 ORDER BY id DESC");
             $stmt->execute();
             return $stmt->fetchAll();
         } catch (PDOException $e) {
@@ -308,25 +309,19 @@ class Modulo144Model {
         }
     }
 
-
-// ============= VERIFICAR SI LA TABLA EXISTE =============
-public function verificarTabla($modulo) {
-    try {
-        if (!isset($this->modulos[$modulo])) {
+    public function verificarTabla($modulo) {
+        try {
+            if (!isset($this->modulos[$modulo])) {
+                return false;
+            }
+            $tabla = $this->modulos[$modulo]['tabla'];
+            $stmt = $this->db->prepare("SHOW TABLES LIKE '{$tabla}'");
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Error verificarTabla [{$modulo}]: " . $e->getMessage());
             return false;
         }
-        $tabla = $this->modulos[$modulo]['tabla'];
-        $stmt = $this->db->prepare("SHOW TABLES LIKE '{$tabla}'");
-        $stmt->execute();
-        return $stmt->rowCount() > 0;
-    } catch (PDOException $e) {
-        error_log("Error verificarTabla [{$modulo}]: " . $e->getMessage());
-        return false;
     }
 }
-
-
-
-    }
 ?>
-
