@@ -1,6 +1,5 @@
 <?php
-<<<<<<< Updated upstream
-// vista/FOR-DE-144/index.php
+// vista/FOR-DE-144/index.php - VERSIÓN CORREGIDA
 
 // 🔐 INCLUIR SEGURIDAD - Redirige si no hay sesión
 require_once __DIR__ . '/../../config/security.php';
@@ -13,9 +12,6 @@ $paginaActual = 'FOR-DE-144';
 
 // Incluir header
 require_once __DIR__ . '/../complementos/header.php';
-=======
-// vista/FOR-DE-144/index.php - VERSIÓN CORREGIDA
->>>>>>> Stashed changes
 ?>
 
 <!DOCTYPE html>
@@ -29,9 +25,6 @@ require_once __DIR__ . '/../complementos/header.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<<<<<<< Updated upstream
-    <!-- Flatpickr para selección de fecha/hora -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <style>
         :root {
@@ -314,27 +307,6 @@ require_once __DIR__ . '/../complementos/header.php';
             margin: 15px 0;
         }
         
-        .opcion-tiempo {
-            padding: 10px;
-            border: 2px solid transparent;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .opcion-tiempo:hover {
-            background: #e9ecef;
-        }
-        
-        .opcion-tiempo input[type="radio"] {
-            margin-right: 10px;
-        }
-        
-        .opcion-tiempo.selected {
-            background: #e3f2fd;
-            border-color: var(--color-primary);
-        }
-        
         .rango-fechas {
             margin-top: 15px;
             padding: 15px;
@@ -421,108 +393,6 @@ require_once __DIR__ . '/../complementos/header.php';
                 <div class="col-md-8">
                     <div class="header-icon">
                         <i class="fas fa-file-alt"></i>
-=======
-    <link rel="stylesheet" href="assets/css/formatos_for_de_144.css">
-    <meta name="base-path" content="<?= dirname($_SERVER['SCRIPT_NAME']) ?>">
-</head>
-<body>
-    <div class="formatos-container">
-        
-        <!-- Mensajes de sesión -->
-        <?php if (isset($_SESSION['mensaje'])): ?>
-            <div class="mensaje-exito">
-                <i class="fas fa-check-circle"></i>
-                <?= $_SESSION['mensaje'] ?>
-            </div>
-            <?php unset($_SESSION['mensaje']); ?>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="mensaje-error">
-                <i class="fas fa-exclamation-circle"></i>
-                <?= $_SESSION['error'] ?>
-            </div>
-            <?php unset($_SESSION['error']); ?>
-        <?php endif; ?>
-
-        <!-- Cabecera -->
-        <div class="formatos-header">
-            <h2>
-                <i class="fas fa-file-alt"></i>
-                Formatos FOR-DE-144
-            </h2>
-        </div>
-
-        <!-- Grid de tarjetas -->
-        <div class="cards-grid" id="cardsGrid">
-            <!-- Tarjeta para agregar nuevo -->
-            <div class="card card-agregar" onclick="FormatoForDe144.abrirPopupCrear()">
-                <div class="card-icon">
-                    <i class="fas fa-plus-circle"></i>
-                </div>
-                <h3>Crear Nuevo</h3>
-                <p>Agrega un nuevo formato FOR-DE-144</p>
-            </div>
-
-            <!-- Tarjetas de formatos existentes -->
-            <?php if (!empty($formularios)): ?>
-                <?php foreach ($formularios as $formato): ?>
-                    <div class="card <?= $formato['disponible'] ? 'clickable' : 'disabled' ?>" 
-                         data-id="<?= $formato['id'] ?>">
-                        
-                        <div class="card-header">
-                            <span class="badge">
-                                <i class="fas fa-hashtag"></i> ID: <?= $formato['id'] ?>
-                            </span>
-                            <div class="acciones-tarjeta">
-                                <button class="btn-editar" onclick="event.stopPropagation(); FormatoForDe144.abrirPopupEditar(<?= htmlspecialchars(json_encode($formato)) ?>)">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn-eliminar" onclick="event.stopPropagation(); FormatoForDe144.confirmarEliminar(<?= $formato['id'] ?>, '<?= htmlspecialchars($formato['titulo']) ?>')">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="card-body">
-                            <h4><?= htmlspecialchars($formato['titulo']) ?></h4>
-                            <p class="descripcion"><?= htmlspecialchars($formato['descripcion'] ?? 'Sin descripción') ?></p>
-                            
-                            <!-- Información de tiempo -->
-                            <div class="info-tiempo">
-                                <?php if (empty($formato['fecha_inicio']) && empty($formato['fecha_cierre'])): ?>
-                                    <span class="badge-tiempo badge-sin-restricciones">
-                                        <i class="fas fa-infinity"></i> Sin restricciones
-                                    </span>
-                                <?php else: ?>
-                                    <?php if ($formato['estado_tiempo'] === 'activo'): ?>
-                                        <span class="badge-tiempo badge-activo">
-                                            <i class="fas fa-check-circle"></i> Activo
-                                        </span>
-                                    <?php elseif ($formato['estado_tiempo'] === 'proximamente'): ?>
-                                        <span class="badge-tiempo badge-proximamente">
-                                            <i class="fas fa-clock"></i> Próximamente
-                                        </span>
-                                    <?php elseif ($formato['estado_tiempo'] === 'cerrado'): ?>
-                                        <span class="badge-tiempo badge-cerrado">
-                                            <i class="fas fa-lock"></i> Cerrado
-                                        </span>
-                                    <?php endif; ?>
-                                    
-                                    <div class="fecha-texto">
-                                        <i class="fas fa-calendar-alt"></i>
-                                        <?= date('d/m/Y', strtotime($formato['fecha_inicio'])) ?> - 
-                                        <?= date('d/m/Y', strtotime($formato['fecha_cierre'])) ?>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        
-                        <div class="card-footer">
-                            <i class="fas fa-clock"></i>
-                            Creado: <?= date('d/m/Y H:i', strtotime($formato['fecha_creacion'])) ?>
-                        </div>
->>>>>>> Stashed changes
                     </div>
                     <h1 class="header-title">FOR-DE-144 - Gestión de Formularios</h1>
                     <p class="header-subtitle">Crea, edita y gestiona tus formularios con control de tiempo</p>
@@ -665,7 +535,6 @@ require_once __DIR__ . '/../complementos/header.php';
             <?php endif; ?>
         </div>
     </div>
-<<<<<<< Updated upstream
     
     <!-- Modal para agregar formulario -->
     <div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
@@ -694,7 +563,7 @@ require_once __DIR__ . '/../complementos/header.php';
                         <div class="mb-3">
                             <label class="form-label">Configuración de Tiempo *</label>
                             <div class="tiempo-opciones">
-                                <div class="opcion-tiempo mb-2" onclick="document.getElementById('tipo_libre').checked = true; mostrarRangoFechas(false);">
+                                <div class="mb-2">
                                     <input type="radio" name="tipo_tiempo" id="tipo_libre" value="libre" checked>
                                     <label for="tipo_libre" class="ms-2">
                                         <i class="fas fa-infinity text-success me-2"></i>
@@ -702,7 +571,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                     </label>
                                 </div>
                                 
-                                <div class="opcion-tiempo" onclick="document.getElementById('tipo_rango').checked = true; mostrarRangoFechas(true);">
+                                <div>
                                     <input type="radio" name="tipo_tiempo" id="tipo_rango" value="rango">
                                     <label for="tipo_rango" class="ms-2">
                                         <i class="fas fa-calendar-alt text-primary me-2"></i>
@@ -773,7 +642,7 @@ require_once __DIR__ . '/../complementos/header.php';
                         <div class="mb-3">
                             <label class="form-label">Configuración de Tiempo *</label>
                             <div class="tiempo-opciones">
-                                <div class="opcion-tiempo mb-2" onclick="document.getElementById('tipo_libre_editar').checked = true; mostrarRangoFechasEditar(false);">
+                                <div class="mb-2">
                                     <input type="radio" name="tipo_tiempo" id="tipo_libre_editar" value="libre">
                                     <label for="tipo_libre_editar" class="ms-2">
                                         <i class="fas fa-infinity text-success me-2"></i>
@@ -781,7 +650,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                     </label>
                                 </div>
                                 
-                                <div class="opcion-tiempo" onclick="document.getElementById('tipo_rango_editar').checked = true; mostrarRangoFechasEditar(true);">
+                                <div>
                                     <input type="radio" name="tipo_tiempo" id="tipo_rango_editar" value="rango">
                                     <label for="tipo_rango_editar" class="ms-2">
                                         <i class="fas fa-calendar-alt text-primary me-2"></i>
@@ -829,8 +698,6 @@ require_once __DIR__ . '/../complementos/header.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     
     <script>
         // Configuración base
@@ -871,13 +738,21 @@ require_once __DIR__ . '/../complementos/header.php';
         }
         
         $(document).ready(function() {
-            // Inicializar Flatpickr para fechas
-            flatpickr("input[type=datetime-local]", {
-                enableTime: true,
-                dateFormat: "Y-m-d H:i",
-                locale: "es",
-                minDate: "today",
-                time_24hr: true
+            // Evento para cambiar la visualización según el tipo de tiempo seleccionado
+            $('input[name="tipo_tiempo"]').on('change', function() {
+                if ($(this).val() === 'rango') {
+                    mostrarRangoFechas(true);
+                } else {
+                    mostrarRangoFechas(false);
+                }
+            });
+            
+            $('input[name="tipo_tiempo_editar"]').on('change', function() {
+                if ($(this).val() === 'rango') {
+                    mostrarRangoFechasEditar(true);
+                } else {
+                    mostrarRangoFechasEditar(false);
+                }
             });
             
             // Manejar envío del formulario de agregar
@@ -1071,8 +946,8 @@ require_once __DIR__ . '/../complementos/header.php';
                         } else {
                             $('#tipo_rango_editar').prop('checked', true);
                             mostrarRangoFechasEditar(true);
-                            $('#fecha_inicio_editar').val(f.fecha_inicio);
-                            $('#fecha_fin_editar').val(f.fecha_fin);
+                            $('#fecha_inicio_editar').val(f.fecha_inicio ? f.fecha_inicio.replace(' ', 'T') : '');
+                            $('#fecha_fin_editar').val(f.fecha_fin ? f.fecha_fin.replace(' ', 'T') : '');
                         }
                         
                         // Mostrar modal
@@ -1096,179 +971,9 @@ require_once __DIR__ . '/../complementos/header.php';
             });
         }
     </script>
-=======
-
-    <!-- POPUP: Crear Nuevo Formato -->
-    <div id="popupCrear" class="popup-overlay">
-        <div class="popup">
-            <div class="popup-header">
-                <h3>
-                    <i class="fas fa-plus-circle" style="color: #4CAF50;"></i>
-                    Nuevo Formato
-                </h3>
-                <button class="cerrar" onclick="FormatoForDe144.cerrarPopup()">&times;</button>
-            </div>
-            
-            <form id="formNuevoFormato">
-                <div class="popup-body">
-                    <div class="form-group">
-                        <label for="titulo">Título del Formato *</label>
-                        <input type="text" id="titulo" name="titulo" placeholder="Ej: Formato de evaluación mensual" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="descripcion">Descripción</label>
-                        <textarea id="descripcion" name="descripcion" placeholder="Describe el propósito de este formato..."></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Configuración de Tiempo</label>
-                        <div class="opciones-tiempo">
-                            <div class="opcion-radio">
-                                <input type="radio" name="tipo_tiempo" id="sin_restricciones" value="sin_restricciones" checked>
-                                <label for="sin_restricciones">
-                                    <i class="fas fa-infinity"></i> Sin restricciones de tiempo
-                                </label>
-                                <small>El formato estará disponible permanentemente</small>
-                            </div>
-                            
-                            <div class="opcion-radio">
-                                <input type="radio" name="tipo_tiempo" id="con_restricciones" value="con_restricciones">
-                                <label for="con_restricciones">
-                                    <i class="fas fa-calendar-alt"></i> Con período definido
-                                </label>
-                                <small>El formato solo estará disponible en las fechas seleccionadas</small>
-                            </div>
-
-                            <div id="camposFecha" class="campos-fecha" style="display: none;">
-                                <div class="form-group">
-                                    <label for="fecha_inicio">Fecha de Apertura</label>
-                                    <input type="datetime-local" id="fecha_inicio" name="fecha_inicio">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="fecha_cierre">Fecha de Cierre</label>
-                                    <input type="datetime-local" id="fecha_cierre" name="fecha_cierre">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="popup-footer">
-                    <button type="button" class="btn-cancelar" onclick="FormatoForDe144.cerrarPopup()">
-                        <i class="fas fa-times"></i>
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn-guardar">
-                        <i class="fas fa-save"></i>
-                        Guardar Formato
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- POPUP: Editar Formato -->
-    <div id="popupEditar" class="popup-overlay">
-        <div class="popup">
-            <div class="popup-header">
-                <h3>
-                    <i class="fas fa-edit" style="color: #3498db;"></i>
-                    Editar Formato
-                </h3>
-                <button class="cerrar" onclick="FormatoForDe144.cerrarPopupEditar()">&times;</button>
-            </div>
-            
-            <form id="formEditarFormato">
-                <input type="hidden" id="edit_id" name="id">
-                
-                <div class="popup-body">
-                    <div class="form-group">
-                        <label for="edit_titulo">Título del Formato *</label>
-                        <input type="text" id="edit_titulo" name="titulo" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="edit_descripcion">Descripción</label>
-                        <textarea id="edit_descripcion" name="descripcion"></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Configuración de Tiempo</label>
-                        <div class="opciones-tiempo">
-                            <div class="opcion-radio">
-                                <input type="radio" name="edit_tipo_tiempo" id="edit_sin_restricciones" value="sin_restricciones">
-                                <label for="edit_sin_restricciones">
-                                    <i class="fas fa-infinity"></i> Sin restricciones
-                                </label>
-                            </div>
-                            
-                            <div class="opcion-radio">
-                                <input type="radio" name="edit_tipo_tiempo" id="edit_con_restricciones" value="con_restricciones">
-                                <label for="edit_con_restricciones">
-                                    <i class="fas fa-calendar-alt"></i> Con período definido
-                                </label>
-                            </div>
-
-                            <div id="edit_camposFecha" class="campos-fecha" style="display: none;">
-                                <div class="form-group">
-                                    <label for="edit_fecha_inicio">Fecha de Apertura</label>
-                                    <input type="datetime-local" id="edit_fecha_inicio" name="fecha_inicio">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="edit_fecha_cierre">Fecha de Cierre</label>
-                                    <input type="datetime-local" id="edit_fecha_cierre" name="fecha_cierre">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="popup-footer">
-                    <button type="button" class="btn-cancelar" onclick="FormatoForDe144.cerrarPopupEditar()">
-                        <i class="fas fa-times"></i>
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn-guardar">
-                        <i class="fas fa-save"></i>
-                        Actualizar
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- POPUP: Confirmar Eliminación -->
-    <div id="popupConfirmar" class="popup-overlay">
-        <div class="popup popup-small">
-            <div class="popup-header">
-                <h3>
-                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
-                    Confirmar Eliminación
-                </h3>
-                <button class="cerrar" onclick="FormatoForDe144.cerrarConfirmar()">&times;</button>
-            </div>
-            
-            <div class="popup-body">
-                <p id="mensajeConfirmacion" style="font-size: 16px; line-height: 1.6;"></p>
-            </div>
-            
-            <div class="popup-footer">
-                <button class="btn-cancelar" onclick="FormatoForDe144.cerrarConfirmar()">
-                    <i class="fas fa-times"></i>
-                    Cancelar
-                </button>
-                <button id="btnEliminarConfirmar" class="btn-eliminar-popup">
-                    <i class="fas fa-trash-alt"></i>
-                    Sí, Eliminar
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <script src="assets/js/formatos_for_de_144.js"></script>
->>>>>>> Stashed changes
 </body>
 </html>
+<?php 
+// Incluir footer
+require_once __DIR__ . '/../complementos/footer.php'; 
+?>

@@ -1,9 +1,5 @@
 <?php 
-<<<<<<< Updated upstream
 // modelo/FORDE144Model.php - VERSIÓN PRODUCCIÓN
-=======
-// modelo/FORDE144Model.php - VERSIÓN COMPLETA
->>>>>>> Stashed changes
 require_once 'config/config.php';
 
 class FORDE144Model {
@@ -26,12 +22,9 @@ class FORDE144Model {
         }
     }
 
-<<<<<<< Updated upstream
     /**
      * Obtiene todos los formularios activos (filtrados por tiempo)
      */
-=======
->>>>>>> Stashed changes
     public function getAll() {
         try {
             $sql = "SELECT *, 
@@ -53,7 +46,6 @@ class FORDE144Model {
         }
     }
 
-<<<<<<< Updated upstream
     /**
      * Obtiene todos los formularios (para administración)
      */
@@ -82,8 +74,6 @@ class FORDE144Model {
     /**
      * Obtiene un formulario por ID
      */
-=======
->>>>>>> Stashed changes
     public function getById($id) {
         try {
             $stmt = $this->db->prepare("SELECT * FROM " . $this->table . " WHERE id = :id");
@@ -162,14 +152,10 @@ class FORDE144Model {
         }
     }
 
-<<<<<<< Updated upstream
     /**
      * Verifica si un formulario está disponible según su configuración de tiempo
      */
     public function isDisponible($id) {
-=======
-    public function verificarDisponibilidad($id) {
->>>>>>> Stashed changes
         try {
             $stmt = $this->db->prepare("SELECT 
                     CASE 
