@@ -240,6 +240,251 @@
     color: #4CAF50;
 }
 
+/* ========== NUEVOS ESTILOS PARA GESTIÓN DE TIEMPO ========== */
+
+/* Configuración de tiempo en formularios */
+.tiempo-configuracion {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 20px 0;
+    border: 1px solid #e9ecef;
+}
+
+.opcion-tiempo {
+    padding: 15px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.opcion-tiempo:hover {
+    background: #e9ecef;
+    border-color: #2C3E50;
+}
+
+.opcion-tiempo.selected {
+    background: #e3f2fd;
+    border-color: #2C3E50;
+}
+
+.opcion-tiempo input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.1);
+}
+
+.rango-fechas {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+    border: 1px solid #dee2e6;
+    animation: slideDown 0.3s ease;
+}
+
+/* Badges de estado de tiempo */
+.badge-tiempo {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-tiempo-libre {
+    background: #27AE60;
+    color: white;
+}
+
+.badge-tiempo-rango {
+    background: #3498DB;
+    color: white;
+}
+
+.badge-disponible {
+    background: #27AE60;
+    color: white;
+}
+
+.badge-no-disponible {
+    background: #E74C3C;
+    color: white;
+}
+
+.badge-proximamente {
+    background: #F39C12;
+    color: white;
+}
+
+.badge-finalizado {
+    background: #95A5A6;
+    color: white;
+}
+
+/* Información de tiempo en tarjetas */
+.tiempo-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    font-size: 0.9rem;
+    border-left: 3px solid #2C3E50;
+}
+
+.tiempo-info i {
+    width: 20px;
+    color: #2C3E50;
+}
+
+.fecha-rango {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #dee2e6;
+}
+
+.fecha-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+    color: #2C3E50;
+}
+
+.fecha-item i {
+    margin-right: 8px;
+}
+
+/* Estados de tarjetas según disponibilidad */
+.card.disponible {
+    border-left: 4px solid #27AE60;
+}
+
+.card.no-disponible {
+    border-left: 4px solid #E74C3C;
+    opacity: 0.8;
+    background: #f8f9fa;
+}
+
+.card.proximamente {
+    border-left: 4px solid #F39C12;
+}
+
+.card.finalizado {
+    border-left: 4px solid #95A5A6;
+    opacity: 0.7;
+}
+
+/* Mensajes de tiempo */
+.mensaje-tiempo {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.mensaje-tiempo.info {
+    background: #D6EAF8;
+    color: #2C3E50;
+    border-left: 3px solid #3498DB;
+}
+
+.mensaje-tiempo.warning {
+    background: #FCF3CF;
+    color: #7D6608;
+    border-left: 3px solid #F39C12;
+}
+
+.mensaje-tiempo.error {
+    background: #FADBD8;
+    color: #943126;
+    border-left: 3px solid #E74C3C;
+}
+
+.mensaje-tiempo.success {
+    background: #D4EDDA;
+    color: #155724;
+    border-left: 3px solid #27AE60;
+}
+
+/* Tooltips personalizados */
+.tooltip-tiempo {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-tiempo .tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #2C3E50;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.85rem;
+    pointer-events: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.tooltip-tiempo:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Contador de caracteres */
+.contador-caracteres {
+    font-size: 0.85rem;
+    color: #7F8C8D;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.contador-caracteres.warning {
+    color: #F39C12;
+}
+
+.contador-caracteres.danger {
+    color: #E74C3C;
+}
+
+/* Botones deshabilitados */
+.btn:disabled,
+.btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* Tooltip para botón ver deshabilitado */
+.btn-ver-disabled {
+    position: relative;
+}
+
+.btn-ver-disabled:hover::after {
+    content: "No disponible en este momento";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2C3E50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    z-index: 1000;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
 /* Estado vacío */
 .no-formatos {
     text-align: center;
@@ -318,17 +563,6 @@
     }
 }
 
-.popup {
-    background: white;
-    border-radius: 16px;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
 @keyframes slideUp {
     from { 
         opacity: 0;
@@ -340,8 +574,23 @@
     }
 }
 
+.popup {
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
 .popup-small {
     max-width: 450px;
+}
+
+.popup-large {
+    max-width: 600px;
 }
 
 .popup-header {
@@ -403,7 +652,7 @@
     border-radius: 0 0 16px 16px;
 }
 
-/* Formularios */
+/* Formularios en popups */
 .form-group {
     margin-bottom: 25px;
 }
@@ -417,7 +666,8 @@
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
     width: 100%;
     padding: 14px 18px;
     border: 2px solid #e0e0e0;
@@ -429,7 +679,8 @@
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group select:focus {
     outline: none;
     border-color: #4CAF50;
     background: white;
@@ -439,6 +690,10 @@
 .form-group textarea {
     resize: vertical;
     min-height: 80px;
+}
+
+.form-group input[type="datetime-local"] {
+    font-family: monospace;
 }
 
 /* Botones popup */
@@ -492,6 +747,20 @@
     box-shadow: 0 6px 8px rgba(255, 107, 107, 0.3);
 }
 
+/* Ayuda visual para rangos de fecha */
+.fecha-ayuda {
+    font-size: 0.85rem;
+    color: #7F8C8D;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.fecha-ayuda i {
+    color: #3498DB;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .cards-grid {
@@ -541,6 +810,14 @@
         width: 100%;
         justify-content: center;
     }
+    
+    .tiempo-info {
+        padding: 12px;
+    }
+    
+    .fecha-item {
+        font-size: 0.85rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -566,5 +843,34 @@
     
     .popup-footer {
         padding: 20px;
+    }
+    
+    .tiempo-configuracion {
+        padding: 15px;
+    }
+    
+    .opcion-tiempo {
+        padding: 12px;
+        font-size: 0.9rem;
+    }
+    
+    .rango-fechas {
+        padding: 15px;
+    }
+}
+
+/* Impresión */
+@media print {
+    .btn-agregar,
+    .btn-eliminar,
+    .popup-overlay,
+    .btn-actions {
+        display: none !important;
+    }
+    
+    .card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
     }
 }

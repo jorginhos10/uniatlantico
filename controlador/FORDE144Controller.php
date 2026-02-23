@@ -18,7 +18,7 @@ class FORDE144Controller {
             die("Error: No se encuentra la vista en: $vistaPath");
         }
         
-        $formularios = $this->model->getAll();
+        $formularios = $this->model->getAllAdmin(); // Usamos getAllAdmin para ver todos en administración
         
         require_once $vistaPath;
     }
@@ -30,15 +30,34 @@ class FORDE144Controller {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titulo = trim($_POST['titulo'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
+            $tipo_tiempo = $_POST['tipo_tiempo'] ?? 'libre';
+            $fecha_inicio = $_POST['fecha_inicio'] ?? null;
+            $fecha_fin = $_POST['fecha_fin'] ?? null;
             
             if (empty($titulo)) {
                 echo json_encode(['success' => false, 'message' => 'El título es obligatorio']);
                 return;
             }
             
+            // Validar fechas si es tipo rango
+            if ($tipo_tiempo === 'rango') {
+                if (empty($fecha_inicio) || empty($fecha_fin)) {
+                    echo json_encode(['success' => false, 'message' => 'Las fechas de inicio y fin son obligatorias para tiempo con rango']);
+                    return;
+                }
+                
+                if (strtotime($fecha_inicio) >= strtotime($fecha_fin)) {
+                    echo json_encode(['success' => false, 'message' => 'La fecha de inicio debe ser menor a la fecha de fin']);
+                    return;
+                }
+            }
+            
             $data = [
                 'titulo' => $titulo,
                 'descripcion' => $descripcion,
+                'tipo_tiempo' => $tipo_tiempo,
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
                 'estado' => 1
             ];
             
@@ -72,6 +91,14 @@ class FORDE144Controller {
         $formulario = $this->model->getById($id);
         
         if ($formulario) {
+            // Formatear fechas para el input datetime-local
+            if ($formulario['fecha_inicio']) {
+                $formulario['fecha_inicio'] = date('Y-m-d\TH:i', strtotime($formulario['fecha_inicio']));
+            }
+            if ($formulario['fecha_fin']) {
+                $formulario['fecha_fin'] = date('Y-m-d\TH:i', strtotime($formulario['fecha_fin']));
+            }
+            
             echo json_encode(['success' => true, 'formulario' => $formulario]);
         } else {
             echo json_encode(['success' => false, 'message' => 'Formulario no encontrado']);
@@ -82,7 +109,7 @@ class FORDE144Controller {
      * Obtiene todos los formularios para AJAX
      */
     public function obtenerFormularios() {
-        $formularios = $this->model->getAll();
+        $formularios = $this->model->getAllAdmin();
         echo json_encode(['success' => true, 'formularios' => $formularios]);
     }
     
@@ -118,6 +145,9 @@ class FORDE144Controller {
             $id = $_POST['id'] ?? 0;
             $titulo = trim($_POST['titulo'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
+            $tipo_tiempo = $_POST['tipo_tiempo'] ?? 'libre';
+            $fecha_inicio = $_POST['fecha_inicio'] ?? null;
+            $fecha_fin = $_POST['fecha_fin'] ?? null;
             $estado = $_POST['estado'] ?? 1;
             
             if (empty($id) || empty($titulo)) {
@@ -125,9 +155,25 @@ class FORDE144Controller {
                 return;
             }
             
+            // Validar fechas si es tipo rango
+            if ($tipo_tiempo === 'rango') {
+                if (empty($fecha_inicio) || empty($fecha_fin)) {
+                    echo json_encode(['success' => false, 'message' => 'Las fechas de inicio y fin son obligatorias para tiempo con rango']);
+                    return;
+                }
+                
+                if (strtotime($fecha_inicio) >= strtotime($fecha_fin)) {
+                    echo json_encode(['success' => false, 'message' => 'La fecha de inicio debe ser menor a la fecha de fin']);
+                    return;
+                }
+            }
+            
             $data = [
                 'titulo' => $titulo,
                 'descripcion' => $descripcion,
+                'tipo_tiempo' => $tipo_tiempo,
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
                 'estado' => $estado
             ];
             

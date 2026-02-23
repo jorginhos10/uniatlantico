@@ -1,20 +1,18 @@
 <?php
-// vista/dashboard/index.php
+// vista/FOR-DE-144/index.php
 
 // 🔐 INCLUIR SEGURIDAD - Redirige si no hay sesión
 require_once __DIR__ . '/../../config/security.php';
 
 // Configurar variables para el header
-$titulo = 'Dashboard - CHEFCONTROL';
-$tituloHeader = 'Bienvenido, ' . $_SESSION['usuario_nombre'] . '!';
-$subtituloHeader = 'Panel de control principal';
-$paginaActual = 'dashboard';
+$titulo = 'FOR-DE-144 - CHEFCONTROL';
+$tituloHeader = 'Gestión de Formularios';
+$subtituloHeader = 'Administra los formularios FOR-DE-144';
+$paginaActual = 'FOR-DE-144';
 
 // Incluir header
 require_once __DIR__ . '/../complementos/header.php';
 ?>
-
-
 
 <!DOCTYPE html>
 <html lang="es">
@@ -27,6 +25,8 @@ require_once __DIR__ . '/../complementos/header.php';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Flatpickr para selección de fecha/hora -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     
     <style>
         :root {
@@ -41,6 +41,7 @@ require_once __DIR__ . '/../complementos/header.php';
             --color-success: #27AE60;
             --color-warning: #F39C12;
             --color-danger: #E74C3C;
+            --color-info: #3498DB;
         }
         
         body {
@@ -52,7 +53,7 @@ require_once __DIR__ . '/../complementos/header.php';
         
         .card-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 25px;
             padding: 25px 0;
         }
@@ -63,7 +64,6 @@ require_once __DIR__ . '/../complementos/header.php';
             box-shadow: 0 4px 12px rgba(44, 62, 80, 0.1);
             padding: 25px;
             transition: all 0.3s ease;
-            height: 280px;
             display: flex;
             flex-direction: column;
             position: relative;
@@ -73,7 +73,20 @@ require_once __DIR__ . '/../complementos/header.php';
         .formulario-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 25px rgba(44, 62, 80, 0.15);
-            border-left-color: var(--color-accent);
+        }
+        
+        .formulario-card.disponible {
+            border-left-color: var(--color-success);
+        }
+        
+        .formulario-card.no-disponible {
+            border-left-color: var(--color-danger);
+            opacity: 0.8;
+            background: #f8f9fa;
+        }
+        
+        .formulario-card.proximamente {
+            border-left-color: var(--color-warning);
         }
         
         .formulario-add {
@@ -85,6 +98,7 @@ require_once __DIR__ . '/../complementos/header.php';
             justify-content: center;
             text-align: center;
             border: 2px dashed rgba(255, 255, 255, 0.3);
+            min-height: 350px;
         }
         
         .formulario-add:hover {
@@ -105,6 +119,7 @@ require_once __DIR__ . '/../complementos/header.php';
             color: var(--color-primary);
             border-bottom: 2px solid #F0F3F4;
             padding-bottom: 8px;
+            padding-right: 80px;
         }
         
         .formulario-descripcion {
@@ -114,6 +129,59 @@ require_once __DIR__ . '/../complementos/header.php';
             text-overflow: ellipsis;
             font-size: 0.95rem;
             line-height: 1.5;
+            margin-bottom: 15px;
+        }
+        
+        .tiempo-info {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            border: 1px solid #e9ecef;
+        }
+        
+        .tiempo-info i {
+            width: 20px;
+            color: var(--color-primary);
+            margin-right: 8px;
+        }
+        
+        .tiempo-info .badge-estado {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .badge-disponible {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .badge-no-disponible {
+            background: var(--color-danger);
+            color: white;
+        }
+        
+        .badge-proximamente {
+            background: var(--color-warning);
+            color: white;
+        }
+        
+        .fecha-rango {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .fecha-item {
+            display: flex;
+            align-items: center;
+            color: var(--color-text);
         }
         
         .formulario-fecha {
@@ -124,83 +192,16 @@ require_once __DIR__ . '/../complementos/header.php';
             border-top: 1px solid #ECF0F1;
         }
         
-        /* Modal Styles */
-        .modal-content {
-            border-radius: 12px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
-        }
-        
-        .modal-header {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            color: var(--color-white);
-            border-radius: 12px 12px 0 0;
-            padding: 20px 25px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .modal-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            border: none;
-            padding: 10px 30px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary:hover {
-            background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
-        }
-        
-        .btn-secondary {
-            background: #95A5A6;
-            border: none;
-            padding: 10px 30px;
-            border-radius: 8px;
-            font-weight: 600;
-        }
-        
-        .btn-secondary:hover {
-            background: #7F8C8D;
-        }
-        
-        .btn-warning {
-            background: var(--color-warning);
-            border: none;
-        }
-        
-        .btn-danger {
-            background: var(--color-danger);
-            border: none;
-        }
-        
-        .btn-close-white {
-            filter: invert(1) brightness(2);
-            opacity: 0.8;
-        }
-        
-        .btn-close-white:hover {
-            opacity: 1;
-        }
-        
-        .form-control:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.25);
-        }
-        
-        #formulariosContainer {
-            min-height: 450px;
-        }
-        
         .btn-actions {
             margin-top: 15px;
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
         }
         
         .badge {
@@ -213,14 +214,16 @@ require_once __DIR__ . '/../complementos/header.php';
             background-color: var(--color-success) !important;
         }
         
-        .badge.bg-secondary {
-            background-color: #95A5A6 !important;
+        .badge.bg-warning {
+            background-color: var(--color-warning) !important;
         }
         
-        .alert-info {
-            background-color: #D6EAF8;
-            border-color: #AED6F1;
-            color: var(--color-primary);
+        .badge.bg-danger {
+            background-color: var(--color-danger) !important;
+        }
+        
+        .badge.bg-info {
+            background-color: var(--color-info) !important;
         }
         
         .header-section {
@@ -249,6 +252,135 @@ require_once __DIR__ . '/../complementos/header.php';
             margin-bottom: 15px;
         }
         
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(44, 62, 80, 0.2);
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            color: var(--color-white);
+            border-radius: 12px 12px 0 0;
+            padding: 20px 25px;
+        }
+        
+        .modal-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+        
+        .btn-close-white {
+            filter: invert(1) brightness(2);
+        }
+        
+        .modal-body {
+            padding: 25px;
+        }
+        
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.25);
+        }
+        
+        .tiempo-opciones {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .opcion-tiempo {
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .opcion-tiempo:hover {
+            background: #e9ecef;
+        }
+        
+        .opcion-tiempo input[type="radio"] {
+            margin-right: 10px;
+        }
+        
+        .opcion-tiempo.selected {
+            background: #e3f2fd;
+            border-color: var(--color-primary);
+        }
+        
+        .rango-fechas {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            border: none;
+            padding: 10px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--color-primary-light) 0%, var(--color-primary) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #95A5A6;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 8px;
+        }
+        
+        .btn-warning {
+            background: var(--color-warning);
+            border: none;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: var(--color-danger);
+            border: none;
+        }
+        
+        .btn-success {
+            background: var(--color-success);
+            border: none;
+        }
+        
+        .alert-info {
+            background-color: #D6EAF8;
+            border-color: #AED6F1;
+            color: var(--color-primary);
+        }
+        
         /* Animaciones */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -269,44 +401,10 @@ require_once __DIR__ . '/../complementos/header.php';
             .header-section {
                 padding: 20px;
             }
-        }
-        
-        /* Estilos para los modales */
-        .modal-body {
-            padding: 25px;
-        }
-        
-        .form-label {
-            font-weight: 600;
-            color: var(--color-primary);
-            margin-bottom: 8px;
-        }
-        
-        .form-control, .form-select {
-            border-radius: 6px;
-            border: 1px solid #BDC3C7;
-            padding: 10px 15px;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.15);
-        }
-        
-        .invalid-feedback {
-            color: var(--color-danger);
-            font-size: 0.85rem;
-        }
-        
-        .alert {
-            border-radius: 8px;
-            border: none;
-            padding: 15px;
-        }
-        
-        .alert-info {
-            background-color: #E8F4FC;
-            color: var(--color-primary);
+            
+            .formulario-titulo {
+                padding-right: 0;
+            }
         }
     </style>
 </head>
@@ -320,11 +418,11 @@ require_once __DIR__ . '/../complementos/header.php';
                         <i class="fas fa-file-alt"></i>
                     </div>
                     <h1 class="header-title">FOR-DE-144 - Gestión de Formularios</h1>
-                    <p class="header-subtitle">Crea, edita y gestiona tus formularios de manera eficiente</p>
+                    <p class="header-subtitle">Crea, edita y gestiona tus formularios con control de tiempo</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <div class="text-muted">
-                        <small><i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y'); ?></small>
+                        <small><i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i'); ?></small>
                     </div>
                 </div>
             </div>
@@ -346,33 +444,103 @@ require_once __DIR__ . '/../complementos/header.php';
                 foreach ($formularios as $formulario): 
                     $fecha = new DateTime($formulario['fecha_creacion']);
                     $fechaFormateada = $fecha->format('d/m/Y H:i');
+                    
+                    // Determinar estado de disponibilidad
+                    $ahora = new DateTime();
+                    $disponible = true;
+                    $estadoTiempo = 'disponible';
+                    $mensajeEstado = '';
+                    
+                    if ($formulario['tipo_tiempo'] == 'rango') {
+                        $inicio = new DateTime($formulario['fecha_inicio']);
+                        $fin = new DateTime($formulario['fecha_fin']);
+                        
+                        if ($ahora < $inicio) {
+                            $disponible = false;
+                            $estadoTiempo = 'proximamente';
+                            $mensajeEstado = 'Disponible a partir del ' . $inicio->format('d/m/Y H:i');
+                        } elseif ($ahora > $fin) {
+                            $disponible = false;
+                            $estadoTiempo = 'finalizado';
+                            $mensajeEstado = 'Finalizado el ' . $fin->format('d/m/Y H:i');
+                        }
+                    }
+                    
+                    $cardClass = $disponible ? 'disponible' : ($estadoTiempo == 'proximamente' ? 'proximamente' : 'no-disponible');
             ?>
      
-            <div class="formulario-card" id="formulario-<?php echo $formulario['id']; ?>">
-                <div class="formulario-titulo"><?php echo htmlspecialchars($formulario['titulo']); ?></div>
-                <div class="formulario-descripcion"><?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?></div>
+            <div class="formulario-card <?php echo $cardClass; ?>" id="formulario-<?php echo $formulario['id']; ?>">
+                <div class="formulario-titulo">
+                    <?php echo htmlspecialchars($formulario['titulo']); ?>
+                    <?php if ($formulario['estado'] != 1): ?>
+                        <span class="badge bg-secondary float-end">Inactivo</span>
+                    <?php endif; ?>
+                </div>
+                
+                <div class="formulario-descripcion">
+                    <?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?>
+                </div>
+                
+                <div class="tiempo-info">
+                    <?php if ($formulario['tipo_tiempo'] == 'libre'): ?>
+                        <span class="badge-estado badge-disponible">
+                            <i class="fas fa-infinity"></i> Tiempo libre
+                        </span>
+                        <div class="fecha-item">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Siempre disponible
+                        </div>
+                    <?php else: ?>
+                        <?php if ($estadoTiempo == 'disponible'): ?>
+                            <span class="badge-estado badge-disponible">
+                                <i class="fas fa-clock"></i> Disponible ahora
+                            </span>
+                        <?php elseif ($estadoTiempo == 'proximamente'): ?>
+                            <span class="badge-estado badge-proximamente">
+                                <i class="fas fa-hourglass-half"></i> Próximamente
+                            </span>
+                        <?php else: ?>
+                            <span class="badge-estado badge-no-disponible">
+                                <i class="fas fa-ban"></i> Finalizado
+                            </span>
+                        <?php endif; ?>
+                        
+                        <div class="fecha-rango">
+                            <div class="fecha-item">
+                                <i class="fas fa-play-circle"></i>
+                                Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?>
+                            </div>
+                            <div class="fecha-item">
+                                <i class="fas fa-stop-circle"></i>
+                                Fin: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_fin'])); ?>
+                            </div>
+                        </div>
+                        
+                        <?php if ($mensajeEstado): ?>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> <?php echo $mensajeEstado; ?>
+                            </small>
+                        <?php endif; ?>
+                    <?php endif; ?>
+                </div>
+                
                 <div class="formulario-fecha">
                     <i class="far fa-clock me-1"></i>Creado: <?php echo $fechaFormateada; ?>
                 </div>
-                <div class="mt-3 d-flex justify-content-between align-items-center">
-                    <span class="badge <?php echo $formulario['estado'] == 1 ? 'bg-success' : 'bg-secondary'; ?>">
-                        <i class="fas fa-<?php echo $formulario['estado'] == 1 ? 'check-circle' : 'times-circle'; ?> me-1"></i>
-                        <?php echo $formulario['estado'] == 1 ? 'Activo' : 'Inactivo'; ?>
-                    </span>
-                    <div class="btn-actions">
-                        <button class="btn btn-sm btn-success me-2" onclick="window.location.href='modulo144/?id=<?php echo $formulario['id']; ?>'" 
-                                title="Ver formulario">
-                            <i class="fas fa-eye me-1"></i>Ver
-                        </button>
-                        <button class="btn btn-sm btn-warning me-2" onclick="editarFormulario(<?php echo $formulario['id']; ?>)" 
-                                title="Editar formulario">
-                            <i class="fas fa-edit me-1"></i>Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)" 
-                                title="Eliminar formulario">
-                            <i class="fas fa-trash me-1"></i>Eliminar
-                        </button>
-                    </div>
+                
+                <div class="btn-actions">
+                    <button class="btn btn-sm btn-success" onclick="window.location.href='modulo144/?id=<?php echo $formulario['id']; ?>'" 
+                            title="Ver formulario" <?php echo !$disponible ? 'disabled' : ''; ?>>
+                        <i class="fas fa-eye me-1"></i>Ver
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="editarFormulario(<?php echo $formulario['id']; ?>)" 
+                            title="Editar formulario">
+                        <i class="fas fa-edit me-1"></i>Editar
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)" 
+                            title="Eliminar formulario">
+                        <i class="fas fa-trash me-1"></i>Eliminar
+                    </button>
                 </div>
             </div>
    
@@ -393,7 +561,7 @@ require_once __DIR__ . '/../complementos/header.php';
     
     <!-- Modal para agregar formulario -->
     <div class="modal fade" id="modalAgregar" tabindex="-1" aria-labelledby="modalAgregarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalAgregarLabel">
@@ -407,20 +575,54 @@ require_once __DIR__ . '/../complementos/header.php';
                             <label for="titulo" class="form-label">Título del Formulario *</label>
                             <input type="text" class="form-control" id="titulo" name="titulo" required 
                                    placeholder="Ingresa un título descriptivo para el formulario">
-                            <div class="invalid-feedback">El título es obligatorio</div>
                         </div>
                         
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="descripcion" class="form-label">Descripción</label>
                             <textarea class="form-control" id="descripcion" name="descripcion" 
-                                      rows="4" placeholder="Describe el propósito o contenido del formulario (opcional)"></textarea>
-                            <div class="form-text">Puedes agregar detalles sobre qué información contiene este formulario.</div>
+                                      rows="3" placeholder="Describe el propósito o contenido del formulario (opcional)"></textarea>
                         </div>
                         
-                        <div class="alert alert-info">
+                        <div class="mb-3">
+                            <label class="form-label">Configuración de Tiempo *</label>
+                            <div class="tiempo-opciones">
+                                <div class="opcion-tiempo mb-2" onclick="document.getElementById('tipo_libre').checked = true; mostrarRangoFechas(false);">
+                                    <input type="radio" name="tipo_tiempo" id="tipo_libre" value="libre" checked>
+                                    <label for="tipo_libre" class="ms-2">
+                                        <i class="fas fa-infinity text-success me-2"></i>
+                                        <strong>Tiempo Libre</strong> - El formulario estará siempre disponible
+                                    </label>
+                                </div>
+                                
+                                <div class="opcion-tiempo" onclick="document.getElementById('tipo_rango').checked = true; mostrarRangoFechas(true);">
+                                    <input type="radio" name="tipo_tiempo" id="tipo_rango" value="rango">
+                                    <label for="tipo_rango" class="ms-2">
+                                        <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                        <strong>Rango de Tiempo</strong> - Definir fecha y hora de inicio y fin
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="rangoFechasContainer" style="display: none;" class="rango-fechas">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_inicio" class="form-label">Fecha y Hora de Inicio *</label>
+                                    <input type="datetime-local" class="form-control" id="fecha_inicio" name="fecha_inicio">
+                                    <small class="text-muted">¿Cuándo comenzará a estar disponible?</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_fin" class="form-label">Fecha y Hora de Fin *</label>
+                                    <input type="datetime-local" class="form-control" id="fecha_fin" name="fecha_fin">
+                                    <small class="text-muted">¿Hasta cuándo estará disponible?</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
                             <small>
                                 <i class="fas fa-info-circle me-1"></i>
-                                El formulario se registrará con la fecha y hora actual automáticamente.
+                                Los formularios con rango de tiempo solo serán accesibles dentro del período configurado.
                             </small>
                         </div>
                     </div>
@@ -439,7 +641,7 @@ require_once __DIR__ . '/../complementos/header.php';
     
     <!-- Modal para editar formulario -->
     <div class="modal fade" id="modalEditar" tabindex="-1" aria-labelledby="modalEditarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalEditarLabel">
@@ -453,12 +655,45 @@ require_once __DIR__ . '/../complementos/header.php';
                         <div class="mb-3">
                             <label for="tituloEditar" class="form-label">Título del Formulario *</label>
                             <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
-                            <div class="invalid-feedback">El título es obligatorio</div>
                         </div>
                         
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="descripcionEditar" class="form-label">Descripción</label>
-                            <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="4"></textarea>
+                            <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Configuración de Tiempo *</label>
+                            <div class="tiempo-opciones">
+                                <div class="opcion-tiempo mb-2" onclick="document.getElementById('tipo_libre_editar').checked = true; mostrarRangoFechasEditar(false);">
+                                    <input type="radio" name="tipo_tiempo" id="tipo_libre_editar" value="libre">
+                                    <label for="tipo_libre_editar" class="ms-2">
+                                        <i class="fas fa-infinity text-success me-2"></i>
+                                        <strong>Tiempo Libre</strong> - El formulario estará siempre disponible
+                                    </label>
+                                </div>
+                                
+                                <div class="opcion-tiempo" onclick="document.getElementById('tipo_rango_editar').checked = true; mostrarRangoFechasEditar(true);">
+                                    <input type="radio" name="tipo_tiempo" id="tipo_rango_editar" value="rango">
+                                    <label for="tipo_rango_editar" class="ms-2">
+                                        <i class="fas fa-calendar-alt text-primary me-2"></i>
+                                        <strong>Rango de Tiempo</strong> - Definir fecha y hora de inicio y fin
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="rangoFechasContainerEditar" style="display: none;" class="rango-fechas">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_inicio_editar" class="form-label">Fecha y Hora de Inicio *</label>
+                                    <input type="datetime-local" class="form-control" id="fecha_inicio_editar" name="fecha_inicio">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="fecha_fin_editar" class="form-label">Fecha y Hora de Fin *</label>
+                                    <input type="datetime-local" class="form-control" id="fecha_fin_editar" name="fecha_fin">
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="mb-3">
@@ -467,7 +702,6 @@ require_once __DIR__ . '/../complementos/header.php';
                                 <option value="1">Activo</option>
                                 <option value="0">Inactivo</option>
                             </select>
-                            <div class="form-text">Los formularios inactivos no aparecerán en el listado principal.</div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -483,27 +717,69 @@ require_once __DIR__ . '/../complementos/header.php';
         </div>
     </div>
     
-    <!-- Bootstrap JS -->
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
     
     <script>
+        // Configuración base
+        const basePath = '<?php echo Config::getBasePath(); ?>';
+        
+        // Función para mostrar/ocultar rango de fechas en modal agregar
+        function mostrarRangoFechas(mostrar) {
+            const container = document.getElementById('rangoFechasContainer');
+            const fechaInicio = document.getElementById('fecha_inicio');
+            const fechaFin = document.getElementById('fecha_fin');
+            
+            if (mostrar) {
+                container.style.display = 'block';
+                fechaInicio.required = true;
+                fechaFin.required = true;
+            } else {
+                container.style.display = 'none';
+                fechaInicio.required = false;
+                fechaFin.required = false;
+            }
+        }
+        
+        // Función para mostrar/ocultar rango de fechas en modal editar
+        function mostrarRangoFechasEditar(mostrar) {
+            const container = document.getElementById('rangoFechasContainerEditar');
+            const fechaInicio = document.getElementById('fecha_inicio_editar');
+            const fechaFin = document.getElementById('fecha_fin_editar');
+            
+            if (mostrar) {
+                container.style.display = 'block';
+                fechaInicio.required = true;
+                fechaFin.required = true;
+            } else {
+                container.style.display = 'none';
+                fechaInicio.required = false;
+                fechaFin.required = false;
+            }
+        }
+        
         $(document).ready(function() {
-            const basePath = '<?php echo Config::getBasePath(); ?>';
+            // Inicializar Flatpickr para fechas
+            flatpickr("input[type=datetime-local]", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                locale: "es",
+                minDate: "today",
+                time_24hr: true
+            });
             
             // Manejar envío del formulario de agregar
             $('#formAgregarFormulario').on('submit', function(e) {
                 e.preventDefault();
                 
-                if (!$(this)[0].checkValidity()) {
-                    $(this).addClass('was-validated');
-                    return;
-                }
-                
                 const formData = $(this).serialize();
                 const submitBtn = $(this).find('button[type="submit"]');
                 const originalText = submitBtn.html();
+                
                 submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i>Guardando...');
                 submitBtn.prop('disabled', true);
                 
@@ -519,19 +795,33 @@ require_once __DIR__ . '/../complementos/header.php';
                         if (response.success) {
                             $('#modalAgregar').modal('hide');
                             $('#formAgregarFormulario')[0].reset();
-                            $('#formAgregarFormulario').removeClass('was-validated');
+                            mostrarRangoFechas(false);
                             
-                            showMessage('success', 'Formulario creado exitosamente');
-                            setTimeout(() => location.reload(), 1200);
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Éxito!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
                         } else {
-                            showMessage('error', 'Error: ' + response.message);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
                         }
                     },
-                    error: function(xhr, status, error) {
+                    error: function() {
                         submitBtn.html(originalText);
                         submitBtn.prop('disabled', false);
-                        showMessage('error', 'Error al conectar con el servidor');
-                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al conectar con el servidor'
+                        });
                     }
                 });
             });
@@ -540,14 +830,10 @@ require_once __DIR__ . '/../complementos/header.php';
             $('#formEditarFormulario').on('submit', function(e) {
                 e.preventDefault();
                 
-                if (!$(this)[0].checkValidity()) {
-                    $(this).addClass('was-validated');
-                    return;
-                }
-                
                 const formData = $(this).serialize();
                 const submitBtn = $(this).find('button[type="submit"]');
                 const originalText = submitBtn.html();
+                
                 submitBtn.html('<i class="fas fa-spinner fa-spin me-1"></i>Actualizando...');
                 submitBtn.prop('disabled', true);
                 
@@ -562,50 +848,36 @@ require_once __DIR__ . '/../complementos/header.php';
                         
                         if (response.success) {
                             $('#modalEditar').modal('hide');
-                            showMessage('success', 'Formulario actualizado exitosamente');
-                            setTimeout(() => location.reload(), 1200);
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Éxito!',
+                                text: response.message,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
                         } else {
-                            showMessage('error', 'Error: ' + response.message);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: response.message
+                            });
                         }
                     },
-                    error: function(xhr, status, error) {
+                    error: function() {
                         submitBtn.html(originalText);
                         submitBtn.prop('disabled', false);
-                        showMessage('error', 'Error al conectar con el servidor');
-                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al conectar con el servidor'
+                        });
                     }
                 });
             });
         });
-        
-        // Función para mostrar mensajes
-        function showMessage(type, text) {
-            $('.alert-message').remove();
-            
-            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
-            const title = type === 'success' ? 'Éxito' : 'Error';
-            
-            const message = `
-                <div class="alert-message alert ${alertClass} alert-dismissible fade show position-fixed" 
-                     style="top: 20px; right: 20px; z-index: 9999; max-width: 400px;">
-                    <div class="d-flex align-items-center">
-                        <i class="fas ${icon} fa-2x me-3"></i>
-                        <div>
-                            <h6 class="mb-1">${title}</h6>
-                            <p class="mb-0">${text}</p>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            
-            $('body').append(message);
-            
-            setTimeout(() => {
-                $('.alert-message').alert('close');
-            }, 5000);
-        }
         
         // Función para eliminar formulario
         function eliminarFormulario(id) {
@@ -617,12 +889,9 @@ require_once __DIR__ . '/../complementos/header.php';
                 confirmButtonColor: '#2C3E50',
                 cancelButtonColor: '#95A5A6',
                 confirmButtonText: 'Sí, eliminar',
-                cancelButtonText: 'Cancelar',
-                reverseButtons: true
+                cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    const basePath = '<?php echo Config::getBasePath(); ?>';
-                    
                     $.ajax({
                         url: basePath + '/FOR-DE-144?action=eliminar',
                         type: 'POST',
@@ -630,14 +899,29 @@ require_once __DIR__ . '/../complementos/header.php';
                         dataType: 'json',
                         success: function(response) {
                             if (response.success) {
-                                showMessage('success', 'Formulario eliminado exitosamente');
-                                setTimeout(() => location.reload(), 1200);
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Eliminado',
+                                    text: response.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    location.reload();
+                                });
                             } else {
-                                showMessage('error', 'Error: ' + response.message);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: response.message
+                                });
                             }
                         },
                         error: function() {
-                            showMessage('error', 'Error al conectar con el servidor');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Error al conectar con el servidor'
+                            });
                         }
                     });
                 }
@@ -646,71 +930,62 @@ require_once __DIR__ . '/../complementos/header.php';
         
         // Función para editar formulario
         function editarFormulario(id) {
-            const basePath = '<?php echo Config::getBasePath(); ?>';
-            
-            $('#modalEditar .modal-body').html(`
-                <div class="text-center p-5">
-                    <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                        <span class="visually-hidden">Cargando...</span>
-                    </div>
-                    <p class="mt-3">Cargando información del formulario...</p>
-                </div>
-            `);
-            $('#modalEditar').modal('show');
+            // Mostrar loading
+            Swal.fire({
+                title: 'Cargando...',
+                text: 'Obteniendo información del formulario',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
             
             $.ajax({
                 url: basePath + '/FOR-DE-144?action=getFormulario&id=' + id,
                 type: 'GET',
                 dataType: 'json',
                 success: function(response) {
+                    Swal.close();
+                    
                     if (response.success && response.formulario) {
-                        const formulario = response.formulario;
+                        const f = response.formulario;
                         
-                        $('#modalEditar .modal-body').html(`
-                            <input type="hidden" id="formularioIdEditar" name="id">
-                            <div class="mb-3">
-                                <label for="tituloEditar" class="form-label">Título del Formulario *</label>
-                                <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
-                                <div class="invalid-feedback">El título es obligatorio</div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="descripcionEditar" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="4"></textarea>
-                            </div>
-                            <div class="mb-3">
-                                <label for="estadoEditar" class="form-label">Estado del Formulario</label>
-                                <select class="form-control" id="estadoEditar" name="estado">
-                                    <option value="1">Activo</option>
-                                    <option value="0">Inactivo</option>
-                                </select>
-                                <div class="form-text">Los formularios inactivos no aparecerán en el listado principal.</div>
-                            </div>
-                        `);
+                        // Llenar el formulario de edición
+                        $('#formularioIdEditar').val(f.id);
+                        $('#tituloEditar').val(f.titulo);
+                        $('#descripcionEditar').val(f.descripcion);
+                        $('#estadoEditar').val(f.estado);
                         
-                        $('#formularioIdEditar').val(formulario.id);
-                        $('#tituloEditar').val(formulario.titulo);
-                        $('#descripcionEditar').val(formulario.descripcion);
-                        $('#estadoEditar').val(formulario.estado);
+                        // Configurar tipo de tiempo
+                        if (f.tipo_tiempo === 'libre') {
+                            $('#tipo_libre_editar').prop('checked', true);
+                            mostrarRangoFechasEditar(false);
+                        } else {
+                            $('#tipo_rango_editar').prop('checked', true);
+                            mostrarRangoFechasEditar(true);
+                            $('#fecha_inicio_editar').val(f.fecha_inicio);
+                            $('#fecha_fin_editar').val(f.fecha_fin);
+                        }
+                        
+                        // Mostrar modal
+                        $('#modalEditar').modal('show');
                     } else {
-                        $('#modalEditar').modal('hide');
-                        showMessage('error', 'Error al cargar el formulario: ' + (response.message || 'Error desconocido'));
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: response.message || 'Error al cargar el formulario'
+                        });
                     }
                 },
                 error: function() {
-                    $('#modalEditar').modal('hide');
-                    showMessage('error', 'Error al conectar con el servidor');
+                    Swal.close();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Error al conectar con el servidor'
+                    });
                 }
             });
-        }
-        
-        // Agregar SweetAlert2 para mejores diálogos
-        if (typeof Swal === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/sweetalert2@11';
-            script.onload = function() {
-                console.log('SweetAlert2 cargado');
-            };
-            document.head.appendChild(script);
         }
     </script>
 </body>

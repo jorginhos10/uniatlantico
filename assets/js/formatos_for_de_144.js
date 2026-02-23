@@ -1,59 +1,219 @@
 // assets/js/formatos_for_de_144.js
 
+/**
+ * Sistema de Gestión de Formatos FOR-DE-144
+ * Versión con control de tiempo (libre / rango)
+ */
+
+// ========== VARIABLES GLOBALES ==========
 let formatoIdAEliminar = null;
+let basePath = '';
 
-// Popup crear
+// Detectar basePath automáticamente
+(function detectBasePath() {
+    const metaBasePath = document.querySelector('meta[name="base-path"]');
+    if (metaBasePath) {
+        basePath = metaBasePath.getAttribute('content');
+    } else {
+        // Intentar deducir la ruta base
+        const pathParts = window.location.pathname.split('/');
+        // Eliminar el último segmento (archivo actual)
+        pathParts.pop();
+        basePath = pathParts.join('/') || '';
+    }
+})();
+
+// ========== FUNCIONES PARA POPUP CREAR ==========
+
+/**
+ * Abre el popup para crear nuevo formato
+ */
 function abrirPopupCrear() {
-    document.getElementById('popupCrear').style.display = 'flex';
-    document.querySelector('#formNuevoFormato input[name="formato_nombre"]').focus();
+    const popup = document.getElementById('popupCrear');
+    if (popup) {
+        popup.style.display = 'flex';
+        
+        // Enfocar el primer campo
+        const primerCampo = document.querySelector('#formNuevoFormato input[name="formato_nombre"]');
+        if (primerCampo) {
+            setTimeout(() => primerCampo.focus(), 100);
+        }
+        
+        // Resetear a tiempo libre por defecto
+        const radioLibre = document.querySelector('input[name="tipo_tiempo"][value="libre"]');
+        if (radioLibre) {
+            radioLibre.checked = true;
+            cambiarTipoTiempo('libre');
+        }
+        
+        // Cargar borrador si existe
+        cargarBorrador();
+    }
 }
 
+/**
+ * Cierra el popup de crear
+ */
 function cerrarPopup() {
-    document.getElementById('popupCrear').style.display = 'none';
-    document.getElementById('formNuevoFormato').reset();
+    const popup = document.getElementById('popupCrear');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+    const formulario = document.getElementById('formNuevoFormato');
+    if (formulario) {
+        formulario.reset();
+    }
 }
 
-// Popup confirmar eliminar
+// ========== FUNCIONES PARA GESTIÓN DE TIEMPO ==========
+
+/**
+ * Cambia el tipo de tiempo y muestra/oculta campos de rango
+ * @param {string} tipo - 'libre' o 'rango'
+ */
+function cambiarTipoTiempo(tipo) {
+    const rangoContainer = document.getElementById('rangoFechasPopup');
+    const fechaInicio = document.getElementById('fecha_inicio_popup');
+    const fechaFin = document.getElementById('fecha_fin_popup');
+    
+    if (!rangoContainer) return;
+    
+    // Actualizar UI según tipo
+    if (tipo === 'rango') {
+        rangoContainer.style.display = 'block';
+        rangoContainer.classList.add('slide-down');
+        
+        if (fechaInicio) fechaInicio.required = true;
+        if (fechaFin) fechaFin.required = true;
+        
+        // Inicializar Flatpickr si está disponible
+        if (typeof flatpickr !== 'undefined') {
+            flatpickr("#fecha_inicio_popup, #fecha_fin_popup", {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+                locale: "es",
+                minDate: "today",
+                time_24hr: true
+            });
+        }
+    } else {
+        rangoContainer.style.display = 'none';
+        
+        if (fechaInicio) {
+            fechaInicio.required = false;
+            fechaInicio.value = '';
+        }
+        if (fechaFin) {
+            fechaFin.required = false;
+            fechaFin.value = '';
+        }
+    }
+    
+    // Marcar opción seleccionada visualmente
+    document.querySelectorAll('.opcion-tiempo').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    const selectedOption = document.querySelector(`.opcion-tiempo input[value="${tipo}"]`).closest('.opcion-tiempo');
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+    }
+}
+
+/**
+ * Valida las fechas de rango
+ * @returns {boolean} - true si las fechas son válidas
+ */
+function validarRangoFechas() {
+    const tipoTiempo = document.querySelector('input[name="tipo_tiempo"]:checked')?.value;
+    
+    if (tipoTiempo === 'rango') {
+        const fechaInicio = document.getElementById('fecha_inicio_popup')?.value;
+        const fechaFin = document.getElementById('fecha_fin_popup')?.value;
+        
+        if (!fechaInicio || !fechaFin) {
+            mostrarMensaje('error', 'Las fechas de inicio y fin son obligatorias');
+            return false;
+        }
+        
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(fechaFin);
+        
+        if (inicio >= fin) {
+            mostrarMensaje('error', 'La fecha de inicio debe ser anterior a la fecha de fin');
+            return false;
+        }
+        
+        if (inicio < new Date()) {
+            if (!confirm('La fecha de inicio es anterior a la fecha actual. ¿Desea continuar?')) {
+                return false;
+            }
+        }
+    }
+    
+    return true;
+}
+
+// ========== FUNCIONES PARA ELIMINAR ==========
+
+/**
+ * Abre popup de confirmación para eliminar
+ * @param {number} id - ID del formato a eliminar
+ * @param {string} nombre - Nombre del formato
+ */
 function confirmarEliminar(id, nombre) {
     event.stopPropagation();
     formatoIdAEliminar = id;
     
     const mensaje = document.getElementById('mensajeConfirmacion');
-    mensaje.innerHTML = `¿Estás seguro de eliminar el formato "<strong>${nombre}</strong>"?<br>
-                        <small>Esta acción no se puede deshacer.</small>`;
+    if (mensaje) {
+        mensaje.innerHTML = `¿Estás seguro de eliminar el formato "<strong>${nombre}</strong>"?<br>
+                            <small class="text-muted">Esta acción no se puede deshacer.</small>`;
+    }
     
-    document.getElementById('popupConfirmar').style.display = 'flex';
-}
-
-function cerrarConfirmar() {
-    document.getElementById('popupConfirmar').style.display = 'none';
-    formatoIdAEliminar = null;
-}
-
-// Configurar botón de eliminar
-function configurarEliminar() {
-    const btnEliminar = document.getElementById('btnEliminarConfirmar');
-    if (btnEliminar) {
-        btnEliminar.onclick = function() {
-            if (formatoIdAEliminar) {
-                eliminarFormato(formatoIdAEliminar);
-            }
-        };
+    const popup = document.getElementById('popupConfirmar');
+    if (popup) {
+        popup.style.display = 'flex';
     }
 }
 
-// Función para eliminar formato
-function eliminarFormato(id) {
+/**
+ * Cierra el popup de confirmación
+ */
+function cerrarConfirmar() {
+    const popup = document.getElementById('popupConfirmar');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+    formatoIdAEliminar = null;
+}
+
+/**
+ * Ejecuta la eliminación del formato
+ */
+function eliminarFormato() {
+    if (!formatoIdAEliminar) return;
+    
+    // Mostrar indicador de carga
+    const btnEliminar = document.getElementById('btnEliminarConfirmar');
+    const originalText = btnEliminar?.innerHTML;
+    if (btnEliminar) {
+        btnEliminar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Eliminando...';
+        btnEliminar.disabled = true;
+    }
+    
+    // Crear y enviar formulario
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = basePath + '/formatos-for-de-144/eliminar';
+    form.style.display = 'none';
     
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = 'formato_id';
-    input.value = id;
+    input.value = formatoIdAEliminar;
     
-    // Agregar token CSRF si existe
+    // CSRF Token si existe
     const token = document.querySelector('meta[name="csrf-token"]');
     if (token) {
         const csrfInput = document.createElement('input');
@@ -68,7 +228,153 @@ function eliminarFormato(id) {
     form.submit();
 }
 
-// Cerrar popups al hacer clic fuera
+// ========== AUTO-GUARDADO EN LOCALSTORAGE ==========
+
+/**
+ * Guarda borrador en localStorage
+ */
+function guardarBorrador() {
+    const nombre = document.querySelector('input[name="formato_nombre"]')?.value || '';
+    const descripcion = document.querySelector('textarea[name="formato_descripcion"]')?.value || '';
+    const tipoTiempo = document.querySelector('input[name="tipo_tiempo"]:checked')?.value || 'libre';
+    const fechaInicio = document.getElementById('fecha_inicio_popup')?.value || '';
+    const fechaFin = document.getElementById('fecha_fin_popup')?.value || '';
+    
+    // Solo guardar si hay contenido
+    if (nombre || descripcion || (tipoTiempo === 'rango' && (fechaInicio || fechaFin))) {
+        const borrador = {
+            nombre,
+            descripcion,
+            tipo_tiempo: tipoTiempo,
+            fecha_inicio: fechaInicio,
+            fecha_fin: fechaFin,
+            timestamp: new Date().toISOString()
+        };
+        
+        localStorage.setItem('formato_for_de_144_borrador', JSON.stringify(borrador));
+        console.log('Borrador guardado:', new Date().toLocaleTimeString());
+    }
+}
+
+/**
+ * Carga borrador desde localStorage
+ */
+function cargarBorrador() {
+    const borradorGuardado = localStorage.getItem('formato_for_de_144_borrador');
+    if (!borradorGuardado) return;
+    
+    try {
+        const borrador = JSON.parse(borradorGuardado);
+        const ahora = new Date();
+        const tiempoBorrador = new Date(borrador.timestamp);
+        const horasTranscurridas = (ahora - tiempoBorrador) / (1000 * 60 * 60);
+        
+        // Borrar borradores de más de 24 horas
+        if (horasTranscurridas > 24) {
+            localStorage.removeItem('formato_for_de_144_borrador');
+            return;
+        }
+        
+        // Preguntar si desea recuperar
+        if (confirm('¿Recuperar el borrador guardado de ' + tiempoBorrador.toLocaleString() + '?')) {
+            document.querySelector('input[name="formato_nombre"]').value = borrador.nombre || '';
+            document.querySelector('textarea[name="formato_descripcion"]').value = borrador.descripcion || '';
+            
+            if (borrador.tipo_tiempo === 'rango') {
+                const radioRango = document.querySelector('input[name="tipo_tiempo"][value="rango"]');
+                if (radioRango) {
+                    radioRango.checked = true;
+                    cambiarTipoTiempo('rango');
+                    
+                    // Esperar a que Flatpickr se inicialice
+                    setTimeout(() => {
+                        if (document.getElementById('fecha_inicio_popup')) {
+                            document.getElementById('fecha_inicio_popup').value = borrador.fecha_inicio || '';
+                        }
+                        if (document.getElementById('fecha_fin_popup')) {
+                            document.getElementById('fecha_fin_popup').value = borrador.fecha_fin || '';
+                        }
+                    }, 100);
+                }
+            }
+        }
+    } catch (e) {
+        console.error('Error al cargar borrador:', e);
+        localStorage.removeItem('formato_for_de_144_borrador');
+    }
+}
+
+// ========== VALIDACIÓN DE FORMULARIO ==========
+
+/**
+ * Valida el formulario antes de enviar
+ * @returns {boolean} - true si es válido
+ */
+function validarFormulario() {
+    const nombreInput = document.querySelector('input[name="formato_nombre"]');
+    const nombre = nombreInput?.value.trim();
+    
+    if (!nombre) {
+        mostrarMensaje('error', 'Por favor, ingresa un nombre para el formato');
+        if (nombreInput) {
+            nombreInput.focus();
+            nombreInput.style.borderColor = '#e74c3c';
+            setTimeout(() => {
+                nombreInput.style.borderColor = '';
+            }, 2000);
+        }
+        return false;
+    }
+    
+    return validarRangoFechas();
+}
+
+/**
+ * Muestra mensajes temporales
+ * @param {string} tipo - 'success' o 'error'
+ * @param {string} texto - Mensaje a mostrar
+ */
+function mostrarMensaje(tipo, texto) {
+    // Eliminar mensajes anteriores
+    const mensajesAnteriores = document.querySelectorAll('.mensaje-flotante');
+    mensajesAnteriores.forEach(m => m.remove());
+    
+    const mensaje = document.createElement('div');
+    mensaje.className = `mensaje-flotante mensaje-${tipo}`;
+    mensaje.innerHTML = `
+        <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+        <span>${texto}</span>
+    `;
+    
+    // Estilos para mensaje flotante
+    mensaje.style.position = 'fixed';
+    mensaje.style.top = '20px';
+    mensaje.style.right = '20px';
+    mensaje.style.padding = '15px 20px';
+    mensaje.style.borderRadius = '8px';
+    mensaje.style.backgroundColor = tipo === 'success' ? '#d4edda' : '#f8d7da';
+    mensaje.style.color = tipo === 'success' ? '#155724' : '#721c24';
+    mensaje.style.border = `1px solid ${tipo === 'success' ? '#c3e6cb' : '#f5c6cb'}`;
+    mensaje.style.zIndex = '9999';
+    mensaje.style.display = 'flex';
+    mensaje.style.alignItems = 'center';
+    mensaje.style.gap = '10px';
+    mensaje.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    mensaje.style.animation = 'slideDown 0.3s ease';
+    
+    document.body.appendChild(mensaje);
+    
+    setTimeout(() => {
+        mensaje.style.animation = 'slideUp 0.3s ease';
+        setTimeout(() => mensaje.remove(), 300);
+    }, 3000);
+}
+
+// ========== CONFIGURACIÓN DE EVENTOS ==========
+
+/**
+ * Configura cierre de popups al hacer clic fuera
+ */
 function configurarClicExterno() {
     document.querySelectorAll('.popup-overlay').forEach(popup => {
         popup.addEventListener('click', function(e) {
@@ -83,7 +389,9 @@ function configurarClicExterno() {
     });
 }
 
-// Cerrar con ESC
+/**
+ * Configura cierre con tecla ESC
+ */
 function configurarTeclaEscape() {
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -93,94 +401,58 @@ function configurarTeclaEscape() {
     });
 }
 
-// Auto-guardar en localStorage mientras se escribe
+/**
+ * Configura auto-guardado en localStorage
+ */
 function configurarAutoGuardado() {
     const formulario = document.getElementById('formNuevoFormato');
-    if (formulario) {
-        const nombreInput = formulario.querySelector('input[name="formato_nombre"]');
-        const descripcionTextarea = formulario.querySelector('textarea[name="formato_descripcion"]');
-        
-        const guardarBorrador = () => {
-            const borrador = {
-                nombre: nombreInput.value,
-                descripcion: descripcionTextarea.value,
-                timestamp: new Date().toISOString()
-            };
-            
-            if (borrador.nombre || borrador.descripcion) {
-                localStorage.setItem('formato_for_de_144_borrador', JSON.stringify(borrador));
-                console.log('Borrador guardado en localStorage');
-            }
-        };
-        
-        nombreInput.addEventListener('input', guardarBorrador);
-        descripcionTextarea.addEventListener('input', guardarBorrador);
-        
-        // Cargar borrador al abrir popup
-        setTimeout(() => {
-            const borradorGuardado = localStorage.getItem('formato_for_de_144_borrador');
-            if (borradorGuardado) {
-                try {
-                    const borrador = JSON.parse(borradorGuardado);
-                    const haceMasDe24Horas = new Date() - new Date(borrador.timestamp) > 24 * 60 * 60 * 1000;
-                    
-                    if (!haceMasDe24Horas && confirm('¿Recuperar el borrador guardado anteriormente?')) {
-                        nombreInput.value = borrador.nombre || '';
-                        descripcionTextarea.value = borrador.descripcion || '';
-                    }
-                } catch (e) {
-                    console.error('Error al cargar borrador:', e);
-                }
-            }
-        }, 100);
-        
-        // Limpiar localStorage al enviar
-        formulario.addEventListener('submit', () => {
-            localStorage.removeItem('formato_for_de_144_borrador');
-        });
-    }
+    if (!formulario) return;
+    
+    const inputs = formulario.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', guardarBorrador);
+    });
+    
+    // Guardar también al cambiar tipo de tiempo
+    const radiosTiempo = formulario.querySelectorAll('input[name="tipo_tiempo"]');
+    radiosTiempo.forEach(radio => {
+        radio.addEventListener('change', guardarBorrador);
+    });
+    
+    // Limpiar localStorage al enviar
+    formulario.addEventListener('submit', function() {
+        localStorage.removeItem('formato_for_de_144_borrador');
+    });
 }
 
-// Validar formulario antes de enviar
+/**
+ * Configura validación del formulario
+ */
 function configurarValidacionFormulario() {
     const formulario = document.getElementById('formNuevoFormato');
-    if (formulario) {
-        formulario.addEventListener('submit', function(e) {
-            const nombreInput = this.querySelector('input[name="formato_nombre"]');
-            const nombre = nombreInput.value.trim();
-            
-            if (!nombre) {
-                e.preventDefault();
-                alert('Por favor, ingresa un nombre para el formato');
-                nombreInput.focus();
-                nombreInput.style.borderColor = '#e74c3c';
-                
-                setTimeout(() => {
-                    nombreInput.style.borderColor = '';
-                }, 2000);
-                
-                return false;
-            }
-            
-            // Mostrar indicador de carga
-            const btnGuardar = document.querySelector('.btn-guardar');
-            if (btnGuardar) {
-                const originalText = btnGuardar.innerHTML;
-                btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-                btnGuardar.disabled = true;
-                
-                setTimeout(() => {
-                    btnGuardar.innerHTML = originalText;
-                    btnGuardar.disabled = false;
-                }, 3000);
-            }
-            
-            return true;
-        });
-    }
+    if (!formulario) return;
+    
+    formulario.addEventListener('submit', function(e) {
+        if (!validarFormulario()) {
+            e.preventDefault();
+            return false;
+        }
+        
+        // Mostrar indicador de carga
+        const btnGuardar = document.querySelector('.btn-guardar');
+        if (btnGuardar) {
+            const originalText = btnGuardar.innerHTML;
+            btnGuardar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            btnGuardar.disabled = true;
+        }
+        
+        return true;
+    });
 }
 
-// Efectos hover en tarjetas
+/**
+ * Configura efectos hover en tarjetas
+ */
 function configurarEfectosTarjetas() {
     const tarjetas = document.querySelectorAll('.card:not(.card-agregar)');
     
@@ -202,7 +474,9 @@ function configurarEfectosTarjetas() {
     });
 }
 
-// Animación para mensajes
+/**
+ * Anima mensajes existentes
+ */
 function animarMensajes() {
     const mensajes = document.querySelectorAll('.mensaje-exito, .mensaje-error');
     
@@ -231,76 +505,143 @@ function animarMensajes() {
     });
 }
 
-// Contador de caracteres para textarea
+/**
+ * Configura contador de caracteres para textarea
+ */
 function configurarContadorCaracteres() {
     const textarea = document.querySelector('#formNuevoFormato textarea[name="formato_descripcion"]');
-    if (textarea) {
-        const contador = document.createElement('div');
+    if (!textarea) return;
+    
+    // Crear contador si no existe
+    let contador = document.querySelector('.contador-caracteres');
+    if (!contador) {
+        contador = document.createElement('div');
         contador.className = 'contador-caracteres';
-        contador.style.fontSize = '12px';
-        contador.style.color = '#95a5a6';
-        contador.style.textAlign = 'right';
-        contador.style.marginTop = '5px';
-        contador.textContent = '0/500 caracteres';
-        
         textarea.parentNode.insertBefore(contador, textarea.nextSibling);
-        
-        textarea.addEventListener('input', function() {
-            const longitud = this.value.length;
-            contador.textContent = `${longitud}/500 caracteres`;
-            
-            if (longitud > 450) {
-                contador.style.color = '#e74c3c';
-            } else if (longitud > 400) {
-                contador.style.color = '#f39c12';
-            } else {
-                contador.style.color = '#95a5a6';
-            }
-        });
-    }
-}
-
-// Inicializar todo cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    // Obtener basePath desde variable global o meta tag
-    if (typeof basePath === 'undefined') {
-        const metaBasePath = document.querySelector('meta[name="base-path"]');
-        if (metaBasePath) {
-            basePath = metaBasePath.getAttribute('content');
-        } else {
-            // Intentar deducir la base path
-            basePath = window.location.pathname.split('/').slice(0, -1).join('/') || '';
-        }
     }
     
-    // Configurar todas las funciones
-    configurarEliminar();
+    const maxLength = 500;
+    
+    const actualizarContador = () => {
+        const longitud = textarea.value.length;
+        contador.textContent = `${longitud}/${maxLength} caracteres`;
+        
+        // Cambiar color según longitud
+        contador.classList.remove('warning', 'danger');
+        if (longitud > maxLength * 0.9) {
+            contador.classList.add('danger');
+        } else if (longitud > maxLength * 0.8) {
+            contador.classList.add('warning');
+        }
+        
+        // Prevenir exceder el límite
+        if (longitud > maxLength) {
+            textarea.value = textarea.value.substring(0, maxLength);
+            contador.textContent = `${maxLength}/${maxLength} caracteres (máximo alcanzado)`;
+        }
+    };
+    
+    textarea.addEventListener('input', actualizarContador);
+    actualizarContador(); // Inicializar
+}
+
+/**
+ * Configura tooltips para elementos con título
+ */
+function configurarTooltips() {
+    const elementosConTooltip = document.querySelectorAll('[title]');
+    elementosConTooltip.forEach(el => {
+        el.classList.add('tooltip-tiempo');
+        
+        const tooltip = document.createElement('span');
+        tooltip.className = 'tooltip-text';
+        tooltip.textContent = el.getAttribute('title');
+        
+        el.appendChild(tooltip);
+        el.removeAttribute('title');
+    });
+}
+
+// ========== INICIALIZACIÓN ==========
+
+/**
+ * Inicializa todas las funcionalidades
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Sistema de Formatos FOR-DE-144 inicializando...');
+    
+    // Configurar todas las funcionalidades
     configurarClicExterno();
     configurarTeclaEscape();
     configurarAutoGuardado();
     configurarValidacionFormulario();
     configurarEfectosTarjetas();
     configurarContadorCaracteres();
+    configurarTooltips();
     animarMensajes();
     
-    // Agregar confirmación antes de salir si hay cambios
+    // Inicializar opciones de tiempo si existen en el DOM
+    const radiosTiempo = document.querySelectorAll('input[name="tipo_tiempo"]');
+    if (radiosTiempo.length > 0) {
+        radiosTiempo.forEach(radio => {
+            radio.addEventListener('change', function() {
+                cambiarTipoTiempo(this.value);
+            });
+            
+            // Inicializar estado
+            if (radio.checked) {
+                cambiarTipoTiempo(radio.value);
+            }
+        });
+    }
+    
+    // Inicializar Flatpickr para inputs datetime-local
+    if (typeof flatpickr !== 'undefined') {
+        flatpickr("input[type=datetime-local]", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i",
+            locale: "es",
+            minDate: "today",
+            time_24hr: true,
+            onChange: guardarBorrador
+        });
+    }
+    
+    // Confirmación antes de salir si hay borrador
     window.addEventListener('beforeunload', function(e) {
         const borrador = localStorage.getItem('formato_for_de_144_borrador');
         if (borrador) {
-            e.preventDefault();
-            e.returnValue = 'Tienes un borrador sin guardar. ¿Seguro que quieres salir?';
-            return e.returnValue;
+            // Verificar si realmente hay cambios sin guardar
+            const nombre = document.querySelector('input[name="formato_nombre"]')?.value;
+            if (nombre) {
+                e.preventDefault();
+                e.returnValue = 'Tienes un borrador sin guardar. ¿Seguro que quieres salir?';
+                return e.returnValue;
+            }
         }
     });
     
-    console.log('Sistema de Formatos FOR-DE-144 inicializado correctamente');
+    console.log('✅ Sistema de Formatos FOR-DE-144 inicializado correctamente');
 });
 
-// Exportar funciones para uso global
+// ========== EXPORTAR FUNCIONES PARA USO GLOBAL ==========
+
 window.FormatoForDe144 = {
     abrirPopupCrear,
     cerrarPopup,
     confirmarEliminar,
     cerrarConfirmar,
-    eliminarFormato
+    eliminarFormato,
+    cambiarTipoTiempo,
+    validarFormulario,
+    guardarBorrador,
+    mostrarMensaje
 };
+
+// Exponer funciones individuales para uso en HTML
+window.abrirPopupCrear = abrirPopupCrear;
+window.cerrarPopup = cerrarPopup;
+window.confirmarEliminar = confirmarEliminar;
+window.cerrarConfirmar = cerrarConfirmar;
+window.eliminarFormato = eliminarFormato;
+window.cambiarTipoTiempo = cambiarTipoTiempo;
