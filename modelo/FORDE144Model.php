@@ -1,5 +1,9 @@
 <?php 
+<<<<<<< Updated upstream
 // modelo/FORDE144Model.php - VERSIÓN PRODUCCIÓN
+=======
+// modelo/FORDE144Model.php - VERSIÓN COMPLETA
+>>>>>>> Stashed changes
 require_once 'config/config.php';
 
 class FORDE144Model {
@@ -22,9 +26,12 @@ class FORDE144Model {
         }
     }
 
+<<<<<<< Updated upstream
     /**
      * Obtiene todos los formularios activos (filtrados por tiempo)
      */
+=======
+>>>>>>> Stashed changes
     public function getAll() {
         try {
             $sql = "SELECT *, 
@@ -46,6 +53,7 @@ class FORDE144Model {
         }
     }
 
+<<<<<<< Updated upstream
     /**
      * Obtiene todos los formularios (para administración)
      */
@@ -74,6 +82,8 @@ class FORDE144Model {
     /**
      * Obtiene un formulario por ID
      */
+=======
+>>>>>>> Stashed changes
     public function getById($id) {
         try {
             $stmt = $this->db->prepare("SELECT * FROM " . $this->table . " WHERE id = :id");
@@ -86,9 +96,6 @@ class FORDE144Model {
         }
     }
 
-    /**
-     * Crea un nuevo formulario
-     */
     public function create($data) {
         try {
             $sql = "INSERT INTO " . $this->table . " 
@@ -111,16 +118,10 @@ class FORDE144Model {
         }
     }
 
-    /**
-     * Obtiene el último ID insertado
-     */
     public function getLastInsertId() {
         return $this->db->lastInsertId();
     }
 
-    /**
-     * Actualiza un formulario existente
-     */
     public function update($id, $data) {
         try {
             $sql = "UPDATE " . $this->table . " 
@@ -150,9 +151,6 @@ class FORDE144Model {
         }
     }
 
-    /**
-     * Elimina (cambia estado a 0) un formulario
-     */
     public function delete($id) {
         try {
             $stmt = $this->db->prepare("UPDATE " . $this->table . " SET estado = 0 WHERE id = :id");
@@ -164,10 +162,14 @@ class FORDE144Model {
         }
     }
 
+<<<<<<< Updated upstream
     /**
      * Verifica si un formulario está disponible según su configuración de tiempo
      */
     public function isDisponible($id) {
+=======
+    public function verificarDisponibilidad($id) {
+>>>>>>> Stashed changes
         try {
             $stmt = $this->db->prepare("SELECT 
                     CASE 

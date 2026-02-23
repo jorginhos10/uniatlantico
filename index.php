@@ -1,5 +1,5 @@
 <?php
-// index.php - ARCHIVO PRINCIPAL PARA PRODUCCIÓN
+// index.php - ARCHIVO PRINCIPAL PARA PRODUCCIÓN (VERSIÓN COMPLETA)
 
 require_once 'config/config.php';
 
@@ -150,36 +150,48 @@ switch ($action) {
         break;
         
     // ====================================================
-    // SECCIÓN PARA FOR-DE-144 (Formularios base)
+    // SECCIÓN PARA FOR-DE-144 (Formularios base) - CORREGIDO
     // ====================================================
     case 'FOR-DE-144':
         require_once 'config/security.php';
         require_once 'controlador/FORDE144Controller.php';
         $forde144Controller = new FORDE144Controller();
         
+        // Obtener la acción
         if (isset($_GET['action'])) {
             $actionParam = $_GET['action'];
         } else {
             $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
         }
         
+        // Manejar las diferentes acciones
         switch ($actionParam) {
-            case 'crearFormulario':
-                $forde144Controller->crearFormulario();
+            case 'crear':  // Cambiado de 'crearFormulario' a 'crear'
+                $forde144Controller->crear();
                 break;
+                
             case 'obtenerFormularios':
                 $forde144Controller->obtenerFormularios();
                 break;
-            case 'eliminar':
-                $forde144Controller->eliminarFormulario();
+                
+            case 'eliminar':  // Cambiado de 'eliminarFormulario' a 'eliminar'
+                $forde144Controller->eliminar();
                 break;
-            case 'editar':
-                $forde144Controller->editarFormulario();
+                
+            case 'editar':  // Cambiado de 'editarFormulario' a 'editar'
+                $forde144Controller->editar();
                 break;
+                
             case 'getFormulario':
                 $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
                 $forde144Controller->getFormulario($id);
                 break;
+                
+            case 'verificarDisponibilidad':
+                $forde144Controller->verificarDisponibilidad();
+                break;
+                
+            case 'index':
             default:
                 $forde144Controller->index();
                 break;
@@ -228,54 +240,50 @@ switch ($action) {
                 break;
         }
         break;
+
     // ====================================================
-
-
-
-
-// ====================================================
-// SECCIÓN PARA MÓDULO 144 (MÚLTIPLES MÓDULOS EN ACORDEÓN)
-// ====================================================
-case 'modulo144':
-    require_once 'config/security.php';
-    require_once 'controlador/Modulo144Controller.php';
-    $modulo144Controller = new Modulo144Controller();
-    
-    if (isset($_GET['action'])) {
-        $actionParam = $_GET['action'];
-    } else {
-        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
-    }
-    
-    switch ($actionParam) {
-        case 'crearBorrador':
-            $modulo144Controller->crearBorrador();
-            break;
-        case 'getBorrador':
-            $modulo144Controller->getBorrador();
-            break;
-        case 'guardar':
-            $modulo144Controller->guardar();
-            break;
-        case 'cambiarEstado':
-            $modulo144Controller->cambiarEstado();
-            break;
-        case 'eliminar':
-            $modulo144Controller->eliminar();
-            break;
-        case 'duplicar':
-            $modulo144Controller->duplicar();
-            break;
-        case 'test':
-            $modulo144Controller->test();
-            break;
-        case 'index':
-        default:
-            $modulo144Controller->index();
-            break;
-    }
-    break;
-// ====================================================
+    // SECCIÓN PARA MÓDULO 144 (MÚLTIPLES MÓDULOS EN ACORDEÓN)
+    // ====================================================
+    case 'modulo144':
+        require_once 'config/security.php';
+        require_once 'controlador/Modulo144Controller.php';
+        $modulo144Controller = new Modulo144Controller();
+        
+        if (isset($_GET['action'])) {
+            $actionParam = $_GET['action'];
+        } else {
+            $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+        }
+        
+        switch ($actionParam) {
+            case 'crearBorrador':
+                $modulo144Controller->crearBorrador();
+                break;
+            case 'getBorrador':
+                $modulo144Controller->getBorrador();
+                break;
+            case 'guardar':
+                $modulo144Controller->guardar();
+                break;
+            case 'cambiarEstado':
+                $modulo144Controller->cambiarEstado();
+                break;
+            case 'eliminar':
+                $modulo144Controller->eliminar();
+                break;
+            case 'duplicar':
+                $modulo144Controller->duplicar();
+                break;
+            case 'test':
+                $modulo144Controller->test();
+                break;
+            case 'index':
+            default:
+                $modulo144Controller->index();
+                break;
+        }
+        break;
+    // ====================================================
         
     case 'publica':
         require_once 'vista/publica/index.php';
@@ -290,7 +298,47 @@ case 'modulo144':
         exit;
         
     default:
+        // Verificar si es una ruta de API o archivo estático
+        if (strpos($action, 'assets/') === 0) {
+            // Servir archivos estáticos
+            $filePath = $action;
+            if (file_exists($filePath)) {
+                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
+                $mimeTypes = [
+                    'css' => 'text/css',
+                    'js' => 'application/javascript',
+                    'png' => 'image/png',
+                    'jpg' => 'image/jpeg',
+                    'jpeg' => 'image/jpeg',
+                    'gif' => 'image/gif',
+                    'ico' => 'image/x-icon',
+                    'svg' => 'image/svg+xml'
+                ];
+                
+                if (isset($mimeTypes[$extension])) {
+                    header('Content-Type: ' . $mimeTypes[$extension]);
+                }
+                
+                readfile($filePath);
+                exit;
+            }
+        }
+        
+        // Si no es un archivo estático, mostrar 404
         require_once 'vista/complementos/404.php';
         break;
+}
+
+// Función de ayuda para depuración (opcional)
+function debug_log($message, $data = null) {
+    $logFile = 'debug.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $logMessage = "[$timestamp] $message";
+    
+    if ($data !== null) {
+        $logMessage .= " - " . print_r($data, true);
+    }
+    
+    file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND);
 }
 ?>
