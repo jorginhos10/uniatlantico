@@ -30,6 +30,9 @@ class FORDE144Controller {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titulo = trim($_POST['titulo'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
+            $tipo_tiempo = $_POST['tipo_tiempo'] ?? 'libre';
+            $fecha_inicio = $_POST['fecha_inicio'] ?? null;
+            $fecha_fin = $_POST['fecha_fin'] ?? null;
             
             if (empty($titulo)) {
                 echo json_encode(['success' => false, 'message' => 'El título es obligatorio']);
@@ -39,6 +42,9 @@ class FORDE144Controller {
             $data = [
                 'titulo' => $titulo,
                 'descripcion' => $descripcion,
+                'tipo_tiempo' => $tipo_tiempo,
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
                 'estado' => 1
             ];
             
@@ -118,6 +124,9 @@ class FORDE144Controller {
             $id = $_POST['id'] ?? 0;
             $titulo = trim($_POST['titulo'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
+            $tipo_tiempo = $_POST['tipo_tiempo'] ?? 'libre';
+            $fecha_inicio = $_POST['fecha_inicio'] ?? null;
+            $fecha_fin = $_POST['fecha_fin'] ?? null;
             $estado = $_POST['estado'] ?? 1;
             
             if (empty($id) || empty($titulo)) {
@@ -128,6 +137,9 @@ class FORDE144Controller {
             $data = [
                 'titulo' => $titulo,
                 'descripcion' => $descripcion,
+                'tipo_tiempo' => $tipo_tiempo,
+                'fecha_inicio' => $fecha_inicio,
+                'fecha_fin' => $fecha_fin,
                 'estado' => $estado
             ];
             
