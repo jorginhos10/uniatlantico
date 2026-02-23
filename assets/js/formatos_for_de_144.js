@@ -1,58 +1,16 @@
-// assets/js/formatos_for_de_144.js - VERSIÓN COMPLETA CON EDICIÓN
+// assets/js/formatos_for_de_144.js
 
 let formatoIdAEliminar = null;
-let formatoActual = null;
 
 // Popup crear
 function abrirPopupCrear() {
     document.getElementById('popupCrear').style.display = 'flex';
-    document.querySelector('#formNuevoFormato input[name="titulo"]').focus();
+    document.querySelector('#formNuevoFormato input[name="formato_nombre"]').focus();
 }
 
 function cerrarPopup() {
     document.getElementById('popupCrear').style.display = 'none';
     document.getElementById('formNuevoFormato').reset();
-    
-    // Ocultar campos de fecha si estaban visibles
-    const camposFecha = document.getElementById('camposFecha');
-    if (camposFecha) {
-        camposFecha.style.display = 'none';
-    }
-    document.getElementById('sin_restricciones').checked = true;
-}
-
-// Popup editar
-function abrirPopupEditar(formato) {
-    formatoActual = formato;
-    
-    // Llenar el formulario de edición con los datos del formato
-    document.getElementById('edit_id').value = formato.id;
-    document.getElementById('edit_titulo').value = formato.titulo;
-    document.getElementById('edit_descripcion').value = formato.descripcion || '';
-    
-    // Configurar tipo de tiempo
-    if (formato.fecha_inicio && formato.fecha_cierre) {
-        document.getElementById('edit_con_restricciones').checked = true;
-        document.getElementById('edit_camposFecha').style.display = 'block';
-        document.getElementById('edit_fecha_inicio').value = formato.fecha_inicio ? formato.fecha_inicio.slice(0, 16) : '';
-        document.getElementById('edit_fecha_cierre').value = formato.fecha_cierre ? formato.fecha_cierre.slice(0, 16) : '';
-    } else {
-        document.getElementById('edit_sin_restricciones').checked = true;
-        document.getElementById('edit_camposFecha').style.display = 'none';
-        document.getElementById('edit_fecha_inicio').value = '';
-        document.getElementById('edit_fecha_cierre').value = '';
-    }
-    
-    document.getElementById('popupEditar').style.display = 'flex';
-    document.getElementById('edit_titulo').focus();
-}
-
-function cerrarPopupEditar() {
-    document.getElementById('popupEditar').style.display = 'none';
-    document.getElementById('formEditarFormato').reset();
-    document.getElementById('edit_sin_restricciones').checked = true;
-    document.getElementById('edit_camposFecha').style.display = 'none';
-    formatoActual = null;
 }
 
 // Popup confirmar eliminar
@@ -62,7 +20,7 @@ function confirmarEliminar(id, nombre) {
     
     const mensaje = document.getElementById('mensajeConfirmacion');
     mensaje.innerHTML = `¿Estás seguro de eliminar el formato "<strong>${nombre}</strong>"?<br>
-                        <small style="color: #e74c3c;">Esta acción no se puede deshacer.</small>`;
+                        <small>Esta acción no se puede deshacer.</small>`;
     
     document.getElementById('popupConfirmar').style.display = 'flex';
 }
@@ -88,11 +46,11 @@ function configurarEliminar() {
 function eliminarFormato(id) {
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = basePath + '/index.php?controller=FORDE144&action=eliminar';
+    form.action = basePath + '/formatos-for-de-144/eliminar';
     
     const input = document.createElement('input');
     input.type = 'hidden';
-    input.name = 'id';
+    input.name = 'formato_id';
     input.value = id;
     
     // Agregar token CSRF si existe
@@ -119,8 +77,6 @@ function configurarClicExterno() {
                     cerrarPopup();
                 } else if (popup.id === 'popupConfirmar') {
                     cerrarConfirmar();
-                } else if (popup.id === 'popupEditar') {
-                    cerrarPopupEditar();
                 }
             }
         });
@@ -133,7 +89,6 @@ function configurarTeclaEscape() {
         if (e.key === 'Escape') {
             cerrarPopup();
             cerrarConfirmar();
-            cerrarPopupEditar();
         }
     });
 }
@@ -142,38 +97,24 @@ function configurarTeclaEscape() {
 function configurarAutoGuardado() {
     const formulario = document.getElementById('formNuevoFormato');
     if (formulario) {
-        const tituloInput = formulario.querySelector('input[name="titulo"]');
-        const descripcionTextarea = formulario.querySelector('textarea[name="descripcion"]');
-        const tipoTiempoRadios = formulario.querySelectorAll('input[name="tipo_tiempo"]');
-        const fechaInicio = formulario.querySelector('input[name="fecha_inicio"]');
-        const fechaCierre = formulario.querySelector('input[name="fecha_cierre"]');
+        const nombreInput = formulario.querySelector('input[name="formato_nombre"]');
+        const descripcionTextarea = formulario.querySelector('textarea[name="formato_descripcion"]');
         
         const guardarBorrador = () => {
-            let tipoTiempo = 'sin_restricciones';
-            tipoTiempoRadios.forEach(radio => {
-                if (radio.checked) tipoTiempo = radio.value;
-            });
-            
             const borrador = {
-                titulo: tituloInput.value,
+                nombre: nombreInput.value,
                 descripcion: descripcionTextarea.value,
-                tipo_tiempo: tipoTiempo,
-                fecha_inicio: fechaInicio?.value || '',
-                fecha_cierre: fechaCierre?.value || '',
                 timestamp: new Date().toISOString()
             };
             
-            if (borrador.titulo || borrador.descripcion) {
+            if (borrador.nombre || borrador.descripcion) {
                 localStorage.setItem('formato_for_de_144_borrador', JSON.stringify(borrador));
                 console.log('Borrador guardado en localStorage');
             }
         };
         
-        tituloInput.addEventListener('input', guardarBorrador);
+        nombreInput.addEventListener('input', guardarBorrador);
         descripcionTextarea.addEventListener('input', guardarBorrador);
-        tipoTiempoRadios.forEach(radio => radio.addEventListener('change', guardarBorrador));
-        if (fechaInicio) fechaInicio.addEventListener('change', guardarBorrador);
-        if (fechaCierre) fechaCierre.addEventListener('change', guardarBorrador);
         
         // Cargar borrador al abrir popup
         setTimeout(() => {
@@ -184,21 +125,8 @@ function configurarAutoGuardado() {
                     const haceMasDe24Horas = new Date() - new Date(borrador.timestamp) > 24 * 60 * 60 * 1000;
                     
                     if (!haceMasDe24Horas && confirm('¿Recuperar el borrador guardado anteriormente?')) {
-                        tituloInput.value = borrador.titulo || '';
+                        nombreInput.value = borrador.nombre || '';
                         descripcionTextarea.value = borrador.descripcion || '';
-                        
-                        // Restaurar tipo de tiempo
-                        tipoTiempoRadios.forEach(radio => {
-                            if (radio.value === borrador.tipo_tiempo) {
-                                radio.checked = true;
-                                if (radio.value === 'con_restricciones') {
-                                    document.getElementById('camposFecha').style.display = 'block';
-                                }
-                            }
-                        });
-                        
-                        if (fechaInicio) fechaInicio.value = borrador.fecha_inicio || '';
-                        if (fechaCierre) fechaCierre.value = borrador.fecha_cierre || '';
                     }
                 } catch (e) {
                     console.error('Error al cargar borrador:', e);
@@ -218,39 +146,20 @@ function configurarValidacionFormulario() {
     const formulario = document.getElementById('formNuevoFormato');
     if (formulario) {
         formulario.addEventListener('submit', function(e) {
-            const tituloInput = this.querySelector('input[name="titulo"]');
-            const titulo = tituloInput.value.trim();
+            const nombreInput = this.querySelector('input[name="formato_nombre"]');
+            const nombre = nombreInput.value.trim();
             
-            if (!titulo) {
+            if (!nombre) {
                 e.preventDefault();
-                alert('Por favor, ingresa un título para el formato');
-                tituloInput.focus();
-                tituloInput.style.borderColor = '#e74c3c';
+                alert('Por favor, ingresa un nombre para el formato');
+                nombreInput.focus();
+                nombreInput.style.borderColor = '#e74c3c';
                 
                 setTimeout(() => {
-                    tituloInput.style.borderColor = '';
+                    nombreInput.style.borderColor = '';
                 }, 2000);
                 
                 return false;
-            }
-            
-            // Validar fechas si se seleccionó con restricciones
-            const conRestricciones = document.getElementById('con_restricciones').checked;
-            if (conRestricciones) {
-                const fechaInicio = document.getElementById('fecha_inicio').value;
-                const fechaCierre = document.getElementById('fecha_cierre').value;
-                
-                if (!fechaInicio || !fechaCierre) {
-                    e.preventDefault();
-                    alert('Por favor, completa las fechas de inicio y cierre');
-                    return false;
-                }
-                
-                if (new Date(fechaInicio) > new Date(fechaCierre)) {
-                    e.preventDefault();
-                    alert('La fecha de inicio no puede ser mayor a la fecha de cierre');
-                    return false;
-                }
             }
             
             // Mostrar indicador de carga
@@ -273,7 +182,7 @@ function configurarValidacionFormulario() {
 
 // Efectos hover en tarjetas
 function configurarEfectosTarjetas() {
-    const tarjetas = document.querySelectorAll('.card:not(.card-agregar):not(.disabled)');
+    const tarjetas = document.querySelectorAll('.card:not(.card-agregar)');
     
     tarjetas.forEach(tarjeta => {
         tarjeta.addEventListener('mouseenter', function() {
@@ -324,7 +233,7 @@ function animarMensajes() {
 
 // Contador de caracteres para textarea
 function configurarContadorCaracteres() {
-    const textarea = document.querySelector('#formNuevoFormato textarea[name="descripcion"]');
+    const textarea = document.querySelector('#formNuevoFormato textarea[name="formato_descripcion"]');
     if (textarea) {
         const contador = document.createElement('div');
         contador.className = 'contador-caracteres';
@@ -393,7 +302,5 @@ window.FormatoForDe144 = {
     cerrarPopup,
     confirmarEliminar,
     cerrarConfirmar,
-    eliminarFormato,
-    abrirPopupEditar,
-    cerrarPopupEditar
+    eliminarFormato
 };

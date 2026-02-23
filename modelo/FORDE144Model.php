@@ -1,5 +1,5 @@
 <?php 
-// modelo/FORDE144Model.php - VERSIÓN COMPLETA CON CAMPOS DE TIEMPO
+// modelo/FORDE144Model.php - VERSIÓN PRODUCCIÓN
 require_once 'config/config.php';
 
 class FORDE144Model {
@@ -56,18 +56,15 @@ class FORDE144Model {
      */
     public function create($data) {
         try {
-            $sql = "INSERT INTO " . $this->table . " 
-                    (titulo, descripcion, estado, fecha_inicio, fecha_cierre) 
-                    VALUES (:titulo, :descripcion, :estado, :fecha_inicio, :fecha_cierre)";
+            $sql = "INSERT INTO " . $this->table . " (titulo, descripcion, estado) 
+                    VALUES (:titulo, :descripcion, :estado)";
             
             $stmt = $this->db->prepare($sql);
             
             return $stmt->execute([
                 ':titulo' => $data['titulo'],
                 ':descripcion' => $data['descripcion'],
-                ':estado' => $data['estado'],
-                ':fecha_inicio' => $data['fecha_inicio'] ?? null,
-                ':fecha_cierre' => $data['fecha_cierre'] ?? null
+                ':estado' => $data['estado']
             ]);
         } catch (PDOException $e) {
             error_log("Error en create: " . $e->getMessage());
@@ -91,8 +88,6 @@ class FORDE144Model {
                     SET titulo = :titulo, 
                         descripcion = :descripcion, 
                         estado = :estado,
-                        fecha_inicio = :fecha_inicio,
-                        fecha_cierre = :fecha_cierre,
                         updated_at = NOW()
                     WHERE id = :id";
             
@@ -102,9 +97,7 @@ class FORDE144Model {
                 ':id' => $id,
                 ':titulo' => $data['titulo'],
                 ':descripcion' => $data['descripcion'],
-                ':estado' => $data['estado'],
-                ':fecha_inicio' => $data['fecha_inicio'] ?? null,
-                ':fecha_cierre' => $data['fecha_cierre'] ?? null
+                ':estado' => $data['estado']
             ]);
         } catch (PDOException $e) {
             error_log("Error en update: " . $e->getMessage());
@@ -123,32 +116,6 @@ class FORDE144Model {
         } catch (PDOException $e) {
             error_log("Error en delete: " . $e->getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Verifica si un formulario está disponible según su fecha
-     */
-    public function verificarDisponibilidad($id) {
-        try {
-            $stmt = $this->db->prepare("
-                SELECT 
-                    CASE 
-                        WHEN fecha_inicio IS NULL AND fecha_cierre IS NULL THEN 1
-                        WHEN NOW() BETWEEN fecha_inicio AND fecha_cierre THEN 1
-                        ELSE 0
-                    END as disponible,
-                    fecha_inicio,
-                    fecha_cierre
-                FROM " . $this->table . " 
-                WHERE id = :id AND estado = 1
-            ");
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetch();
-        } catch (PDOException $e) {
-            error_log("Error en verificarDisponibilidad: " . $e->getMessage());
-            return null;
         }
     }
 }
