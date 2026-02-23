@@ -51,6 +51,108 @@ require_once __DIR__ . '/../complementos/header.php';
             line-height: 1.6;
         }
         
+        /* Estilos para los filtros */
+        .filtros-container {
+            background: var(--color-white);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.08);
+            border: 1px solid #e9ecef;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--color-text-light);
+            z-index: 10;
+        }
+        
+        .search-box input {
+            padding-left: 45px;
+            height: 45px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+        
+        .search-box input:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.25);
+        }
+        
+        .filter-select {
+            height: 45px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .filter-select:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 0.25rem rgba(44, 62, 80, 0.25);
+        }
+        
+        .filter-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 10px;
+        }
+        
+        .filter-badge.activos {
+            background: var(--color-success);
+            color: white;
+        }
+        
+        .filter-badge.inactivos {
+            background: var(--color-danger);
+            color: white;
+        }
+        
+        .filter-badge.todos {
+            background: var(--color-primary);
+            color: white;
+        }
+        
+        .stats-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .stat-item i {
+            color: var(--color-primary);
+        }
+        
+        .stat-item .badge {
+            background: var(--color-primary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+        }
+        
         .card-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
@@ -68,6 +170,7 @@ require_once __DIR__ . '/../complementos/header.php';
             flex-direction: column;
             position: relative;
             border-left: 4px solid var(--color-primary);
+            animation: fadeIn 0.5s ease-out;
         }
         
         .formulario-card:hover {
@@ -87,6 +190,15 @@ require_once __DIR__ . '/../complementos/header.php';
         
         .formulario-card.proximamente {
             border-left-color: var(--color-warning);
+        }
+        
+        .formulario-card.finalizado {
+            border-left-color: var(--color-text-light);
+            opacity: 0.7;
+        }
+        
+        .formulario-card.oculto {
+            display: none;
         }
         
         .formulario-add {
@@ -171,6 +283,11 @@ require_once __DIR__ . '/../complementos/header.php';
             color: white;
         }
         
+        .badge-finalizado {
+            background: var(--color-text-light);
+            color: white;
+        }
+        
         .fecha-rango {
             display: flex;
             flex-direction: column;
@@ -224,6 +341,10 @@ require_once __DIR__ . '/../complementos/header.php';
         
         .badge.bg-info {
             background-color: var(--color-info) !important;
+        }
+        
+        .badge.bg-secondary {
+            background-color: var(--color-text-light) !important;
         }
         
         .header-section {
@@ -375,6 +496,12 @@ require_once __DIR__ . '/../complementos/header.php';
             border: none;
         }
         
+        .btn-info {
+            background: var(--color-info);
+            border: none;
+            color: white;
+        }
+        
         .alert-info {
             background-color: #D6EAF8;
             border-color: #AED6F1;
@@ -387,8 +514,30 @@ require_once __DIR__ . '/../complementos/header.php';
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .formulario-card {
-            animation: fadeIn 0.5s ease-out;
+        /* Mensaje sin resultados */
+        .no-resultados {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .no-resultados i {
+            font-size: 4rem;
+            color: var(--color-text-light);
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .no-resultados h4 {
+            color: var(--color-text);
+            margin-bottom: 10px;
+        }
+        
+        .no-resultados p {
+            color: var(--color-text-light);
         }
         
         /* Responsive */
@@ -404,6 +553,15 @@ require_once __DIR__ . '/../complementos/header.php';
             
             .formulario-titulo {
                 padding-right: 0;
+            }
+            
+            .filtros-container .row {
+                gap: 15px;
+            }
+            
+            .stats-container {
+                flex-direction: column;
+                gap: 10px;
             }
         }
     </style>
@@ -425,6 +583,66 @@ require_once __DIR__ . '/../complementos/header.php';
                         <small><i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i'); ?></small>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Filtros de búsqueda y estado -->
+        <div class="filtros-container">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" 
+                               class="form-control" 
+                               id="buscador" 
+                               placeholder="Buscar por título o descripción...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select filter-select" id="filtroEstado">
+                        <option value="todos" selected>Todos los formularios</option>
+                        <option value="activos">Activos</option>
+                        <option value="inactivos">Inactivos</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-info w-100" onclick="limpiarFiltros()">
+                        <i class="fas fa-undo-alt me-1"></i>Limpiar
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Estadísticas -->
+            <div class="stats-container" id="estadisticas">
+                <?php 
+                if (isset($formularios) && is_array($formularios)):
+                    $total = count($formularios);
+                    $activos = 0;
+                    $inactivos = 0;
+                    
+                    foreach ($formularios as $f) {
+                        if ($f['estado'] == 1) {
+                            $activos++;
+                        } else {
+                            $inactivos++;
+                        }
+                    }
+                ?>
+                <div class="stat-item">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Total: <strong><?php echo $total; ?></strong></span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-check-circle text-success"></i>
+                    <span>Activos: <strong><?php echo $activos; ?></strong></span>
+                    <span class="badge activos"><?php echo $total > 0 ? round(($activos/$total)*100) : 0; ?>%</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-times-circle text-danger"></i>
+                    <span>Inactivos: <strong><?php echo $inactivos; ?></strong></span>
+                    <span class="badge inactivos"><?php echo $total > 0 ? round(($inactivos/$total)*100) : 0; ?>%</span>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
         
@@ -467,13 +685,22 @@ require_once __DIR__ . '/../complementos/header.php';
                     }
                     
                     $cardClass = $disponible ? 'disponible' : ($estadoTiempo == 'proximamente' ? 'proximamente' : 'no-disponible');
+                    $estadoClass = $formulario['estado'] == 1 ? 'activo' : 'inactivo';
             ?>
      
-            <div class="formulario-card <?php echo $cardClass; ?>" id="formulario-<?php echo $formulario['id']; ?>">
+            <div class="formulario-card <?php echo $cardClass; ?>" 
+                 id="formulario-<?php echo $formulario['id']; ?>"
+                 data-titulo="<?php echo strtolower(htmlspecialchars($formulario['titulo'])); ?>"
+                 data-descripcion="<?php echo strtolower(htmlspecialchars($formulario['descripcion'] ?: '')); ?>"
+                 data-estado="<?php echo $formulario['estado']; ?>"
+                 data-estado-tiempo="<?php echo $estadoTiempo; ?>">
+                 
                 <div class="formulario-titulo">
                     <?php echo htmlspecialchars($formulario['titulo']); ?>
                     <?php if ($formulario['estado'] != 1): ?>
                         <span class="badge bg-secondary float-end">Inactivo</span>
+                    <?php else: ?>
+                        <span class="badge bg-success float-end">Activo</span>
                     <?php endif; ?>
                 </div>
                 
@@ -499,9 +726,13 @@ require_once __DIR__ . '/../complementos/header.php';
                             <span class="badge-estado badge-proximamente">
                                 <i class="fas fa-hourglass-half"></i> Próximamente
                             </span>
+                        <?php elseif ($estadoTiempo == 'finalizado'): ?>
+                            <span class="badge-estado badge-finalizado">
+                                <i class="fas fa-ban"></i> Finalizado
+                            </span>
                         <?php else: ?>
                             <span class="badge-estado badge-no-disponible">
-                                <i class="fas fa-ban"></i> Finalizado
+                                <i class="fas fa-ban"></i> No disponible
                             </span>
                         <?php endif; ?>
                         
@@ -728,6 +959,90 @@ require_once __DIR__ . '/../complementos/header.php';
         // Configuración base
         const basePath = '<?php echo Config::getBasePath(); ?>';
         
+        // Variables para filtros
+        let busquedaActual = '';
+        let filtroActual = 'todos';
+        
+        // Función para filtrar formularios
+        function filtrarFormularios() {
+            const busqueda = document.getElementById('buscador').value.toLowerCase().trim();
+            const filtroEstado = document.getElementById('filtroEstado').value;
+            const formularios = document.querySelectorAll('.formulario-card:not(.formulario-add)');
+            let contadorVisibles = 0;
+            
+            formularios.forEach(formulario => {
+                const titulo = formulario.dataset.titulo || '';
+                const descripcion = formulario.dataset.descripcion || '';
+                const estado = formulario.dataset.estado;
+                
+                // Aplicar filtro de búsqueda
+                const coincideBusqueda = busqueda === '' || 
+                                        titulo.includes(busqueda) || 
+                                        descripcion.includes(busqueda);
+                
+                // Aplicar filtro de estado
+                let coincideEstado = true;
+                if (filtroEstado === 'activos') {
+                    coincideEstado = estado === '1';
+                } else if (filtroEstado === 'inactivos') {
+                    coincideEstado = estado === '0';
+                }
+                
+                // Mostrar u ocultar según filtros
+                if (coincideBusqueda && coincideEstado) {
+                    formulario.classList.remove('oculto');
+                    contadorVisibles++;
+                } else {
+                    formulario.classList.add('oculto');
+                }
+            });
+            
+            // Mostrar mensaje si no hay resultados
+            const container = document.getElementById('formulariosContainer');
+            const noResultados = document.querySelector('.no-resultados');
+            
+            if (contadorVisibles === 0) {
+                if (!noResultados) {
+                    const mensaje = document.createElement('div');
+                    mensaje.className = 'no-resultados';
+                    mensaje.innerHTML = `
+                        <i class="fas fa-search"></i>
+                        <h4>No se encontraron resultados</h4>
+                        <p>No hay formularios que coincidan con los filtros aplicados.</p>
+                        <button class="btn btn-primary mt-3" onclick="limpiarFiltros()">
+                            <i class="fas fa-undo-alt me-1"></i>Limpiar filtros
+                        </button>
+                    `;
+                    container.appendChild(mensaje);
+                }
+            } else {
+                if (noResultados) {
+                    noResultados.remove();
+                }
+            }
+            
+            // Actualizar contador en el título (opcional)
+            const totalActivos = document.querySelectorAll('.formulario-card:not(.formulario-add):not(.oculto)').length;
+            console.log(`Mostrando ${totalActivos} formularios`);
+        }
+        
+        // Función para limpiar filtros
+        function limpiarFiltros() {
+            document.getElementById('buscador').value = '';
+            document.getElementById('filtroEstado').value = 'todos';
+            filtrarFormularios();
+            
+            // Animar el botón de limpiar
+            const btn = event?.currentTarget;
+            if (btn) {
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-info');
+                }, 300);
+            }
+        }
+        
         // Función para mostrar/ocultar rango de fechas en modal agregar
         function mostrarRangoFechas(mostrar) {
             const container = document.getElementById('rangoFechasContainer');
@@ -770,6 +1085,15 @@ require_once __DIR__ . '/../complementos/header.php';
                 locale: "es",
                 minDate: "today",
                 time_24hr: true
+            });
+            
+            // Eventos para filtros
+            $('#buscador').on('keyup', function() {
+                filtrarFormularios();
+            });
+            
+            $('#filtroEstado').on('change', function() {
+                filtrarFormularios();
             });
             
             // Manejar envío del formulario de agregar
