@@ -26,6 +26,12 @@ class Modulo144Controller {
 
         $estado_fechas = $this->model->verificarFechaHabil($formulario);
         
+        // Obtener líneas estratégicas de la base de datos
+        $lineas_estrategicas = $this->model->getLineasEstrategicas();
+        
+        // Obtener estrategias de la base de datos
+        $estrategias = $this->model->getEstrategias();
+        
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         
@@ -44,6 +50,23 @@ class Modulo144Controller {
         }
 
         require_once $vistaPath;
+    }
+
+    /**
+     * Obtener estrategias por línea estratégica (para AJAX)
+     */
+    public function getEstrategiasPorLinea() {
+        header('Content-Type: application/json');
+        
+        $linea_id = $_GET['linea_id'] ?? 0;
+        
+        if (empty($linea_id)) {
+            echo json_encode(['success' => false, 'message' => 'Línea no especificada']);
+            return;
+        }
+        
+        $estrategias = $this->model->getEstrategiasPorLinea($linea_id);
+        echo json_encode(['success' => true, 'estrategias' => $estrategias]);
     }
 
     // ============= PÁGINA DE TEST =============
