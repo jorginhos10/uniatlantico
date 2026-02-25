@@ -166,6 +166,33 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             padding: 20px;
         }
         
+        .modal-header .modal-title {
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        
+        .modal-header .modal-title:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .modal-header .modal-title-input {
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 5px;
+            width: 100%;
+        }
+        
+        .modal-header .modal-title-input:focus {
+            outline: none;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
         .btn-close-white {
             filter: invert(1) brightness(2);
         }
@@ -181,10 +208,36 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
         }
         
+        .form-control[readonly] {
+            background-color: #e9ecef;
+            opacity: 1;
+        }
+        
         .form-label {
             font-weight: 600;
             color: var(--color-primary);
             margin-bottom: 8px;
+        }
+        
+        .auto-save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--color-success);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 9999;
+            animation: fadeInOut 2s ease;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
         }
         
         @media (max-width: 768px) {
@@ -291,9 +344,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i>
                                 Gestión de <?php echo $modulo['config']['nombre']; ?>
                             </h4>
+                            <?php if ($key === 'formulacion'): ?>
                             <button class="btn btn-success" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
                                 <i class="fas fa-plus me-1"></i>Nuevo Borrador
                             </button>
+                            <?php endif; ?>
                         </div>
                         
                         <div class="mb-5">
@@ -328,12 +383,21 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
+                                                    <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
                                                         <i class="fas fa-times"></i>
                                                     </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
                                                         <i class="fas fa-copy"></i>
                                                     </button>
@@ -347,7 +411,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 <div class="empty-state p-4">
                                     <i class="fas fa-file-alt fa-3x mb-3"></i>
                                     <h6>No hay borradores</h6>
-                                    <p class="text-muted small">Haz clic en "Nuevo Borrador" para comenzar</p>
+                                    <p class="text-muted small"><?php echo $key === 'formulacion' ? 'Haz clic en "Nuevo Borrador" para comenzar' : 'Los borradores de formulación aparecerán aquí'; ?></p>
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -454,7 +518,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         <?php endif; ?>
     </div>
 
-    <!-- MODALES -->
+    <!-- Indicador de auto-guardado -->
+    <div class="auto-save-indicator" id="autoSaveIndicator">
+        <i class="fas fa-check-circle me-2"></i> Guardado automático
+    </div>
+
+    <!-- MODAL PARA NUEVO BORRADOR -->
     <div class="modal fade" id="modalNuevoBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -480,6 +549,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
+    <!-- MODAL PARA DUPLICAR BORRADOR -->
     <div class="modal fade" id="modalDuplicarBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -505,27 +575,24 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
+    <!-- MODAL PARA FORMULACIÓN -->
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);">
-                    <h5 class="modal-title"><i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacion"></span></h5>
+                    <h5 class="modal-title" id="tituloFormulacion" ondblclick="editarTituloModal('formulacion')">
+                        <i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan"></span>
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formFormulacion">
                     <input type="hidden" name="modulo" value="formulacion">
                     <input type="hidden" id="formulacion_id" name="id">
                     <div class="modal-body">
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <label class="form-label">Nombre del Borrador</label>
-                                <input type="text" class="form-control" id="formulacion_nombre" name="nombre_borrador" required>
-                            </div>
-                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">AÑO</label>
-                                <select class="form-select" name="anio" id="formulacion_anio">
+                                <select class="form-select" name="anio" id="formulacion_anio" onchange="autoGuardarFormulacion()">
                                     <option value="">Seleccione año</option>
                                     <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
                                     <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
@@ -534,127 +601,134 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">LÍNEA ESTRATÉGICA</label>
-                                <input type="text" class="form-control" name="linea_estrategica" id="formulacion_linea">
+                                <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias()">
+                                    <option value="">Seleccione línea estratégica</option>
+                                    <?php foreach ($lineas_estrategicas as $linea): ?>
+                                    <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
+                                            data-id="<?php echo $linea['id']; ?>" 
+                                            data-objetivo="<?php echo htmlspecialchars($linea['objetivo']); ?>">
+                                        <?php echo htmlspecialchars($linea['codigo'] . ' - ' . $linea['nombre']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">OBJETIVO</label>
-                                <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3"></textarea>
+                                <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">ESTRATEGIA</label>
-                                <textarea class="form-control" name="estrategia" id="formulacion_estrategia" rows="3"></textarea>
+                                <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion()">
+                                    <option value="">Seleccione una estrategia</option>
+                                </select>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">MOTOR DE DESARROLLO</label>
-                                <input type="text" class="form-control" name="motor_desarrollo" id="formulacion_motor">
+                                <input type="text" class="form-control" name="motor_desarrollo" id="formulacion_motor" oninput="autoGuardarFormulacion()">
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">META DE RESULTADO</label>
-                                <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2"></textarea>
+                                <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion()"></textarea>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">PROYECTO</label>
-                                <input type="text" class="form-control" name="proyecto" id="formulacion_proyecto">
+                                <input type="text" class="form-control" name="proyecto" id="formulacion_proyecto" oninput="autoGuardarFormulacion()">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">PONDERACIÓN DE LOS PROYECTOS</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100">
+                                    <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">ACTIVIDAD DEL PROYECTO (205)</label>
-                                <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4"></textarea>
+                                <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion()"></textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100">
+                                    <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE</label>
-                                <input type="text" class="form-control" name="responsable" id="formulacion_responsable">
+                                <input type="text" class="form-control" name="responsable_formulacion" id="formulacion_responsable" oninput="autoGuardarFormulacion()">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Guardar Cambios</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- MODAL PARA SEGUIMIENTO -->
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
-                    <h5 class="modal-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimiento"></span></h5>
+                    <h5 class="modal-title" id="tituloSeguimiento" ondblclick="editarTituloModal('seguimiento')">
+                        <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan"></span>
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formSeguimiento">
                     <input type="hidden" name="modulo" value="seguimiento">
                     <input type="hidden" id="seguimiento_id" name="id">
                     <div class="modal-body">
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <label class="form-label">Nombre del Borrador</label>
-                                <input type="text" class="form-control" id="seguimiento_nombre" name="nombre_borrador" required>
-                            </div>
-                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">INDICADOR</label>
-                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento">
+                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento" oninput="autoGuardarSeguimiento()">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">FECHA DE SEGUIMIENTO</label>
-                                <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha">
+                                <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META PROGRAMADA</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01">
+                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">$</span>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META EJECUTADA</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01">
+                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">$</span>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">% AVANCE</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100">
+                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE</label>
-                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable">
+                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">OBSERVACIONES</label>
-                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4"></textarea>
+                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Guardar Cambios</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- MODAL PARA VER FORMULARIO -->
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -677,6 +751,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
     <script>
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
+        
+        // Variables para auto-guardado
+        let timeoutId = null;
+        let currentModule = null;
         
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
         function actualizarContador() {
@@ -701,6 +779,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         actualizarContador();
         setInterval(actualizarContador, 1000);
         <?php endif; ?>
+
+        // Variable para controlar la edición del título
+        let editandoTitulo = false;
 
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
@@ -749,6 +830,243 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
+        // Función principal para cargar estrategias
+        function cargarObjetivoYestrategias() {
+            console.log('=== FUNCIÓN CARGAR ESTRATEGIAS EJECUTADA ===');
+            
+            const selectLinea = document.getElementById('formulacion_linea');
+            const selectedOption = selectLinea.options[selectLinea.selectedIndex];
+            
+            if (!selectedOption || !selectedOption.value) {
+                console.log('No hay línea seleccionada');
+                document.getElementById('formulacion_objetivo').value = '';
+                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                return;
+            }
+            
+            const objetivo = selectedOption.getAttribute('data-objetivo') || '';
+            document.getElementById('formulacion_objetivo').value = objetivo;
+            
+            const lineaId = selectedOption.getAttribute('data-id');
+            console.log('Línea seleccionada - ID:', lineaId, 'Nombre:', selectedOption.value);
+            
+            if (lineaId) {
+                // Mostrar mensaje de carga
+                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
+                
+                // Construir URL completa para debug
+                const url = basePath + '/modulo144/getEstrategiasPorLinea?linea_id=' + lineaId;
+                console.log('URL de petición:', url);
+                
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('Respuesta del servidor:', response);
+                        
+                        const selectEstrategia = document.getElementById('formulacion_estrategia');
+                        selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
+                        
+                        if (response.success && response.estrategias && response.estrategias.length > 0) {
+                            console.log('Estrategias cargadas:', response.estrategias.length);
+                            response.estrategias.forEach(function(estrategia, index) {
+                                console.log(`Estrategia ${index + 1}:`, estrategia);
+                                const option = document.createElement('option');
+                                option.value = estrategia.descripcion;
+                                option.textContent = estrategia.descripcion;
+                                selectEstrategia.appendChild(option);
+                            });
+                        } else {
+                            console.log('No hay estrategias o respuesta vacía');
+                            selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
+                        }
+                        
+                        autoGuardarFormulacion();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error en AJAX:', error);
+                        console.error('Status:', status);
+                        console.error('Respuesta completa:', xhr.responseText);
+                        document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Error al cargar estrategias</option>';
+                    }
+                });
+            }
+        }
+
+        function editarTituloModal(modulo) {
+            if (editandoTitulo) return;
+            
+            const modalHeader = modulo === 'formulacion' ? 
+                $('#modalFormulacion .modal-header h5') : 
+                $('#modalSeguimiento .modal-header h5');
+            
+            const tituloActual = modulo === 'formulacion' ? 
+                $('#tituloFormulacionSpan').text() : 
+                $('#tituloSeguimientoSpan').text();
+            
+            const inputHtml = `<input type="text" class="modal-title-input" id="editTituloInput" value="${tituloActual}" />`;
+            modalHeader.html(inputHtml);
+            
+            $('#editTituloInput').focus();
+            editandoTitulo = true;
+            
+            $('#editTituloInput').on('blur', function() {
+                guardarTituloModal(modulo, $(this).val());
+            }).on('keypress', function(e) {
+                if (e.which === 13) {
+                    guardarTituloModal(modulo, $(this).val());
+                }
+            });
+        }
+
+        function guardarTituloModal(modulo, nuevoTitulo) {
+            if (!nuevoTitulo.trim()) {
+                restaurarTituloModal(modulo);
+                return;
+            }
+
+            const id = modulo === 'formulacion' ? $('#formulacion_id').val() : $('#seguimiento_id').val();
+            
+            $.ajax({
+                url: basePath + '/modulo144/guardar',
+                type: 'POST',
+                data: {
+                    modulo: modulo,
+                    id: id,
+                    nombre_borrador: nuevoTitulo
+                },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        if (modulo === 'formulacion') {
+                            $('#tituloFormulacionSpan').text(nuevoTitulo);
+                            $('#modalFormulacion .modal-header h5').html(`<i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan">${nuevoTitulo}</span>`);
+                        } else {
+                            $('#tituloSeguimientoSpan').text(nuevoTitulo);
+                            $('#modalSeguimiento .modal-header h5').html(`<i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan">${nuevoTitulo}</span>`);
+                        }
+                        editandoTitulo = false;
+                        
+                        // Mostrar indicador de guardado
+                        mostrarAutoSaveIndicator();
+                    } else {
+                        restaurarTituloModal(modulo);
+                    }
+                },
+                error: function() {
+                    restaurarTituloModal(modulo);
+                }
+            });
+        }
+
+        function restaurarTituloModal(modulo) {
+            const tituloActual = modulo === 'formulacion' ? 
+                $('#tituloFormulacionSpan').text() : 
+                $('#tituloSeguimientoSpan').text();
+            
+            if (modulo === 'formulacion') {
+                $('#modalFormulacion .modal-header h5').html(`<i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan">${tituloActual}</span>`);
+            } else {
+                $('#modalSeguimiento .modal-header h5').html(`<i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan">${tituloActual}</span>`);
+            }
+            editandoTitulo = false;
+        }
+
+        function autoGuardarFormulacion() {
+            const id = $('#formulacion_id').val();
+            if (!id) return;
+            
+            currentModule = 'formulacion';
+            
+            // Limpiar timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            
+            // Programar nuevo guardado
+            timeoutId = setTimeout(function() {
+                const data = {
+                    modulo: 'formulacion',
+                    id: id,
+                    anio: $('#formulacion_anio').val(),
+                    linea_estrategica: $('#formulacion_linea').val(),
+                    objetivo: $('#formulacion_objetivo').val(),
+                    estrategia: $('#formulacion_estrategia').val(),
+                    motor_desarrollo: $('#formulacion_motor').val(),
+                    meta_resultado: $('#formulacion_meta').val(),
+                    proyecto: $('#formulacion_proyecto').val(),
+                    ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
+                    actividad_proyecto: $('#formulacion_actividad').val(),
+                    ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
+                    responsable_formulacion: $('#formulacion_responsable').val()
+                };
+                
+                $.ajax({
+                    url: basePath + '/modulo144/guardar',
+                    type: 'POST',
+                    data: data,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            mostrarAutoSaveIndicator();
+                        }
+                    }
+                });
+            }, 500);
+        }
+
+        function autoGuardarSeguimiento() {
+            const id = $('#seguimiento_id').val();
+            if (!id) return;
+            
+            currentModule = 'seguimiento';
+            
+            // Limpiar timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+            
+            // Programar nuevo guardado
+            timeoutId = setTimeout(function() {
+                const data = {
+                    modulo: 'seguimiento',
+                    id: id,
+                    indicador: $('#seguimiento_indicador').val(),
+                    fecha_seguimiento: $('#seguimiento_fecha').val(),
+                    meta_programada: $('#seguimiento_meta_programada').val(),
+                    meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
+                    porcentaje_avance: $('#seguimiento_porcentaje').val(),
+                    responsable_seguimiento: $('#seguimiento_responsable').val(),
+                    observaciones: $('#seguimiento_observaciones').val()
+                };
+                
+                $.ajax({
+                    url: basePath + '/modulo144/guardar',
+                    type: 'POST',
+                    data: data,
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            mostrarAutoSaveIndicator();
+                        }
+                    }
+                });
+            }, 500);
+        }
+
+        function mostrarAutoSaveIndicator() {
+            const indicator = document.getElementById('autoSaveIndicator');
+            indicator.style.display = 'block';
+            indicator.style.animation = 'none';
+            indicator.offsetHeight;
+            indicator.style.animation = 'fadeInOut 2s ease';
+            
+            setTimeout(function() {
+                indicator.style.display = 'none';
+            }, 2000);
+        }
+
         function editarBorrador(modulo, id) {
             $.ajax({
                 url: basePath + '/modulo144/getBorrador?modulo=' + modulo + '&id=' + id,
@@ -759,24 +1077,62 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         const b = response.borrador;
                         if (modulo === 'formulacion') {
                             $('#formulacion_id').val(b.id);
-                            $('#tituloFormulacion').text(b.nombre_borrador);
-                            $('#formulacion_nombre').val(b.nombre_borrador);
+                            $('#tituloFormulacionSpan').text(b.nombre_borrador);
                             $('#formulacion_anio').val(b.anio);
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
-                            $('#formulacion_estrategia').val(b.estrategia);
+                            
+                            const selectLinea = document.getElementById('formulacion_linea');
+                            const selectedOption = selectLinea.options[selectLinea.selectedIndex];
+                            const lineaId = selectedOption ? selectedOption.getAttribute('data-id') : null;
+                            
+                            function cargarEstrategias(lineaId, valorEstrategia) {
+                                if (lineaId) {
+                                    document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
+                                    
+                                    $.ajax({
+                                        url: basePath + '/modulo144/getEstrategiasPorLinea',
+                                        type: 'GET',
+                                        data: { linea_id: lineaId },
+                                        dataType: 'json',
+                                        success: function(res) {
+                                            const selectEstrategia = document.getElementById('formulacion_estrategia');
+                                            selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                            
+                                            if (res.success && res.estrategias && res.estrategias.length > 0) {
+                                                res.estrategias.forEach(function(estrategia) {
+                                                    const option = document.createElement('option');
+                                                    option.value = estrategia.descripcion;
+                                                    option.textContent = estrategia.descripcion;
+                                                    selectEstrategia.appendChild(option);
+                                                });
+                                                
+                                                if (valorEstrategia) {
+                                                    $('#formulacion_estrategia').val(valorEstrategia);
+                                                }
+                                            } else {
+                                                selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                }
+                            }
+                            
+                            cargarEstrategias(lineaId, b.estrategia);
+                            
                             $('#formulacion_motor').val(b.motor_desarrollo);
                             $('#formulacion_meta').val(b.meta_resultado);
                             $('#formulacion_proyecto').val(b.proyecto);
                             $('#formulacion_ponderacion_proyectos').val(b.ponderacion_proyectos);
                             $('#formulacion_actividad').val(b.actividad_proyecto);
                             $('#formulacion_ponderacion_actividades').val(b.ponderacion_actividades);
-                            $('#formulacion_responsable').val(b.responsable);
+                            $('#formulacion_responsable').val(b.responsable_formulacion);
                             $('#modalFormulacion').modal('show');
                         } else {
                             $('#seguimiento_id').val(b.id);
-                            $('#tituloSeguimiento').text(b.nombre_borrador);
-                            $('#seguimiento_nombre').val(b.nombre_borrador);
+                            $('#tituloSeguimientoSpan').text(b.nombre_borrador);
                             $('#seguimiento_indicador').val(b.indicador);
                             $('#seguimiento_fecha').val(b.fecha_seguimiento);
                             $('#seguimiento_meta_programada').val(b.meta_programada);
@@ -815,23 +1171,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 }
             });
         }
-
-        $('#formFormulacion, #formSeguimiento').on('submit', function(e) {
-            e.preventDefault();
-            $.ajax({
-                url: basePath + '/modulo144/guardar',
-                type: 'POST',
-                data: $(this).serialize(),
-                dataType: 'json',
-                success: function(response) {
-                    if (response.success) {
-                        Swal.fire('¡Guardado!', response.message, 'success');
-                        $('.modal').modal('hide');
-                        setTimeout(() => location.reload(), 1000);
-                    }
-                }
-            });
-        });
 
         function cambiarEstadoBorrador(modulo, id, estado) {
             Swal.fire({
@@ -884,6 +1223,42 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 }
             });
         }
+
+        // Test automático al cargar la página
+        $(document).ready(function() {
+            console.log('=== TEST AUTOMÁTICO DE ESTRATEGIAS ===');
+            console.log('BasePath:', basePath);
+            
+            // Verificar que el select existe
+            console.log('Select de estrategias:', document.getElementById('formulacion_estrategia'));
+            
+            // Probar el endpoint directamente con línea 1
+            setTimeout(function() {
+                $.ajax({
+                    url: basePath + '/modulo144/getEstrategiasPorLinea?linea_id=1',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('✅ TEST - RESPUESTA EXITOSA:');
+                        console.log('Datos completos:', response);
+                        if (response.success) {
+                            console.log('Estrategias encontradas:', response.estrategias ? response.estrategias.length : 0);
+                            if (response.estrategias && response.estrategias.length > 0) {
+                                console.log('Primera estrategia:', response.estrategias[0]);
+                            }
+                        } else {
+                            console.log('Error en respuesta:', response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('❌ TEST - ERROR EN PETICIÓN:');
+                        console.log('Status:', status);
+                        console.log('Error:', error);
+                        console.log('Respuesta del servidor:', xhr.responseText);
+                    }
+                });
+            }, 1000);
+        });
     </script>
 </body>
 </html>

@@ -277,6 +277,9 @@ switch ($action) {
             case 'test':
                 $modulo144Controller->test();
                 break;
+            case 'getEstrategiasPorLinea':  // <-- NUEVA LÍNEA AGREGADA
+                $modulo144Controller->getEstrategiasPorLinea();
+                break;
             case 'index':
             default:
                 $modulo144Controller->index();
