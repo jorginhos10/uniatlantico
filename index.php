@@ -150,7 +150,7 @@ switch ($action) {
         break;
         
     // ====================================================
-    // SECCIÓN PARA FOR-DE-144 (Formularios base) - CORREGIDO
+    // SECCIÓN PARA FOR-DE-144 (Formularios base)
     // ====================================================
     case 'FOR-DE-144':
         require_once 'config/security.php';

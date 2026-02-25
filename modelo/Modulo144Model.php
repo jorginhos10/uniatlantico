@@ -16,9 +16,14 @@ class Modulo144Model {
             'descripcion' => 'Planificación y formulación estratégica',
             'campo_estado' => 'estado_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
-            'campos_editables' => ['anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 'proyecto',
-                                   'meta_resultado', 'ponderacion_proyectos', 'actividad_proyecto', 
-                                   'ponderacion_actividades', 'responsable_formulacion'],
+            'campos_editables' => [
+                'anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
+                'proyecto', 'meta_resultado', 'ponderacion_proyectos', 'actividad_proyecto', 
+                'ponderacion_actividades', 'responsable_formulacion', 'id_indicador', 
+                'gestionado_facultades',
+                'nombre_indicador', 'formula_medicion', 'frecuencia_medicion', 
+                'unidad_medida', 'tipo_medicion', 'descripcion_indicador'
+            ],
             'campos_vista' => [
                 'AÑO' => 'anio',
                 'LÍNEA ESTRATÉGICA' => 'linea_estrategica',
@@ -30,7 +35,15 @@ class Modulo144Model {
                 'PONDERACIÓN PROYECTOS' => 'ponderacion_proyectos',
                 'ACTIVIDAD DEL PROYECTO' => 'actividad_proyecto',
                 'PONDERACIÓN ACTIVIDADES' => 'ponderacion_actividades',
-                'RESPONSABLE' => 'responsable_formulacion'
+                'RESPONSABLE' => 'responsable_formulacion',
+                'ID INDICADOR' => 'id_indicador',
+                'GESTIONADO EN FACULTADES' => 'gestionado_facultades',
+                'NOMBRE DEL INDICADOR' => 'nombre_indicador',
+                'FÓRMULA DE MEDICIÓN' => 'formula_medicion',
+                'FRECUENCIA DE MEDICIÓN' => 'frecuencia_medicion',
+                'UNIDAD DE MEDIDA' => 'unidad_medida',
+                'TIPO DE MEDICIÓN' => 'tipo_medicion',
+                'DESCRIPCIÓN DEL INDICADOR' => 'descripcion_indicador'
             ]
         ],
         'seguimiento' => [
@@ -242,6 +255,20 @@ class Modulo144Model {
     }
 
     /**
+     * Obtener cargos de la tabla cargos
+     */
+    public function getCargos() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM cargos WHERE activo = 1 ORDER BY nombre");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getCargos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Obtiene registros por estado (usando el campo de estado específico del módulo)
      */
     public function getByEstado($modulo, $formulario_id, $estado) {
@@ -432,14 +459,20 @@ class Modulo144Model {
                                         (formulario_id, nombre_borrador, anio, linea_estrategica, objetivo, 
                                          estrategia, motor_desarrollo, proyecto, meta_resultado, 
                                          ponderacion_proyectos, actividad_proyecto, ponderacion_actividades, 
-                                         responsable_formulacion, indicador, meta_programada, meta_ejecutada, 
+                                         responsable_formulacion, id_indicador, gestionado_facultades,
+                                         nombre_indicador, formula_medicion, frecuencia_medicion,
+                                         unidad_medida, tipo_medicion, descripcion_indicador,
+                                         indicador, meta_programada, meta_ejecutada, 
                                          porcentaje_avance, fecha_seguimiento, observaciones, responsable_seguimiento,
                                          estado_formulacion, estado_seguimiento, creado_por) 
                                         VALUES 
                                         (:formulario_id, :nombre, :anio, :linea_estrategica, :objetivo,
                                          :estrategia, :motor_desarrollo, :proyecto, :meta_resultado,
                                          :ponderacion_proyectos, :actividad_proyecto, :ponderacion_actividades,
-                                         :responsable_formulacion, :indicador, :meta_programada, :meta_ejecutada,
+                                         :responsable_formulacion, :id_indicador, :gestionado_facultades,
+                                         :nombre_indicador, :formula_medicion, :frecuencia_medicion,
+                                         :unidad_medida, :tipo_medicion, :descripcion_indicador,
+                                         :indicador, :meta_programada, :meta_ejecutada,
                                          :porcentaje_avance, :fecha_seguimiento, :observaciones, :responsable_seguimiento,
                                          0, 0, :creado_por)");
             
@@ -457,6 +490,14 @@ class Modulo144Model {
                 ':actividad_proyecto' => $original['actividad_proyecto'],
                 ':ponderacion_actividades' => $original['ponderacion_actividades'],
                 ':responsable_formulacion' => $original['responsable_formulacion'],
+                ':id_indicador' => $original['id_indicador'],
+                ':gestionado_facultades' => $original['gestionado_facultades'],
+                ':nombre_indicador' => $original['nombre_indicador'],
+                ':formula_medicion' => $original['formula_medicion'],
+                ':frecuencia_medicion' => $original['frecuencia_medicion'],
+                ':unidad_medida' => $original['unidad_medida'],
+                ':tipo_medicion' => $original['tipo_medicion'],
+                ':descripcion_indicador' => $original['descripcion_indicador'],
                 ':indicador' => $original['indicador'],
                 ':meta_programada' => $original['meta_programada'],
                 ':meta_ejecutada' => $original['meta_ejecutada'],

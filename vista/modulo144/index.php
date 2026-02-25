@@ -24,6 +24,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             --color-info: #3498DB;
             --color-bg: #F8F9FA;
             --color-white: #FFFFFF;
+            --color-tab-incomplete: #6c757d;
+            --color-tab-complete: #27AE60;
         }
         
         body {
@@ -213,6 +215,24 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             opacity: 1;
         }
         
+        .form-check-input {
+            width: 1.2em;
+            height: 1.2em;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .form-check-input:checked {
+            background-color: var(--color-success);
+            border-color: var(--color-success);
+        }
+        
+        .form-check-label {
+            font-weight: 500;
+            color: var(--color-primary);
+            cursor: pointer;
+        }
+        
         .form-label {
             font-weight: 600;
             color: var(--color-primary);
@@ -248,6 +268,69 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             .countdown-number {
                 font-size: 1.8rem;
             }
+        }
+
+        /* Estilos para pestañas */
+        .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-tabs .nav-link:hover {
+            border-bottom-color: var(--color-primary-light);
+            background-color: rgba(44, 62, 80, 0.05);
+        }
+        
+        .nav-tabs .nav-link.active {
+            border-bottom-color: var(--color-primary);
+            background-color: transparent;
+            color: var(--color-primary) !important;
+        }
+        
+        /* Estilos para el estado de las pestañas */
+        .nav-tabs .nav-link.tab-incomplete {
+            color: var(--color-tab-incomplete) !important;
+        }
+        
+        .nav-tabs .nav-link.tab-complete {
+            color: var(--color-tab-complete) !important;
+        }
+        
+        .nav-tabs .nav-link.tab-complete i {
+            color: var(--color-tab-complete);
+        }
+
+        /* Estilos para campos de indicador */
+        .indicador-section {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .indicador-title {
+            color: var(--color-primary);
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--color-primary-light);
+        }
+
+        /* Estilos para tabla de metas */
+        .meta-table {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .meta-table .table-header {
+            background-color: var(--color-primary);
+            color: white;
+            font-weight: 600;
+            text-align: center;
         }
     </style>
 </head>
@@ -575,7 +658,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA FORMULACIÓN -->
+    <!-- MODAL PARA FORMULACIÓN CON PESTAÑAS -->
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -588,85 +671,317 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 <form id="formFormulacion">
                     <input type="hidden" name="modulo" value="formulacion">
                     <input type="hidden" id="formulacion_id" name="id">
-                    <div class="modal-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">AÑO</label>
-                                <select class="form-select" name="anio" id="formulacion_anio" onchange="autoGuardarFormulacion()">
-                                    <option value="">Seleccione año</option>
-                                    <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
-                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                    <?php endfor; ?>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">LÍNEA ESTRATÉGICA</label>
-                                <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea()">
-                                    <option value="">Seleccione línea estratégica</option>
-                                    <?php foreach ($lineas_estrategicas as $linea): ?>
-                                    <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
-                                            data-id="<?php echo $linea['id']; ?>" 
-                                            data-objetivo="<?php echo htmlspecialchars($linea['objetivo']); ?>">
-                                        <?php echo htmlspecialchars($linea['codigo'] . ' - ' . $linea['nombre']); ?>
-                                    </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">OBJETIVO</label>
-                                <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">ESTRATEGIA</label>
-                                <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion()">
-                                    <option value="">Seleccione una estrategia</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">MOTOR DE DESARROLLO</label>
-                                <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion()">
-                                    <option value="">Seleccione un motor de desarrollo</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">META DE RESULTADO</label>
-                                <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion()"></textarea>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">PROYECTO</label>
-                                <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion()">
-                                    <option value="">Seleccione un proyecto</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">PROYECTO ANTERIOR (este campo se mantiene por compatibilidad)</label>
-                                <input type="text" class="form-control" name="proyecto_anterior" id="formulacion_proyecto_anterior" oninput="autoGuardarFormulacion()" placeholder="Campo de texto para proyecto anterior">
-                                <small class="text-muted">Este campo se mantiene para compatibilidad con versiones anteriores</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">PONDERACIÓN DE LOS PROYECTOS</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
-                                    <span class="input-group-text">%</span>
+                    
+                    <!-- PESTAÑAS -->
+                    <ul class="nav nav-tabs px-3 pt-3" id="formulacionTabs" role="tablist" style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active tab-incomplete" id="tab-formulacion" data-bs-toggle="tab" data-bs-target="#formulacion" type="button" role="tab" aria-controls="formulacion" aria-selected="true" style="font-weight: 600;">
+                                <i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link tab-incomplete" id="tab-indicador" data-bs-toggle="tab" data-bs-target="#indicador" type="button" role="tab" aria-controls="indicador" aria-selected="false" style="font-weight: 600;">
+                                <i class="fas fa-chart-line me-2"></i>INDICADOR DE RESULTADO
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link tab-incomplete" id="tab-meta" data-bs-toggle="tab" data-bs-target="#meta" type="button" role="tab" aria-controls="meta" aria-selected="false" style="font-weight: 600;">
+                                <i class="fas fa-bullseye me-2"></i>META PROPUESTA
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link tab-incomplete" id="tab-planes" data-bs-toggle="tab" data-bs-target="#planes" type="button" role="tab" aria-controls="planes" aria-selected="false" style="font-weight: 600;">
+                                <i class="fas fa-file-alt me-2"></i>PLANES INSTITUCIONALES DECRETO 612 DE 2018
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <!-- CONTENIDO DE LAS PESTAÑAS -->
+                    <div class="tab-content" style="max-height: 60vh; overflow-y: auto; padding: 20px;">
+                        <!-- PESTAÑA 1: FORMULACIÓN (campos 1-13) -->
+                        <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
+                            <div class="row">
+                                <!-- 1. AÑO -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">1. AÑO</label>
+                                    <select class="form-select" name="anio" id="formulacion_anio" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione año</option>
+                                        <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
+                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+
+                                <!-- 2. LÍNEA ESTRATÉGICA -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">2. LÍNEA ESTRATÉGICA</label>
+                                    <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas()">
+                                        <option value="">Seleccione línea estratégica</option>
+                                        <?php foreach ($lineas_estrategicas as $linea): ?>
+                                        <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
+                                                data-id="<?php echo $linea['id']; ?>" 
+                                                data-objetivo="<?php echo htmlspecialchars($linea['objetivo']); ?>">
+                                            <?php echo htmlspecialchars($linea['codigo'] . ' - ' . $linea['nombre']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <!-- 3. OBJETIVO -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">3. OBJETIVO</label>
+                                    <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
+                                </div>
+
+                                <!-- 4. ESTRATEGIA -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">4. ESTRATEGIA</label>
+                                    <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione una estrategia</option>
+                                    </select>
+                                </div>
+
+                                <!-- 5. MOTOR DE DESARROLLO -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">5. MOTOR DE DESARROLLO</label>
+                                    <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione un motor de desarrollo</option>
+                                    </select>
+                                </div>
+
+                                <!-- 6. PROYECTO -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">6. PROYECTO</label>
+                                    <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione un proyecto</option>
+                                    </select>
+                                </div>
+
+                                <!-- 7. META DE RESULTADO -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">7. META DE RESULTADO</label>
+                                    <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
+                                </div>
+
+                                <!-- 8. PONDERACIÓN DE LOS PROYECTOS -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">8. PONDERACIÓN DE LOS PROYECTOS</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <!-- 9. ACTIVIDAD DEL PROYECTO (205) -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">9. ACTIVIDAD DEL PROYECTO (205)</label>
+                                    <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
+                                </div>
+
+                                <!-- 10. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">10. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <!-- 11. RESPONSABLE (select de cargos) -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">11. RESPONSABLE</label>
+                                    <select class="form-select" name="responsable_formulacion" id="formulacion_responsable" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione un cargo</option>
+                                        <?php foreach ($cargos as $cargo): ?>
+                                        <option value="<?php echo htmlspecialchars($cargo['nombre']); ?>">
+                                            <?php echo htmlspecialchars($cargo['nombre']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <!-- 12. ID INDICADOR -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">12. ID INDICADOR</label>
+                                    <input type="text" class="form-control" name="id_indicador" id="formulacion_id_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el ID del indicador">
+                                </div>
+
+                                <!-- 13. GESTIONADO EN FACULTADES -->
+                                <div class="col-12 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <label class="form-check-label" for="formulacion_gestionado_facultades">
+                                            <strong>13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">ACTIVIDAD DEL PROYECTO (205)</label>
-                                <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion()"></textarea>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
-                                    <span class="input-group-text">%</span>
+                        </div>
+                        
+                        <!-- PESTAÑA 2: INDICADOR DE RESULTADO (ahora guarda en BD) -->
+                        <div class="tab-pane fade" id="indicador" role="tabpanel" aria-labelledby="tab-indicador">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <h5 class="indicador-title">INFORMACIÓN DEL INDICADOR</h5>
+                                </div>
+                                
+                                <!-- 16.1 NOMBRE DEL INDICADOR -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">16.1 NOMBRE DEL INDICADOR</label>
+                                    <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el nombre del indicador">
+                                </div>
+                                
+                                <!-- 16.2 FÓRMULA DE LA MEDICIÓN -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">16.2 FÓRMULA DE LA MEDICIÓN</label>
+                                    <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <!-- 16.3 FRECUENCIA DE MEDICIÓN -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">16.3 FRECUENCIA DE MEDICIÓN</label>
+                                        <select class="form-select" name="frecuencia_medicion" id="formulacion_frecuencia_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <option value="">Seleccione frecuencia</option>
+                                            <option value="Mensual">Mensual</option>
+                                            <option value="Bimestral">Bimestral</option>
+                                            <option value="Trimestral">Trimestral</option>
+                                            <option value="Semestral">Semestral</option>
+                                            <option value="Anual">Anual</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- 16.4 UNIDAD DE MEDIDA -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">16.4 UNIDAD DE MEDIDA</label>
+                                        <input type="text" class="form-control" name="unidad_medida" id="formulacion_unidad_medida" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: Porcentaje, Número, Tasa">
+                                    </div>
+                                    
+                                    <!-- 16.5 TIPO DE MEDICIÓN -->
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">16.5 TIPO DE MEDICIÓN</label>
+                                        <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <option value="">Seleccione tipo</option>
+                                            <option value="Cuantitativo">Cuantitativo</option>
+                                            <option value="Cualitativo">Cualitativo</option>
+                                            <option value="Mixto">Mixto</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- DESCRIPCIÓN DEL INDICADOR -->
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
+                                    <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador, su propósito y qué mide..."></textarea>
                                 </div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">RESPONSABLE</label>
-                                <input type="text" class="form-control" name="responsable_formulacion" id="formulacion_responsable" oninput="autoGuardarFormulacion()">
+                        </div>
+                        
+                        <!-- PESTAÑA 3: META PROPUESTA (ahora guarda en BD) -->
+                        <div class="tab-pane fade" id="meta" role="tabpanel" aria-labelledby="tab-meta">
+                            <div class="row">
+                                <div class="col-12 mb-4">
+                                    <h5 class="indicador-title">METAS PROPUESTAS</h5>
+                                </div>
+                                
+                                <!-- 17.1 LÍNEA BASE -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">17.1 LÍNEA BASE</label>
+                                    <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Valor de línea base">
+                                </div>
+                                
+                                <!-- 17.4 AÑO (de la línea base) -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">17.4 AÑO</label>
+                                    <select class="form-select" name="anio_base_meta" id="formulacion_anio_base_meta" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <option value="">Seleccione año</option>
+                                        <?php for ($i = date('Y') - 2; $i <= date('Y') + 5; $i++): ?>
+                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
+                                </div>
+                                
+                                <!-- 17.2 SEMESTRE 1 -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">17.2 SEMESTRE 1</label>
+                                    <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 1">
+                                </div>
+                                
+                                <!-- 17.3 SEMESTRE 2 -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">17.3 SEMESTRE 2</label>
+                                    <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 2">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- PESTAÑA 4: PLANES INSTITUCIONALES DECRETO 612 DE 2018 (solo visual, no guarda en BD) -->
+                        <div class="tab-pane fade" id="planes" role="tabpanel" aria-labelledby="tab-planes">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Estos campos son solo de referencia visual. No se guardan en la base de datos.
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <div class="alert alert-secondary">
+                                        <i class="fas fa-file-alt me-2"></i>
+                                        Planes institucionales según el Decreto 612 de 2018
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan Anticorrupción y de Atención al Ciudadano
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan de Seguridad Digital
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan Archivístico
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan de Tecnologías de la Información - PTI
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan de Racionalización de Trámites
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" disabled>
+                                        <label class="form-check-label">
+                                            Plan de Incorrupción
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">OTROS PLANES INSTITUCIONALES</label>
+                                    <textarea class="form-control" rows="3" placeholder="Campo visual" disabled></textarea>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
@@ -839,6 +1154,67 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
+        // Función para validar el estado de las pestañas
+        function validarPestanas() {
+            // Validar Pestaña 1: FORMULACIÓN
+            const camposFormulacion = [
+                $('#formulacion_anio').val(),
+                $('#formulacion_linea').val(),
+                $('#formulacion_estrategia').val(),
+                $('#formulacion_motor').val(),
+                $('#formulacion_proyecto').val(),
+                $('#formulacion_meta').val(),
+                $('#formulacion_ponderacion_proyectos').val(),
+                $('#formulacion_actividad').val(),
+                $('#formulacion_ponderacion_actividades').val(),
+                $('#formulacion_responsable').val(),
+                $('#formulacion_id_indicador').val()
+            ];
+            
+            // El checkbox no es obligatorio, por eso no lo incluimos
+            const formulacionCompleta = camposFormulacion.every(valor => valor && valor.trim() !== '');
+            
+            // Validar Pestaña 2: INDICADOR DE RESULTADO
+            const camposIndicador = [
+                $('#formulacion_nombre_indicador').val(),
+                $('#formulacion_formula_medicion').val(),
+                $('#formulacion_frecuencia_medicion').val(),
+                $('#formulacion_unidad_medida').val(),
+                $('#formulacion_tipo_medicion').val(),
+                $('#formulacion_descripcion_indicador').val()
+            ];
+            
+            const indicadorCompleto = camposIndicador.every(valor => valor && valor.trim() !== '');
+            
+            // Validar Pestaña 3: META PROPUESTA
+            const camposMeta = [
+                $('#formulacion_linea_base_meta').val(),
+                $('#formulacion_anio_base_meta').val(),
+                $('#formulacion_meta_s1').val(),
+                $('#formulacion_meta_s2').val()
+            ];
+            
+            const metaCompleta = camposMeta.every(valor => valor && valor.trim() !== '');
+            
+            // Pestaña 4 es solo visual, siempre estará "completa" para efectos del color
+            const planesCompleto = true;
+            
+            // Actualizar clases de las pestañas
+            actualizarClasePestana('#tab-formulacion', formulacionCompleta);
+            actualizarClasePestana('#tab-indicador', indicadorCompleto);
+            actualizarClasePestana('#tab-meta', metaCompleta);
+            actualizarClasePestana('#tab-planes', planesCompleto);
+        }
+        
+        function actualizarClasePestana(selector, completo) {
+            const pestana = $(selector);
+            if (completo) {
+                pestana.removeClass('tab-incomplete').addClass('tab-complete');
+            } else {
+                pestana.removeClass('tab-complete').addClass('tab-incomplete');
+            }
+        }
+
         // Función para cargar estrategias
         function cargarObjetivoYestrategias() {
             const selectLinea = document.getElementById('formulacion_linea');
@@ -847,6 +1223,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             if (!selectedOption || !selectedOption.value) {
                 document.getElementById('formulacion_objetivo').value = '';
                 document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                validarPestanas();
                 return;
             }
             
@@ -881,9 +1258,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         }
                         
                         autoGuardarFormulacion();
+                        validarPestanas();
                     },
                     error: function() {
                         document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Error al cargar estrategias</option>';
+                        validarPestanas();
                     }
                 });
             }
@@ -897,6 +1276,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             if (!selectedOption || !selectedOption.value) {
                 document.getElementById('formulacion_motor').innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
                 document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Primero seleccione un motor</option>';
+                validarPestanas();
                 return;
             }
             
@@ -928,9 +1308,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         }
                         
                         autoGuardarFormulacion();
+                        validarPestanas();
                     },
                     error: function() {
                         document.getElementById('formulacion_motor').innerHTML = '<option value="">Error al cargar motores</option>';
+                        validarPestanas();
                     }
                 });
             }
@@ -946,6 +1328,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             
             if (!lineaOption || !lineaOption.value || !motorOption || !motorOption.value) {
                 document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Seleccione un motor primero</option>';
+                validarPestanas();
                 return;
             }
             
@@ -979,9 +1362,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         }
                         
                         autoGuardarFormulacion();
+                        validarPestanas();
                     },
                     error: function() {
                         document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Error al cargar proyectos</option>';
+                        validarPestanas();
                     }
                 });
             }
@@ -1079,6 +1464,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             
             // Programar nuevo guardado
             timeoutId = setTimeout(function() {
+                // Para el checkbox, enviar 1 si está marcado, 0 si no
+                const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
+                
                 const data = {
                     modulo: 'formulacion',
                     id: id,
@@ -1092,7 +1480,23 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
                     actividad_proyecto: $('#formulacion_actividad').val(),
                     ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
-                    responsable_formulacion: $('#formulacion_responsable').val()
+                    responsable_formulacion: $('#formulacion_responsable').val(),
+                    id_indicador: $('#formulacion_id_indicador').val(),
+                    gestionado_facultades: gestionado,
+                    
+                    // Campos de la pestaña INDICADOR DE RESULTADO
+                    nombre_indicador: $('#formulacion_nombre_indicador').val(),
+                    formula_medicion: $('#formulacion_formula_medicion').val(),
+                    frecuencia_medicion: $('#formulacion_frecuencia_medicion').val(),
+                    unidad_medida: $('#formulacion_unidad_medida').val(),
+                    tipo_medicion: $('#formulacion_tipo_medicion').val(),
+                    descripcion_indicador: $('#formulacion_descripcion_indicador').val(),
+                    
+                    // Campos de la pestaña META PROPUESTA
+                    linea_base_meta: $('#formulacion_linea_base_meta').val(),
+                    anio_base_meta: $('#formulacion_anio_base_meta').val(),
+                    meta_s1: $('#formulacion_meta_s1').val(),
+                    meta_s2: $('#formulacion_meta_s2').val()
                 };
                 
                 $.ajax({
@@ -1103,6 +1507,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     success: function(response) {
                         if (response.success) {
                             mostrarAutoSaveIndicator();
+                            validarPestanas();
                         }
                     }
                 });
@@ -1208,10 +1613,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             } else {
                                                 selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
                                             }
+                                            validarPestanas();
                                         }
                                     });
                                 } else {
                                     document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                    validarPestanas();
                                 }
                             }
                             
@@ -1249,10 +1656,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             } else {
                                                 selectMotor.innerHTML = '<option value="">No hay motores disponibles</option>';
                                             }
+                                            validarPestanas();
                                         }
                                     });
                                 } else {
                                     document.getElementById('formulacion_motor').innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+                                    validarPestanas();
                                 }
                             }
                             
@@ -1291,6 +1700,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             } else {
                                                 selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
                                             }
+                                            validarPestanas();
                                         }
                                     });
                                 }
@@ -1305,7 +1715,33 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_actividad').val(b.actividad_proyecto);
                             $('#formulacion_ponderacion_actividades').val(b.ponderacion_actividades);
                             $('#formulacion_responsable').val(b.responsable_formulacion);
+                            $('#formulacion_id_indicador').val(b.id_indicador);
+                            
+                            // Checkbox: marcar si gestionado_facultades es 1
+                            if (b.gestionado_facultades == 1) {
+                                $('#formulacion_gestionado_facultades').prop('checked', true);
+                            } else {
+                                $('#formulacion_gestionado_facultades').prop('checked', false);
+                            }
+                            
+                            // Campos de la pestaña INDICADOR DE RESULTADO
+                            $('#formulacion_nombre_indicador').val(b.nombre_indicador);
+                            $('#formulacion_formula_medicion').val(b.formula_medicion);
+                            $('#formulacion_frecuencia_medicion').val(b.frecuencia_medicion);
+                            $('#formulacion_unidad_medida').val(b.unidad_medida);
+                            $('#formulacion_tipo_medicion').val(b.tipo_medicion);
+                            $('#formulacion_descripcion_indicador').val(b.descripcion_indicador);
+                            
+                            // Campos de la pestaña META PROPUESTA
+                            $('#formulacion_linea_base_meta').val(b.linea_base_meta);
+                            $('#formulacion_anio_base_meta').val(b.anio_base_meta);
+                            $('#formulacion_meta_s1').val(b.meta_s1);
+                            $('#formulacion_meta_s2').val(b.meta_s2);
+                            
                             $('#modalFormulacion').modal('show');
+                            
+                            // Validar pestañas después de cargar
+                            setTimeout(validarPestanas, 500);
                         } else {
                             $('#seguimiento_id').val(b.id);
                             $('#tituloSeguimientoSpan').text(b.nombre_borrador);
@@ -1402,7 +1838,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON PROYECTOS ===');
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON VALIDACIÓN DE PESTAÑAS Y NUEVAS METAS ===');
+            
+            // Inicializar validación de pestañas cuando se abre el modal
+            $('#modalFormulacion').on('shown.bs.modal', function() {
+                validarPestanas();
+            });
         });
     </script>
 </body>

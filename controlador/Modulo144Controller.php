@@ -29,6 +29,9 @@ class Modulo144Controller {
         // Obtener líneas estratégicas de la base de datos
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         
+        // Obtener cargos de la base de datos
+        $cargos = $this->model->getCargos();
+        
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         
