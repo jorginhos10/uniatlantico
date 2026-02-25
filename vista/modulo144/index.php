@@ -604,7 +604,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias()">
                                     <option value="">Seleccione línea estratégica</option>
                                     <?php foreach ($lineas_estrategicas as $linea): ?>
-                                    <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" data-id="<?php echo $linea['id']; ?>" data-objetivo="<?php echo htmlspecialchars($linea['objetivo']); ?>">
+                                    <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
+                                            data-id="<?php echo $linea['id']; ?>" 
+                                            data-objetivo="<?php echo htmlspecialchars($linea['objetivo']); ?>">
                                         <?php echo htmlspecialchars($linea['codigo'] . ' - ' . $linea['nombre']); ?>
                                     </option>
                                     <?php endforeach; ?>
@@ -622,43 +624,42 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">MOTOR DE DESARROLLO</label>
-                                <input type="text" class="form-control" name="motor_desarrollo" id="formulacion_motor" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()">
+                                <input type="text" class="form-control" name="motor_desarrollo" id="formulacion_motor" oninput="autoGuardarFormulacion()">
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">META DE RESULTADO</label>
-                                <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()"></textarea>
+                                <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion()"></textarea>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">PROYECTO</label>
-                                <input type="text" class="form-control" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()">
+                                <input type="text" class="form-control" name="proyecto" id="formulacion_proyecto" oninput="autoGuardarFormulacion()">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">PONDERACIÓN DE LOS PROYECTOS</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()">
+                                    <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">ACTIVIDAD DEL PROYECTO (205)</label>
-                                <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()"></textarea>
+                                <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion()"></textarea>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()">
+                                    <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE</label>
-                                <input type="text" class="form-control" name="responsable_formulacion" id="formulacion_responsable" onchange="autoGuardarFormulacion()" onkeyup="autoGuardarFormulacion()">
+                                <input type="text" class="form-control" name="responsable_formulacion" id="formulacion_responsable" oninput="autoGuardarFormulacion()">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <!-- Botón de guardar eliminado -->
                     </div>
                 </form>
             </div>
@@ -682,7 +683,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">INDICADOR</label>
-                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()">
+                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento" oninput="autoGuardarSeguimiento()">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">FECHA DE SEGUIMIENTO</label>
@@ -691,37 +692,36 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META PROGRAMADA</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()">
+                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">$</span>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META EJECUTADA</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()">
+                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">$</span>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">% AVANCE</label>
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()">
+                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()">
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE</label>
-                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()">
+                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">OBSERVACIONES</label>
-                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" onchange="autoGuardarSeguimiento()" onkeyup="autoGuardarSeguimiento()"></textarea>
+                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                        <!-- Botón de guardar eliminado -->
                     </div>
                 </form>
             </div>
@@ -830,42 +830,67 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
+        // Función principal para cargar estrategias
         function cargarObjetivoYestrategias() {
+            console.log('=== FUNCIÓN CARGAR ESTRATEGIAS EJECUTADA ===');
+            
             const selectLinea = document.getElementById('formulacion_linea');
             const selectedOption = selectLinea.options[selectLinea.selectedIndex];
             
-            // Cargar objetivo
+            if (!selectedOption || !selectedOption.value) {
+                console.log('No hay línea seleccionada');
+                document.getElementById('formulacion_objetivo').value = '';
+                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                return;
+            }
+            
             const objetivo = selectedOption.getAttribute('data-objetivo') || '';
             document.getElementById('formulacion_objetivo').value = objetivo;
             
-            // Cargar estrategias
             const lineaId = selectedOption.getAttribute('data-id');
+            console.log('Línea seleccionada - ID:', lineaId, 'Nombre:', selectedOption.value);
+            
             if (lineaId) {
+                // Mostrar mensaje de carga
+                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
+                
+                // Construir URL completa para debug
+                const url = basePath + '/modulo144/getEstrategiasPorLinea?linea_id=' + lineaId;
+                console.log('URL de petición:', url);
+                
                 $.ajax({
-                    url: basePath + '/modulo144/getEstrategiasPorLinea',
+                    url: url,
                     type: 'GET',
-                    data: { linea_id: lineaId },
                     dataType: 'json',
                     success: function(response) {
+                        console.log('Respuesta del servidor:', response);
+                        
                         const selectEstrategia = document.getElementById('formulacion_estrategia');
                         selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
                         
-                        if (response.success && response.estrategias.length > 0) {
-                            response.estrategias.forEach(function(estrategia) {
+                        if (response.success && response.estrategias && response.estrategias.length > 0) {
+                            console.log('Estrategias cargadas:', response.estrategias.length);
+                            response.estrategias.forEach(function(estrategia, index) {
+                                console.log(`Estrategia ${index + 1}:`, estrategia);
                                 const option = document.createElement('option');
                                 option.value = estrategia.descripcion;
                                 option.textContent = estrategia.descripcion;
                                 selectEstrategia.appendChild(option);
                             });
+                        } else {
+                            console.log('No hay estrategias o respuesta vacía');
+                            selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
                         }
                         
-                        // Auto-guardar después de cargar objetivo y estrategias
                         autoGuardarFormulacion();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error en AJAX:', error);
+                        console.error('Status:', status);
+                        console.error('Respuesta completa:', xhr.responseText);
+                        document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Error al cargar estrategias</option>';
                     }
                 });
-            } else {
-                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
-                autoGuardarFormulacion();
             }
         }
 
@@ -988,7 +1013,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         }
                     }
                 });
-            }, 500); // Esperar 500ms después del último cambio
+            }, 500);
         }
 
         function autoGuardarSeguimiento() {
@@ -1034,7 +1059,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             const indicator = document.getElementById('autoSaveIndicator');
             indicator.style.display = 'block';
             indicator.style.animation = 'none';
-            indicator.offsetHeight; // Trigger reflow
+            indicator.offsetHeight;
             indicator.style.animation = 'fadeInOut 2s ease';
             
             setTimeout(function() {
@@ -1057,36 +1082,45 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
                             
-                            // Cargar estrategias según la línea seleccionada
                             const selectLinea = document.getElementById('formulacion_linea');
                             const selectedOption = selectLinea.options[selectLinea.selectedIndex];
                             const lineaId = selectedOption ? selectedOption.getAttribute('data-id') : null;
                             
-                            if (lineaId) {
-                                $.ajax({
-                                    url: basePath + '/modulo144/getEstrategiasPorLinea',
-                                    type: 'GET',
-                                    data: { linea_id: lineaId },
-                                    dataType: 'json',
-                                    success: function(res) {
-                                        const selectEstrategia = document.getElementById('formulacion_estrategia');
-                                        selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
-                                        
-                                        if (res.success && res.estrategias.length > 0) {
-                                            res.estrategias.forEach(function(estrategia) {
-                                                const option = document.createElement('option');
-                                                option.value = estrategia.descripcion;
-                                                option.textContent = estrategia.descripcion;
-                                                selectEstrategia.appendChild(option);
-                                            });
+                            function cargarEstrategias(lineaId, valorEstrategia) {
+                                if (lineaId) {
+                                    document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
+                                    
+                                    $.ajax({
+                                        url: basePath + '/modulo144/getEstrategiasPorLinea',
+                                        type: 'GET',
+                                        data: { linea_id: lineaId },
+                                        dataType: 'json',
+                                        success: function(res) {
+                                            const selectEstrategia = document.getElementById('formulacion_estrategia');
+                                            selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                            
+                                            if (res.success && res.estrategias && res.estrategias.length > 0) {
+                                                res.estrategias.forEach(function(estrategia) {
+                                                    const option = document.createElement('option');
+                                                    option.value = estrategia.descripcion;
+                                                    option.textContent = estrategia.descripcion;
+                                                    selectEstrategia.appendChild(option);
+                                                });
+                                                
+                                                if (valorEstrategia) {
+                                                    $('#formulacion_estrategia').val(valorEstrategia);
+                                                }
+                                            } else {
+                                                selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
+                                            }
                                         }
-                                        
-                                        $('#formulacion_estrategia').val(b.estrategia);
-                                    }
-                                });
-                            } else {
-                                document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                    });
+                                } else {
+                                    document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
+                                }
                             }
+                            
+                            cargarEstrategias(lineaId, b.estrategia);
                             
                             $('#formulacion_motor').val(b.motor_desarrollo);
                             $('#formulacion_meta').val(b.meta_resultado);
@@ -1189,6 +1223,42 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 }
             });
         }
+
+        // Test automático al cargar la página
+        $(document).ready(function() {
+            console.log('=== TEST AUTOMÁTICO DE ESTRATEGIAS ===');
+            console.log('BasePath:', basePath);
+            
+            // Verificar que el select existe
+            console.log('Select de estrategias:', document.getElementById('formulacion_estrategia'));
+            
+            // Probar el endpoint directamente con línea 1
+            setTimeout(function() {
+                $.ajax({
+                    url: basePath + '/modulo144/getEstrategiasPorLinea?linea_id=1',
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('✅ TEST - RESPUESTA EXITOSA:');
+                        console.log('Datos completos:', response);
+                        if (response.success) {
+                            console.log('Estrategias encontradas:', response.estrategias ? response.estrategias.length : 0);
+                            if (response.estrategias && response.estrategias.length > 0) {
+                                console.log('Primera estrategia:', response.estrategias[0]);
+                            }
+                        } else {
+                            console.log('Error en respuesta:', response.message);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.log('❌ TEST - ERROR EN PETICIÓN:');
+                        console.log('Status:', status);
+                        console.log('Error:', error);
+                        console.log('Respuesta del servidor:', xhr.responseText);
+                    }
+                });
+            }, 1000);
+        });
     </script>
 </body>
 </html>

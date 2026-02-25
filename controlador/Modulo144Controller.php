@@ -29,9 +29,6 @@ class Modulo144Controller {
         // Obtener líneas estratégicas de la base de datos
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         
-        // Obtener estrategias de la base de datos
-        $estrategias = $this->model->getEstrategias();
-        
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         

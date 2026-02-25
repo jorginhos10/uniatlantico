@@ -1,385 +1,345 @@
 <?php
-// vista/modulo144/test.php
+// test_completo.php - Test completo de líneas estratégicas y estrategias
+require_once 'config/config.php';
+require_once 'modelo/Modulo144Model.php';
+
+// Función para ejecutar consulta SQL directa
+function ejecutarConsultaSQL($sql) {
+    try {
+        $dsn = "mysql:host=" . Config::DB_HOST . ";dbname=" . Config::DB_NAME . ";charset=" . Config::DB_CHARSET;
+        $db = new PDO($dsn, Config::DB_USER, Config::DB_PASS);
+        $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $stmt = $db->query($sql);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        return ['error' => $e->getMessage()];
+    }
+}
+
+$model = new Modulo144Model();
 $basePath = Config::getBasePath();
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEST - Sistema 144 (ID: <?php echo $id; ?>)</title>
-    
+    <title>Test Completo - Líneas Estratégicas y Estrategias</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <style>
-        :root {
-            --color-primary: #2C3E50;
-            --color-success: #27AE60;
-            --color-danger: #E74C3C;
-            --color-warning: #F39C12;
-            --color-info: #3498DB;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Segoe UI', sans-serif;
-            padding: 30px;
-            min-height: 100vh;
-        }
-        
-        .test-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        .header-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            border-left: 5px solid var(--color-primary);
-        }
-        
-        .module-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-            transition: transform 0.3s ease;
-        }
-        
-        .module-card:hover {
-            transform: translateY(-5px);
-        }
-        
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-weight: 600;
-            color: white;
-            display: inline-block;
-        }
-        
-        .status-success {
-            background: linear-gradient(135deg, var(--color-success) 0%, #2ECC71 100%);
-        }
-        
-        .status-danger {
-            background: linear-gradient(135deg, var(--color-danger) 0%, #C0392B 100%);
-        }
-        
-        .status-warning {
-            background: linear-gradient(135deg, var(--color-warning) 0%, #E67E22 100%);
-        }
-        
-        .info-table {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary) 0%, #34495E 100%);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(44,62,80,0.3);
-        }
-        
-        .btn-success {
-            background: linear-gradient(135deg, var(--color-success) 0%, #2ECC71 100%);
-            border: none;
-        }
-        
-        .btn-info {
-            background: linear-gradient(135deg, var(--color-info) 0%, #2980B9 100%);
-            border: none;
-            color: white;
-        }
-        
-        .stat-circle {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: 700;
-            color: white;
-        }
+        body { padding: 20px; background: #f8f9fa; }
+        .card { margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .card-header { font-weight: bold; }
+        pre { background: #f4f4f4; padding: 10px; border-radius: 5px; max-height: 400px; overflow: auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        table { font-size: 0.9em; }
     </style>
 </head>
 <body>
-    <div class="test-container">
-        <!-- HEADER -->
-        <div class="header-card">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2" style="color: var(--color-primary);">
-                        <i class="fas fa-vial me-3"></i>SISTEMA 144 - TEST
-                    </h1>
-                    <h4 class="mb-0">Formulario ID: <?php echo $id; ?></h4>
-                    <p class="mb-0 mt-2 text-muted">
-                        <i class="fas fa-info-circle me-1"></i>
-                        <?php echo htmlspecialchars($formulario['titulo'] ?? 'Sin título'); ?>
-                    </p>
-                    <div class="mt-3">
-                        <span class="badge bg-secondary me-2">
-                            <i class="fas fa-calendar-alt me-1"></i>
-                            Inicio: <?php echo !empty($formulario['fecha_inicio']) ? date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])) : 'No definido'; ?>
-                        </span>
-                        <span class="badge bg-secondary">
-                            <i class="fas fa-calendar-times me-1"></i>
-                            Cierre: <?php echo !empty($formulario['fecha_cierre']) ? date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])) : 'No definido'; ?>
-                        </span>
-                    </div>
-                </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <a href="<?php echo $basePath; ?>/modulo144?id=<?php echo $id; ?>" class="btn btn-primary me-2">
-                        <i class="fas fa-arrow-left me-1"></i>Volver
-                    </a>
-                    <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-secondary">
-                        <i class="fas fa-folder me-1"></i>Formularios
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- RESUMEN GENERAL -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Módulos</h5>
-                        <h2><?php echo count($modulos); ?></h2>
-                        <small>Módulos configurados</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Tablas OK</h5>
-                        <h2>
-                            <?php 
-                            $tablas_ok = 0;
-                            foreach ($datos_modulos as $m) {
-                                if ($m['tabla_existe']) $tablas_ok++;
-                            }
-                            echo $tablas_ok . '/' . count($modulos);
-                            ?>
-                        </h2>
-                        <small>Tablas existentes</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Borradores</h5>
-                        <h2>
-                            <?php 
-                            $total_borradores = 0;
-                            foreach ($datos_modulos as $m) {
-                                $total_borradores += count($m['borradores']);
-                            }
-                            echo $total_borradores;
-                            ?>
-                        </h2>
-                        <small>Total en todos los módulos</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <h5 class="card-title">Publicados</h5>
-                        <h2>
-                            <?php 
-                            $total_publicados = 0;
-                            foreach ($datos_modulos as $m) {
-                                $total_publicados += count($m['publicados']);
-                            }
-                            echo $total_publicados;
-                            ?>
-                        </h2>
-                        <small>Total en todos los módulos</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- RESULTADOS POR MÓDULO -->
-        <h3 class="text-white mb-3"><i class="fas fa-cubes me-2"></i>Resultados por Módulo</h3>
+    <div class="container">
+        <h1 class="mb-4">🧪 Test Completo - Líneas Estratégicas y Estrategias</h1>
         
-        <?php foreach ($resultados_tests as $test): ?>
-        <div class="module-card">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <h4 class="mb-1" style="color: <?php echo $test['modulo'] == 'FORMULACIÓN 144' ? '#2C3E50' : '#27AE60'; ?>;">
-                        <?php echo $test['modulo']; ?>
-                    </h4>
-                    <small class="text-muted"><?php echo $test['tabla']; ?></small>
-                </div>
-                <div class="col-md-2">
-                    <?php if ($test['tabla_existe']): ?>
-                        <span class="status-badge status-success">
-                            <i class="fas fa-check-circle me-1"></i>Tabla OK
-                        </span>
-                    <?php else: ?>
-                        <span class="status-badge status-danger">
-                            <i class="fas fa-times-circle me-1"></i>No existe
-                        </span>
-                    <?php endif; ?>
-                </div>
-                <div class="col-md-5">
-                    <div class="d-flex gap-4">
-                        <div class="text-center">
-                            <div class="stat-circle bg-secondary mb-2"><?php echo $test['borradores']; ?></div>
-                            <small>Borradores</small>
-                        </div>
-                        <div class="text-center">
-                            <div class="stat-circle bg-success mb-2"><?php echo $test['publicados']; ?></div>
-                            <small>Publicados</small>
-                        </div>
-                        <div class="text-center">
-                            <div class="stat-circle bg-danger mb-2"><?php echo $test['cancelados']; ?></div>
-                            <small>Cancelados</small>
+        <!-- Pestañas de navegación -->
+        <ul class="nav nav-tabs mb-4" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="db-tab" data-bs-toggle="tab" data-bs-target="#db" type="button">Base de Datos</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="ajax-tab" data-bs-toggle="tab" data-bs-target="#ajax" type="button">Test AJAX</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sql-tab" data-bs-toggle="tab" data-bs-target="#sql" type="button">SQL Completo</button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <!-- Pestaña 1: Base de Datos -->
+            <div class="tab-pane fade show active" id="db">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">📋 1. Líneas Estratégicas</div>
+                            <div class="card-body">
+                                <?php
+                                try {
+                                    $lineas = $model->getLineasEstrategicas();
+                                    if (empty($lineas)) {
+                                        echo '<div class="alert alert-warning">❌ No hay líneas estratégicas en la base de datos</div>';
+                                    } else {
+                                        echo '<div class="alert alert-success">✅ ' . count($lineas) . ' líneas encontradas</div>';
+                                        echo '<table class="table table-sm table-bordered">';
+                                        echo '<tr><th>ID</th><th>Código</th><th>Nombre</th></tr>';
+                                        foreach ($lineas as $linea) {
+                                            echo '<tr>';
+                                            echo '<td>' . $linea['id'] . '</td>';
+                                            echo '<td>' . $linea['codigo'] . '</td>';
+                                            echo '<td>' . $linea['nombre'] . '</td>';
+                                            echo '</tr>';
+                                        }
+                                        echo '</table>';
+                                    }
+                                } catch (Exception $e) {
+                                    echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
+                                }
+                                ?>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-2 text-end">
-                    <?php if (!$test['tabla_existe']): ?>
-                        <button class="btn btn-sm btn-danger" onclick="alert('Ejecutar SQL:\nCREATE TABLE <?php echo $test['tabla']; ?> (...)')">
-                            <i class="fas fa-database me-1"></i>Crear tabla
-                        </button>
-                    <?php endif; ?>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">📋 2. Estrategias por Línea</div>
+                            <div class="card-body">
+                                <?php
+                                try {
+                                    $lineas = $model->getLineasEstrategicas();
+                                    if (!empty($lineas)) {
+                                        foreach ($lineas as $linea) {
+                                            echo '<div class="mb-3 p-2 border rounded">';
+                                            echo '<strong>Línea ' . $linea['codigo'] . ':</strong> ' . $linea['nombre'] . '<br>';
+                                            $estrategias = $model->getEstrategiasPorLinea($linea['id']);
+                                            if (empty($estrategias)) {
+                                                echo '<span class="warning">⚠️ Sin estrategias</span>';
+                                            } else {
+                                                echo '<span class="success">✅ ' . count($estrategias) . ' estrategias</span>';
+                                                echo '<ul class="mt-2">';
+                                                foreach ($estrategias as $e) {
+                                                    echo '<li><small>' . $e['descripcion'] . '</small></li>';
+                                                }
+                                                echo '</ul>';
+                                            }
+                                            echo '</div>';
+                                        }
+                                    }
+                                } catch (Exception $e) {
+                                    echo '<div class="alert alert-danger">Error: ' . $e->getMessage() . '</div>';
+                                }
+                                ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <?php if ($test['borradores'] > 0 || $test['publicados'] > 0 || $test['cancelados'] > 0): ?>
-            <div class="info-table mt-3">
-                <h6 class="mb-2"><i class="fas fa-list me-2"></i>Últimos registros:</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Estado</th>
-                                <th>Fecha Creación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php 
-                            $modulo_key = array_search($test['modulo'], array_column($modulos, 'nombre'));
-                            $modulo_data = $datos_modulos[array_keys($modulos)[$modulo_key]];
-                            $todos = array_merge($modulo_data['borradores'], $modulo_data['publicados'], $modulo_data['cancelados']);
-                            usort($todos, function($a, $b) {
-                                return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
-                            });
-                            $todos = array_slice($todos, 0, 3);
-                            ?>
-                            <?php foreach ($todos as $item): ?>
-                            <tr>
-                                <td><?php echo $item['id']; ?></td>
-                                <td><?php echo htmlspecialchars($item['nombre_borrador']); ?></td>
-                                <td>
-                                    <?php if ($item['estado'] == 0): ?>
-                                        <span class="badge bg-secondary">Borrador</span>
-                                    <?php elseif ($item['estado'] == 1): ?>
-                                        <span class="badge bg-danger">Cancelado</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-success">Publicado</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo date('d/m/Y H:i', strtotime($item['fecha_creacion'])); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+            <!-- Pestaña 2: Test AJAX -->
+            <div class="tab-pane fade" id="ajax">
+                <div class="card">
+                    <div class="card-header">🌐 Test del Endpoint AJAX</div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="linea_id" class="form-label">ID de Línea a probar:</label>
+                                <input type="number" class="form-control" id="linea_id" value="1" min="1">
+                            </div>
+                            <div class="col-md-8 d-flex align-items-end">
+                                <button class="btn btn-primary me-2" onclick="testEndpoint()">Probar Endpoint</button>
+                                <button class="btn btn-success me-2" onclick="testTodasLasLineas()">Probar Todas (1-4)</button>
+                                <button class="btn btn-info" onclick="testDirecto()">URL Directa</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">URL del Endpoint:</label>
+                            <input type="text" class="form-control" id="endpoint_url" readonly value="<?php echo $basePath; ?>/modulo144/getEstrategiasPorLinea?linea_id=1">
+                        </div>
+                        
+                        <div class="card mt-3">
+                            <div class="card-header">Resultado:</div>
+                            <div class="card-body">
+                                <pre id="ajax_resultado" style="min-height: 200px;">Haz clic en un botón para probar...</pre>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
+            
+            <!-- Pestaña 3: SQL Completo -->
+            <div class="tab-pane fade" id="sql">
+                <div class="card">
+                    <div class="card-header">📝 SQL para crear/rellenar tablas</div>
+                    <div class="card-body">
+                        <pre style="background: #2d2d2d; color: #f8f8f2; padding: 15px;">-- Crear tabla lineas_estrategicas
+CREATE TABLE IF NOT EXISTS `lineas_estrategicas` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `codigo` varchar(10) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `objetivo` text NOT NULL,
+  `activo` tinyint(4) NOT NULL DEFAULT 1,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-        <!-- INFORMACIÓN DEL SISTEMA -->
-        <div class="row mt-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-dark text-white">
-                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>PHP Version</span>
-                                <strong><?php echo phpversion(); ?></strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>Servidor</span>
-                                <strong><?php echo $_SERVER['SERVER_SOFTWARE'] ?? 'N/A'; ?></strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>Base de Datos</span>
-                                <strong><?php echo Config::DB_NAME; ?></strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between">
-                                <span>Fecha/Hora</span>
-                                <strong><?php echo date('d/m/Y H:i:s'); ?></strong>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-dark text-white">
-                        <i class="fas fa-tools me-2"></i>Acciones Rápidas
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a href="<?php echo $basePath; ?>/modulo144?id=<?php echo $id; ?>" class="btn btn-primary">
-                                <i class="fas fa-arrow-left me-2"></i>Ir al Módulo 144
-                            </a>
-                            <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-info">
-                                <i class="fas fa-folder me-2"></i>Gestión de Formularios
-                            </a>
-                            <button class="btn btn-success" onclick="location.reload()">
-                                <i class="fas fa-sync-alt me-2"></i>Ejecutar Test Nuevamente
-                            </button>
+-- Insertar líneas estratégicas
+INSERT INTO `lineas_estrategicas` (`codigo`, `nombre`, `objetivo`) VALUES
+('L1', 'Formación Académica Integral', 'Garantizar la formación en educación superior de manera integral, flexible e interdisciplinar con diversas modalidades, articulada a procesos de enseñanza y aprendizaje innovadores en sus diferentes niveles y campos de formación.'),
+('L2', 'Investigación y Redes de conocimiento para el desarrollo', 'Línea estratégica orientada a la investigación y creación de redes de conocimiento que impulsen el desarrollo regional y nacional.'),
+('L3', 'Impacto regional, nacional e internacional de la Universidad', 'Línea estratégica enfocada en generar impacto a través de la proyección social, extensión y cooperación internacional.'),
+('L4', 'Bienestar Universitario, Salud mental positiva y Cultura del Cuidado', 'Línea estratégica centrada en el bienestar de la comunidad universitaria, promoviendo la salud mental y una cultura del cuidado.');
+
+-- Crear tabla estrategias
+CREATE TABLE IF NOT EXISTS `estrategias` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `linea_id` int(11) NOT NULL,
+  `descripcion` text NOT NULL,
+  `activo` tinyint(4) NOT NULL DEFAULT 1,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `linea_id` (`linea_id`),
+  CONSTRAINT `estrategias_ibfk_1` FOREIGN KEY (`linea_id`) REFERENCES `lineas_estrategicas` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Insertar estrategias de ejemplo (14 para L1)
+INSERT INTO `estrategias` (`linea_id`, `descripcion`) VALUES
+(1, 'Fortalecer la oferta académica de manera flexible e interdisciplinar con diversas modalidades, articulada a procesos de enseñanza y aprendizaje innovadores en sus diferentes niveles y campos de formación.'),
+(1, 'Consolidar la estructura y el funcionamiento del Sistema de Aseguramiento Interno de la Calidad, de acuerdo a la normatividad y lineamientos vigentes del Ministerio de Educación Nacional.'),
+(1, 'Fortalecer los procesos de internacionalización, movilidad, multilingüismo e interculturalidad que visibilicen la Universidad a nivel nacional e internacional, y alcanzar un posicionamiento académico.'),
+(1, 'Asegurar la sostenibilidad de la Política de Enseñanza, Aprendizaje y Evaluación de Lenguas Extranjeras de la Universidad del Atlántico.'),
+(1, 'Fortalecer políticas curriculares con pedagogías adecuadas que atiendan al principio de calidad académica con enfoque inclusivo a través del desarrollo de las disciplinas y las profesiones, la integración de saberes, el fortalecimiento de competencias digitales, la solución de problemas y la inserción de los egresados al mercado laboral.'),
+(1, 'Integrar los procesos académicos y administrativos que conlleve de manera funcional a un orden adecuado de interacciones, soportadas en tecnologías de la información, de acuerdo a la normatividad vigente.'),
+(1, 'Fortalecer la metodología de investigación y la participación activa en proyectos de investigación y desarrollo de productos tecnológicos para lograr un mayor reconocimiento regional y la competitividad nacional e internacional.'),
+(1, 'Implementar iniciativas de colaboración entre instituciones de educación superior y universidades, incluidas las cooperativas de investigación y desarrollo de productos tecnológicos, así como la creación de espacios de intercambio de experiencias y conocimientos.'),
+(1, 'Fomentar el uso y apropiación de las tecnologías de la información y comunicación (TIC) integradas a los procesos misionales, fortaleciendo las competencias digitales de la comunidad universitaria, la oferta académica de excelencia, la innovación pedagógica y la interacción con diferentes actores a nivel global, nacional y local.'),
+(1, 'Promover la formación y desarrollo de la cultura de la diversidad cultural y lingüística.'),
+(1, 'Desarrollar programas académicos con calidad y pertinencia para contribuir a la necesidad de contexto y la región Caribe.'),
+(1, 'Articular la investigación y la extensión a la docencia para contribuir a la mejora de la calidad de la enseñanza y el conocimiento.'),
+(1, 'Aumentar la formación de la población rural en programas académicos de la Universidad para cerrar la brecha urbano – rural.'),
+(1, 'Fortalecer la vinculación del sector productivo y/o otros actores regionales para el fortalecimiento de oferta académica en región.'),
+
+-- Insertar estrategias para L2
+(2, 'Fortalecer los grupos de investigación y su clasificación en MinCiencias.'),
+(2, 'Promover la formación doctoral de los docentes investigadores.'),
+(2, 'Establecer alianzas estratégicas con centros de investigación nacionales e internacionales.'),
+(2, 'Fomentar la publicación en revistas indexadas de alto impacto.'),
+(2, 'Impulsar la transferencia de conocimiento y tecnología al sector productivo.'),
+
+-- Insertar estrategias para L3
+(3, 'Fortalecer los programas de extensión y proyección social.'),
+(3, 'Establecer convenios de cooperación internacional para movilidad académica.'),
+(3, 'Promover la participación en redes académicas internacionales.'),
+(3, 'Desarrollar proyectos de cooperación con entidades gubernamentales y no gubernamentales.'),
+(3, 'Visibilizar los logros y avances de la universidad a nivel nacional e internacional.'),
+
+-- Insertar estrategias para L4
+(4, 'Implementar programas de promoción de la salud mental y prevención de riesgos psicosociales.'),
+(4, 'Fortalecer los servicios de bienestar universitario y acompañamiento estudiantil.'),
+(4, 'Promover una cultura del cuidado y el autocuidado en la comunidad universitaria.'),
+(4, 'Desarrollar programas de deporte, recreación y cultura para el bienestar integral.'),
+(4, 'Establecer rutas de atención y seguimiento para casos de vulnerabilidad psicosocial.');</pre>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-warning" onclick="copiarSQL()">Copiar SQL al portapapeles</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <!-- FOOTER -->
-        <div class="text-center text-white mt-4">
-            <small>Sistema 144 - Test ID: <?php echo $id; ?> | <?php echo date('Y-m-d H:i:s'); ?></small>
+        
+        <div class="mt-4">
+            <a href="<?php echo $basePath; ?>/modulo144?id=1" class="btn btn-secondary">Volver al Módulo 144</a>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
     <script>
-        // Tooltips
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        });
+        const basePath = '<?php echo $basePath; ?>';
+        
+        function testEndpoint() {
+            const lineaId = document.getElementById('linea_id').value;
+            const url = basePath + '/modulo144/getEstrategiasPorLinea?linea_id=' + lineaId;
+            
+            document.getElementById('endpoint_url').value = url;
+            document.getElementById('ajax_resultado').innerHTML = 'Cargando... URL: ' + url;
+            
+            fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                return response.text().then(text => {
+                    let html = '📊 STATUS: ' + response.status + ' ' + response.statusText + '\n';
+                    html += '📍 URL: ' + url + '\n';
+                    html += '══════════════════════════════════════════════════\n\n';
+                    html += '📥 RESPUESTA RAW:\n' + text + '\n\n';
+                    
+                    try {
+                        const json = JSON.parse(text);
+                        html += '📦 JSON PARSED:\n' + JSON.stringify(json, null, 2);
+                        
+                        if (json.success && json.estrategias) {
+                            html += '\n\n📋 ESTRATEGIAS ENCONTRADAS: ' + json.estrategias.length;
+                        }
+                    } catch (e) {
+                        html += '❌ ERROR AL PARSEAR JSON: ' + e.message;
+                    }
+                    
+                    document.getElementById('ajax_resultado').innerHTML = html;
+                });
+            })
+            .catch(error => {
+                document.getElementById('ajax_resultado').innerHTML = '❌ ERROR: ' + error;
+            });
+        }
+        
+        function testTodasLasLineas() {
+            const lineasIds = [1, 2, 3, 4];
+            let resultados = [];
+            let html = '📊 PROBANDO LÍNEAS 1-4\n';
+            html += '══════════════════════════════════════════════════\n\n';
+            
+            Promise.all(lineasIds.map(id => 
+                fetch(basePath + '/modulo144/getEstrategiasPorLinea?linea_id=' + id)
+                    .then(res => res.text())
+                    .then(text => {
+                        try {
+                            return { id, data: JSON.parse(text), raw: text };
+                        } catch (e) {
+                            return { id, error: e.message, raw: text };
+                        }
+                    })
+            )).then(results => {
+                results.forEach(r => {
+                    html += `🔷 LÍNEA ID: ${r.id}\n`;
+                    if (r.error) {
+                        html += `   ❌ Error: ${r.error}\n`;
+                    } else {
+                        html += `   ✅ Success: ${r.data.success}\n`;
+                        if (r.data.success) {
+                            html += `   📋 Estrategias: ${r.data.estrategias ? r.data.estrategias.length : 0}\n`;
+                            if (r.data.estrategias && r.data.estrategias.length > 0) {
+                                r.data.estrategias.forEach((e, i) => {
+                                    html += `      ${i+1}. ${e.descripcion.substring(0, 50)}...\n`;
+                                });
+                            }
+                        } else {
+                            html += `   ❌ Mensaje: ${r.data.message}\n`;
+                        }
+                    }
+                    html += '\n';
+                });
+                document.getElementById('ajax_resultado').innerHTML = html;
+            });
+        }
+        
+        function testDirecto() {
+            window.open(basePath + '/modulo144/getEstrategiasPorLinea?linea_id=1', '_blank');
+        }
+        
+        function copiarSQL() {
+            const sql = document.querySelector('#sql pre').innerText;
+            navigator.clipboard.writeText(sql).then(() => {
+                alert('SQL copiado al portapapeles');
+            });
+        }
+
+        // Probar automáticamente al cargar la página
+        window.onload = function() {
+            setTimeout(testEndpoint, 500);
+        };
     </script>
 </body>
 </html>
