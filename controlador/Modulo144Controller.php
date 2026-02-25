@@ -55,15 +55,71 @@ class Modulo144Controller {
     public function getEstrategiasPorLinea() {
         header('Content-Type: application/json');
         
-        $linea_id = $_GET['linea_id'] ?? 0;
+        $linea_id = isset($_GET['linea_id']) ? intval($_GET['linea_id']) : 0;
         
-        if (empty($linea_id)) {
-            echo json_encode(['success' => false, 'message' => 'Línea no especificada']);
+        if ($linea_id <= 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'ID de línea no válido'
+            ]);
             return;
         }
         
         $estrategias = $this->model->getEstrategiasPorLinea($linea_id);
-        echo json_encode(['success' => true, 'estrategias' => $estrategias]);
+        
+        echo json_encode([
+            'success' => true, 
+            'estrategias' => $estrategias
+        ]);
+    }
+
+    /**
+     * Obtener motores por línea estratégica (para AJAX)
+     */
+    public function getMotoresPorLinea() {
+        header('Content-Type: application/json');
+        
+        $linea_id = isset($_GET['linea_id']) ? intval($_GET['linea_id']) : 0;
+        
+        if ($linea_id <= 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'ID de línea no válido'
+            ]);
+            return;
+        }
+        
+        $motores = $this->model->getMotoresPorLinea($linea_id);
+        
+        echo json_encode([
+            'success' => true, 
+            'motores' => $motores
+        ]);
+    }
+
+    /**
+     * Obtener proyectos por línea y motor (para AJAX)
+     */
+    public function getProyectosPorLineaYMotor() {
+        header('Content-Type: application/json');
+        
+        $linea_id = isset($_GET['linea_id']) ? intval($_GET['linea_id']) : 0;
+        $motor_id = isset($_GET['motor_id']) ? intval($_GET['motor_id']) : 0;
+        
+        if ($linea_id <= 0 || $motor_id <= 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'ID de línea o motor no válido'
+            ]);
+            return;
+        }
+        
+        $proyectos = $this->model->getProyectosPorLineaYMotor($linea_id, $motor_id);
+        
+        echo json_encode([
+            'success' => true, 
+            'proyectos' => $proyectos
+        ]);
     }
 
     // ============= PÁGINA DE TEST =============

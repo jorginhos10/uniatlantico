@@ -166,7 +166,7 @@ switch ($action) {
         
         // Manejar las diferentes acciones
         switch ($actionParam) {
-            case 'crear':  // Cambiado de 'crearFormulario' a 'crear'
+            case 'crear':
                 $forde144Controller->crear();
                 break;
                 
@@ -174,11 +174,11 @@ switch ($action) {
                 $forde144Controller->obtenerFormularios();
                 break;
                 
-            case 'eliminar':  // Cambiado de 'eliminarFormulario' a 'eliminar'
+            case 'eliminar':
                 $forde144Controller->eliminar();
                 break;
                 
-            case 'editar':  // Cambiado de 'editarFormulario' a 'editar'
+            case 'editar':
                 $forde144Controller->editar();
                 break;
                 
@@ -277,8 +277,14 @@ switch ($action) {
             case 'test':
                 $modulo144Controller->test();
                 break;
-            case 'getEstrategiasPorLinea':  // <-- NUEVA LÍNEA AGREGADA
+            case 'getEstrategiasPorLinea':
                 $modulo144Controller->getEstrategiasPorLinea();
+                break;
+            case 'getMotoresPorLinea':
+                $modulo144Controller->getMotoresPorLinea();
+                break;
+            case 'getProyectosPorLineaYMotor':
+                $modulo144Controller->getProyectosPorLineaYMotor();
                 break;
             case 'index':
             default:

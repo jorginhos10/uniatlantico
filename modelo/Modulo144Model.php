@@ -16,8 +16,8 @@ class Modulo144Model {
             'descripcion' => 'Planificación y formulación estratégica',
             'campo_estado' => 'estado_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
-            'campos_editables' => ['anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
-                                   'meta_resultado', 'proyecto', 'ponderacion_proyectos', 'actividad_proyecto', 
+            'campos_editables' => ['anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 'proyecto',
+                                   'meta_resultado', 'ponderacion_proyectos', 'actividad_proyecto', 
                                    'ponderacion_actividades', 'responsable_formulacion'],
             'campos_vista' => [
                 'AÑO' => 'anio',
@@ -25,8 +25,8 @@ class Modulo144Model {
                 'OBJETIVO' => 'objetivo',
                 'ESTRATEGIA' => 'estrategia',
                 'MOTOR DE DESARROLLO' => 'motor_desarrollo',
-                'META DE RESULTADO' => 'meta_resultado',
                 'PROYECTO' => 'proyecto',
+                'META DE RESULTADO' => 'meta_resultado',
                 'PONDERACIÓN PROYECTOS' => 'ponderacion_proyectos',
                 'ACTIVIDAD DEL PROYECTO' => 'actividad_proyecto',
                 'PONDERACIÓN ACTIVIDADES' => 'ponderacion_actividades',
@@ -185,6 +185,58 @@ class Modulo144Model {
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log("Error getEstrategiasPorLinea: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener motores por línea estratégica
+     */
+    public function getMotoresPorLinea($linea_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre");
+            $stmt->execute([':linea_id' => $linea_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getMotoresPorLinea: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener proyectos por línea y motor
+     */
+    public function getProyectosPorLineaYMotor($linea_id, $motor_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM proyectos WHERE linea_id = :linea_id AND motor_id = :motor_id AND activo = 1 ORDER BY codigo");
+            $stmt->execute([
+                ':linea_id' => $linea_id,
+                ':motor_id' => $motor_id
+            ]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getProyectosPorLineaYMotor: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener todos los proyectos
+     */
+    public function getProyectos() {
+        try {
+            $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,
+                                        l.codigo as linea_codigo, l.nombre as linea_nombre,
+                                        m.nombre as motor_nombre
+                                        FROM proyectos p
+                                        INNER JOIN lineas_estrategicas l ON p.linea_id = l.id
+                                        INNER JOIN motores m ON p.motor_id = m.id
+                                        WHERE p.activo = 1 
+                                        ORDER BY l.codigo, m.id, p.codigo");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getProyectos: " . $e->getMessage());
             return [];
         }
     }
@@ -378,14 +430,14 @@ class Modulo144Model {
             
             $stmt = $this->db->prepare("INSERT INTO {$tabla} 
                                         (formulario_id, nombre_borrador, anio, linea_estrategica, objetivo, 
-                                         estrategia, motor_desarrollo, meta_resultado, proyecto, 
+                                         estrategia, motor_desarrollo, proyecto, meta_resultado, 
                                          ponderacion_proyectos, actividad_proyecto, ponderacion_actividades, 
                                          responsable_formulacion, indicador, meta_programada, meta_ejecutada, 
                                          porcentaje_avance, fecha_seguimiento, observaciones, responsable_seguimiento,
                                          estado_formulacion, estado_seguimiento, creado_por) 
                                         VALUES 
                                         (:formulario_id, :nombre, :anio, :linea_estrategica, :objetivo,
-                                         :estrategia, :motor_desarrollo, :meta_resultado, :proyecto,
+                                         :estrategia, :motor_desarrollo, :proyecto, :meta_resultado,
                                          :ponderacion_proyectos, :actividad_proyecto, :ponderacion_actividades,
                                          :responsable_formulacion, :indicador, :meta_programada, :meta_ejecutada,
                                          :porcentaje_avance, :fecha_seguimiento, :observaciones, :responsable_seguimiento,
@@ -399,8 +451,8 @@ class Modulo144Model {
                 ':objetivo' => $original['objetivo'],
                 ':estrategia' => $original['estrategia'],
                 ':motor_desarrollo' => $original['motor_desarrollo'],
-                ':meta_resultado' => $original['meta_resultado'],
                 ':proyecto' => $original['proyecto'],
+                ':meta_resultado' => $original['meta_resultado'],
                 ':ponderacion_proyectos' => $original['ponderacion_proyectos'],
                 ':actividad_proyecto' => $original['actividad_proyecto'],
                 ':ponderacion_actividades' => $original['ponderacion_actividades'],

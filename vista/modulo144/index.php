@@ -601,7 +601,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">LÍNEA ESTRATÉGICA</label>
-                                <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias()">
+                                <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea()">
                                     <option value="">Seleccione línea estratégica</option>
                                     <?php foreach ($lineas_estrategicas as $linea): ?>
                                     <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
@@ -624,7 +624,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">MOTOR DE DESARROLLO</label>
-                                <input type="text" class="form-control" name="motor_desarrollo" id="formulacion_motor" oninput="autoGuardarFormulacion()">
+                                <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion()">
+                                    <option value="">Seleccione un motor de desarrollo</option>
+                                </select>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">META DE RESULTADO</label>
@@ -632,7 +634,14 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label">PROYECTO</label>
-                                <input type="text" class="form-control" name="proyecto" id="formulacion_proyecto" oninput="autoGuardarFormulacion()">
+                                <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion()">
+                                    <option value="">Seleccione un proyecto</option>
+                                </select>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">PROYECTO ANTERIOR (este campo se mantiene por compatibilidad)</label>
+                                <input type="text" class="form-control" name="proyecto_anterior" id="formulacion_proyecto_anterior" oninput="autoGuardarFormulacion()" placeholder="Campo de texto para proyecto anterior">
+                                <small class="text-muted">Este campo se mantiene para compatibilidad con versiones anteriores</small>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">PONDERACIÓN DE LOS PROYECTOS</label>
@@ -830,65 +839,149 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
-        // Función principal para cargar estrategias
+        // Función para cargar estrategias
         function cargarObjetivoYestrategias() {
-            console.log('=== FUNCIÓN CARGAR ESTRATEGIAS EJECUTADA ===');
-            
             const selectLinea = document.getElementById('formulacion_linea');
             const selectedOption = selectLinea.options[selectLinea.selectedIndex];
             
             if (!selectedOption || !selectedOption.value) {
-                console.log('No hay línea seleccionada');
                 document.getElementById('formulacion_objetivo').value = '';
                 document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Seleccione una estrategia</option>';
                 return;
             }
             
+            // Cargar objetivo
             const objetivo = selectedOption.getAttribute('data-objetivo') || '';
             document.getElementById('formulacion_objetivo').value = objetivo;
             
+            // Cargar estrategias
             const lineaId = selectedOption.getAttribute('data-id');
-            console.log('Línea seleccionada - ID:', lineaId, 'Nombre:', selectedOption.value);
             
             if (lineaId) {
-                // Mostrar mensaje de carga
                 document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
                 
-                // Construir URL completa para debug
-                const url = basePath + '/modulo144/getEstrategiasPorLinea?linea_id=' + lineaId;
-                console.log('URL de petición:', url);
-                
                 $.ajax({
-                    url: url,
+                    url: basePath + '/modulo144/getEstrategiasPorLinea',
                     type: 'GET',
+                    data: { linea_id: lineaId },
                     dataType: 'json',
                     success: function(response) {
-                        console.log('Respuesta del servidor:', response);
-                        
                         const selectEstrategia = document.getElementById('formulacion_estrategia');
                         selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
                         
                         if (response.success && response.estrategias && response.estrategias.length > 0) {
-                            console.log('Estrategias cargadas:', response.estrategias.length);
-                            response.estrategias.forEach(function(estrategia, index) {
-                                console.log(`Estrategia ${index + 1}:`, estrategia);
+                            response.estrategias.forEach(function(estrategia) {
                                 const option = document.createElement('option');
                                 option.value = estrategia.descripcion;
                                 option.textContent = estrategia.descripcion;
                                 selectEstrategia.appendChild(option);
                             });
                         } else {
-                            console.log('No hay estrategias o respuesta vacía');
                             selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
                         }
                         
                         autoGuardarFormulacion();
                     },
-                    error: function(xhr, status, error) {
-                        console.error('Error en AJAX:', error);
-                        console.error('Status:', status);
-                        console.error('Respuesta completa:', xhr.responseText);
+                    error: function() {
                         document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Error al cargar estrategias</option>';
+                    }
+                });
+            }
+        }
+
+        // Función para cargar motores
+        function cargarMotoresPorLinea() {
+            const selectLinea = document.getElementById('formulacion_linea');
+            const selectedOption = selectLinea.options[selectLinea.selectedIndex];
+            
+            if (!selectedOption || !selectedOption.value) {
+                document.getElementById('formulacion_motor').innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+                document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Primero seleccione un motor</option>';
+                return;
+            }
+            
+            const lineaId = selectedOption.getAttribute('data-id');
+            
+            if (lineaId) {
+                document.getElementById('formulacion_motor').innerHTML = '<option value="">Cargando motores...</option>';
+                document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Seleccione un motor primero</option>';
+                
+                $.ajax({
+                    url: basePath + '/modulo144/getMotoresPorLinea',
+                    type: 'GET',
+                    data: { linea_id: lineaId },
+                    dataType: 'json',
+                    success: function(response) {
+                        const selectMotor = document.getElementById('formulacion_motor');
+                        selectMotor.innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+                        
+                        if (response.success && response.motores && response.motores.length > 0) {
+                            response.motores.forEach(function(motor) {
+                                const option = document.createElement('option');
+                                option.value = motor.nombre;
+                                option.setAttribute('data-motor-id', motor.id);
+                                option.textContent = motor.nombre;
+                                selectMotor.appendChild(option);
+                            });
+                        } else {
+                            selectMotor.innerHTML = '<option value="">No hay motores disponibles</option>';
+                        }
+                        
+                        autoGuardarFormulacion();
+                    },
+                    error: function() {
+                        document.getElementById('formulacion_motor').innerHTML = '<option value="">Error al cargar motores</option>';
+                    }
+                });
+            }
+        }
+
+        // Función para cargar proyectos según el motor seleccionado
+        function cargarProyectosPorMotor() {
+            const selectLinea = document.getElementById('formulacion_linea');
+            const selectMotor = document.getElementById('formulacion_motor');
+            
+            const lineaOption = selectLinea.options[selectLinea.selectedIndex];
+            const motorOption = selectMotor.options[selectMotor.selectedIndex];
+            
+            if (!lineaOption || !lineaOption.value || !motorOption || !motorOption.value) {
+                document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Seleccione un motor primero</option>';
+                return;
+            }
+            
+            const lineaId = lineaOption.getAttribute('data-id');
+            const motorId = motorOption.getAttribute('data-motor-id');
+            
+            if (lineaId && motorId) {
+                document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Cargando proyectos...</option>';
+                
+                $.ajax({
+                    url: basePath + '/modulo144/getProyectosPorLineaYMotor',
+                    type: 'GET',
+                    data: { 
+                        linea_id: lineaId,
+                        motor_id: motorId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        const selectProyecto = document.getElementById('formulacion_proyecto');
+                        selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
+                        
+                        if (response.success && response.proyectos && response.proyectos.length > 0) {
+                            response.proyectos.forEach(function(proyecto) {
+                                const option = document.createElement('option');
+                                option.value = proyecto.nombre;
+                                option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
+                                selectProyecto.appendChild(option);
+                            });
+                        } else {
+                            selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
+                        }
+                        
+                        autoGuardarFormulacion();
+                    },
+                    error: function() {
+                        document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Error al cargar proyectos</option>';
                     }
                 });
             }
@@ -994,8 +1087,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     objetivo: $('#formulacion_objetivo').val(),
                     estrategia: $('#formulacion_estrategia').val(),
                     motor_desarrollo: $('#formulacion_motor').val(),
-                    meta_resultado: $('#formulacion_meta').val(),
                     proyecto: $('#formulacion_proyecto').val(),
+                    meta_resultado: $('#formulacion_meta').val(),
                     ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
                     actividad_proyecto: $('#formulacion_actividad').val(),
                     ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
@@ -1082,10 +1175,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
                             
+                            // Obtener el ID de la línea seleccionada
                             const selectLinea = document.getElementById('formulacion_linea');
-                            const selectedOption = selectLinea.options[selectLinea.selectedIndex];
-                            const lineaId = selectedOption ? selectedOption.getAttribute('data-id') : null;
+                            const lineaOption = selectLinea.options[selectLinea.selectedIndex];
+                            const lineaId = lineaOption ? lineaOption.getAttribute('data-id') : null;
                             
+                            // Función para cargar estrategias
                             function cargarEstrategias(lineaId, valorEstrategia) {
                                 if (lineaId) {
                                     document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
@@ -1120,11 +1215,92 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 }
                             }
                             
-                            cargarEstrategias(lineaId, b.estrategia);
+                            // Función para cargar motores
+                            function cargarMotores(lineaId, valorMotor) {
+                                if (lineaId) {
+                                    document.getElementById('formulacion_motor').innerHTML = '<option value="">Cargando motores...</option>';
+                                    
+                                    $.ajax({
+                                        url: basePath + '/modulo144/getMotoresPorLinea',
+                                        type: 'GET',
+                                        data: { linea_id: lineaId },
+                                        dataType: 'json',
+                                        success: function(res) {
+                                            const selectMotor = document.getElementById('formulacion_motor');
+                                            selectMotor.innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+                                            
+                                            if (res.success && res.motores && res.motores.length > 0) {
+                                                res.motores.forEach(function(motor) {
+                                                    const option = document.createElement('option');
+                                                    option.value = motor.nombre;
+                                                    option.setAttribute('data-motor-id', motor.id);
+                                                    option.textContent = motor.nombre;
+                                                    selectMotor.appendChild(option);
+                                                });
+                                                
+                                                if (valorMotor) {
+                                                    $('#formulacion_motor').val(valorMotor);
+                                                    
+                                                    // Después de seleccionar el motor, cargar proyectos
+                                                    setTimeout(function() {
+                                                        cargarProyectosPorMotorConValor(b.proyecto);
+                                                    }, 300);
+                                                }
+                                            } else {
+                                                selectMotor.innerHTML = '<option value="">No hay motores disponibles</option>';
+                                            }
+                                        }
+                                    });
+                                } else {
+                                    document.getElementById('formulacion_motor').innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+                                }
+                            }
                             
-                            $('#formulacion_motor').val(b.motor_desarrollo);
+                            // Función para cargar proyectos después de seleccionar motor
+                            function cargarProyectosPorMotorConValor(valorProyecto) {
+                                const selectMotor = document.getElementById('formulacion_motor');
+                                const motorOption = selectMotor.options[selectMotor.selectedIndex];
+                                const motorId = motorOption ? motorOption.getAttribute('data-motor-id') : null;
+                                
+                                if (lineaId && motorId) {
+                                    document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Cargando proyectos...</option>';
+                                    
+                                    $.ajax({
+                                        url: basePath + '/modulo144/getProyectosPorLineaYMotor',
+                                        type: 'GET',
+                                        data: { 
+                                            linea_id: lineaId,
+                                            motor_id: motorId
+                                        },
+                                        dataType: 'json',
+                                        success: function(res) {
+                                            const selectProyecto = document.getElementById('formulacion_proyecto');
+                                            selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
+                                            
+                                            if (res.success && res.proyectos && res.proyectos.length > 0) {
+                                                res.proyectos.forEach(function(proyecto) {
+                                                    const option = document.createElement('option');
+                                                    option.value = proyecto.nombre;
+                                                    option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
+                                                    selectProyecto.appendChild(option);
+                                                });
+                                                
+                                                if (valorProyecto) {
+                                                    $('#formulacion_proyecto').val(valorProyecto);
+                                                }
+                                            } else {
+                                                selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                            
+                            // Cargar estrategias, motores y luego proyectos
+                            cargarEstrategias(lineaId, b.estrategia);
+                            cargarMotores(lineaId, b.motor_desarrollo);
+                            
                             $('#formulacion_meta').val(b.meta_resultado);
-                            $('#formulacion_proyecto').val(b.proyecto);
                             $('#formulacion_ponderacion_proyectos').val(b.ponderacion_proyectos);
                             $('#formulacion_actividad').val(b.actividad_proyecto);
                             $('#formulacion_ponderacion_actividades').val(b.ponderacion_actividades);
@@ -1226,38 +1402,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== TEST AUTOMÁTICO DE ESTRATEGIAS ===');
-            console.log('BasePath:', basePath);
-            
-            // Verificar que el select existe
-            console.log('Select de estrategias:', document.getElementById('formulacion_estrategia'));
-            
-            // Probar el endpoint directamente con línea 1
-            setTimeout(function() {
-                $.ajax({
-                    url: basePath + '/modulo144/getEstrategiasPorLinea?linea_id=1',
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(response) {
-                        console.log('✅ TEST - RESPUESTA EXITOSA:');
-                        console.log('Datos completos:', response);
-                        if (response.success) {
-                            console.log('Estrategias encontradas:', response.estrategias ? response.estrategias.length : 0);
-                            if (response.estrategias && response.estrategias.length > 0) {
-                                console.log('Primera estrategia:', response.estrategias[0]);
-                            }
-                        } else {
-                            console.log('Error en respuesta:', response.message);
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.log('❌ TEST - ERROR EN PETICIÓN:');
-                        console.log('Status:', status);
-                        console.log('Error:', error);
-                        console.log('Respuesta del servidor:', xhr.responseText);
-                    }
-                });
-            }, 1000);
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON PROYECTOS ===');
         });
     </script>
 </body>
