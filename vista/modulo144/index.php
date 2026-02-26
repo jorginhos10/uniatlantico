@@ -319,18 +319,19 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         }
 
         /* Estilos para tabla de metas */
-        .meta-table {
-            background-color: #f8f9fa;
+        .meta-section {
+            background-color: #f0f8ff;
+            padding: 20px;
             border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--color-primary);
         }
         
-        .meta-table .table-header {
-            background-color: var(--color-primary);
-            color: white;
-            font-weight: 600;
-            text-align: center;
+        .meta-title {
+            color: var(--color-primary);
+            font-weight: 700;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
         }
     </style>
 </head>
@@ -672,7 +673,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="modulo" value="formulacion">
                     <input type="hidden" id="formulacion_id" name="id">
                     
-                    <!-- PESTAÑAS -->
+                    <!-- PESTAÑAS (SOLO 3: FORMULACIÓN, INDICADOR DE RESULTADO, PLANES INSTITUCIONALES) -->
                     <ul class="nav nav-tabs px-3 pt-3" id="formulacionTabs" role="tablist" style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active tab-incomplete" id="tab-formulacion" data-bs-toggle="tab" data-bs-target="#formulacion" type="button" role="tab" aria-controls="formulacion" aria-selected="true" style="font-weight: 600;">
@@ -682,11 +683,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         <li class="nav-item" role="presentation">
                             <button class="nav-link tab-incomplete" id="tab-indicador" data-bs-toggle="tab" data-bs-target="#indicador" type="button" role="tab" aria-controls="indicador" aria-selected="false" style="font-weight: 600;">
                                 <i class="fas fa-chart-line me-2"></i>INDICADOR DE RESULTADO
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link tab-incomplete" id="tab-meta" data-bs-toggle="tab" data-bs-target="#meta" type="button" role="tab" aria-controls="meta" aria-selected="false" style="font-weight: 600;">
-                                <i class="fas fa-bullseye me-2"></i>META PROPUESTA
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -818,7 +814,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                         </div>
                         
-                        <!-- PESTAÑA 2: INDICADOR DE RESULTADO (ahora guarda en BD) -->
+                        <!-- PESTAÑA 2: INDICADOR DE RESULTADO (con METAS PROPUESTAS al final) -->
                         <div class="tab-pane fade" id="indicador" role="tabpanel" aria-labelledby="tab-indicador">
                             <div class="row">
                                 <div class="col-12 mb-4">
@@ -851,10 +847,14 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
                                     
-                                    <!-- 16.4 UNIDAD DE MEDIDA -->
+                                    <!-- 16.4 UNIDAD DE MEDIDA - AHORA ES SELECT -->
                                     <div class="col-md-4 mb-3">
                                         <label class="form-label">16.4 UNIDAD DE MEDIDA</label>
-                                        <input type="text" class="form-control" name="unidad_medida" id="formulacion_unidad_medida" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: Porcentaje, Número, Tasa">
+                                        <select class="form-select" name="unidad_medida" id="formulacion_unidad_medida" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <option value="">Seleccione unidad</option>
+                                            <option value="Unidad">Unidad</option>
+                                            <option value="Porcentaje">Porcentaje</option>
+                                        </select>
                                     </div>
                                     
                                     <!-- 16.5 TIPO DE MEDICIÓN -->
@@ -874,110 +874,85 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
                                     <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador, su propósito y qué mide..."></textarea>
                                 </div>
+                                
+                                <!-- SECCIÓN DE METAS PROPUESTAS (ahora aquí) -->
+                                <div class="col-12 mt-4">
+                                    <div class="meta-section">
+                                        <h5 class="meta-title">METAS PROPUESTAS</h5>
+                                        
+                                        <div class="row">
+                                            <!-- 17.1 LÍNEA BASE -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">17.1 LÍNEA BASE</label>
+                                                <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Valor de línea base">
+                                            </div>
+                                            
+                                            <!-- 17.4 AÑO -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">17.4 AÑO</label>
+                                                <select class="form-select" name="anio_base_meta" id="formulacion_anio_base_meta" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                                    <option value="">Seleccione año</option>
+                                                    <?php for ($i = date('Y') - 2; $i <= date('Y') + 5; $i++): ?>
+                                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                                    <?php endfor; ?>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="col-12">
+                                                <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
+                                            </div>
+                                            
+                                            <!-- 17.2 SEMESTRE 1 -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">17.2 SEMESTRE 1</label>
+                                                <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 1">
+                                            </div>
+                                            
+                                            <!-- 17.3 SEMESTRE 2 -->
+                                            <div class="col-md-6 mb-3">
+                                                <label class="form-label">17.3 SEMESTRE 2</label>
+                                                <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 2">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- PESTAÑA 3: META PROPUESTA (ahora guarda en BD) -->
-                        <div class="tab-pane fade" id="meta" role="tabpanel" aria-labelledby="tab-meta">
-                            <div class="row">
-                                <div class="col-12 mb-4">
-                                    <h5 class="indicador-title">METAS PROPUESTAS</h5>
-                                </div>
-                                
-                                <!-- 17.1 LÍNEA BASE -->
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">17.1 LÍNEA BASE</label>
-                                    <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Valor de línea base">
-                                </div>
-                                
-                                <!-- 17.4 AÑO (de la línea base) -->
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">17.4 AÑO</label>
-                                    <select class="form-select" name="anio_base_meta" id="formulacion_anio_base_meta" onchange="autoGuardarFormulacion(); validarPestanas()">
-                                        <option value="">Seleccione año</option>
-                                        <?php for ($i = date('Y') - 2; $i <= date('Y') + 5; $i++): ?>
-                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
-                                </div>
-                                
-                                <!-- 17.2 SEMESTRE 1 -->
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">17.2 SEMESTRE 1</label>
-                                    <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 1">
-                                </div>
-                                
-                                <!-- 17.3 SEMESTRE 2 -->
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label">17.3 SEMESTRE 2</label>
-                                    <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 2">
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- PESTAÑA 4: PLANES INSTITUCIONALES DECRETO 612 DE 2018 (solo visual, no guarda en BD) -->
+                        <!-- PESTAÑA 3: PLANES INSTITUCIONALES DECRETO 612 DE 2018 -->
                         <div class="tab-pane fade" id="planes" role="tabpanel" aria-labelledby="tab-planes">
                             <div class="row">
-                                <div class="col-12 mb-3">
-                                    <div class="alert alert-info">
-                                        <i class="fas fa-info-circle me-2"></i>
-                                        Estos campos son solo de referencia visual. No se guardan en la base de datos.
-                                    </div>
+                                <div class="col-12 mb-4">
+                                    <h5 class="indicador-title">PLANES INSTITUCIONALES</h5>
                                 </div>
-                                <div class="col-12 mb-3">
-                                    <div class="alert alert-secondary">
-                                        <i class="fas fa-file-alt me-2"></i>
-                                        Planes institucionales según el Decreto 612 de 2018
-                                    </div>
-                                </div>
+                                
+                                <!-- Selector con buscador (columna izquierda) -->
                                 <div class="col-md-6 mb-3">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan Anticorrupción y de Atención al Ciudadano
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan de Seguridad Digital
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan Archivístico
-                                        </label>
-                                    </div>
+                                    <label class="form-label">SELECCIONAR PLAN</label>
+                                    <select class="form-select" id="selectPlanInstitucional" style="width: 100%;">
+                                        <option value="">-- Buscar y seleccionar plan --</option>
+                                        <?php foreach ($planes_institucionales as $plan): ?>
+                                        <option value="<?php echo htmlspecialchars($plan['nombre']); ?>">
+                                            <?php echo htmlspecialchars($plan['nombre']); ?>
+                                        </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="button" class="btn btn-primary mt-2" onclick="agregarPlan()">
+                                        <i class="fas fa-plus me-2"></i>Agregar Plan
+                                    </button>
                                 </div>
+                                
+                                <!-- Contenedor de planes seleccionados (columna derecha) -->
                                 <div class="col-md-6 mb-3">
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan de Tecnologías de la Información - PTI
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan de Racionalización de Trámites
-                                        </label>
-                                    </div>
-                                    <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" disabled>
-                                        <label class="form-check-label">
-                                            Plan de Incorrupción
-                                        </label>
+                                    <label class="form-label">PLANES SELECCIONADOS</label>
+                                    <div id="contenedorPlanes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ced4da; border-radius: 8px; padding: 10px; background-color: #f8f9fa;">
+                                        <!-- Los planes seleccionados se cargarán aquí dinámicamente -->
+                                        <p class="text-muted text-center mb-0" id="mensajeVacioPlanes">No hay planes seleccionados</p>
                                     </div>
                                 </div>
-                                <div class="col-12 mb-3">
-                                    <label class="form-label">OTROS PLANES INSTITUCIONALES</label>
-                                    <textarea class="form-control" rows="3" placeholder="Campo visual" disabled></textarea>
-                                </div>
+                                
+                                <!-- Campo oculto para guardar los planes en la base de datos -->
+                                <input type="hidden" name="planes_institucionales" id="formulacion_planes_institucionales" value="">
                             </div>
                         </div>
                     </div>
@@ -1107,6 +1082,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         // Variable para controlar la edición del título
         let editandoTitulo = false;
 
+        // Array para almacenar los planes seleccionados
+        let planesSeleccionados = [];
+
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
             $('#nuevo_nombre').val('');
@@ -1171,38 +1149,31 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 $('#formulacion_id_indicador').val()
             ];
             
-            // El checkbox no es obligatorio, por eso no lo incluimos
+            // El checkbox no es obligatorio
             const formulacionCompleta = camposFormulacion.every(valor => valor && valor.trim() !== '');
             
-            // Validar Pestaña 2: INDICADOR DE RESULTADO
+            // Validar Pestaña 2: INDICADOR DE RESULTADO (incluyendo METAS PROPUESTAS)
             const camposIndicador = [
                 $('#formulacion_nombre_indicador').val(),
                 $('#formulacion_formula_medicion').val(),
                 $('#formulacion_frecuencia_medicion').val(),
                 $('#formulacion_unidad_medida').val(),
                 $('#formulacion_tipo_medicion').val(),
-                $('#formulacion_descripcion_indicador').val()
-            ];
-            
-            const indicadorCompleto = camposIndicador.every(valor => valor && valor.trim() !== '');
-            
-            // Validar Pestaña 3: META PROPUESTA
-            const camposMeta = [
+                $('#formulacion_descripcion_indicador').val(),
                 $('#formulacion_linea_base_meta').val(),
                 $('#formulacion_anio_base_meta').val(),
                 $('#formulacion_meta_s1').val(),
                 $('#formulacion_meta_s2').val()
             ];
             
-            const metaCompleta = camposMeta.every(valor => valor && valor.trim() !== '');
+            const indicadorCompleto = camposIndicador.every(valor => valor && valor.trim() !== '');
             
-            // Pestaña 4 es solo visual, siempre estará "completa" para efectos del color
+            // Pestaña 3 es opcional
             const planesCompleto = true;
             
             // Actualizar clases de las pestañas
             actualizarClasePestana('#tab-formulacion', formulacionCompleta);
             actualizarClasePestana('#tab-indicador', indicadorCompleto);
-            actualizarClasePestana('#tab-meta', metaCompleta);
             actualizarClasePestana('#tab-planes', planesCompleto);
         }
         
@@ -1372,6 +1343,139 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
+        // Funciones para manejar planes institucionales
+        function agregarPlan() {
+            const select = document.getElementById('selectPlanInstitucional');
+            const planSeleccionado = select.value;
+            
+            if (!planSeleccionado) {
+                Swal.fire('Atención', 'Por favor seleccione un plan', 'warning');
+                return;
+            }
+            
+            // Verificar si ya fue seleccionado
+            if (planesSeleccionados.includes(planSeleccionado)) {
+                Swal.fire('Atención', 'Este plan ya ha sido agregado', 'info');
+                return;
+            }
+            
+            // Agregar al array
+            planesSeleccionados.push(planSeleccionado);
+            
+            // Actualizar la vista
+            actualizarContenedorPlanes();
+            
+            // Limpiar el select
+            select.value = '';
+            
+            // Actualizar campo oculto y guardar
+            actualizarCampoOculto();
+            
+            // Forzar guardado inmediato
+            guardarPlanesInmediatamente();
+        }
+
+        function eliminarPlan(plan) {
+            // Filtrar el array para quitar el plan
+            planesSeleccionados = planesSeleccionados.filter(p => p !== plan);
+            
+            // Actualizar la vista
+            actualizarContenedorPlanes();
+            
+            // Actualizar campo oculto y guardar
+            actualizarCampoOculto();
+            
+            // Forzar guardado inmediato
+            guardarPlanesInmediatamente();
+        }
+
+        function guardarPlanesInmediatamente() {
+            const id = $('#formulacion_id').val();
+            if (!id) return;
+            
+            const data = {
+                modulo: 'formulacion',
+                id: id,
+                planes_institucionales: $('#formulacion_planes_institucionales').val()
+            };
+            
+            $.ajax({
+                url: basePath + '/modulo144/guardar',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        console.log('Planes guardados correctamente');
+                        mostrarAutoSaveIndicator();
+                    }
+                }
+            });
+        }
+
+        function actualizarContenedorPlanes() {
+            const contenedor = document.getElementById('contenedorPlanes');
+            
+            if (planesSeleccionados.length === 0) {
+                contenedor.innerHTML = '<p class="text-muted text-center mb-0" id="mensajeVacioPlanes">No hay planes seleccionados</p>';
+                return;
+            }
+            
+            let html = '';
+            planesSeleccionados.forEach((plan, index) => {
+                // Asignar colores según el índice
+                let colorClass = '';
+                let colorText = '';
+                
+                if (index % 3 === 0) {
+                    colorClass = 'bg-primary';
+                    colorText = 'Primary';
+                } else if (index % 3 === 1) {
+                    colorClass = 'bg-success';
+                    colorText = 'Primary';
+                } else {
+                    colorClass = 'bg-info';
+                    colorText = 'Primary';
+                }
+                
+                // Escapar comillas para el onclick
+                const planEscaped = plan.replace(/'/g, "\\'");
+                
+                html += `
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 ${colorClass} text-white rounded" style="opacity: 0.9;">
+                        <span><strong>${colorText} ${index + 1}:</strong> ${plan}</span>
+                        <button type="button" class="btn btn-sm btn-light" onclick="eliminarPlan('${planEscaped}')">
+                            <i class="fas fa-times text-danger"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            contenedor.innerHTML = html;
+        }
+
+        function actualizarCampoOculto() {
+            const valorJSON = JSON.stringify(planesSeleccionados);
+            document.getElementById('formulacion_planes_institucionales').value = valorJSON;
+            console.log('Campo oculto actualizado:', valorJSON);
+        }
+
+        function cargarPlanesDesdeBD(planesJSON) {
+            console.log('Cargando planes desde BD:', planesJSON);
+            if (planesJSON && planesJSON !== '[]' && planesJSON !== '') {
+                try {
+                    planesSeleccionados = JSON.parse(planesJSON);
+                } catch (e) {
+                    console.error('Error al parsear planes:', e);
+                    planesSeleccionados = [];
+                }
+            } else {
+                planesSeleccionados = [];
+            }
+            actualizarContenedorPlanes();
+            actualizarCampoOculto();
+        }
+
         function editarTituloModal(modulo) {
             if (editandoTitulo) return;
             
@@ -1492,12 +1596,17 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     tipo_medicion: $('#formulacion_tipo_medicion').val(),
                     descripcion_indicador: $('#formulacion_descripcion_indicador').val(),
                     
-                    // Campos de la pestaña META PROPUESTA
+                    // Campos de METAS PROPUESTAS (ahora en la misma pestaña)
                     linea_base_meta: $('#formulacion_linea_base_meta').val(),
                     anio_base_meta: $('#formulacion_anio_base_meta').val(),
                     meta_s1: $('#formulacion_meta_s1').val(),
-                    meta_s2: $('#formulacion_meta_s2').val()
+                    meta_s2: $('#formulacion_meta_s2').val(),
+                    
+                    // Campos de la pestaña PLANES INSTITUCIONALES
+                    planes_institucionales: $('#formulacion_planes_institucionales').val()
                 };
+                
+                console.log('Enviando datos:', data); // Para depuración
                 
                 $.ajax({
                     url: basePath + '/modulo144/guardar',
@@ -1506,9 +1615,15 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
+                            console.log('Guardado exitoso');
                             mostrarAutoSaveIndicator();
                             validarPestanas();
+                        } else {
+                            console.error('Error en guardado:', response);
                         }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error en la petición:', error);
                     }
                 });
             }, 500);
@@ -1573,6 +1688,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         const b = response.borrador;
+                        console.log('Borrador cargado:', b); // Para depuración
+                        
                         if (modulo === 'formulacion') {
                             $('#formulacion_id').val(b.id);
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
@@ -1732,11 +1849,20 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_tipo_medicion').val(b.tipo_medicion);
                             $('#formulacion_descripcion_indicador').val(b.descripcion_indicador);
                             
-                            // Campos de la pestaña META PROPUESTA
+                            // Campos de METAS PROPUESTAS
                             $('#formulacion_linea_base_meta').val(b.linea_base_meta);
                             $('#formulacion_anio_base_meta').val(b.anio_base_meta);
                             $('#formulacion_meta_s1').val(b.meta_s1);
                             $('#formulacion_meta_s2').val(b.meta_s2);
+                            
+                            // Cargar planes institucionales
+                            if (b.planes_institucionales) {
+                                cargarPlanesDesdeBD(b.planes_institucionales);
+                            } else {
+                                planesSeleccionados = [];
+                                actualizarContenedorPlanes();
+                                actualizarCampoOculto();
+                            }
                             
                             $('#modalFormulacion').modal('show');
                             
@@ -1838,7 +1964,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON VALIDACIÓN DE PESTAÑAS Y NUEVAS METAS ===');
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON 3 PESTAÑAS (METAS PROPUESTAS EN INDICADOR) ===');
             
             // Inicializar validación de pestañas cuando se abre el modal
             $('#modalFormulacion').on('shown.bs.modal', function() {

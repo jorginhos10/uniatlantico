@@ -22,7 +22,9 @@ class Modulo144Model {
                 'ponderacion_actividades', 'responsable_formulacion', 'id_indicador', 
                 'gestionado_facultades',
                 'nombre_indicador', 'formula_medicion', 'frecuencia_medicion', 
-                'unidad_medida', 'tipo_medicion', 'descripcion_indicador'
+                'unidad_medida', 'tipo_medicion', 'descripcion_indicador',
+                'planes_institucionales',
+                'linea_base_meta', 'anio_base_meta', 'meta_s1', 'meta_s2'
             ],
             'campos_vista' => [
                 'AÑO' => 'anio',
@@ -43,7 +45,12 @@ class Modulo144Model {
                 'FRECUENCIA DE MEDICIÓN' => 'frecuencia_medicion',
                 'UNIDAD DE MEDIDA' => 'unidad_medida',
                 'TIPO DE MEDICIÓN' => 'tipo_medicion',
-                'DESCRIPCIÓN DEL INDICADOR' => 'descripcion_indicador'
+                'DESCRIPCIÓN DEL INDICADOR' => 'descripcion_indicador',
+                'PLANES INSTITUCIONALES' => 'planes_institucionales',
+                'LÍNEA BASE META' => 'linea_base_meta',
+                'AÑO BASE META' => 'anio_base_meta',
+                'META SEMESTRE 1' => 'meta_s1',
+                'META SEMESTRE 2' => 'meta_s2'
             ]
         ],
         'seguimiento' => [
@@ -269,6 +276,20 @@ class Modulo144Model {
     }
 
     /**
+     * Obtener planes institucionales de la tabla planes_institucionales
+     */
+    public function getPlanesInstitucionales() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getPlanesInstitucionales: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Obtiene registros por estado (usando el campo de estado específico del módulo)
      */
     public function getByEstado($modulo, $formulario_id, $estado) {
@@ -462,6 +483,8 @@ class Modulo144Model {
                                          responsable_formulacion, id_indicador, gestionado_facultades,
                                          nombre_indicador, formula_medicion, frecuencia_medicion,
                                          unidad_medida, tipo_medicion, descripcion_indicador,
+                                         planes_institucionales,
+                                         linea_base_meta, anio_base_meta, meta_s1, meta_s2,
                                          indicador, meta_programada, meta_ejecutada, 
                                          porcentaje_avance, fecha_seguimiento, observaciones, responsable_seguimiento,
                                          estado_formulacion, estado_seguimiento, creado_por) 
@@ -472,6 +495,8 @@ class Modulo144Model {
                                          :responsable_formulacion, :id_indicador, :gestionado_facultades,
                                          :nombre_indicador, :formula_medicion, :frecuencia_medicion,
                                          :unidad_medida, :tipo_medicion, :descripcion_indicador,
+                                         :planes_institucionales,
+                                         :linea_base_meta, :anio_base_meta, :meta_s1, :meta_s2,
                                          :indicador, :meta_programada, :meta_ejecutada,
                                          :porcentaje_avance, :fecha_seguimiento, :observaciones, :responsable_seguimiento,
                                          0, 0, :creado_por)");
@@ -498,6 +523,11 @@ class Modulo144Model {
                 ':unidad_medida' => $original['unidad_medida'],
                 ':tipo_medicion' => $original['tipo_medicion'],
                 ':descripcion_indicador' => $original['descripcion_indicador'],
+                ':planes_institucionales' => $original['planes_institucionales'],
+                ':linea_base_meta' => $original['linea_base_meta'],
+                ':anio_base_meta' => $original['anio_base_meta'],
+                ':meta_s1' => $original['meta_s1'],
+                ':meta_s2' => $original['meta_s2'],
                 ':indicador' => $original['indicador'],
                 ':meta_programada' => $original['meta_programada'],
                 ':meta_ejecutada' => $original['meta_ejecutada'],

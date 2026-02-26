@@ -32,6 +32,9 @@ class Modulo144Controller {
         // Obtener cargos de la base de datos
         $cargos = $this->model->getCargos();
         
+        // Obtener planes institucionales de la base de datos
+        $planes_institucionales = $this->model->getPlanesInstitucionales();
+        
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         
