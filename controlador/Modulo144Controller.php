@@ -35,6 +35,9 @@ class Modulo144Controller {
         // Obtener planes institucionales de la base de datos
         $planes_institucionales = $this->model->getPlanesInstitucionales();
         
+        // ===== NUEVO: Obtener facultades de la base de datos =====
+        $facultades = $this->model->getFacultades();
+        
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         
@@ -125,6 +128,32 @@ class Modulo144Controller {
         echo json_encode([
             'success' => true, 
             'proyectos' => $proyectos
+        ]);
+    }
+
+    /**
+     * Obtener borradores por facultad (para AJAX)
+     */
+    public function getBorradoresPorFacultad() {
+        header('Content-Type: application/json');
+        
+        $facultad_id = isset($_GET['facultad_id']) ? intval($_GET['facultad_id']) : 0;
+        $formulario_id = isset($_GET['formulario_id']) ? intval($_GET['formulario_id']) : 0;
+        
+        if ($facultad_id <= 0 || $formulario_id <= 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'ID de facultad o formulario no válido',
+                'borradores' => []
+            ]);
+            return;
+        }
+        
+        $borradores = $this->model->getBorradoresPorFacultad($facultad_id, $formulario_id);
+        
+        echo json_encode([
+            'success' => true, 
+            'borradores' => $borradores
         ]);
     }
 
@@ -313,6 +342,7 @@ class Modulo144Controller {
             $modulo = $_POST['modulo'] ?? '';
             $formulario_id = $_POST['formulario_id'] ?? 0;
             $nombre = trim($_POST['nombre_borrador'] ?? '');
+            $facultad_id = isset($_POST['facultad_id']) ? intval($_POST['facultad_id']) : null;
 
             if (empty($modulo)) {
                 echo json_encode(['success' => false, 'message' => 'Módulo no especificado']);
@@ -330,7 +360,7 @@ class Modulo144Controller {
             }
 
             $creado_por = $_SESSION['user_id'] ?? 1;
-            $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por);
+            $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por, $facultad_id);
 
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Borrador creado exitosamente']);
