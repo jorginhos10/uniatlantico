@@ -524,6 +524,38 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             font-weight: 600;
             color: white;
         }
+
+        /* Estilos para items de formulación en facultades */
+        .facultad-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid var(--color-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .facultad-item:hover {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .facultad-item-info h6 {
+            margin: 0 0 5px 0;
+            color: var(--color-primary);
+        }
+        
+        .facultad-item-info small {
+            color: #6c757d;
+        }
+        
+        .facultad-item-actions {
+            display: flex;
+            gap: 5px;
+        }
     </style>
 </head>
 <body>
@@ -803,7 +835,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             <?php endforeach; ?>
         </div>
 
-        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - DINÁMICO SEGÚN TABLA FACULTADES -->
+        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - CON TODAS LAS FORMULACIONES -->
         <div class="accordion mt-4" id="accordionFacultades">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingFacultades">
@@ -816,7 +848,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         <div>
                             <span style="font-size: 1.3rem;">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span>
                             <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Gestión de formulación y seguimiento por cada facultad</small>
+                            <small style="font-size: 0.85rem; opacity: 0.9;">Todas las formulaciones activas en cada facultad</small>
                         </div>
                         <span class="badge bg-light text-dark ms-3">
                             <i class="fas fa-building me-1"></i><?php echo count($facultades ?? []); ?> facultades
@@ -830,19 +862,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         
                         <?php if (isset($facultades) && count($facultades) > 0): ?>
                             <?php 
-                            // Organizar borradores por facultad
-                            $borradores_por_facultad = [];
-                            if (isset($datos_modulos['formulacion']['borradores'])) {
-                                foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
-                                    if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1 && !empty($borrador['facultad_id'])) {
-                                        $fac_id = $borrador['facultad_id'];
-                                        if (!isset($borradores_por_facultad[$fac_id])) {
-                                            $borradores_por_facultad[$fac_id] = [];
-                                        }
-                                        $borradores_por_facultad[$fac_id][] = $borrador;
-                                    }
-                                }
-                            }
+                            // Obtener TODAS las formulaciones activas (borradores)
+                            $todas_las_formulaciones = $datos_modulos['formulacion']['borradores'] ?? [];
                             ?>
                             
                             <?php foreach ($facultades as $index => $facultad): ?>
@@ -851,7 +872,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 if ($facultad['estado'] != 1) continue; 
                                 $colorIndex = $index % 10; // Para variedad de colores
                                 $facultadId = $facultad['id'];
-                                $borradoresFacultad = $borradores_por_facultad[$facultadId] ?? [];
                                 ?>
                                 <!-- Facultad dinámica desde BD -->
                                 <div class="facultad-card facultad-color-<?php echo $colorIndex; ?>">
@@ -862,83 +882,85 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             </span>
                                             <?php echo htmlspecialchars($facultad['nombre']); ?>
                                         </h5>
-                                        <span class="badge bg-primary" id="badge-facultad-<?php echo $facultadId; ?>">
-                                            <?php echo count($borradoresFacultad); ?> borradores
+                                        <span class="badge bg-primary">
+                                            <?php echo count($todas_las_formulaciones); ?> formulaciones
                                         </span>
                                         <i class="fas fa-chevron-down"></i>
                                     </div>
                                     <div id="facultad<?php echo $facultadId; ?>" class="collapse facultad-content">
-                                        <?php if (count($borradoresFacultad) > 0): ?>
-                                            <table class="facultad-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Borrador</th>
-                                                        <th>Estado</th>
-                                                        <th>Última actualización</th>
-                                                        <th>Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="tabla-facultad-<?php echo $facultadId; ?>">
-                                                    <?php foreach ($borradoresFacultad as $borrador): ?>
-                                                        <?php
-                                                        $estadoClass = 'bg-secondary';
-                                                        $estadoText = 'Borrador';
-                                                        
-                                                        if ($borrador['estado_formulacion'] == 2) {
-                                                            $estadoClass = 'bg-success';
-                                                            $estadoText = 'Publicado';
-                                                        } else if ($borrador['estado_formulacion'] == 1) {
-                                                            $estadoClass = 'bg-danger';
-                                                            $estadoText = 'Cancelado';
-                                                        }
-                                                        
-                                                        $fecha = isset($borrador['fecha_actualizacion']) && $borrador['fecha_actualizacion'] 
-                                                                ? date('d/m/Y', strtotime($borrador['fecha_actualizacion'])) 
-                                                                : (isset($borrador['fecha_creacion']) ? date('d/m/Y', strtotime($borrador['fecha_creacion'])) : '-');
-                                                        ?>
-                                                        <tr>
-                                                            <td><?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?></td>
-                                                            <td><span class="badge <?php echo $estadoClass; ?>"><?php echo $estadoText; ?></span></td>
-                                                            <td><?php echo $fecha; ?></td>
-                                                            <td>
-                                                                <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)">
-                                                                    <i class="fas fa-edit"></i>
-                                                                </button>
-                                                                <?php if ($borrador['estado_formulacion'] == 0): ?>
-                                                                <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('formulacion', <?php echo $borrador['id']; ?>, 2)">
+                                        <?php if (count($todas_las_formulaciones) > 0): ?>
+                                            <div class="mb-3">
+                                                <h6 class="text-muted mb-3"><i class="fas fa-clipboard-list me-2"></i>Todas las formulaciones activas:</h6>
+                                                <?php foreach ($todas_las_formulaciones as $borrador): ?>
+                                                    <?php
+                                                    $estadoClass = 'bg-secondary';
+                                                    $estadoText = 'Borrador';
+                                                    
+                                                    if ($borrador['estado_formulacion'] == 2) {
+                                                        $estadoClass = 'bg-success';
+                                                        $estadoText = 'Publicado';
+                                                    } else if ($borrador['estado_formulacion'] == 1) {
+                                                        $estadoClass = 'bg-danger';
+                                                        $estadoText = 'Cancelado';
+                                                    }
+                                                    
+                                                    $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
+                                                    ?>
+                                                    <div class="facultad-item">
+                                                        <div class="facultad-item-info">
+                                                            <h6><?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?></h6>
+                                                            <small>
+                                                                <i class="far fa-calendar-alt me-1"></i> <?php echo $fecha; ?>
+                                                                <?php if (!empty($borrador['anio'])): ?>
+                                                                    | <i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?>
+                                                                <?php endif; ?>
+                                                            </small>
+                                                            <div class="mt-1">
+                                                                <span class="badge <?php echo $estadoClass; ?>"><?php echo $estadoText; ?></span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="facultad-item-actions">
+                                                            <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Editar">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <?php if ($borrador['estado_formulacion'] == 0): ?>
+                                                                <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('formulacion', <?php echo $borrador['id']; ?>, 2)" title="Publicar">
                                                                     <i class="fas fa-check"></i>
                                                                 </button>
-                                                                <?php endif; ?>
-                                                                <?php if ($borrador['estado_formulacion'] == 2): ?>
-                                                                <button class="btn btn-sm btn-info" onclick="verBorrador('formulacion', <?php echo $borrador['id']; ?>)">
+                                                            <?php endif; ?>
+                                                            <?php if ($borrador['estado_formulacion'] == 2): ?>
+                                                                <button class="btn btn-sm btn-info" onclick="verBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Ver">
                                                                     <i class="fas fa-eye"></i>
                                                                 </button>
-                                                                <?php endif; ?>
-                                                                <?php if ($borrador['estado_formulacion'] == 1): ?>
-                                                                <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('formulacion', <?php echo $borrador['id']; ?>)">
+                                                            <?php endif; ?>
+                                                            <?php if ($borrador['estado_formulacion'] == 1): ?>
+                                                                <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Eliminar">
                                                                     <i class="fas fa-trash"></i>
                                                                 </button>
-                                                                <?php endif; ?>
-                                                            </td>
-                                                        </tr>
-                                                    <?php endforeach; ?>
-                                                </tbody>
-                                            </table>
+                                                            <?php endif; ?>
+                                                            <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('formulacion', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Duplicar">
+                                                                <i class="fas fa-copy"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            </div>
                                         <?php else: ?>
                                             <div class="empty-state p-3">
                                                 <i class="fas fa-file-alt fa-2x mb-2"></i>
-                                                <p class="text-muted mb-0">No hay borradores para esta facultad</p>
+                                                <p class="text-muted mb-0">No hay formulaciones activas en el sistema</p>
                                             </div>
                                         <?php endif; ?>
                                         
                                         <div class="mt-3 text-end">
                                             <button class="btn btn-sm btn-success" onclick="abrirModalNuevoBorradorFacultad('<?php echo $facultadId; ?>', '<?php echo htmlspecialchars($facultad['nombre']); ?>')">
-                                                <i class="fas fa-plus me-1"></i>Nuevo Borrador
+                                                <i class="fas fa-plus me-1"></i>Nueva Formulación
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
+
                         <?php else: ?>
                             <!-- Si no hay facultades en la BD -->
                             <div class="desarrollo-section">
@@ -1044,7 +1066,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
-                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nuevo Borrador - <span id="facultadNombreModal"></span></h5>
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Formulación - <span id="facultadNombreModal"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formNuevoBorradorFacultad">
@@ -1053,13 +1075,13 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="facultad_id" id="facultad_id_modal">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Borrador *</label>
+                            <label class="form-label">Nombre de la Formulación *</label>
                             <input type="text" class="form-control" name="nombre_borrador" id="nuevo_nombre_facultad" required placeholder="Ej: Plan Facultad 2025">
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Crear Borrador</button>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Crear Formulación</button>
                     </div>
                 </form>
             </div>
@@ -1071,7 +1093,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
-                    <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Borrador</h5>
+                    <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Formulación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formDuplicarBorrador">
@@ -1079,7 +1101,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="id" id="duplicar_id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Nuevo Borrador *</label>
+                            <label class="form-label">Nombre de la Nueva Formulación *</label>
                             <input type="text" class="form-control" name="nombre_duplicado" id="duplicar_nombre" required>
                         </div>
                     </div>
@@ -1667,7 +1689,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         function abrirModalNuevoBorradorFacultad(facultadId, facultadNombre) {
             $('#facultad_id_modal').val(facultadId);
             $('#facultadNombreModal').text(facultadNombre);
-            $('#nuevo_nombre_facultad').val('Borrador ' + facultadNombre);
+            $('#nuevo_nombre_facultad').val('Formulación ' + facultadNombre);
             $('#modalNuevoBorradorFacultad').modal('show');
         }
 
@@ -2596,8 +2618,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         function cambiarEstadoBorrador(modulo, id, estado) {
             Swal.fire({
-                title: estado === 2 ? '¿Publicar borrador?' : '¿Cancelar borrador?',
-                text: estado === 2 ? 'Este borrador pasará a estado PUBLICADO' : 'Este borrador pasará a estado CANCELADO',
+                title: estado === 2 ? '¿Publicar formulación?' : '¿Cancelar formulación?',
+                text: estado === 2 ? 'Esta formulación pasará a estado PUBLICADO' : 'Esta formulación pasará a estado CANCELADO',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: estado === 2 ? '#27AE60' : '#E74C3C',
@@ -2622,7 +2644,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         function eliminarBorrador(modulo, id) {
             Swal.fire({
-                title: '¿Eliminar borrador?',
+                title: '¿Eliminar formulación?',
                 text: 'Esta acción NO se puede deshacer',
                 icon: 'warning',
                 showCancelButton: true,
