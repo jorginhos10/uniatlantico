@@ -16,21 +16,53 @@ class Modulo144Model {
             'descripcion' => 'Planificación y formulación estratégica',
             'campo_estado' => 'estado_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
-            'campos_editables' => ['anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
-                                   'meta_resultado', 'proyecto', 'ponderacion_proyectos', 'actividad_proyecto', 
-                                   'ponderacion_actividades', 'responsable_formulacion'],
+            'campos_editables' => [
+                'anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
+                'proyecto', 'meta_resultado', 'ponderacion_proyectos', 'actividad_proyecto', 
+                'ponderacion_actividades', 'responsable_formulacion', 'id_indicador', 
+                'gestionado_facultades',
+                'nombre_indicador', 'formula_medicion', 'frecuencia_medicion', 
+                'unidad_medida', 'tipo_medicion', 'descripcion_indicador',
+                'planes_institucionales',
+                'linea_base_meta', 'anio_base_meta', 'meta_s1', 'meta_s2',
+                'facultad_id',
+                // Nuevos campos para gestión semestral
+                'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
+                // Campos para la tabla de 3 filas
+                'tabla_fila1_sem1', 'tabla_fila1_sem2',
+                'tabla_fila2_sem1', 'tabla_fila2_sem2',
+                'tabla_fila3_sem1', 'tabla_fila3_sem2'
+            ],
             'campos_vista' => [
                 'AÑO' => 'anio',
                 'LÍNEA ESTRATÉGICA' => 'linea_estrategica',
                 'OBJETIVO' => 'objetivo',
                 'ESTRATEGIA' => 'estrategia',
                 'MOTOR DE DESARROLLO' => 'motor_desarrollo',
-                'META DE RESULTADO' => 'meta_resultado',
                 'PROYECTO' => 'proyecto',
+                'META DE RESULTADO' => 'meta_resultado',
                 'PONDERACIÓN PROYECTOS' => 'ponderacion_proyectos',
                 'ACTIVIDAD DEL PROYECTO' => 'actividad_proyecto',
                 'PONDERACIÓN ACTIVIDADES' => 'ponderacion_actividades',
-                'RESPONSABLE' => 'responsable_formulacion'
+                'RESPONSABLE' => 'responsable_formulacion',
+                'ID INDICADOR' => 'id_indicador',
+                'GESTIONADO EN FACULTADES' => 'gestionado_facultades',
+                'NOMBRE DEL INDICADOR' => 'nombre_indicador',
+                'FÓRMULA DE MEDICIÓN' => 'formula_medicion',
+                'FRECUENCIA DE MEDICIÓN' => 'frecuencia_medicion',
+                'UNIDAD DE MEDIDA' => 'unidad_medida',
+                'TIPO DE MEDICIÓN' => 'tipo_medicion',
+                'DESCRIPCIÓN DEL INDICADOR' => 'descripcion_indicador',
+                'PLANES INSTITUCIONALES' => 'planes_institucionales',
+                'LÍNEA BASE META' => 'linea_base_meta',
+                'AÑO BASE META' => 'anio_base_meta',
+                'META SEMESTRE 1' => 'meta_s1',
+                'META SEMESTRE 2' => 'meta_s2',
+                'FACULTAD' => 'facultad_id',
+                'GESTIÓN SEMESTRE 1' => 'gestion_sem1',
+                'GESTIÓN SEMESTRE 2' => 'gestion_sem2',
+                'VIGENCIA' => 'vigencia',
+                'DESCRIPCIÓN GESTIÓN' => 'descripcion_gestion'
             ]
         ],
         'seguimiento' => [
@@ -190,6 +222,121 @@ class Modulo144Model {
     }
 
     /**
+     * Obtener motores por línea estratégica
+     */
+    public function getMotoresPorLinea($linea_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre");
+            $stmt->execute([':linea_id' => $linea_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getMotoresPorLinea: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener proyectos por línea y motor
+     */
+    public function getProyectosPorLineaYMotor($linea_id, $motor_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM proyectos WHERE linea_id = :linea_id AND motor_id = :motor_id AND activo = 1 ORDER BY codigo");
+            $stmt->execute([
+                ':linea_id' => $linea_id,
+                ':motor_id' => $motor_id
+            ]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getProyectosPorLineaYMotor: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener todos los proyectos
+     */
+    public function getProyectos() {
+        try {
+            $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,
+                                        l.codigo as linea_codigo, l.nombre as linea_nombre,
+                                        m.nombre as motor_nombre
+                                        FROM proyectos p
+                                        INNER JOIN lineas_estrategicas l ON p.linea_id = l.id
+                                        INNER JOIN motores m ON p.motor_id = m.id
+                                        WHERE p.activo = 1 
+                                        ORDER BY l.codigo, m.id, p.codigo");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getProyectos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener cargos de la tabla cargos
+     */
+    public function getCargos() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM cargos WHERE activo = 1 ORDER BY nombre");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getCargos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener planes institucionales de la tabla planes_institucionales
+     */
+    public function getPlanesInstitucionales() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getPlanesInstitucionales: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener todas las facultades activas de la tabla facultades
+     */
+    public function getFacultades() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, codigo, nombre, estado FROM facultades WHERE estado = 1 ORDER BY codigo, nombre");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getFacultades: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtener borradores por facultad
+     */
+    public function getBorradoresPorFacultad($facultad_id, $formulario_id) {
+        try {
+            $tabla = $this->modulos['formulacion']['tabla'];
+            $stmt = $this->db->prepare("SELECT * FROM {$tabla} 
+                                        WHERE formulario_id = :formulario_id 
+                                        AND facultad_id = :facultad_id 
+                                        ORDER BY fecha_creacion DESC");
+            $stmt->execute([
+                ':formulario_id' => $formulario_id,
+                ':facultad_id' => $facultad_id
+            ]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getBorradoresPorFacultad: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Obtiene registros por estado (usando el campo de estado específico del módulo)
      */
     public function getByEstado($modulo, $formulario_id, $estado) {
@@ -227,9 +374,8 @@ class Modulo144Model {
     /**
      * Crear un nuevo borrador (solo desde formulación)
      */
-    public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1) {
+    public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1, $facultad_id = null) {
         try {
-            // Solo permitir crear desde formulación
             if ($modulo !== 'formulacion') {
                 error_log("Error: Solo se pueden crear borradores desde formulación");
                 return false;
@@ -244,16 +390,26 @@ class Modulo144Model {
                 return false;
             }
             
-            // Insertar con ambos estados en 0 (borrador)
-            $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                        (formulario_id, nombre_borrador, estado_formulacion, estado_seguimiento, creado_por) 
-                                        VALUES (:formulario_id, :nombre, 0, 0, :creado_por)");
-            
-            return $stmt->execute([
-                ':formulario_id' => $formulario_id,
-                ':nombre' => $nombre_borrador,
-                ':creado_por' => $creado_por
-            ]);
+            if ($facultad_id) {
+                $stmt = $this->db->prepare("INSERT INTO {$tabla} 
+                                            (formulario_id, nombre_borrador, facultad_id, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, :facultad_id, 0, 0, :creado_por)");
+                return $stmt->execute([
+                    ':formulario_id' => $formulario_id,
+                    ':nombre' => $nombre_borrador,
+                    ':facultad_id' => $facultad_id,
+                    ':creado_por' => $creado_por
+                ]);
+            } else {
+                $stmt = $this->db->prepare("INSERT INTO {$tabla} 
+                                            (formulario_id, nombre_borrador, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, 0, 0, :creado_por)");
+                return $stmt->execute([
+                    ':formulario_id' => $formulario_id,
+                    ':nombre' => $nombre_borrador,
+                    ':creado_por' => $creado_por
+                ]);
+            }
             
         } catch (PDOException $e) {
             error_log("Error crearBorrador [{$modulo}]: " . $e->getMessage());
@@ -295,14 +451,13 @@ class Modulo144Model {
                 }
             }
             
-            // También permitir actualizar el nombre del borrador
             if (isset($data['nombre_borrador'])) {
                 $sets[] = "nombre_borrador = :nombre_borrador";
                 $params[':nombre_borrador'] = $data['nombre_borrador'];
             }
             
             if (empty($sets)) {
-                return true; // Nada que actualizar
+                return true;
             }
             
             $sets[] = "fecha_actualizacion = NOW()";
@@ -326,7 +481,6 @@ class Modulo144Model {
             $campo_estado = $modulo_config['campo_estado'];
             $campo_fecha = $modulo_config['fecha_publicacion'];
             
-            // Si es cancelado desde formulación, cancelar también seguimiento
             if ($modulo === 'formulacion' && $estado == 1) {
                 $stmt = $this->db->prepare("UPDATE {$tabla} 
                                             SET estado_formulacion = 1, 
@@ -335,7 +489,6 @@ class Modulo144Model {
                                             WHERE id = :id");
                 return $stmt->execute([':id' => $id]);
             } else {
-                // Cambiar estado normal (publicar o mover a borrador)
                 $stmt = $this->db->prepare("UPDATE {$tabla} 
                                             SET {$campo_estado} = :estado, 
                                                 {$campo_fecha} = CASE WHEN :estado = 2 THEN NOW() ELSE {$campo_fecha} END,
@@ -377,34 +530,62 @@ class Modulo144Model {
             $tabla = $this->modulos[$modulo]['tabla'];
             
             $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                        (formulario_id, nombre_borrador, anio, linea_estrategica, objetivo, 
-                                         estrategia, motor_desarrollo, meta_resultado, proyecto, 
+                                        (formulario_id, nombre_borrador, facultad_id, anio, linea_estrategica, objetivo, 
+                                         estrategia, motor_desarrollo, proyecto, meta_resultado, 
                                          ponderacion_proyectos, actividad_proyecto, ponderacion_actividades, 
-                                         responsable_formulacion, indicador, meta_programada, meta_ejecutada, 
+                                         responsable_formulacion, id_indicador, gestionado_facultades,
+                                         nombre_indicador, formula_medicion, frecuencia_medicion,
+                                         unidad_medida, tipo_medicion, descripcion_indicador,
+                                         planes_institucionales,
+                                         linea_base_meta, anio_base_meta, meta_s1, meta_s2,
+                                         indicador, meta_programada, meta_ejecutada, 
                                          porcentaje_avance, fecha_seguimiento, observaciones, responsable_seguimiento,
+                                         gestion_sem1, gestion_sem2, vigencia, descripcion_gestion,
+                                         tabla_fila1_sem1, tabla_fila1_sem2, tabla_fila2_sem1, tabla_fila2_sem2, tabla_fila3_sem1, tabla_fila3_sem2,
                                          estado_formulacion, estado_seguimiento, creado_por) 
                                         VALUES 
-                                        (:formulario_id, :nombre, :anio, :linea_estrategica, :objetivo,
-                                         :estrategia, :motor_desarrollo, :meta_resultado, :proyecto,
+                                        (:formulario_id, :nombre, :facultad_id, :anio, :linea_estrategica, :objetivo,
+                                         :estrategia, :motor_desarrollo, :proyecto, :meta_resultado,
                                          :ponderacion_proyectos, :actividad_proyecto, :ponderacion_actividades,
-                                         :responsable_formulacion, :indicador, :meta_programada, :meta_ejecutada,
+                                         :responsable_formulacion, :id_indicador, :gestionado_facultades,
+                                         :nombre_indicador, :formula_medicion, :frecuencia_medicion,
+                                         :unidad_medida, :tipo_medicion, :descripcion_indicador,
+                                         :planes_institucionales,
+                                         :linea_base_meta, :anio_base_meta, :meta_s1, :meta_s2,
+                                         :indicador, :meta_programada, :meta_ejecutada,
                                          :porcentaje_avance, :fecha_seguimiento, :observaciones, :responsable_seguimiento,
+                                         :gestion_sem1, :gestion_sem2, :vigencia, :descripcion_gestion,
+                                         :tabla_fila1_sem1, :tabla_fila1_sem2, :tabla_fila2_sem1, :tabla_fila2_sem2, :tabla_fila3_sem1, :tabla_fila3_sem2,
                                          0, 0, :creado_por)");
             
             return $stmt->execute([
                 ':formulario_id' => $original['formulario_id'],
                 ':nombre' => $nuevo_nombre,
+                ':facultad_id' => $original['facultad_id'],
                 ':anio' => $original['anio'],
                 ':linea_estrategica' => $original['linea_estrategica'],
                 ':objetivo' => $original['objetivo'],
                 ':estrategia' => $original['estrategia'],
                 ':motor_desarrollo' => $original['motor_desarrollo'],
-                ':meta_resultado' => $original['meta_resultado'],
                 ':proyecto' => $original['proyecto'],
+                ':meta_resultado' => $original['meta_resultado'],
                 ':ponderacion_proyectos' => $original['ponderacion_proyectos'],
                 ':actividad_proyecto' => $original['actividad_proyecto'],
                 ':ponderacion_actividades' => $original['ponderacion_actividades'],
                 ':responsable_formulacion' => $original['responsable_formulacion'],
+                ':id_indicador' => $original['id_indicador'],
+                ':gestionado_facultades' => $original['gestionado_facultades'],
+                ':nombre_indicador' => $original['nombre_indicador'],
+                ':formula_medicion' => $original['formula_medicion'],
+                ':frecuencia_medicion' => $original['frecuencia_medicion'],
+                ':unidad_medida' => $original['unidad_medida'],
+                ':tipo_medicion' => $original['tipo_medicion'],
+                ':descripcion_indicador' => $original['descripcion_indicador'],
+                ':planes_institucionales' => $original['planes_institucionales'],
+                ':linea_base_meta' => $original['linea_base_meta'],
+                ':anio_base_meta' => $original['anio_base_meta'],
+                ':meta_s1' => $original['meta_s1'],
+                ':meta_s2' => $original['meta_s2'],
                 ':indicador' => $original['indicador'],
                 ':meta_programada' => $original['meta_programada'],
                 ':meta_ejecutada' => $original['meta_ejecutada'],
@@ -412,6 +593,16 @@ class Modulo144Model {
                 ':fecha_seguimiento' => $original['fecha_seguimiento'],
                 ':observaciones' => $original['observaciones'],
                 ':responsable_seguimiento' => $original['responsable_seguimiento'],
+                ':gestion_sem1' => $original['gestion_sem1'],
+                ':gestion_sem2' => $original['gestion_sem2'],
+                ':vigencia' => $original['vigencia'],
+                ':descripcion_gestion' => $original['descripcion_gestion'],
+                ':tabla_fila1_sem1' => $original['tabla_fila1_sem1'],
+                ':tabla_fila1_sem2' => $original['tabla_fila1_sem2'],
+                ':tabla_fila2_sem1' => $original['tabla_fila2_sem1'],
+                ':tabla_fila2_sem2' => $original['tabla_fila2_sem2'],
+                ':tabla_fila3_sem1' => $original['tabla_fila3_sem1'],
+                ':tabla_fila3_sem2' => $original['tabla_fila3_sem2'],
                 ':creado_por' => $creado_por
             ]);
         } catch (PDOException $e) {
@@ -439,6 +630,45 @@ class Modulo144Model {
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("Error verificarTabla [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Actualizar específicamente los campos de gestión semestral
+     */
+    public function actualizarGestionSemestral($id, $data) {
+        try {
+            $tabla = $this->modulos['formulacion']['tabla'];
+            
+            $sets = [];
+            $params = [':id' => $id];
+            
+            $camposPermitidos = [
+                'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
+                'tabla_fila1_sem1', 'tabla_fila1_sem2',
+                'tabla_fila2_sem1', 'tabla_fila2_sem2',
+                'tabla_fila3_sem1', 'tabla_fila3_sem2'
+            ];
+            
+            foreach ($camposPermitidos as $campo) {
+                if (isset($data[$campo])) {
+                    $sets[] = "{$campo} = :{$campo}";
+                    $params[":{$campo}"] = $data[$campo];
+                }
+            }
+            
+            if (empty($sets)) {
+                return true;
+            }
+            
+            $sets[] = "fecha_actualizacion = NOW()";
+            $sql = "UPDATE {$tabla} SET " . implode(', ', $sets) . " WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log("Error actualizarGestionSemestral: " . $e->getMessage());
             return false;
         }
     }
