@@ -923,6 +923,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                             <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Editar">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
+                                                            <!-- NUEVO BOTÓN PARA GESTIÓN SEMESTRAL -->
+                                                            <button class="btn btn-sm" style="background-color: #FF9800; color: white;" onclick="abrirGestionSemestral(<?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Gestión Semestral">
+                                                                <i class="fas fa-calendar-alt"></i>
+                                                            </button>
                                                             <?php if ($borrador['estado_formulacion'] == 0): ?>
                                                                 <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('formulacion', <?php echo $borrador['id']; ?>, 2)" title="Publicar">
                                                                     <i class="fas fa-check"></i>
@@ -1108,6 +1112,81 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-info"><i class="fas fa-copy me-1"></i>Duplicar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA GESTIÓN SEMESTRAL (ACTUALIZADO - SIN TABLA) -->
+    <div class="modal fade" id="modalGestionSemestral" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-alt me-2"></i>GESTIÓN SEMESTRAL - <span id="gestionTituloSpan"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formGestionSemestral">
+                    <input type="hidden" id="gestion_id" name="id">
+                    
+                    <div class="modal-body">
+                        <!-- Sección de arquitectura con 3 inputs -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3" style="border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                                    <i class="fas fa-archway me-2"></i>ARQUITECTURA
+                                </h6>
+                            </div>
+                            
+                            <!-- SEM. 1 -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">SEM. 1</label>
+                                <input type="text" class="form-control" name="gestion_sem1" id="gestion_sem1" placeholder="Ingrese gestión semestre 1">
+                            </div>
+                            
+                            <!-- SEM. 2 -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">SEM. 2</label>
+                                <input type="text" class="form-control" name="gestion_sem2" id="gestion_sem2" placeholder="Ingrese gestión semestre 2">
+                            </div>
+                            
+                            <!-- VIGENCIA -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">VIGENCIA</label>
+                                <select class="form-select" name="vigencia" id="gestion_vigencia">
+                                    <option value="">Seleccione vigencia</option>
+                                    <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
+                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- SEGUIMIENTO (0/0) y DESCRIPCIÓN DE LA GESTIÓN -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-white">
+                                        <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO (0/0)
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">DESCRIPCIÓN DE LA GESTIÓN</label>
+                                            <textarea class="form-control" name="descripcion_gestion" id="gestion_descripcion" rows="4" placeholder="Describa la gestión realizada..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-1"></i>Guardar Gestión Semestral
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1446,7 +1525,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA SEGUIMIENTO (con datos de formulación no editables y nuevos campos semestrales) -->
+    <!-- MODAL PARA SEGUIMIENTO (con datos de formulación no editables y campos de semestre antes de la descripción) -->
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -1561,7 +1640,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                         </div>
                         
-                        <!-- CAMPOS EDITABLES DE SEGUIMIENTO (incluyendo nuevos semestres) -->
+                        <!-- CAMPOS EDITABLES DE SEGUIMIENTO (con semestres antes de la descripción) -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">INDICADOR</label>
@@ -1572,16 +1651,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()">
                             </div>
                             
-                            <!-- NUEVOS CAMPOS: SEMESTRE 1 Y SEMESTRE 2 (independientes de la BD de formulación) -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            
+                            <!-- META PROGRAMADA Y EJECUTADA -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META PROGRAMADA</label>
                                 <div class="input-group">
@@ -1603,6 +1673,17 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
+                            
+                            <!-- NUEVOS CAMPOS: SEMESTRE 1 Y SEMESTRE 2 (ANTES DE LA DESCRIPCIÓN) -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
+                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
+                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
+                            </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label>
                                 <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
@@ -1750,6 +1831,63 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         Swal.fire('¡Duplicado!', response.message, 'success');
                         setTimeout(() => location.reload(), 1500);
                     }
+                }
+            });
+        });
+
+        // Función para abrir el modal de gestión semestral (ACTUALIZADA - SIN TABLA)
+        function abrirGestionSemestral(id, nombre) {
+            $('#gestion_id').val(id);
+            $('#gestionTituloSpan').text(nombre);
+            
+            // Cargar datos existentes si los hay
+            $.ajax({
+                url: basePath + '/modulo144/getBorrador?modulo=formulacion&id=' + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const b = response.borrador;
+                        
+                        // Cargar campos principales
+                        $('#gestion_sem1').val(b.gestion_sem1 || '');
+                        $('#gestion_sem2').val(b.gestion_sem2 || '');
+                        $('#gestion_vigencia').val(b.vigencia || '');
+                        $('#gestion_descripcion').val(b.descripcion_gestion || '');
+                    }
+                }
+            });
+            
+            $('#modalGestionSemestral').modal('show');
+        }
+
+        // Manejar el envío del formulario de gestión semestral (ACTUALIZADO - SIN TABLA)
+        $('#formGestionSemestral').on('submit', function(e) {
+            e.preventDefault();
+            
+            const data = {
+                id: $('#gestion_id').val(),
+                gestion_sem1: $('#gestion_sem1').val(),
+                gestion_sem2: $('#gestion_sem2').val(),
+                vigencia: $('#gestion_vigencia').val(),
+                descripcion_gestion: $('#gestion_descripcion').val()
+            };
+            
+            $.ajax({
+                url: basePath + '/modulo144/guardarGestionSemestral',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Guardado!', response.message, 'success');
+                        $('#modalGestionSemestral').modal('hide');
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
                 }
             });
         });
@@ -2670,7 +2808,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON FACULTADES DINÁMICAS ===');
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON FACULTADES DINÁMICAS Y GESTIÓN SEMESTRAL ===');
             
             // Inicializar validación de pestañas cuando se abre el modal
             $('#modalFormulacion').on('shown.bs.modal', function() {

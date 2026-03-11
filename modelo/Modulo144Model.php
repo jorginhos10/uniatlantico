@@ -25,7 +25,13 @@ class Modulo144Model {
                 'unidad_medida', 'tipo_medicion', 'descripcion_indicador',
                 'planes_institucionales',
                 'linea_base_meta', 'anio_base_meta', 'meta_s1', 'meta_s2',
-                'facultad_id' // Nuevo campo para asociar a facultad
+                'facultad_id',
+                // Nuevos campos para gestión semestral
+                'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
+                // Campos para la tabla de 3 filas
+                'tabla_fila1_sem1', 'tabla_fila1_sem2',
+                'tabla_fila2_sem1', 'tabla_fila2_sem2',
+                'tabla_fila3_sem1', 'tabla_fila3_sem2'
             ],
             'campos_vista' => [
                 'AÑO' => 'anio',
@@ -52,7 +58,11 @@ class Modulo144Model {
                 'AÑO BASE META' => 'anio_base_meta',
                 'META SEMESTRE 1' => 'meta_s1',
                 'META SEMESTRE 2' => 'meta_s2',
-                'FACULTAD' => 'facultad_id'
+                'FACULTAD' => 'facultad_id',
+                'GESTIÓN SEMESTRE 1' => 'gestion_sem1',
+                'GESTIÓN SEMESTRE 2' => 'gestion_sem2',
+                'VIGENCIA' => 'vigencia',
+                'DESCRIPCIÓN GESTIÓN' => 'descripcion_gestion'
             ]
         ],
         'seguimiento' => [
@@ -366,7 +376,6 @@ class Modulo144Model {
      */
     public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1, $facultad_id = null) {
         try {
-            // Solo permitir crear desde formulación
             if ($modulo !== 'formulacion') {
                 error_log("Error: Solo se pueden crear borradores desde formulación");
                 return false;
@@ -381,7 +390,6 @@ class Modulo144Model {
                 return false;
             }
             
-            // Insertar con ambos estados en 0 (borrador)
             if ($facultad_id) {
                 $stmt = $this->db->prepare("INSERT INTO {$tabla} 
                                             (formulario_id, nombre_borrador, facultad_id, estado_formulacion, estado_seguimiento, creado_por) 
@@ -443,14 +451,13 @@ class Modulo144Model {
                 }
             }
             
-            // También permitir actualizar el nombre del borrador
             if (isset($data['nombre_borrador'])) {
                 $sets[] = "nombre_borrador = :nombre_borrador";
                 $params[':nombre_borrador'] = $data['nombre_borrador'];
             }
             
             if (empty($sets)) {
-                return true; // Nada que actualizar
+                return true;
             }
             
             $sets[] = "fecha_actualizacion = NOW()";
@@ -474,7 +481,6 @@ class Modulo144Model {
             $campo_estado = $modulo_config['campo_estado'];
             $campo_fecha = $modulo_config['fecha_publicacion'];
             
-            // Si es cancelado desde formulación, cancelar también seguimiento
             if ($modulo === 'formulacion' && $estado == 1) {
                 $stmt = $this->db->prepare("UPDATE {$tabla} 
                                             SET estado_formulacion = 1, 
@@ -483,7 +489,6 @@ class Modulo144Model {
                                             WHERE id = :id");
                 return $stmt->execute([':id' => $id]);
             } else {
-                // Cambiar estado normal (publicar o mover a borrador)
                 $stmt = $this->db->prepare("UPDATE {$tabla} 
                                             SET {$campo_estado} = :estado, 
                                                 {$campo_fecha} = CASE WHEN :estado = 2 THEN NOW() ELSE {$campo_fecha} END,
@@ -535,6 +540,8 @@ class Modulo144Model {
                                          linea_base_meta, anio_base_meta, meta_s1, meta_s2,
                                          indicador, meta_programada, meta_ejecutada, 
                                          porcentaje_avance, fecha_seguimiento, observaciones, responsable_seguimiento,
+                                         gestion_sem1, gestion_sem2, vigencia, descripcion_gestion,
+                                         tabla_fila1_sem1, tabla_fila1_sem2, tabla_fila2_sem1, tabla_fila2_sem2, tabla_fila3_sem1, tabla_fila3_sem2,
                                          estado_formulacion, estado_seguimiento, creado_por) 
                                         VALUES 
                                         (:formulario_id, :nombre, :facultad_id, :anio, :linea_estrategica, :objetivo,
@@ -547,6 +554,8 @@ class Modulo144Model {
                                          :linea_base_meta, :anio_base_meta, :meta_s1, :meta_s2,
                                          :indicador, :meta_programada, :meta_ejecutada,
                                          :porcentaje_avance, :fecha_seguimiento, :observaciones, :responsable_seguimiento,
+                                         :gestion_sem1, :gestion_sem2, :vigencia, :descripcion_gestion,
+                                         :tabla_fila1_sem1, :tabla_fila1_sem2, :tabla_fila2_sem1, :tabla_fila2_sem2, :tabla_fila3_sem1, :tabla_fila3_sem2,
                                          0, 0, :creado_por)");
             
             return $stmt->execute([
@@ -584,6 +593,16 @@ class Modulo144Model {
                 ':fecha_seguimiento' => $original['fecha_seguimiento'],
                 ':observaciones' => $original['observaciones'],
                 ':responsable_seguimiento' => $original['responsable_seguimiento'],
+                ':gestion_sem1' => $original['gestion_sem1'],
+                ':gestion_sem2' => $original['gestion_sem2'],
+                ':vigencia' => $original['vigencia'],
+                ':descripcion_gestion' => $original['descripcion_gestion'],
+                ':tabla_fila1_sem1' => $original['tabla_fila1_sem1'],
+                ':tabla_fila1_sem2' => $original['tabla_fila1_sem2'],
+                ':tabla_fila2_sem1' => $original['tabla_fila2_sem1'],
+                ':tabla_fila2_sem2' => $original['tabla_fila2_sem2'],
+                ':tabla_fila3_sem1' => $original['tabla_fila3_sem1'],
+                ':tabla_fila3_sem2' => $original['tabla_fila3_sem2'],
                 ':creado_por' => $creado_por
             ]);
         } catch (PDOException $e) {
@@ -611,6 +630,45 @@ class Modulo144Model {
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("Error verificarTabla [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Actualizar específicamente los campos de gestión semestral
+     */
+    public function actualizarGestionSemestral($id, $data) {
+        try {
+            $tabla = $this->modulos['formulacion']['tabla'];
+            
+            $sets = [];
+            $params = [':id' => $id];
+            
+            $camposPermitidos = [
+                'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
+                'tabla_fila1_sem1', 'tabla_fila1_sem2',
+                'tabla_fila2_sem1', 'tabla_fila2_sem2',
+                'tabla_fila3_sem1', 'tabla_fila3_sem2'
+            ];
+            
+            foreach ($camposPermitidos as $campo) {
+                if (isset($data[$campo])) {
+                    $sets[] = "{$campo} = :{$campo}";
+                    $params[":{$campo}"] = $data[$campo];
+                }
+            }
+            
+            if (empty($sets)) {
+                return true;
+            }
+            
+            $sets[] = "fecha_actualizacion = NOW()";
+            $sql = "UPDATE {$tabla} SET " . implode(', ', $sets) . " WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log("Error actualizarGestionSemestral: " . $e->getMessage());
             return false;
         }
     }
