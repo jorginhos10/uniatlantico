@@ -556,6 +556,23 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             display: flex;
             gap: 5px;
         }
+
+        /* Indicador de checkbox activo */
+        .gestionado-indicador {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background-color: #27AE60;
+            color: white;
+            margin-left: 8px;
+        }
+        
+        .gestionado-indicador i {
+            font-size: 0.6rem;
+            margin-right: 3px;
+        }
     </style>
 </head>
 <body>
@@ -687,6 +704,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($borrador['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $borrador['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($borrador['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="item-actions mt-3">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
@@ -757,6 +777,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($publicado['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $publicado['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($publicado['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="mt-3">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
@@ -810,6 +833,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($cancelado['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $cancelado['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($cancelado['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="mt-3">
                                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $cancelado['id']; ?>)">
                                                         <i class="fas fa-trash me-1"></i>Eliminar
@@ -835,7 +861,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             <?php endforeach; ?>
         </div>
 
-        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - CON TODAS LAS FORMULACIONES -->
+        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - SOLO CON CHECKBOX ACTIVO -->
         <div class="accordion mt-4" id="accordionFacultades">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingFacultades">
@@ -848,7 +874,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         <div>
                             <span style="font-size: 1.3rem;">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span>
                             <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Todas las formulaciones activas en cada facultad</small>
+                            <small style="font-size: 0.85rem; opacity: 0.9;">Solo formulaciones con gestión desde facultades activada</small>
                         </div>
                         <span class="badge bg-light text-dark ms-3">
                             <i class="fas fa-building me-1"></i><?php echo count($facultades ?? []); ?> facultades
@@ -861,10 +887,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <div class="accordion-body p-4">
                         
                         <?php if (isset($facultades) && count($facultades) > 0): ?>
-                            <?php 
-                            // Obtener TODAS las formulaciones activas (borradores)
-                            $todas_las_formulaciones = $datos_modulos['formulacion']['borradores'] ?? [];
-                            ?>
                             
                             <?php foreach ($facultades as $index => $facultad): ?>
                                 <?php 
@@ -872,7 +894,34 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 if ($facultad['estado'] != 1) continue; 
                                 $colorIndex = $index % 10; // Para variedad de colores
                                 $facultadId = $facultad['id'];
+                                
+                                // Filtrar SOLO las formulaciones que tengan gestionado_facultades = 1
+                                $formulaciones_con_check = [];
+                                
+                                // Filtrar borradores con gestionado_facultades = 1
+                                if (isset($datos_modulos['formulacion']['borradores'])) {
+                                    foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
+                                        if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
+                                            $formulaciones_con_check[] = $borrador;
+                                        }
+                                    }
+                                }
+                                
+                                // Filtrar publicados con gestionado_facultades = 1
+                                if (isset($datos_modulos['formulacion']['publicados'])) {
+                                    foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
+                                        if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
+                                            $formulaciones_con_check[] = $publicado;
+                                        }
+                                    }
+                                }
+                                
+                                // Ordenar por fecha de creación (más recientes primero)
+                                usort($formulaciones_con_check, function($a, $b) {
+                                    return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
+                                });
                                 ?>
+                                
                                 <!-- Facultad dinámica desde BD -->
                                 <div class="facultad-card facultad-color-<?php echo $colorIndex; ?>">
                                     <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad<?php echo $facultadId; ?>" aria-expanded="false">
@@ -883,15 +932,15 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             <?php echo htmlspecialchars($facultad['nombre']); ?>
                                         </h5>
                                         <span class="badge bg-primary">
-                                            <?php echo count($todas_las_formulaciones); ?> formulaciones
+                                            <?php echo count($formulaciones_con_check); ?> formulaciones con check
                                         </span>
                                         <i class="fas fa-chevron-down"></i>
                                     </div>
                                     <div id="facultad<?php echo $facultadId; ?>" class="collapse facultad-content">
-                                        <?php if (count($todas_las_formulaciones) > 0): ?>
+                                        <?php if (count($formulaciones_con_check) > 0): ?>
                                             <div class="mb-3">
-                                                <h6 class="text-muted mb-3"><i class="fas fa-clipboard-list me-2"></i>Todas las formulaciones activas:</h6>
-                                                <?php foreach ($todas_las_formulaciones as $borrador): ?>
+                                                <h6 class="text-muted mb-3"><i class="fas fa-clipboard-list me-2"></i>Formulaciones con gestión desde facultades activada:</h6>
+                                                <?php foreach ($formulaciones_con_check as $borrador): ?>
                                                     <?php
                                                     $estadoClass = 'bg-secondary';
                                                     $estadoText = 'Borrador';
@@ -908,7 +957,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     ?>
                                                     <div class="facultad-item">
                                                         <div class="facultad-item-info">
-                                                            <h6><?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?></h6>
+                                                            <h6>
+                                                                <?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?>
+                                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                            </h6>
                                                             <small>
                                                                 <i class="far fa-calendar-alt me-1"></i> <?php echo $fecha; ?>
                                                                 <?php if (!empty($borrador['anio'])): ?>
@@ -952,7 +1004,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         <?php else: ?>
                                             <div class="empty-state p-3">
                                                 <i class="fas fa-file-alt fa-2x mb-2"></i>
-                                                <p class="text-muted mb-0">No hay formulaciones activas en el sistema</p>
+                                                <p class="text-muted mb-0">No hay formulaciones con gestión desde facultades activada</p>
+                                                <p class="text-muted small mb-0 mt-2">
+                                                    Para que aparezcan aquí, marca la opción:
+                                                    <br>
+                                                    <strong>"13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
+                                                </p>
                                             </div>
                                         <?php endif; ?>
                                         
@@ -2808,7 +2865,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON FACULTADES DINÁMICAS Y GESTIÓN SEMESTRAL ===');
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON FORMULACIONES POR FACULTADES (SOLO CON CHECK) ===');
             
             // Inicializar validación de pestañas cuando se abre el modal
             $('#modalFormulacion').on('shown.bs.modal', function() {
