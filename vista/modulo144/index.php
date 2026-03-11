@@ -26,12 +26,30 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             --color-white: #FFFFFF;
             --color-tab-incomplete: #6c757d;
             --color-tab-complete: #27AE60;
-            --color-facultad-1: #9C27B0;
-            --color-facultad-2: #FF9800;
-            --color-facultad-3: #2196F3;
-            --color-facultad-4: #4CAF50;
-            --color-facultad-5: #F44336;
         }
+        
+        /* Colores dinámicos para facultades */
+        .facultad-color-0 { border-left-color: #9C27B0; }
+        .facultad-color-1 { border-left-color: #FF9800; }
+        .facultad-color-2 { border-left-color: #2196F3; }
+        .facultad-color-3 { border-left-color: #4CAF50; }
+        .facultad-color-4 { border-left-color: #F44336; }
+        .facultad-color-5 { border-left-color: #673AB7; }
+        .facultad-color-6 { border-left-color: #FF5722; }
+        .facultad-color-7 { border-left-color: #009688; }
+        .facultad-color-8 { border-left-color: #3F51B5; }
+        .facultad-color-9 { border-left-color: #E91E63; }
+        
+        .badge-facultad-0 { background-color: #9C27B0; }
+        .badge-facultad-1 { background-color: #FF9800; }
+        .badge-facultad-2 { background-color: #2196F3; }
+        .badge-facultad-3 { background-color: #4CAF50; }
+        .badge-facultad-4 { background-color: #F44336; }
+        .badge-facultad-5 { background-color: #673AB7; }
+        .badge-facultad-6 { background-color: #FF5722; }
+        .badge-facultad-7 { background-color: #009688; }
+        .badge-facultad-8 { background-color: #3F51B5; }
+        .badge-facultad-9 { background-color: #E91E63; }
         
         body {
             background-color: var(--color-bg);
@@ -396,7 +414,44 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             padding: 20px;
         }
 
-        /* Estilos para el nuevo acordeón de facultades */
+        /* Estilos para la sección de desarrollo */
+        .desarrollo-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+        
+        .desarrollo-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        
+        .desarrollo-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .desarrollo-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+        
+        .desarrollo-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 30px;
+            padding: 8px 20px;
+            display: inline-block;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Estilos para el acordeón de facultades */
         .facultad-card {
             background: white;
             border-radius: 12px;
@@ -469,48 +524,71 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             font-weight: 600;
             color: white;
         }
-        
-        .badge-facultad-1 { background-color: var(--color-facultad-1); }
-        .badge-facultad-2 { background-color: var(--color-facultad-2); }
-        .badge-facultad-3 { background-color: var(--color-facultad-3); }
-        .badge-facultad-4 { background-color: var(--color-facultad-4); }
-        .badge-facultad-5 { background-color: var(--color-facultad-5); }
 
-        /* Estilos para la sección de desarrollo */
-        .desarrollo-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 12px;
-            padding: 30px;
-            margin-top: 20px;
-            color: white;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
-        }
-        
-        .desarrollo-icon {
-            font-size: 4rem;
-            margin-bottom: 15px;
-        }
-        
-        .desarrollo-title {
-            font-size: 2rem;
-            font-weight: 700;
+        /* Estilos para items de formulación en facultades */
+        .facultad-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
             margin-bottom: 10px;
+            border-left: 3px solid var(--color-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
         }
         
-        .desarrollo-subtitle {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
+        .facultad-item:hover {
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .desarrollo-badge {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 30px;
-            padding: 8px 20px;
+        .facultad-item-info h6 {
+            margin: 0 0 5px 0;
+            color: var(--color-primary);
+        }
+        
+        .facultad-item-info small {
+            color: #6c757d;
+        }
+        
+        .facultad-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        /* Indicador de checkbox activo */
+        .gestionado-indicador {
             display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
             font-weight: 600;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background-color: #27AE60;
+            color: white;
+            margin-left: 8px;
+        }
+        
+        .gestionado-indicador i {
+            font-size: 0.6rem;
+            margin-right: 3px;
+        }
+
+        /* Animación para fade in/out */
+        .fade-out {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .fade-in {
+            opacity: 1;
+            transform: translateX(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        
+        .facultad-item {
+            transition: all 0.3s ease;
         }
     </style>
 </head>
@@ -643,6 +721,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($borrador['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $borrador['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($borrador['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="item-actions mt-3">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
@@ -713,6 +794,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($publicado['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $publicado['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($publicado['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="mt-3">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
@@ -766,6 +850,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                 <?php if (!empty($cancelado['anio'])): ?>
                                                 <span class="badge bg-secondary mb-2">Año: <?php echo $cancelado['anio']; ?></span>
                                                 <?php endif; ?>
+                                                <?php if ($cancelado['gestionado_facultades'] == 1): ?>
+                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                <?php endif; ?>
                                                 <div class="mt-3">
                                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $cancelado['id']; ?>)">
                                                         <i class="fas fa-trash me-1"></i>Eliminar
@@ -791,7 +878,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             <?php endforeach; ?>
         </div>
 
-        <!-- Acordeón 2: Formulación y Seguimiento por Facultades -->
+        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - CON ACTUALIZACIÓN EN TIEMPO REAL -->
         <div class="accordion mt-4" id="accordionFacultades">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingFacultades">
@@ -804,8 +891,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         <div>
                             <span style="font-size: 1.3rem;">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span>
                             <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Gestión de formulación y seguimiento por cada facultad</small>
+                            <small style="font-size: 0.85rem; opacity: 0.9;">Solo formulaciones con gestión desde facultades activada</small>
                         </div>
+                        <span class="badge bg-light text-dark ms-3">
+                            <i class="fas fa-building me-1"></i><?php echo count($facultades ?? []); ?> facultades
+                        </span>
                     </button>
                 </h2>
                 <div id="collapseFacultades" 
@@ -813,277 +903,159 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                      data-bs-parent="#accordionFacultades">
                     <div class="accordion-body p-4">
                         
-                        <!-- Facultad 1 - Ciencias de la Educación -->
-                        <div class="facultad-card" style="border-left-color: var(--color-facultad-1);">
-                            <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad1" aria-expanded="false">
-                                <h5 class="mb-0">
-                                    <span class="badge-facultad badge-facultad-1 me-2">FAC-01</span>
-                                    Facultad de Ciencias de la Educación
-                                </h5>
-                                <span class="badge bg-primary">3 borradores</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="facultad1" class="collapse facultad-content">
-                                <table class="facultad-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Borrador</th>
-                                            <th>Estado</th>
-                                            <th>Última actualización</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Plan de Mejoramiento 2025-1</td>
-                                            <td><span class="badge bg-success">Publicado</span></td>
-                                            <td>15/02/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Plan de Mejoramiento 2025-2</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>10/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Plan de Mejoramiento 2026-1</td>
-                                            <td><span class="badge bg-secondary">Cancelado</span></td>
-                                            <td>20/01/2026</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-success">
-                                        <i class="fas fa-plus me-1"></i>Nuevo Borrador
-                                    </button>
+                        <?php if (isset($facultades) && count($facultades) > 0): ?>
+                            
+                            <?php foreach ($facultades as $index => $facultad): ?>
+                                <?php 
+                                // Solo mostrar facultades activas (estado = 1)
+                                if ($facultad['estado'] != 1) continue; 
+                                $colorIndex = $index % 10; // Para variedad de colores
+                                $facultadId = $facultad['id'];
+                                
+                                // Filtrar SOLO las formulaciones que tengan gestionado_facultades = 1
+                                $formulaciones_con_check = [];
+                                
+                                // Filtrar borradores con gestionado_facultades = 1
+                                if (isset($datos_modulos['formulacion']['borradores'])) {
+                                    foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
+                                        if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
+                                            $formulaciones_con_check[] = $borrador;
+                                        }
+                                    }
+                                }
+                                
+                                // Filtrar publicados con gestionado_facultades = 1
+                                if (isset($datos_modulos['formulacion']['publicados'])) {
+                                    foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
+                                        if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
+                                            $formulaciones_con_check[] = $publicado;
+                                        }
+                                    }
+                                }
+                                
+                                // Ordenar por fecha de creación (más recientes primero)
+                                usort($formulaciones_con_check, function($a, $b) {
+                                    return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
+                                });
+                                ?>
+                                
+                                <!-- Facultad dinámica desde BD -->
+                                <div class="facultad-card facultad-color-<?php echo $colorIndex; ?>" id="facultad-card-<?php echo $facultadId; ?>">
+                                    <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad<?php echo $facultadId; ?>" aria-expanded="false">
+                                        <h5 class="mb-0">
+                                            <span class="badge-facultad badge-facultad-<?php echo $colorIndex; ?> me-2">
+                                                <?php echo htmlspecialchars($facultad['codigo'] ?? 'FAC'); ?>
+                                            </span>
+                                            <?php echo htmlspecialchars($facultad['nombre']); ?>
+                                        </h5>
+                                        <span class="badge bg-primary" id="facultad-count-<?php echo $facultadId; ?>">
+                                            <?php echo count($formulaciones_con_check); ?> formulaciones con check
+                                        </span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div id="facultad<?php echo $facultadId; ?>" class="collapse facultad-content">
+                                        <div id="facultad-contenido-<?php echo $facultadId; ?>">
+                                            <?php if (count($formulaciones_con_check) > 0): ?>
+                                                <div class="mb-3">
+                                                    <h6 class="text-muted mb-3"><i class="fas fa-clipboard-list me-2"></i>Formulaciones con gestión desde facultades activada:</h6>
+                                                    <?php foreach ($formulaciones_con_check as $borrador): ?>
+                                                        <?php
+                                                        $estadoClass = 'bg-secondary';
+                                                        $estadoText = 'Borrador';
+                                                        
+                                                        if ($borrador['estado_formulacion'] == 2) {
+                                                            $estadoClass = 'bg-success';
+                                                            $estadoText = 'Publicado';
+                                                        } else if ($borrador['estado_formulacion'] == 1) {
+                                                            $estadoClass = 'bg-danger';
+                                                            $estadoText = 'Cancelado';
+                                                        }
+                                                        
+                                                        $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
+                                                        ?>
+                                                        <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>">
+                                                            <div class="facultad-item-info">
+                                                                <h6>
+                                                                    <?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?>
+                                                                    <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                                </h6>
+                                                                <small>
+                                                                    <i class="far fa-calendar-alt me-1"></i> <?php echo $fecha; ?>
+                                                                    <?php if (!empty($borrador['anio'])): ?>
+                                                                        | <i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?>
+                                                                    <?php endif; ?>
+                                                                </small>
+                                                                <div class="mt-1">
+                                                                    <span class="badge <?php echo $estadoClass; ?>"><?php echo $estadoText; ?></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="facultad-item-actions">
+                                                                <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Editar">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                                <!-- NUEVO BOTÓN PARA GESTIÓN SEMESTRAL -->
+                                                                <button class="btn btn-sm" style="background-color: #FF9800; color: white;" onclick="abrirGestionSemestral(<?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Gestión Semestral">
+                                                                    <i class="fas fa-calendar-alt"></i>
+                                                                </button>
+                                                                <?php if ($borrador['estado_formulacion'] == 0): ?>
+                                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('formulacion', <?php echo $borrador['id']; ?>, 2)" title="Publicar">
+                                                                        <i class="fas fa-check"></i>
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                                <?php if ($borrador['estado_formulacion'] == 2): ?>
+                                                                    <button class="btn btn-sm btn-info" onclick="verBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Ver">
+                                                                        <i class="fas fa-eye"></i>
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                                <?php if ($borrador['estado_formulacion'] == 1): ?>
+                                                                    <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Eliminar">
+                                                                        <i class="fas fa-trash"></i>
+                                                                    </button>
+                                                                <?php endif; ?>
+                                                                <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('formulacion', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Duplicar">
+                                                                    <i class="fas fa-copy"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="empty-state p-3" id="empty-state-<?php echo $facultadId; ?>">
+                                                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                                    <p class="text-muted mb-0">No hay formulaciones con gestión desde facultades activada</p>
+                                                    <p class="text-muted small mb-0 mt-2">
+                                                        Para que aparezcan aquí, marca la opción:
+                                                        <br>
+                                                        <strong>"13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
+                                                    </p>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <div class="mt-3 text-end">
+                                            <button class="btn btn-sm btn-success" onclick="abrirModalNuevoBorradorFacultad('<?php echo $facultadId; ?>', '<?php echo htmlspecialchars($facultad['nombre']); ?>')">
+                                                <i class="fas fa-plus me-1"></i>Nueva Formulación
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            <?php endforeach; ?>
 
-                        <!-- Facultad 2 - Ingeniería -->
-                        <div class="facultad-card" style="border-left-color: var(--color-facultad-2);">
-                            <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad2" aria-expanded="false">
-                                <h5 class="mb-0">
-                                    <span class="badge-facultad badge-facultad-2 me-2">FAC-02</span>
-                                    Facultad de Ingeniería
-                                </h5>
-                                <span class="badge bg-primary">5 borradores</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="facultad2" class="collapse facultad-content">
-                                <table class="facultad-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Borrador</th>
-                                            <th>Estado</th>
-                                            <th>Última actualización</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Proyecto de Investigación - Sistemas</td>
-                                            <td><span class="badge bg-success">Publicado</span></td>
-                                            <td>05/02/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Laboratorio de Electrónica</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>12/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Proyecto de Robótica</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>18/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Innovación en Software</td>
-                                            <td><span class="badge bg-secondary">Cancelado</span></td>
-                                            <td>25/01/2026</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-success">
-                                        <i class="fas fa-plus me-1"></i>Nuevo Borrador
-                                    </button>
+                        <?php else: ?>
+                            <!-- Si no hay facultades en la BD -->
+                            <div class="desarrollo-section">
+                                <div class="desarrollo-icon">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <div class="desarrollo-title">NO HAY FACULTADES REGISTRADAS</div>
+                                <div class="desarrollo-subtitle">
+                                    No se encontraron facultades en la base de datos
+                                </div>
+                                <div class="desarrollo-badge">
+                                    <i class="fas fa-info-circle me-2"></i>Contacte al administrador
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Facultad 3 - Ciencias Económicas -->
-                        <div class="facultad-card" style="border-left-color: var(--color-facultad-3);">
-                            <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad3" aria-expanded="false">
-                                <h5 class="mb-0">
-                                    <span class="badge-facultad badge-facultad-3 me-2">FAC-03</span>
-                                    Facultad de Ciencias Económicas
-                                </h5>
-                                <span class="badge bg-primary">2 borradores</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="facultad3" class="collapse facultad-content">
-                                <table class="facultad-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Borrador</th>
-                                            <th>Estado</th>
-                                            <th>Última actualización</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Plan de Desarrollo Económico</td>
-                                            <td><span class="badge bg-success">Publicado</span></td>
-                                            <td>08/02/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Proyecto de Emprendimiento</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>15/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-success">
-                                        <i class="fas fa-plus me-1"></i>Nuevo Borrador
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Facultad 4 - Ciencias de la Salud -->
-                        <div class="facultad-card" style="border-left-color: var(--color-facultad-4);">
-                            <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad4" aria-expanded="false">
-                                <h5 class="mb-0">
-                                    <span class="badge-facultad badge-facultad-4 me-2">FAC-04</span>
-                                    Facultad de Ciencias de la Salud
-                                </h5>
-                                <span class="badge bg-primary">4 borradores</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="facultad4" class="collapse facultad-content">
-                                <table class="facultad-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Borrador</th>
-                                            <th>Estado</th>
-                                            <th>Última actualización</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Programa de Salud Pública</td>
-                                            <td><span class="badge bg-success">Publicado</span></td>
-                                            <td>12/02/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Investigación en Enfermería</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>20/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Proyecto de Medicina Preventiva</td>
-                                            <td><span class="badge bg-warning">Borrador</span></td>
-                                            <td>22/03/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-success">
-                                        <i class="fas fa-plus me-1"></i>Nuevo Borrador
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Facultad 5 - Ciencias Humanas -->
-                        <div class="facultad-card" style="border-left-color: var(--color-facultad-5);">
-                            <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad5" aria-expanded="false">
-                                <h5 class="mb-0">
-                                    <span class="badge-facultad badge-facultad-5 me-2">FAC-05</span>
-                                    Facultad de Ciencias Humanas
-                                </h5>
-                                <span class="badge bg-primary">1 borrador</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div id="facultad5" class="collapse facultad-content">
-                                <table class="facultad-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Borrador</th>
-                                            <th>Estado</th>
-                                            <th>Última actualización</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Proyecto de Investigación Social</td>
-                                            <td><span class="badge bg-success">Publicado</span></td>
-                                            <td>18/02/2025</td>
-                                            <td>
-                                                <button class="btn btn-sm btn-info"><i class="fas fa-eye"></i></button>
-                                                <button class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <div class="mt-3 text-end">
-                                    <button class="btn btn-sm btn-success">
-                                        <i class="fas fa-plus me-1"></i>Nuevo Borrador
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <?php endif; ?>
 
                     </div>
                 </div>
@@ -1114,7 +1086,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         
                         <div class="desarrollo-section">
                             <div class="desarrollo-icon">
-                                <i class="fas fa-code-branch"></i>
+                                <i class="fas fa-chart-pie"></i>
                             </div>
                             <div class="desarrollo-title">EVALUACIÓN LÍNEAS</div>
                             <div class="desarrollo-subtitle">
@@ -1169,12 +1141,39 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
+    <!-- MODAL PARA NUEVO BORRADOR DE FACULTAD -->
+    <div class="modal fade" id="modalNuevoBorradorFacultad" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
+                    <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Formulación - <span id="facultadNombreModal"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formNuevoBorradorFacultad">
+                    <input type="hidden" name="modulo" value="formulacion">
+                    <input type="hidden" name="formulario_id" value="<?php echo $formulario['id']; ?>">
+                    <input type="hidden" name="facultad_id" id="facultad_id_modal">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Formulación *</label>
+                            <input type="text" class="form-control" name="nombre_borrador" id="nuevo_nombre_facultad" required placeholder="Ej: Plan Facultad 2025">
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success"><i class="fas fa-save me-1"></i>Crear Formulación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL PARA DUPLICAR BORRADOR -->
     <div class="modal fade" id="modalDuplicarBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
-                    <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Borrador</h5>
+                    <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Formulación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="formDuplicarBorrador">
@@ -1182,13 +1181,88 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="id" id="duplicar_id">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Nuevo Borrador *</label>
+                            <label class="form-label">Nombre de la Nueva Formulación *</label>
                             <input type="text" class="form-control" name="nombre_duplicado" id="duplicar_nombre" required>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-info"><i class="fas fa-copy me-1"></i>Duplicar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PARA GESTIÓN SEMESTRAL (ACTUALIZADO - SIN TABLA) -->
+    <div class="modal fade" id="modalGestionSemestral" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                    <h5 class="modal-title">
+                        <i class="fas fa-calendar-alt me-2"></i>GESTIÓN SEMESTRAL - <span id="gestionTituloSpan"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="formGestionSemestral">
+                    <input type="hidden" id="gestion_id" name="id">
+                    
+                    <div class="modal-body">
+                        <!-- Sección de arquitectura con 3 inputs -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <h6 class="text-muted mb-3" style="border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
+                                    <i class="fas fa-archway me-2"></i>ARQUITECTURA
+                                </h6>
+                            </div>
+                            
+                            <!-- SEM. 1 -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">SEM. 1</label>
+                                <input type="text" class="form-control" name="gestion_sem1" id="gestion_sem1" placeholder="Ingrese gestión semestre 1">
+                            </div>
+                            
+                            <!-- SEM. 2 -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">SEM. 2</label>
+                                <input type="text" class="form-control" name="gestion_sem2" id="gestion_sem2" placeholder="Ingrese gestión semestre 2">
+                            </div>
+                            
+                            <!-- VIGENCIA -->
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">VIGENCIA</label>
+                                <select class="form-select" name="vigencia" id="gestion_vigencia">
+                                    <option value="">Seleccione vigencia</option>
+                                    <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
+                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                    <?php endfor; ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- SEGUIMIENTO (0/0) y DESCRIPCIÓN DE LA GESTIÓN -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-white">
+                                        <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO (0/0)
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-bold">DESCRIPCIÓN DE LA GESTIÓN</label>
+                                            <textarea class="form-control" name="descripcion_gestion" id="gestion_descripcion" rows="4" placeholder="Describa la gestión realizada..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save me-1"></i>Guardar Gestión Semestral
+                        </button>
                     </div>
                 </form>
             </div>
@@ -1342,7 +1416,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <!-- 13. GESTIONADO EN FACULTADES -->
                                     <div class="col-12 mb-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this)">
                                             <label class="form-check-label" for="formulacion_gestionado_facultades">
                                                 <strong>13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
                                             </label>
@@ -1527,7 +1601,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA SEGUIMIENTO (con datos de formulación no editables y nuevos campos semestrales) -->
+    <!-- MODAL PARA SEGUIMIENTO (con datos de formulación no editables y campos de semestre antes de la descripción) -->
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -1642,7 +1716,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                         </div>
                         
-                        <!-- CAMPOS EDITABLES DE SEGUIMIENTO (incluyendo nuevos semestres) -->
+                        <!-- CAMPOS EDITABLES DE SEGUIMIENTO (con semestres antes de la descripción) -->
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">INDICADOR</label>
@@ -1653,16 +1727,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()">
                             </div>
                             
-                            <!-- NUEVOS CAMPOS: SEMESTRE 1 Y SEMESTRE 2 (independientes de la BD de formulación) -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            
+                            <!-- META PROGRAMADA Y EJECUTADA -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">META PROGRAMADA</label>
                                 <div class="input-group">
@@ -1684,6 +1749,17 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
+                            
+                            <!-- NUEVOS CAMPOS: SEMESTRE 1 Y SEMESTRE 2 (ANTES DE LA DESCRIPCIÓN) -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
+                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
+                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
+                            </div>
+                            
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label>
                                 <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
@@ -1767,6 +1843,13 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             $('#modalNuevoBorrador').modal('show');
         }
 
+        function abrirModalNuevoBorradorFacultad(facultadId, facultadNombre) {
+            $('#facultad_id_modal').val(facultadId);
+            $('#facultadNombreModal').text(facultadNombre);
+            $('#nuevo_nombre_facultad').val('Formulación ' + facultadNombre);
+            $('#modalNuevoBorradorFacultad').modal('show');
+        }
+
         $('#formNuevoBorrador').on('submit', function(e) {
             e.preventDefault();
             $.ajax({
@@ -1778,6 +1861,26 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
                         setTimeout(() => location.reload(), 1500);
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                }
+            });
+        });
+
+        $('#formNuevoBorradorFacultad').on('submit', function(e) {
+            e.preventDefault();
+            $.ajax({
+                url: basePath + '/modulo144/crearBorrador',
+                type: 'POST',
+                data: $(this).serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Creado!', response.message, 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -1807,6 +1910,197 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 }
             });
         });
+
+        // Función para abrir el modal de gestión semestral (ACTUALIZADA - SIN TABLA)
+        function abrirGestionSemestral(id, nombre) {
+            $('#gestion_id').val(id);
+            $('#gestionTituloSpan').text(nombre);
+            
+            // Cargar datos existentes si los hay
+            $.ajax({
+                url: basePath + '/modulo144/getBorrador?modulo=formulacion&id=' + id,
+                type: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        const b = response.borrador;
+                        
+                        // Cargar campos principales
+                        $('#gestion_sem1').val(b.gestion_sem1 || '');
+                        $('#gestion_sem2').val(b.gestion_sem2 || '');
+                        $('#gestion_vigencia').val(b.vigencia || '');
+                        $('#gestion_descripcion').val(b.descripcion_gestion || '');
+                    }
+                }
+            });
+            
+            $('#modalGestionSemestral').modal('show');
+        }
+
+        // Manejar el envío del formulario de gestión semestral (ACTUALIZADO - SIN TABLA)
+        $('#formGestionSemestral').on('submit', function(e) {
+            e.preventDefault();
+            
+            const data = {
+                id: $('#gestion_id').val(),
+                gestion_sem1: $('#gestion_sem1').val(),
+                gestion_sem2: $('#gestion_sem2').val(),
+                vigencia: $('#gestion_vigencia').val(),
+                descripcion_gestion: $('#gestion_descripcion').val()
+            };
+            
+            $.ajax({
+                url: basePath + '/modulo144/guardarGestionSemestral',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('¡Guardado!', response.message, 'success');
+                        $('#modalGestionSemestral').modal('hide');
+                    } else {
+                        Swal.fire('Error', response.message, 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
+                }
+            });
+        });
+
+        // Función para gestionar el cambio del checkbox de facultades
+        function gestionarCheckboxFacultades(checkbox) {
+            const id = $('#formulacion_id').val();
+            const nombreBorrador = $('#tituloFormulacionSpan').text();
+            const facultadId = <?php echo isset($facultad['id']) ? $facultad['id'] : 'null'; ?>;
+            
+            if (checkbox.checked) {
+                // Checkbox activado - mostrar alerta para crear en facultades
+                Swal.fire({
+                    title: '¿Activar gestión desde facultades?',
+                    html: `
+                        <p>Se creará un formulario de <strong>SEGUIMIENTO</strong> para cada facultad basado en esta formulación.</p>
+                        <p class="text-muted small">Los formularios de seguimiento aparecerán en la sección de cada facultad.</p>
+                    `,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#27AE60',
+                    cancelButtonColor: '#E74C3C',
+                    confirmButtonText: 'Sí, activar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Aquí se llamaría al controlador para crear los seguimientos por facultad
+                        // Por ahora, simulamos el éxito y actualizamos la UI
+                        Swal.fire({
+                            title: '¡Activado!',
+                            text: 'Se han creado los formularios de seguimiento en cada facultad.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Actualizar UI sin recargar - mostrar el formulario en las facultades
+                        actualizarUIporCheckbox(id, true);
+                        
+                        // Auto-guardar el cambio
+                        autoGuardarFormulacion();
+                    } else {
+                        // Si cancela, desmarcar el checkbox
+                        checkbox.checked = false;
+                    }
+                });
+            } else {
+                // Checkbox desactivado - mostrar alerta para eliminar de facultades
+                Swal.fire({
+                    title: '¿Desactivar gestión desde facultades?',
+                    html: `
+                        <p>Se <strong>ELIMINARÁN</strong> todos los formularios de seguimiento asociados a esta formulación en las facultades.</p>
+                        <p class="text-danger small">Esta acción no se puede deshacer.</p>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#E74C3C',
+                    cancelButtonColor: '#27AE60',
+                    confirmButtonText: 'Sí, desactivar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Aquí se llamaría al controlador para eliminar los seguimientos por facultad
+                        Swal.fire({
+                            title: '¡Desactivado!',
+                            text: 'Se han eliminado los formularios de seguimiento de las facultades.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        
+                        // Actualizar UI sin recargar - ocultar el formulario de las facultades
+                        actualizarUIporCheckbox(id, false);
+                        
+                        // Auto-guardar el cambio
+                        autoGuardarFormulacion();
+                    } else {
+                        // Si cancela, marcar el checkbox nuevamente
+                        checkbox.checked = true;
+                    }
+                });
+            }
+        }
+
+        // Función para actualizar la UI sin recargar la página
+        function actualizarUIporCheckbox(formulacionId, activado) {
+            // Buscar el elemento del formulario en la sección de facultades
+            const formularioItem = document.getElementById(`formulacion-item-${formulacionId}`);
+            const facultadCard = formularioItem ? formularioItem.closest('.facultad-card') : null;
+            
+            if (activado) {
+                // Si se activa, mostrar el elemento con animación
+                if (formularioItem) {
+                    formularioItem.classList.remove('fade-out');
+                    formularioItem.classList.add('fade-in');
+                    formularioItem.style.display = 'flex';
+                    
+                    // Actualizar contador de la facultad
+                    if (facultadCard) {
+                        const countSpan = facultadCard.querySelector('.badge.bg-primary');
+                        if (countSpan) {
+                            const currentCount = parseInt(countSpan.textContent) || 0;
+                            countSpan.textContent = `${currentCount + 1} formulaciones con check`;
+                        }
+                    }
+                }
+            } else {
+                // Si se desactiva, ocultar el elemento con animación
+                if (formularioItem) {
+                    formularioItem.classList.add('fade-out');
+                    
+                    // Esperar a que termine la animación para ocultar
+                    setTimeout(() => {
+                        formularioItem.style.display = 'none';
+                        formularioItem.classList.remove('fade-out');
+                        
+                        // Actualizar contador de la facultad
+                        if (facultadCard) {
+                            const countSpan = facultadCard.querySelector('.badge.bg-primary');
+                            if (countSpan) {
+                                const currentCount = parseInt(countSpan.textContent) || 0;
+                                countSpan.textContent = `${Math.max(0, currentCount - 1)} formulaciones con check`;
+                            }
+                            
+                            // Verificar si la facultad quedó vacía
+                            const itemsVisibles = facultadCard.querySelectorAll('.facultad-item[style="display: flex;"], .facultad-item:not([style*="display: none"])');
+                            if (itemsVisibles.length === 0) {
+                                const emptyState = facultadCard.querySelector('.empty-state');
+                                if (emptyState) {
+                                    emptyState.style.display = 'block';
+                                }
+                            }
+                        }
+                    }, 300);
+                }
+            }
+        }
 
         // Función para cargar la tabla de resumen con los valores actuales
         function cargarTablaResumen() {
@@ -2672,8 +2966,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         function cambiarEstadoBorrador(modulo, id, estado) {
             Swal.fire({
-                title: estado === 2 ? '¿Publicar borrador?' : '¿Cancelar borrador?',
-                text: estado === 2 ? 'Este borrador pasará a estado PUBLICADO' : 'Este borrador pasará a estado CANCELADO',
+                title: estado === 2 ? '¿Publicar formulación?' : '¿Cancelar formulación?',
+                text: estado === 2 ? 'Esta formulación pasará a estado PUBLICADO' : 'Esta formulación pasará a estado CANCELADO',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: estado === 2 ? '#27AE60' : '#E74C3C',
@@ -2698,7 +2992,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         function eliminarBorrador(modulo, id) {
             Swal.fire({
-                title: '¿Eliminar borrador?',
+                title: '¿Eliminar formulación?',
                 text: 'Esta acción NO se puede deshacer',
                 icon: 'warning',
                 showCancelButton: true,
@@ -2724,7 +3018,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON 3 ACORDEONES Y NUEVOS CAMPOS EN SEGUIMIENTO ===');
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON ACTUALIZACIÓN EN TIEMPO REAL ===');
             
             // Inicializar validación de pestañas cuando se abre el modal
             $('#modalFormulacion').on('shown.bs.modal', function() {

@@ -26,14 +26,10 @@ class Modulo144Controller {
 
         $estado_fechas = $this->model->verificarFechaHabil($formulario);
         
-        // Obtener líneas estratégicas de la base de datos
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
-        
-        // Obtener cargos de la base de datos
         $cargos = $this->model->getCargos();
-        
-        // Obtener planes institucionales de la base de datos
         $planes_institucionales = $this->model->getPlanesInstitucionales();
+        $facultades = $this->model->getFacultades();
         
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
@@ -55,9 +51,6 @@ class Modulo144Controller {
         require_once $vistaPath;
     }
 
-    /**
-     * Obtener estrategias por línea estratégica (para AJAX)
-     */
     public function getEstrategiasPorLinea() {
         header('Content-Type: application/json');
         
@@ -79,9 +72,6 @@ class Modulo144Controller {
         ]);
     }
 
-    /**
-     * Obtener motores por línea estratégica (para AJAX)
-     */
     public function getMotoresPorLinea() {
         header('Content-Type: application/json');
         
@@ -103,9 +93,6 @@ class Modulo144Controller {
         ]);
     }
 
-    /**
-     * Obtener proyectos por línea y motor (para AJAX)
-     */
     public function getProyectosPorLineaYMotor() {
         header('Content-Type: application/json');
         
@@ -128,7 +115,29 @@ class Modulo144Controller {
         ]);
     }
 
-    // ============= PÁGINA DE TEST =============
+    public function getBorradoresPorFacultad() {
+        header('Content-Type: application/json');
+        
+        $facultad_id = isset($_GET['facultad_id']) ? intval($_GET['facultad_id']) : 0;
+        $formulario_id = isset($_GET['formulario_id']) ? intval($_GET['formulario_id']) : 0;
+        
+        if ($facultad_id <= 0 || $formulario_id <= 0) {
+            echo json_encode([
+                'success' => false, 
+                'message' => 'ID de facultad o formulario no válido',
+                'borradores' => []
+            ]);
+            return;
+        }
+        
+        $borradores = $this->model->getBorradoresPorFacultad($facultad_id, $formulario_id);
+        
+        echo json_encode([
+            'success' => true, 
+            'borradores' => $borradores
+        ]);
+    }
+
     public function test() {
         $id = $_GET['id'] ?? 0;
         
@@ -149,7 +158,6 @@ class Modulo144Controller {
         $resultados_tests = [];
         
         foreach ($modulos as $key => $modulo) {
-            // Verificar tabla
             $tabla_existe = $this->model->verificarTabla($key);
             $datos_modulos[$key] = [
                 'config' => $modulo,
@@ -159,7 +167,6 @@ class Modulo144Controller {
                 'cancelados' => $this->model->getCancelados($key, $id)
             ];
             
-            // Resultados para mostrar
             $resultados_tests[] = [
                 'modulo' => $modulo['nombre'],
                 'tabla' => $modulo['tabla'],
@@ -313,6 +320,7 @@ class Modulo144Controller {
             $modulo = $_POST['modulo'] ?? '';
             $formulario_id = $_POST['formulario_id'] ?? 0;
             $nombre = trim($_POST['nombre_borrador'] ?? '');
+            $facultad_id = isset($_POST['facultad_id']) ? intval($_POST['facultad_id']) : null;
 
             if (empty($modulo)) {
                 echo json_encode(['success' => false, 'message' => 'Módulo no especificado']);
@@ -330,7 +338,7 @@ class Modulo144Controller {
             }
 
             $creado_por = $_SESSION['user_id'] ?? 1;
-            $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por);
+            $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por, $facultad_id);
 
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Borrador creado exitosamente']);
@@ -372,6 +380,43 @@ class Modulo144Controller {
                 'success' => $resultado,
                 'message' => $resultado ? 'Guardado exitosamente' : 'Error al guardar'
             ]);
+        }
+    }
+    
+    /**
+     * Guardar específicamente los campos de gestión semestral
+     */
+    public function guardarGestionSemestral() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'] ?? 0;
+            
+            if (empty($id) || $id <= 0) {
+                echo json_encode(['success' => false, 'message' => 'ID no válido']);
+                return;
+            }
+            
+            $data = [
+                'gestion_sem1' => $_POST['gestion_sem1'] ?? '',
+                'gestion_sem2' => $_POST['gestion_sem2'] ?? '',
+                'vigencia' => $_POST['vigencia'] ?? '',
+                'descripcion_gestion' => $_POST['descripcion_gestion'] ?? '',
+                'tabla_fila1_sem1' => $_POST['tabla_fila1_sem1'] ?? '',
+                'tabla_fila1_sem2' => $_POST['tabla_fila1_sem2'] ?? '',
+                'tabla_fila2_sem1' => $_POST['tabla_fila2_sem1'] ?? '',
+                'tabla_fila2_sem2' => $_POST['tabla_fila2_sem2'] ?? '',
+                'tabla_fila3_sem1' => $_POST['tabla_fila3_sem1'] ?? '',
+                'tabla_fila3_sem2' => $_POST['tabla_fila3_sem2'] ?? ''
+            ];
+            
+            $resultado = $this->model->actualizarGestionSemestral($id, $data);
+            
+            echo json_encode([
+                'success' => $resultado,
+                'message' => $resultado ? 'Gestión semestral guardada exitosamente' : 'Error al guardar la gestión semestral'
+            ]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
         }
     }
 
