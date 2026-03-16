@@ -34,13 +34,15 @@ require_once __DIR__ . '/../complementos/header.php';
       <p>Configura la creacion eliminacion y edicion de dependencias</p>
     </div>
 
+    <a style="text-decoration:none;" href="./config-formularios">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #4a6ee0;">
-        <i class="fas fa-user-shield"></i>
+        <i class="fas fa-wpforms"></i>
       </div>
-      <h3>Seguridad</h3>
-      <p>Configura contraseñas, permisos y autenticación de dos factores</p>
+      <h3>Formularios</h3>
+      <p>Configura campos, validaciones y plantillas de formularios</p>
     </div>
+    </a>
     
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #34a853;">

@@ -77,12 +77,25 @@ switch ($action) {
         require_once 'vista/menu/index.php';
         break;
 
-    case 'configuraciones':
-        require_once 'config/security.php';
-        require_once 'vista/configuraciones/index.php';
-        break;
-     
-    case 'usuarios':
+case 'configuraciones':
+    require_once 'config/security.php';
+    
+    $subaction = $urlParts[1] ?? 'index';
+    
+    switch ($subaction) {
+        case 'config-formularios':
+            require_once 'vista/configuraciones/config-formularios.php';
+            break;
+        case 'proveedores':
+            require_once 'vista/configuraciones/proveedores.php';
+            break;
+        default:
+            require_once 'vista/configuraciones/index.php';
+            break;
+    }
+    break;
+   
+        case 'usuarios':
         require_once 'config/security.php';
         require_once 'controlador/usuarioController.php';
         $usuarioController = new UsuarioController();
@@ -125,7 +138,8 @@ switch ($action) {
         }
         break;
         
-    case 'permisos':
+    
+        case 'permisos':
         require_once 'config/security.php';
         require_once 'controlador/permisoPopupController.php';
         $permisoController = new PermisoPopupController();
@@ -149,6 +163,14 @@ switch ($action) {
         }
         break;
         
+    // ====================================================
+    // SECCIÓN PARA FORMULARIOS (Página principal de formularios)
+    // ====================================================
+    case 'config-formularios':
+        require_once 'config/security.php';
+        require_once 'vista/configuraciones/formularios.php';
+        break;
+    
     // ====================================================
     // SECCIÓN PARA FOR-DE-144 (Formularios base)
     // ====================================================

@@ -133,7 +133,7 @@ define('PERMISO_PERMISOS_ID', 7);     // gestionar_permisos
             <!-- Configuración - Permiso ID: 5 (configurar_sistema) -->
             <?php if (tienePermisoPorId(PERMISO_CONFIG_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
                 <li class="navItem <?php echo ($paginaActual ?? '') === 'configuraciones' ? 'active' : ''; ?>">
-                    <a href="<?php echo $basePath; ?>/configuracion" class="navLink" data-tooltip="Configuración">
+                    <a href="<?php echo $basePath; ?>/configuraciones" class="navLink" data-tooltip="Configuración">
                         <i class="fas fa-cog"></i>
                         <span>Configuraciones</span>
                     </a>
