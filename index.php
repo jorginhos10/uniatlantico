@@ -77,25 +77,25 @@ switch ($action) {
         require_once 'vista/menu/index.php';
         break;
 
-case 'configuraciones':
-    require_once 'config/security.php';
-    
-    $subaction = $urlParts[1] ?? 'index';
-    
-    switch ($subaction) {
-        case 'config-formularios':
-            require_once 'vista/configuraciones/config-formularios.php';
-            break;
-        case 'proveedores':
-            require_once 'vista/configuraciones/proveedores.php';
-            break;
-        default:
-            require_once 'vista/configuraciones/index.php';
-            break;
-    }
-    break;
+    case 'configuraciones':
+        require_once 'config/security.php';
+        
+        $subaction = $urlParts[1] ?? 'index';
+        
+        switch ($subaction) {
+            case 'config-formularios':
+                require_once 'vista/configuraciones/config-formularios.php';
+                break;
+            case 'proveedores':
+                require_once 'vista/configuraciones/proveedores.php';
+                break;
+            default:
+                require_once 'vista/configuraciones/index.php';
+                break;
+        }
+        break;
    
-        case 'usuarios':
+    case 'usuarios':
         require_once 'config/security.php';
         require_once 'controlador/usuarioController.php';
         $usuarioController = new UsuarioController();
@@ -139,7 +139,7 @@ case 'configuraciones':
         break;
         
     
-        case 'permisos':
+    case 'permisos':
         require_once 'config/security.php';
         require_once 'controlador/permisoPopupController.php';
         $permisoController = new PermisoPopupController();
@@ -311,6 +311,50 @@ case 'configuraciones':
             case 'index':
             default:
                 $modulo144Controller->index();
+                break;
+        }
+        break;
+    // ====================================================
+
+    // ====================================================
+    // SECCIÓN PARA CONFIG-144 (Configuración de años)
+    // ====================================================
+    case 'config144':
+        require_once 'config/security.php';
+        require_once 'controlador/config144Controller.php';
+        $config144Controller = new config144Controller();
+        
+        if (isset($_GET['action'])) {
+            $actionParam = $_GET['action'];
+        } else {
+            $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+        }
+        
+        switch ($actionParam) {
+            case 'listar':
+                $config144Controller->listar();
+                break;
+            case 'activos':
+                $config144Controller->activos();
+                break;
+            case 'crear':
+                $config144Controller->crear();
+                break;
+            case 'get':
+                $config144Controller->get();
+                break;
+            case 'actualizar':
+                $config144Controller->actualizar();
+                break;
+            case 'cambiarEstado':
+                $config144Controller->cambiarEstado();
+                break;
+            case 'eliminar':
+                $config144Controller->eliminar();
+                break;
+            case 'index':
+            default:
+                $config144Controller->index();
                 break;
         }
         break;

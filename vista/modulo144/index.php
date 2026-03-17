@@ -600,7 +600,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <h1 class="mb-2">
                         <i class="fas fa-cubes me-3"></i>SISTEMA 144
                     </h1>
-                    <h4 class="mb-0"><?php echo htmlspecialchars($formulario['titulo'] ?? 'Sin título'); ?></h4>
+                    <h4 class="mb-0"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h4>
                     <p class="mb-0 mt-2 opacity-75">
                         <i class="fas fa-info-circle me-1"></i>
                         <?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?>
@@ -1308,14 +1308,22 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <!-- PESTAÑA 1: FORMULACIÓN (campos 1-13) -->
                             <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
                                 <div class="row">
-                                    <!-- 1. AÑO -->
+                                    <!-- 1. AÑO - CARGADO DESDE LA TABLA ano-for-de-144 -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">1. AÑO</label>
                                         <select class="form-select" name="anio" id="formulacion_anio" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione año</option>
-                                            <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
-                                            <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                            <?php endfor; ?>
+                                            <?php if (isset($anos) && count($anos) > 0): ?>
+                                                <?php foreach ($anos as $ano): ?>
+                                                    <option value="<?php echo htmlspecialchars($ano['anio']); ?>">
+                                                        <?php echo htmlspecialchars($ano['anio']); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
+                                                    <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+                                                <?php endfor; ?>
+                                            <?php endif; ?>
                                         </select>
                                     </div>
 

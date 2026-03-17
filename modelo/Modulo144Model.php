@@ -109,6 +109,20 @@ class Modulo144Model {
         return $this->modulos;
     }
 
+    /**
+     * Obtener años de la tabla ano-for-de-144
+     */
+    public function getAnos() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, anio FROM `ano-for-de-144` WHERE activo = 1 ORDER BY anio DESC");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAnos: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function verificarFormulario($id) {
         try {
             $stmt = $this->db->prepare("SELECT *, 
