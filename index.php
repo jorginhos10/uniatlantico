@@ -314,10 +314,9 @@ switch ($action) {
                 break;
         }
         break;
+    
     // ====================================================
-
-    // ====================================================
-    // SECCIÓN PARA CONFIG-144 (Configuración de años)
+    // SECCIÓN PARA CONFIG-144 (Configuración de años) - VERSIÓN COMPLETA CON NUEVAS TABLAS
     // ====================================================
     case 'config144':
         require_once 'config/security.php';
@@ -331,6 +330,7 @@ switch ($action) {
         }
         
         switch ($actionParam) {
+            // Endpoints básicos para años
             case 'listar':
                 $config144Controller->listar();
                 break;
@@ -352,6 +352,70 @@ switch ($action) {
             case 'eliminar':
                 $config144Controller->eliminar();
                 break;
+            case 'actualizarOrden':
+                $config144Controller->actualizarOrden();
+                break;
+            
+            // Endpoints para obtener datos de líneas, motores y proyectos
+            case 'getLineasEstrategicas':
+                $config144Controller->getLineasEstrategicas();
+                break;
+            case 'getMotoresPorLinea':
+                $config144Controller->getMotoresPorLinea();
+                break;
+            case 'getProyectosPorMotor':
+                $config144Controller->getProyectosPorMotor();
+                break;
+            
+            // NUEVOS ENDPOINTS para las tablas data_*
+            case 'getDataMotores':
+                $config144Controller->getDataMotores();
+                break;
+            case 'getDataProyectos':
+                $config144Controller->getDataProyectos();
+                break;
+            case 'guardarDataMotores':
+                $config144Controller->guardarDataMotores();
+                break;
+            case 'guardarDataProyectos':
+                $config144Controller->guardarDataProyectos();
+                break;
+            case 'getDataDistribucionPorAnio':
+                $config144Controller->getDataDistribucionPorAnio();
+                break;
+            case 'guardarDataDistribucion':
+                $config144Controller->guardarDataDistribucion();
+                break;
+            case 'verificarDatos':
+                $config144Controller->verificarDatos();
+                break;
+            
+            // ENDPOINTS ANTIGUOS (mantenidos por compatibilidad, pero redirigidos a los nuevos)
+            case 'getPorcentajesMotores':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataMotores();
+                break;
+            case 'getPorcentajesProyectos':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataProyectos();
+                break;
+            case 'guardarPorcentajesMotores':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataMotores();
+                break;
+            case 'guardarPorcentajesProyectos':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataProyectos();
+                break;
+            case 'getDistribucionPorAnio':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataDistribucionPorAnio();
+                break;
+            case 'guardarDistribucion':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataDistribucion();
+                break;
+            
             case 'index':
             default:
                 $config144Controller->index();

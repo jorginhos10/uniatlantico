@@ -27,7 +27,7 @@ class Modulo144Controller {
         $estado_fechas = $this->model->verificarFechaHabil($formulario);
         
         // Cargar datos necesarios para la vista
-        $anos = $this->model->getAnos(); // NUEVO: Cargar años desde la tabla
+        $anos = $this->model->getAnos();
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         $cargos = $this->model->getCargos();
         $planes_institucionales = $this->model->getPlanesInstitucionales();
@@ -385,9 +385,6 @@ class Modulo144Controller {
         }
     }
     
-    /**
-     * Guardar específicamente los campos de gestión semestral
-     */
     public function guardarGestionSemestral() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

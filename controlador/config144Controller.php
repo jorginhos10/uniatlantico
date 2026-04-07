@@ -9,9 +9,6 @@ class config144Controller {
         $this->model = new config144Model();
     }
 
-    /**
-     * Página principal de gestión de años
-     */
     public function index() {
         $vistaPath = 'vista/configuraciones/config144.php';
         if (!file_exists($vistaPath)) {
@@ -21,27 +18,18 @@ class config144Controller {
         require_once $vistaPath;
     }
 
-    /**
-     * Obtener todos los años (API)
-     */
     public function listar() {
         header('Content-Type: application/json');
         $anos = $this->model->getAnos();
         echo json_encode(['success' => true, 'anos' => $anos]);
     }
 
-    /**
-     * Obtener años activos (API)
-     */
     public function activos() {
         header('Content-Type: application/json');
         $anos = $this->model->getAnosActivos();
         echo json_encode(['success' => true, 'anos' => $anos]);
     }
 
-    /**
-     * Crear un nuevo año
-     */
     public function crear() {
         header('Content-Type: application/json');
         
@@ -68,9 +56,6 @@ class config144Controller {
         echo json_encode($resultado);
     }
 
-    /**
-     * Obtener un año por ID
-     */
     public function get() {
         header('Content-Type: application/json');
         
@@ -90,9 +75,6 @@ class config144Controller {
         }
     }
 
-    /**
-     * Actualizar un año
-     */
     public function actualizar() {
         header('Content-Type: application/json');
         
@@ -125,9 +107,6 @@ class config144Controller {
         echo json_encode($resultado);
     }
 
-    /**
-     * Cambiar estado (activar/desactivar)
-     */
     public function cambiarEstado() {
         header('Content-Type: application/json');
         
@@ -148,9 +127,6 @@ class config144Controller {
         echo json_encode($resultado);
     }
 
-    /**
-     * Eliminar un año
-     */
     public function eliminar() {
         header('Content-Type: application/json');
         
@@ -170,9 +146,6 @@ class config144Controller {
         echo json_encode($resultado);
     }
 
-    /**
-     * Actualizar orden de los años (para drag & drop)
-     */
     public function actualizarOrden() {
         header('Content-Type: application/json');
         
@@ -190,6 +163,200 @@ class config144Controller {
 
         $resultado = $this->model->reordenarAnos($ordenes);
         echo json_encode($resultado);
+    }
+
+    public function getLineasEstrategicas() {
+        header('Content-Type: application/json');
+        
+        $lineas = $this->model->getLineasEstrategicas();
+        
+        echo json_encode(['success' => true, 'lineas' => $lineas]);
+    }
+
+    public function getMotoresPorLinea() {
+        header('Content-Type: application/json');
+        
+        $linea_id = isset($_GET['linea_id']) ? intval($_GET['linea_id']) : 0;
+        
+        if ($linea_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID de línea no válido']);
+            return;
+        }
+        
+        $motores = $this->model->getMotoresPorLinea($linea_id);
+        echo json_encode(['success' => true, 'motores' => $motores]);
+    }
+
+    public function getProyectosPorMotor() {
+        header('Content-Type: application/json');
+        
+        $motor_id = isset($_GET['motor_id']) ? intval($_GET['motor_id']) : 0;
+        
+        if ($motor_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID de motor no válido']);
+            return;
+        }
+        
+        $proyectos = $this->model->getProyectosPorMotor($motor_id);
+        echo json_encode(['success' => true, 'proyectos' => $proyectos]);
+    }
+
+    public function getDataMotores() {
+        header('Content-Type: application/json');
+        
+        $anio = isset($_GET['anio']) ? intval($_GET['anio']) : 0;
+        $linea_id = isset($_GET['linea_id']) ? intval($_GET['linea_id']) : 0;
+        
+        if ($anio <= 0 || $linea_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Año o línea no válidos']);
+            return;
+        }
+        
+        $datos = $this->model->getDataMotores($anio, $linea_id);
+        echo json_encode(['success' => true, 'datos' => ['motor' => $datos]]);
+    }
+
+    public function getDataProyectos() {
+        header('Content-Type: application/json');
+        
+        $anio = isset($_GET['anio']) ? intval($_GET['anio']) : 0;
+        $motor_id = isset($_GET['motor_id']) ? intval($_GET['motor_id']) : 0;
+        
+        if ($anio <= 0 || $motor_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Año o motor no válidos']);
+            return;
+        }
+        
+        $datos = $this->model->getDataProyectos($anio, $motor_id);
+        echo json_encode(['success' => true, 'datos' => ['proyecto' => $datos]]);
+    }
+
+    public function guardarDataMotores() {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        
+        $datos = isset($_POST['datos']) ? json_decode($_POST['datos'], true) : [];
+        
+        if (empty($datos)) {
+            echo json_encode(['success' => false, 'message' => 'No hay datos para guardar']);
+            return;
+        }
+        
+        $total = 0;
+        $anio = $datos[0]['anio'];
+        $linea_id = $datos[0]['linea_id'];
+        
+        foreach ($datos as $item) {
+            $total += floatval($item['porcentaje']);
+        }
+        
+        if (abs($total - 100) > 0.01 && count($datos) > 1) {
+            echo json_encode(['success' => false, 'message' => 'La suma de porcentajes debe ser 100%']);
+            return;
+        }
+        
+        $resultado = $this->model->guardarDataMotores($anio, $linea_id, $datos);
+        echo json_encode($resultado);
+    }
+
+    public function guardarDataProyectos() {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        
+        $datos = isset($_POST['datos']) ? json_decode($_POST['datos'], true) : [];
+        
+        if (empty($datos)) {
+            echo json_encode(['success' => false, 'message' => 'No hay datos para guardar']);
+            return;
+        }
+        
+        $total = 0;
+        $anio = $datos[0]['anio'];
+        $motor_id = $datos[0]['motor_id'];
+        
+        foreach ($datos as $item) {
+            $total += floatval($item['porcentaje']);
+        }
+        
+        if (abs($total - 100) > 0.01 && count($datos) > 1) {
+            echo json_encode(['success' => false, 'message' => 'La suma de porcentajes debe ser 100%']);
+            return;
+        }
+        
+        $resultado = $this->model->guardarDataProyectos($anio, $motor_id, $datos);
+        echo json_encode($resultado);
+    }
+
+    public function getDataDistribucionPorAnio() {
+        header('Content-Type: application/json');
+        
+        $anio = isset($_GET['anio']) ? intval($_GET['anio']) : 0;
+        
+        if ($anio <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Año no válido']);
+            return;
+        }
+        
+        $datos = $this->model->getDataLineasEstrategicasPorAnio($anio);
+        
+        if ($datos === false || $datos === null) {
+            $datos = [];
+        }
+        
+        echo json_encode(['success' => true, 'distribucion' => $datos]);
+    }
+
+    public function guardarDataDistribucion() {
+        header('Content-Type: application/json');
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        
+        $distribucion = isset($_POST['distribucion']) ? json_decode($_POST['distribucion'], true) : [];
+        
+        if (empty($distribucion)) {
+            echo json_encode(['success' => false, 'message' => 'No hay datos para guardar']);
+            return;
+        }
+        
+        $total = 0;
+        $anio = $distribucion[0]['anio'];
+        
+        foreach ($distribucion as $item) {
+            $total += floatval($item['porcentaje']);
+        }
+        
+        if (abs($total - 100) > 0.01) {
+            echo json_encode(['success' => false, 'message' => 'La suma de porcentajes debe ser 100%']);
+            return;
+        }
+        
+        $resultado = $this->model->guardarDataDistribucion($anio, $distribucion);
+        echo json_encode($resultado);
+    }
+
+    public function verificarDatos() {
+        header('Content-Type: application/json');
+        
+        $anio = isset($_GET['anio']) ? intval($_GET['anio']) : 0;
+        
+        if ($anio <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Año no válido']);
+            return;
+        }
+        
+        $tieneDatos = $this->model->verificarDatosPorAnio($anio);
+        echo json_encode(['success' => true, 'tiene_datos' => $tieneDatos]);
     }
 }
 ?>
