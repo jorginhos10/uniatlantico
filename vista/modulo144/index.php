@@ -28,7 +28,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             --color-tab-complete: #27AE60;
         }
         
-        /* Colores dinámicos para facultades */
         .facultad-color-0 { border-left-color: #9C27B0; }
         .facultad-color-1 { border-left-color: #FF9800; }
         .facultad-color-2 { border-left-color: #2196F3; }
@@ -128,7 +127,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             filter: brightness(0) invert(1);
         }
         
-        /* NUEVOS ESTILOS PARA LISTAS (en lugar de tarjetas) */
         .lista-container {
             background: white;
             border: 1px solid #e9ecef;
@@ -344,7 +342,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
-        /* Estilos para pestañas */
         .nav-tabs .nav-link {
             border: none;
             border-bottom: 3px solid transparent;
@@ -441,11 +438,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             background-color: #fff;
         }
         
-        .resumen-table .subtotal {
-            background-color: #ffe0b2;
-            font-weight: 600;
-        }
-
         .modal-body-scroll {
             max-height: 70vh;
             overflow-y: auto;
@@ -584,18 +576,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             font-size: 0.6rem;
             margin-right: 3px;
         }
-
-        .fade-out {
-            opacity: 0;
-            transform: translateX(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
-        
-        .fade-in {
-            opacity: 1;
-            transform: translateX(0);
-            transition: opacity 0.3s ease, transform 0.3s ease;
-        }
     </style>
 </head>
 <body>
@@ -658,7 +638,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
         <?php else: ?>
 
-        <!-- Acordeón 1: Módulos existentes (FORMULACIÓN 144 y SEGUIMIENTO 144) -->
+        <!-- Acordeón 1: Módulos existentes -->
         <div class="accordion" id="accordionModulos">
             <?php $primer_modulo = false; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
@@ -699,7 +679,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
                         
-                        <!-- BORRADORES - VISTA DE LISTA -->
+                        <!-- BORRADORES -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-secondary bg-opacity-10 p-2 rounded-circle me-2">
@@ -774,7 +754,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
 
-                        <!-- PUBLICADOS - VISTA DE LISTA -->
+                        <!-- PUBLICADOS -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
@@ -832,7 +812,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
 
-                        <!-- CANCELADOS - VISTA DE LISTA -->
+                        <!-- CANCELADOS -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-danger bg-opacity-10 p-2 rounded-circle me-2">
@@ -976,7 +956,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                         
                                                         $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
                                                         ?>
-                                                        <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>">
+                                                        <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>" data-facultad-id="<?php echo $facultadId; ?>">
                                                             <div class="facultad-item-info">
                                                                 <h6>
                                                                     <?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?>
@@ -1028,7 +1008,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     <p class="text-muted small mb-0 mt-2">
                                                         Para que aparezcan aquí, marca la opción:
                                                         <br>
-                                                        <strong>"13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
+                                                        <strong>"12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
                                                     </p>
                                                 </div>
                                             <?php endif; ?>
@@ -1109,7 +1089,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         <?php endif; ?>
     </div>
 
-    <!-- Indicador de auto-guardado -->
     <div class="auto-save-indicator" id="autoSaveIndicator">
         <i class="fas fa-check-circle me-2"></i> Guardado automático
     </div>
@@ -1260,7 +1239,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA FORMULACIÓN - ELIMINADO EL CAMPO AÑO -->
+    <!-- MODAL PARA FORMULACIÓN -->
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -1294,10 +1273,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     
                     <div class="modal-body-scroll">
                         <div class="tab-content">
-                            <!-- PESTAÑA 1: FORMULACIÓN (sin el campo año) -->
+                            <!-- PESTAÑA 1: FORMULACIÓN -->
                             <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
                                 <div class="row">
-                                    <!-- 1. LÍNEA ESTRATÉGICA -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">1. LÍNEA ESTRATÉGICA</label>
                                         <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas()">
@@ -1312,13 +1290,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 2. OBJETIVO -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">2. OBJETIVO</label>
                                         <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
                                     </div>
 
-                                    <!-- 3. ESTRATEGIA -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">3. ESTRATEGIA</label>
                                         <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion(); validarPestanas()">
@@ -1326,7 +1302,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 4. MOTOR DE DESARROLLO -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">4. MOTOR DE DESARROLLO</label>
                                         <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas()">
@@ -1334,7 +1309,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 5. PROYECTO -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
                                         <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion(); validarPestanas()">
@@ -1342,13 +1316,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 6. META DE RESULTADO -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">6. META DE RESULTADO</label>
                                         <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
                                     </div>
 
-                                    <!-- 7. PONDERACIÓN DE LOS PROYECTOS -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
                                         <div class="input-group">
@@ -1357,13 +1329,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </div>
                                     </div>
 
-                                    <!-- 8. ACTIVIDAD DEL PROYECTO (205) -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">8. ACTIVIDAD DEL PROYECTO (205)</label>
                                         <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
                                     </div>
 
-                                    <!-- 9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                         <div class="input-group">
@@ -1372,7 +1342,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </div>
                                     </div>
 
-                                    <!-- 10. RESPONSABLE (select de cargos) -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">10. RESPONSABLE</label>
                                         <select class="form-select" name="responsable_formulacion" id="formulacion_responsable" onchange="autoGuardarFormulacion(); validarPestanas()">
@@ -1385,13 +1354,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 11. ID INDICADOR -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">11. ID INDICADOR</label>
                                         <input type="text" class="form-control" name="id_indicador" id="formulacion_id_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el ID del indicador">
                                     </div>
 
-                                    <!-- 12. GESTIONADO EN FACULTADES -->
                                     <div class="col-12 mb-3">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this)">
@@ -1455,7 +1422,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     
                                     <div class="col-12 mb-3">
                                         <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
-                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador, su propósito y qué mide..."></textarea>
+                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
                                     </div>
                                     
                                     <div class="col-12 mt-4">
@@ -1499,15 +1466,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         <div class="resumen-section">
                                             <h5 class="resumen-title">RESUMEN DE INDICADORES Y METAS</h5>
                                             <table class="resumen-table">
-                                                <thead>
-                                                    <tr><th>CATEGORÍA</th><th>VALOR</th></tr>
-                                                </thead>
+                                                <thead><tr><th>CATEGORÍA</th><th>VALOR</th></tr></thead>
                                                 <tbody id="tablaResumenCuerpo"></tbody>
-                                             </table>
-                                            <div class="mt-3 text-muted small">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                Los valores mostrados corresponden a los datos ingresados en el formulario.
-                                            </div>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -1538,7 +1499,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">PLANES SELECCIONADOS</label>
                                         <div id="contenedorPlanes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ced4da; border-radius: 8px; padding: 10px; background-color: #f8f9fa;">
-                                            <p class="text-muted text-center mb-0" id="mensajeVacioPlanes">No hay planes seleccionados</p>
+                                            <p class="text-muted text-center mb-0">No hay planes seleccionados</p>
                                         </div>
                                     </div>
                                     
@@ -1573,7 +1534,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <div class="modal-body-scroll">
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div class="alert alert-success" role="alert">
+                                <div class="alert alert-success">
                                     <i class="fas fa-info-circle me-2"></i>
                                     <strong>Datos de Formulación:</strong> Esta información proviene del formulario de formulación y no es editable.
                                 </div>
@@ -1581,59 +1542,26 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-2 mb-3">
-                                <label class="form-label text-muted">AÑO</label>
-                                <div class="bg-light-view" id="seguimiento_anio_view">-</div>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label text-muted">LÍNEA ESTRATÉGICA</label>
-                                <div class="bg-light-view" id="seguimiento_linea_view">-</div>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label text-muted">OBJETIVO</label>
-                                <div class="bg-light-view" id="seguimiento_objetivo_view">-</div>
-                            </div>
+                            <div class="col-md-2 mb-3"><label class="form-label text-muted">AÑO</label><div class="bg-light-view" id="seguimiento_anio_view">-</div></div>
+                            <div class="col-md-5 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
+                            <div class="col-md-5 mb-3"><label class="form-label text-muted">OBJETIVO</label><div class="bg-light-view" id="seguimiento_objetivo_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">ESTRATEGIA</label>
-                                <div class="bg-light-view" id="seguimiento_estrategia_view">-</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">MOTOR DE DESARROLLO</label>
-                                <div class="bg-light-view" id="seguimiento_motor_view">-</div>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ESTRATEGIA</label><div class="bg-light-view" id="seguimiento_estrategia_view">-</div></div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">META DE RESULTADO</label>
-                                <div class="bg-light-view" id="seguimiento_meta_resultado_view">-</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">PROYECTO</label>
-                                <div class="bg-light-view" id="seguimiento_proyecto_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">PONDERACIÓN PROYECTOS</label>
-                                <div class="bg-light-view" id="seguimiento_ponderacion_proyectos_view">-</div>
-                            </div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">META DE RESULTADO</label><div class="bg-light-view" id="seguimiento_meta_resultado_view">-</div></div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN PROYECTOS</label><div class="bg-light-view" id="seguimiento_ponderacion_proyectos_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">ACTIVIDAD DEL PROYECTO (205)</label>
-                                <div class="bg-light-view" id="seguimiento_actividad_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">PONDERACIÓN ACTIVIDADES</label>
-                                <div class="bg-light-view" id="seguimiento_ponderacion_actividades_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">RESPONSABLE</label>
-                                <div class="bg-light-view" id="seguimiento_responsable_view">-</div>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ACTIVIDAD DEL PROYECTO</label><div class="bg-light-view" id="seguimiento_actividad_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN ACTIVIDADES</label><div class="bg-light-view" id="seguimiento_ponderacion_actividades_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">RESPONSABLE</label><div class="bg-light-view" id="seguimiento_responsable_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
@@ -1649,61 +1577,22 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-12">
-                                <hr class="my-4">
-                                <h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6>
-                            </div>
+                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6></div>
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">INDICADOR</label>
-                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">FECHA DE SEGUIMIENTO</label>
-                                <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()">
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">INDICADOR</label><input type="text" class="form-control" name="indicador" id="seguimiento_indicador" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">FECHA DE SEGUIMIENTO</label><input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()"></div>
                             
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">META PROGRAMADA</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">$</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">META EJECUTADA</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">$</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">% AVANCE</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">%</span>
-                                </div>
-                            </div>
+                            <div class="col-md-4 mb-3"><label class="form-label">META PROGRAMADA</label><div class="input-group"><input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label">META EJECUTADA</label><div class="input-group"><input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label">% AVANCE</label><div class="input-group"><input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()"><span class="input-group-text">%</span></div></div>
                             
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 1</label><input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 2</label><input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" oninput="autoGuardarSeguimiento()"></div>
                             
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label>
-                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">OBSERVACIONES</label>
-                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label><input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-12 mb-3"><label class="form-label">OBSERVACIONES</label><textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
                         </div>
                     </div>
                     
@@ -1740,6 +1629,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         
         let timeoutId = null;
         let currentModule = null;
+        let editandoTitulo = false;
+        let planesSeleccionados = [];
         
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
         function actualizarContador() {
@@ -1765,9 +1656,83 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         setInterval(actualizarContador, 1000);
         <?php endif; ?>
 
-        let editandoTitulo = false;
-        let planesSeleccionados = [];
+        // FUNCIÓN PRINCIPAL - GESTIONAR CHECKBOX CON RECARGA DE PÁGINA
+        function gestionarCheckboxFacultades(checkbox) {
+            const id = $('#formulacion_id').val();
+            const estadoActual = checkbox.checked;
+            const accion = estadoActual ? 'activar' : 'desactivar';
+            const titulo = estadoActual ? '¿Activar gestión desde facultades?' : '¿Desactivar gestión desde facultades?';
+            const mensaje = estadoActual ? 
+                'Se creará un formulario de SEGUIMIENTO para cada facultad basado en esta formulación.' :
+                'Se ELIMINARÁN todos los formularios de seguimiento asociados a esta formulación en las facultades. Esta acción no se puede deshacer.';
+            const icono = estadoActual ? 'question' : 'warning';
+            const colorBoton = estadoActual ? '#27AE60' : '#E74C3C';
+            
+            Swal.fire({
+                title: titulo,
+                html: `<p>${mensaje}</p>${!estadoActual ? '<p class="text-danger small mt-2">⚠️ Esta acción no se puede deshacer.</p>' : ''}`,
+                icon: icono,
+                showCancelButton: true,
+                confirmButtonColor: colorBoton,
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: estadoActual ? 'Sí, activar' : 'Sí, desactivar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Mostrar loading
+                    Swal.fire({
+                        title: estadoActual ? 'Activando...' : 'Desactivando...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    
+                    // Guardar el cambio en el servidor
+                    const data = {
+                        modulo: 'formulacion',
+                        id: id,
+                        gestionado_facultades: estadoActual ? 1 : 0
+                    };
+                    
+                    $.ajax({
+                        url: basePath + '/modulo144/guardar',
+                        type: 'POST',
+                        data: data,
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: estadoActual ? '¡Activado!' : '¡Desactivado!',
+                                    text: estadoActual ? 'Se ha activado la gestión desde facultades.' : 'Se ha desactivado la gestión desde facultades.',
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    // RECARGAR LA PÁGINA COMPLETAMENTE
+                                    location.reload();
+                                });
+                            } else {
+                                // Si hubo error, revertir el checkbox
+                                checkbox.checked = !estadoActual;
+                                Swal.fire('Error', response.message || 'No se pudo guardar el cambio', 'error');
+                            }
+                        },
+                        error: function() {
+                            // Si hubo error, revertir el checkbox
+                            checkbox.checked = !estadoActual;
+                            Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
+                        }
+                    });
+                } else {
+                    // Si cancela, revertir el checkbox
+                    checkbox.checked = !estadoActual;
+                }
+            });
+        }
 
+        // Resto de funciones (abrirModalNuevoBorrador, abrirModalDuplicar, etc.)
+        // ... (mantener todas las demás funciones igual que antes)
+        
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
             $('#nuevo_nombre').val('');
@@ -1892,91 +1857,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
-        function gestionarCheckboxFacultades(checkbox) {
-            const id = $('#formulacion_id').val();
-            const nombreBorrador = $('#tituloFormulacionSpan').text();
-            
-            if (checkbox.checked) {
-                Swal.fire({
-                    title: '¿Activar gestión desde facultades?',
-                    html: `<p>Se creará un formulario de <strong>SEGUIMIENTO</strong> para cada facultad basado en esta formulación.</p>`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#27AE60',
-                    cancelButtonColor: '#E74C3C',
-                    confirmButtonText: 'Sí, activar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({ title: '¡Activado!', text: 'Se han creado los formularios de seguimiento en cada facultad.', icon: 'success', timer: 2000, showConfirmButton: false });
-                        actualizarUIporCheckbox(id, true);
-                        autoGuardarFormulacion();
-                    } else {
-                        checkbox.checked = false;
-                    }
-                });
-            } else {
-                Swal.fire({
-                    title: '¿Desactivar gestión desde facultades?',
-                    html: `<p>Se <strong>ELIMINARÁN</strong> todos los formularios de seguimiento asociados a esta formulación.</p><p class="text-danger small">Esta acción no se puede deshacer.</p>`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#E74C3C',
-                    cancelButtonColor: '#27AE60',
-                    confirmButtonText: 'Sí, desactivar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({ title: '¡Desactivado!', text: 'Se han eliminado los formularios de seguimiento de las facultades.', icon: 'success', timer: 2000, showConfirmButton: false });
-                        actualizarUIporCheckbox(id, false);
-                        autoGuardarFormulacion();
-                    } else {
-                        checkbox.checked = true;
-                    }
-                });
-            }
-        }
-
-        function actualizarUIporCheckbox(formulacionId, activado) {
-            const formularioItem = document.getElementById(`formulacion-item-${formulacionId}`);
-            const facultadCard = formularioItem ? formularioItem.closest('.facultad-card') : null;
-            
-            if (activado) {
-                if (formularioItem) {
-                    formularioItem.classList.remove('fade-out');
-                    formularioItem.classList.add('fade-in');
-                    formularioItem.style.display = 'flex';
-                    if (facultadCard) {
-                        const countSpan = facultadCard.querySelector('.badge.bg-primary');
-                        if (countSpan) {
-                            const currentCount = parseInt(countSpan.textContent) || 0;
-                            countSpan.textContent = `${currentCount + 1} formulaciones con check`;
-                        }
-                    }
-                }
-            } else {
-                if (formularioItem) {
-                    formularioItem.classList.add('fade-out');
-                    setTimeout(() => {
-                        formularioItem.style.display = 'none';
-                        formularioItem.classList.remove('fade-out');
-                        if (facultadCard) {
-                            const countSpan = facultadCard.querySelector('.badge.bg-primary');
-                            if (countSpan) {
-                                const currentCount = parseInt(countSpan.textContent) || 0;
-                                countSpan.textContent = `${Math.max(0, currentCount - 1)} formulaciones con check`;
-                            }
-                            const itemsVisibles = facultadCard.querySelectorAll('.facultad-item[style="display: flex;"], .facultad-item:not([style*="display: none"])');
-                            if (itemsVisibles.length === 0) {
-                                const emptyState = facultadCard.querySelector('.empty-state');
-                                if (emptyState) emptyState.style.display = 'block';
-                            }
-                        }
-                    }, 300);
-                }
-            }
-        }
-
         function cargarTablaResumen() {
             const campos = [
                 { categoria: 'NOMBRE DEL INDICADOR', valor: $('#formulacion_nombre_indicador').val() || '-' },
@@ -1993,7 +1873,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             ];
             
             let html = '';
-            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td></tr>`; });
+            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td>`; });
             $('#tablaResumenCuerpo').html(html);
         }
 
@@ -2013,7 +1893,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             ];
             
             let html = '';
-            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td></tr>`; });
+            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td>`; });
             $('#tablaResumenSeguimientoCuerpo').html(html);
         }
 
@@ -2257,7 +2137,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        console.log('Planes guardados correctamente');
                         mostrarAutoSaveIndicator();
                     }
                 }
@@ -2375,7 +2254,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             const id = $('#formulacion_id').val();
             if (!id) return;
             
-            currentModule = 'formulacion';
             if (timeoutId) clearTimeout(timeoutId);
             
             timeoutId = setTimeout(function() {
@@ -2428,7 +2306,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             const id = $('#seguimiento_id').val();
             if (!id) return;
             
-            currentModule = 'seguimiento';
             if (timeoutId) clearTimeout(timeoutId);
             
             timeoutId = setTimeout(function() {
