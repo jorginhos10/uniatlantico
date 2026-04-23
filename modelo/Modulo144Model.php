@@ -121,15 +121,17 @@ class Modulo144Model {
     public function verificarFormulario($id) {
         try {
             $stmt = $this->db->prepare("SELECT *, 
-                                        fecha_fin as fecha_cierre,
+                                        CASE WHEN tipo_tiempo = 'libre' THEN NULL ELSE fecha_fin END as fecha_cierre,
                                         NOW() as fecha_actual,
-                                        TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) as segundos_restantes,
+                                        CASE WHEN tipo_tiempo = 'rango' AND fecha_fin IS NOT NULL 
+                                             THEN TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) 
+                                             ELSE NULL END as segundos_restantes,
                                         CASE 
-                                            WHEN fecha_inicio IS NOT NULL AND NOW() < fecha_inicio THEN 'no_iniciado'
-                                            WHEN fecha_fin IS NOT NULL AND NOW() > fecha_fin THEN 'expirado'
-                                            WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_fin THEN 'vigente'
-                                            WHEN fecha_inicio IS NULL AND fecha_fin IS NULL THEN 'sin_fechas'
-                                            ELSE 'vigente'
+                                            WHEN tipo_tiempo = 'libre' THEN 'sin_fechas'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_inicio IS NOT NULL AND NOW() < fecha_inicio THEN 'no_iniciado'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_fin IS NOT NULL AND NOW() > fecha_fin THEN 'expirado'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_fin THEN 'vigente'
+                                            ELSE 'sin_fechas'
                                         END as estado_fecha
                                         FROM formularios 
                                         WHERE id = :id AND estado = 1");
@@ -150,9 +152,23 @@ class Modulo144Model {
             ];
         }
 
+        // Formulario con tiempo libre: siempre disponible, sin fechas
+        if (($formulario['tipo_tiempo'] ?? '') === 'libre') {
+            return [
+                'valido' => true,
+                'mensaje' => 'Siempre disponible',
+                'clase' => 'sin-fechas'
+            ];
+        }
+
         $fecha_actual = date('Y-m-d H:i:s');
-        
-        if (empty($formulario['fecha_inicio']) && empty($formulario['fecha_fin'])) {
+
+        // Formulario con rango: verificar fechas
+        $fi = $formulario['fecha_inicio'] ?? null;
+        $ff = $formulario['fecha_fin']    ?? null;
+
+        if (empty($fi) && empty($ff)) {
+            // Rango pero sin fechas cargadas → tratar como libre
             return [
                 'valido' => true,
                 'mensaje' => 'Sin restricción de fechas',
@@ -160,27 +176,28 @@ class Modulo144Model {
             ];
         }
 
-        if (!empty($formulario['fecha_inicio']) && !empty($formulario['fecha_fin'])) {
-            if ($fecha_actual < $formulario['fecha_inicio']) {
+        if (!empty($fi) && !empty($ff)) {
+            if ($fecha_actual < $fi) {
                 return [
                     'valido' => false,
-                    'mensaje' => 'Disponible desde: ' . date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])),
+                    'mensaje' => 'Disponible desde: ' . date('d/m/Y H:i', strtotime($fi)),
                     'clase' => 'no-iniciado'
                 ];
-            } elseif ($fecha_actual > $formulario['fecha_fin']) {
+            } elseif ($fecha_actual > $ff) {
                 return [
                     'valido' => false,
-                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
+                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($ff)),
                     'clase' => 'expirado'
                 ];
             } else {
                 return [
                     'valido' => true,
-                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
+                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($ff)),
                     'clase' => 'vigente'
                 ];
             }
         }
+
         return ['valido' => true, 'mensaje' => 'Vigente', 'clase' => 'vigente'];
     }
 

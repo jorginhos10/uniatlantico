@@ -422,28 +422,45 @@ require_once __DIR__ . '/../complementos/header.php';
                     $fecha = new DateTime($formulario['fecha_creacion']);
                     $fechaFormateada = $fecha->format('d/m/Y H:i');
                     
-                    // Determinar estado de disponibilidad
-                    $ahora = new DateTime();
-                    $disponible = true;
-                    $estadoTiempo = 'disponible';
+                    // Disponibilidad real: estado + tipo_tiempo
+                    $ahora         = new DateTime();
+                    $disponible    = false;
+                    $estadoTiempo  = 'no-disponible';
                     $mensajeEstado = '';
-                    
-                    if ($formulario['tipo_tiempo'] == 'rango') {
+
+                    if ($formulario['estado'] != 1) {
+                        $estadoTiempo  = 'inactivo';
+                        $mensajeEstado = 'Formulario inactivo';
+
+                    } elseif ($formulario['tipo_tiempo'] == 'libre') {
+                        $disponible   = true;
+                        $estadoTiempo = 'disponible';
+
+                    } elseif ($formulario['tipo_tiempo'] == 'rango') {
                         $inicio = new DateTime($formulario['fecha_inicio']);
-                        $fin = new DateTime($formulario['fecha_fin']);
-                        
+                        $fin    = new DateTime($formulario['fecha_fin']);
+
                         if ($ahora < $inicio) {
-                            $disponible = false;
-                            $estadoTiempo = 'proximamente';
+                            $disponible    = false;
+                            $estadoTiempo  = 'proximamente';
                             $mensajeEstado = 'Disponible a partir del ' . $inicio->format('d/m/Y H:i');
                         } elseif ($ahora > $fin) {
-                            $disponible = false;
-                            $estadoTiempo = 'finalizado';
+                            $disponible    = false;
+                            $estadoTiempo  = 'finalizado';
                             $mensajeEstado = 'Finalizado el ' . $fin->format('d/m/Y H:i');
+                        } else {
+                            $disponible   = true;
+                            $estadoTiempo = 'disponible';
                         }
                     }
-                    
-                    $cardClass = $disponible ? 'disponible' : ($estadoTiempo == 'proximamente' ? 'proximamente' : 'no-disponible');
+
+                    if ($estadoTiempo === 'disponible') {
+                        $cardClass = 'disponible';
+                    } elseif ($estadoTiempo === 'proximamente') {
+                        $cardClass = 'proximamente';
+                    } else {
+                        $cardClass = 'no-disponible';
+                    }
             ?>
      
             <div class="formulario-card <?php echo $cardClass; ?>" id="formulario-<?php echo $formulario['id']; ?>">
@@ -459,7 +476,17 @@ require_once __DIR__ . '/../complementos/header.php';
                 </div>
                 
                 <div class="tiempo-info">
-                    <?php if ($formulario['tipo_tiempo'] == 'libre'): ?>
+                    <?php if ($formulario['estado'] != 1): ?>
+                        <!-- Inactivo -->
+                        <span class="badge-estado badge-no-disponible">
+                            <i class="fas fa-times-circle"></i> Inactivo
+                        </span>
+                        <div class="fecha-item text-muted">
+                            <i class="fas fa-ban"></i> No disponible
+                        </div>
+
+                    <?php elseif ($formulario['tipo_tiempo'] == 'libre'): ?>
+                        <!-- Activo + Tiempo libre -->
                         <span class="badge-estado badge-disponible">
                             <i class="fas fa-infinity"></i> Tiempo libre
                         </span>
@@ -467,7 +494,9 @@ require_once __DIR__ . '/../complementos/header.php';
                             <i class="fas fa-check-circle text-success"></i>
                             Siempre disponible
                         </div>
+
                     <?php else: ?>
+                        <!-- Activo + Rango -->
                         <?php if ($estadoTiempo == 'disponible'): ?>
                             <span class="badge-estado badge-disponible">
                                 <i class="fas fa-clock"></i> Disponible ahora
@@ -503,6 +532,9 @@ require_once __DIR__ . '/../complementos/header.php';
                 
                 <div class="formulario-fecha">
                     <i class="far fa-clock me-1"></i>Creado: <?php echo $fechaFormateada; ?>
+                    <?php if (!empty($formulario['anio'])): ?>
+                        &nbsp;|&nbsp;<i class="fas fa-calendar-check me-1"></i>Año: <strong><?php echo htmlspecialchars($formulario['anio']); ?></strong>
+                    <?php endif; ?>
                 </div>
                 
                 <div class="btn-actions">
@@ -558,6 +590,27 @@ require_once __DIR__ . '/../complementos/header.php';
                             <label for="descripcion" class="form-label">Descripción</label>
                             <textarea class="form-control" id="descripcion" name="descripcion" 
                                       rows="3" placeholder="Describe el propósito o contenido del formulario (opcional)"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="anio" class="form-label">Año de Vigencia *</label>
+                            <select class="form-control" id="anio" name="anio" required>
+                                <option value="">-- Seleccione un año --</option>
+                                <?php if (!empty($anios)): ?>
+                                    <?php foreach ($anios as $a): ?>
+                                        <option value="<?php echo htmlspecialchars($a['anio']); ?>"
+                                            <?php echo ($a['anio'] == date('Y')) ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($a['anio']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>No hay años disponibles</option>
+                                <?php endif; ?>
+                            </select>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Este año se usará como referencia en las formulaciones 144 asociadas a este formulario.
+                            </small>
                         </div>
                         
                         <div class="mb-3">
@@ -637,6 +690,26 @@ require_once __DIR__ . '/../complementos/header.php';
                         <div class="mb-3">
                             <label for="descripcionEditar" class="form-label">Descripción</label>
                             <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="3"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="anioEditar" class="form-label">Año de Vigencia *</label>
+                            <select class="form-control" id="anioEditar" name="anio" required>
+                                <option value="">-- Seleccione un año --</option>
+                                <?php if (!empty($anios)): ?>
+                                    <?php foreach ($anios as $a): ?>
+                                        <option value="<?php echo htmlspecialchars($a['anio']); ?>">
+                                            <?php echo htmlspecialchars($a['anio']); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <option value="" disabled>No hay años disponibles</option>
+                                <?php endif; ?>
+                            </select>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Este año se usará como referencia en las formulaciones 144 asociadas a este formulario.
+                            </small>
                         </div>
                         
                         <div class="mb-3">
@@ -747,7 +820,8 @@ require_once __DIR__ . '/../complementos/header.php';
                 }
             });
             
-            $('input[name="tipo_tiempo_editar"]').on('change', function() {
+            // Evento radio buttons modal editar
+            $('#modalEditar input[name="tipo_tiempo"]').on('change', function() {
                 if ($(this).val() === 'rango') {
                     mostrarRangoFechasEditar(true);
                 } else {
@@ -767,7 +841,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 submitBtn.prop('disabled', true);
                 
                 $.ajax({
-                    url: basePath + '/FOR-DE-144?action=crearFormulario',
+                    url: basePath + '/FOR-DE-144?action=crear',
                     type: 'POST',
                     data: formData,
                     dataType: 'json',
@@ -938,6 +1012,7 @@ require_once __DIR__ . '/../complementos/header.php';
                         $('#tituloEditar').val(f.titulo);
                         $('#descripcionEditar').val(f.descripcion);
                         $('#estadoEditar').val(f.estado);
+                        $('#anioEditar').val(f.anio || '').trigger('change');
                         
                         // Configurar tipo de tiempo
                         if (f.tipo_tiempo === 'libre') {

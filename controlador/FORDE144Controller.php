@@ -19,6 +19,7 @@ class FORDE144Controller {
         }
         
         $formularios = $this->model->getAll();
+        $anios = $this->model->getAnios();
         
         require_once $vistaPath;
     }
@@ -26,16 +27,22 @@ class FORDE144Controller {
     /**
      * Procesa la creación de un nuevo formulario
      */
-    public function crearFormulario() {
+    public function crear() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $titulo = trim($_POST['titulo'] ?? '');
             $descripcion = trim($_POST['descripcion'] ?? '');
             $tipo_tiempo = $_POST['tipo_tiempo'] ?? 'libre';
             $fecha_inicio = $_POST['fecha_inicio'] ?? null;
             $fecha_fin = $_POST['fecha_fin'] ?? null;
+            $anio = $_POST['anio'] ?? null;
             
             if (empty($titulo)) {
                 echo json_encode(['success' => false, 'message' => 'El título es obligatorio']);
+                return;
+            }
+
+            if (empty($anio) || !is_numeric($anio) || strlen($anio) !== 4) {
+                echo json_encode(['success' => false, 'message' => 'El año es obligatorio y debe tener 4 dígitos']);
                 return;
             }
             
@@ -45,7 +52,8 @@ class FORDE144Controller {
                 'tipo_tiempo' => $tipo_tiempo,
                 'fecha_inicio' => $fecha_inicio,
                 'fecha_fin' => $fecha_fin,
-                'estado' => 1
+                'estado' => 1,
+                'anio' => intval($anio)
             ];
             
             $resultado = $this->model->create($data);
@@ -95,7 +103,7 @@ class FORDE144Controller {
     /**
      * Elimina un formulario
      */
-    public function eliminarFormulario() {
+    public function eliminar() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'] ?? 0;
             
@@ -119,7 +127,7 @@ class FORDE144Controller {
     /**
      * Edita un formulario existente
      */
-    public function editarFormulario() {
+    public function editar() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = $_POST['id'] ?? 0;
             $titulo = trim($_POST['titulo'] ?? '');
@@ -128,9 +136,15 @@ class FORDE144Controller {
             $fecha_inicio = $_POST['fecha_inicio'] ?? null;
             $fecha_fin = $_POST['fecha_fin'] ?? null;
             $estado = $_POST['estado'] ?? 1;
+            $anio = $_POST['anio'] ?? null;
             
             if (empty($id) || empty($titulo)) {
                 echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+                return;
+            }
+
+            if (empty($anio) || !is_numeric($anio) || strlen((string)$anio) !== 4) {
+                echo json_encode(['success' => false, 'message' => 'El año es obligatorio y debe tener 4 dígitos']);
                 return;
             }
             
@@ -140,7 +154,8 @@ class FORDE144Controller {
                 'tipo_tiempo' => $tipo_tiempo,
                 'fecha_inicio' => $fecha_inicio,
                 'fecha_fin' => $fecha_fin,
-                'estado' => $estado
+                'estado' => $estado,
+                'anio' => intval($anio)
             ];
             
             $resultado = $this->model->update($id, $data);

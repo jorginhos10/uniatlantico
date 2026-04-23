@@ -1,7 +1,11 @@
 <?php
 // vista/modulo144/index.php
 $basePath = Config::getBasePath();
-$fecha_cierre = $formulario['fecha_cierre'] ?? null;
+// Solo asignar fecha_cierre si es formulario de rango con fecha válida
+$fecha_cierre = null;
+if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_cierre'])) {
+    $fecha_cierre = $formulario['fecha_cierre'];
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">

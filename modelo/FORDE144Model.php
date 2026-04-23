@@ -89,8 +89,8 @@ class FORDE144Model {
     public function create($data) {
         try {
             $sql = "INSERT INTO " . $this->table . " 
-                    (titulo, descripcion, tipo_tiempo, fecha_inicio, fecha_fin, estado) 
-                    VALUES (:titulo, :descripcion, :tipo_tiempo, :fecha_inicio, :fecha_fin, :estado)";
+                    (titulo, descripcion, tipo_tiempo, fecha_inicio, fecha_fin, estado, anio) 
+                    VALUES (:titulo, :descripcion, :tipo_tiempo, :fecha_inicio, :fecha_fin, :estado, :anio)";
             
             $stmt = $this->db->prepare($sql);
             
@@ -100,7 +100,8 @@ class FORDE144Model {
                 ':tipo_tiempo' => $data['tipo_tiempo'],
                 ':fecha_inicio' => $data['fecha_inicio'] ?? null,
                 ':fecha_fin' => $data['fecha_fin'] ?? null,
-                ':estado' => $data['estado']
+                ':estado' => $data['estado'],
+                ':anio' => $data['anio'] ?? null
             ]);
         } catch (PDOException $e) {
             error_log("Error en create: " . $e->getMessage());
@@ -121,6 +122,7 @@ class FORDE144Model {
                         fecha_inicio = :fecha_inicio,
                         fecha_fin = :fecha_fin,
                         estado = :estado,
+                        anio = :anio,
                         updated_at = NOW()
                     WHERE id = :id";
             
@@ -133,7 +135,8 @@ class FORDE144Model {
                 ':tipo_tiempo' => $data['tipo_tiempo'],
                 ':fecha_inicio' => $data['fecha_inicio'] ?? null,
                 ':fecha_fin' => $data['fecha_fin'] ?? null,
-                ':estado' => $data['estado']
+                ':estado' => $data['estado'],
+                ':anio' => $data['anio'] ?? null
             ]);
         } catch (PDOException $e) {
             error_log("Error en update: " . $e->getMessage());
@@ -149,6 +152,20 @@ class FORDE144Model {
         } catch (PDOException $e) {
             error_log("Error en delete: " . $e->getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Obtiene los años disponibles desde la tabla ano-for-de-144
+     */
+    public function getAnios() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, anio FROM `ano-for-de-144` WHERE activo = 1 ORDER BY orden ASC");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error en getAnios: " . $e->getMessage());
+            return [];
         }
     }
 
