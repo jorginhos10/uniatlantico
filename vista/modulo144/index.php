@@ -13,6 +13,58 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <style>
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 4px 8px;
+            min-height: 48px;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--multiple {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #1D71B8;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            padding: 2px 10px;
+            font-size: 0.82rem;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice:first-of-type {
+            background-color: #D85819;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: rgba(255,255,255,0.8);
+            margin-right: 5px;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: white;
+            background: transparent;
+        }
+        .select2-dropdown {
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--color-primary);
+        }
+        .select2-search--dropdown .select2-search__field {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            padding: 6px 10px;
+        }
+        .select2-container { width: 100% !important; }
+        .select2-max-reached {
+            padding: 6px 12px;
+            color: #D85819;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+    </style>
     
     <style>
         :root {
@@ -402,42 +454,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             font-size: 1.2rem;
         }
 
-        .resumen-section {
-            background-color: #fff3e0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border-left: 4px solid #ff9800;
-        }
-        
-        .resumen-title {
-            color: #e65100;
-            font-weight: 700;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .resumen-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .resumen-table th {
-            background-color: #ffb74d;
-            color: #fff;
-            font-weight: 600;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ff9800;
-        }
-        
-        .resumen-table td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ff9800;
-            background-color: #fff;
-        }
-        
         .modal-body-scroll {
             max-height: 70vh;
             overflow-y: auto;
@@ -1344,14 +1360,14 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">10. RESPONSABLE</label>
-                                        <select class="form-select" name="responsable_formulacion" id="formulacion_responsable" onchange="autoGuardarFormulacion(); validarPestanas()">
-                                            <option value="">Seleccione un cargo</option>
+                                        <select class="form-select" name="responsable_formulacion_multi[]" id="formulacion_responsable" multiple="multiple">
                                             <?php foreach ($cargos as $cargo): ?>
                                             <option value="<?php echo htmlspecialchars($cargo['nombre']); ?>">
                                                 <?php echo htmlspecialchars($cargo['nombre']); ?>
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
+                                        <input type="hidden" name="responsable_formulacion" id="formulacion_responsable_hidden">
                                     </div>
 
                                     <div class="col-12 mb-3">
@@ -1459,17 +1475,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </div>
                                     </div>
 
-                                    <div class="col-12 mt-4">
-                                        <div class="resumen-section">
-                                            <h5 class="resumen-title">RESUMEN DE INDICADORES Y METAS</h5>
-                                            <table class="resumen-table">
-                                                <thead>
-                                                    <tr><th>CATEGORÍA</th><th>VALOR</th></tr>
-                                                </thead>
-                                                <tbody id="tablaResumenCuerpo"></tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
                             
@@ -1563,19 +1569,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <div class="col-md-3 mb-3"><label class="form-label text-muted">RESPONSABLE</label><div class="bg-light-view" id="seguimiento_responsable_view">-</div></div>
                         </div>
                         
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="resumen-section">
-                                    <h5 class="resumen-title">RESUMEN DE INDICADORES Y METAS</h5>
-                                    <table class="resumen-table">
-                                        <thead>
-                                            <tr><th>CATEGORÍA</th><th>VALOR</th></tr>
-                                        </thead>
-                                        <tbody id="tablaResumenSeguimientoCuerpo"></tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+
                         
                         <div class="row mb-4">
                             <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6></div>
@@ -1623,6 +1617,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         const basePath = '<?php echo $basePath; ?>';
@@ -1689,11 +1684,34 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 const ultimoValor = obtenerUltimoValorReportado(lineaBase, metaS1, metaS2);
                 valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
             }
+            else if (tipoMedicion === 'Límite') {
+                // Límite = valor de Semestre 2
+                valorAnual = metaS2 !== null ? metaS2.toFixed(2) : '';
+            }
             else {
                 valorAnual = '';
             }
             
             $('#formulacion_anio_base_meta').val(valorAnual);
+
+            // Bloquear/desbloquear Línea Base y Semestre 1 según tipo Límite
+            if (tipoMedicion === 'Límite') {
+                $('#formulacion_linea_base_meta')
+                    .prop('readonly', true)
+                    .val('')
+                    .css({ 'background-color': '#e9ecef', 'opacity': '0.6', 'cursor': 'not-allowed' });
+                $('#formulacion_meta_s1')
+                    .prop('readonly', true)
+                    .val('')
+                    .css({ 'background-color': '#e9ecef', 'opacity': '0.6', 'cursor': 'not-allowed' });
+            } else {
+                $('#formulacion_linea_base_meta')
+                    .prop('readonly', false)
+                    .css({ 'background-color': '', 'opacity': '', 'cursor': '' });
+                $('#formulacion_meta_s1')
+                    .prop('readonly', false)
+                    .css({ 'background-color': '', 'opacity': '', 'cursor': '' });
+            }
         }
         
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
@@ -1905,88 +1923,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
-        function cargarTablaResumen() {
-            const valorAnual = $('#formulacion_anio_base_meta').val() || '0';
-            const campos = [
-                { categoria: 'NOMBRE DEL INDICADOR', valor: $('#formulacion_nombre_indicador').val() || '-' },
-                { categoria: 'FÓRMULA DE LA MEDICIÓN', valor: $('#formulacion_formula_medicion').val() || '-' },
-                { categoria: 'FRECUENCIA DE MEDICIÓN', valor: $('#formulacion_frecuencia_medicion').val() || '-' },
-                { categoria: 'UNIDAD DE MEDIDA', valor: $('#formulacion_unidad_medida').val() || '-' },
-                { categoria: 'DESCRIPCIÓN', valor: $('#formulacion_descripcion_indicador').val() || '-' },
-                { categoria: 'AÑO', valor: $('#formulacion_tipo_medicion').val() || '-' },
-                { categoria: 'LÍNEA BASE', valor: $('#formulacion_linea_base_meta').val() || '-' },
-                { categoria: 'SEMESTRE 1', valor: $('#formulacion_meta_s1').val() || '-' },
-                { categoria: 'SEMESTRE 2', valor: $('#formulacion_meta_s2').val() || '-' },
-                { categoria: 'VALOR AÑO', valor: valorAnual },
-                { categoria: 'SEG. FAC', valor: $('#formulacion_gestionado_facultades').is(':checked') ? '✓' : '✗' }
-            ];
-            
-            let html = '';
-            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td>`; });
-            $('#tablaResumenCuerpo').html(html);
-        }
-
-        function cargarTablaResumenSeguimiento(b) {
-            let valorAnual = '-';
-            const lineaBaseRaw = b.linea_base_meta;
-            const metaS1Raw = b.meta_s1;
-            const metaS2Raw = b.meta_s2;
-            
-            const lineaBase = (lineaBaseRaw && lineaBaseRaw !== '') ? parseFloat(lineaBaseRaw) : null;
-            const metaS1 = (metaS1Raw && metaS1Raw !== '') ? parseFloat(metaS1Raw) : null;
-            const metaS2 = (metaS2Raw && metaS2Raw !== '') ? parseFloat(metaS2Raw) : null;
-            
-            if (b.tipo_medicion === 'Acumulado') {
-                let suma = 0;
-                if (lineaBase !== null) suma += lineaBase;
-                if (metaS1 !== null) suma += metaS1;
-                if (metaS2 !== null) suma += metaS2;
-                valorAnual = suma.toFixed(2);
-            } 
-            else if (b.tipo_medicion === 'Nuevo gestionado durante la vigencia') {
-                let suma = 0;
-                if (metaS1 !== null) suma += metaS1;
-                if (metaS2 !== null) suma += metaS2;
-                valorAnual = suma.toFixed(2);
-            }
-            else if (b.tipo_medicion === 'Promedio') {
-                let suma = 0;
-                let contador = 0;
-                if (metaS1 !== null) { suma += metaS1; contador++; }
-                if (metaS2 !== null) { suma += metaS2; contador++; }
-                valorAnual = contador > 0 ? (suma / contador).toFixed(2) : '0.00';
-            }
-            else if (b.tipo_medicion === 'Último valor reportado') {
-                let ultimoValor = null;
-                if (metaS2 !== null && metaS2 !== undefined && metaS2 !== '' && !isNaN(metaS2)) {
-                    ultimoValor = metaS2;
-                } else if (metaS1 !== null && metaS1 !== undefined && metaS1 !== '' && !isNaN(metaS1)) {
-                    ultimoValor = metaS1;
-                } else if (lineaBase !== null && lineaBase !== undefined && lineaBase !== '' && !isNaN(lineaBase)) {
-                    ultimoValor = lineaBase;
-                }
-                valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
-            }
-            
-            const campos = [
-                { categoria: 'NOMBRE DEL INDICADOR', valor: b.nombre_indicador || '-' },
-                { categoria: 'FÓRMULA DE LA MEDICIÓN', valor: b.formula_medicion || '-' },
-                { categoria: 'FRECUENCIA DE MEDICIÓN', valor: b.frecuencia_medicion || '-' },
-                { categoria: 'UNIDAD DE MEDIDA', valor: b.unidad_medida || '-' },
-                { categoria: 'DESCRIPCIÓN', valor: b.descripcion_indicador || '-' },
-                { categoria: 'AÑO', valor: b.tipo_medicion || '-' },
-                { categoria: 'LÍNEA BASE', valor: b.linea_base_meta || '-' },
-                { categoria: 'SEMESTRE 1', valor: b.meta_s1 || '-' },
-                { categoria: 'SEMESTRE 2', valor: b.meta_s2 || '-' },
-                { categoria: 'VALOR AÑO', valor: valorAnual },
-                { categoria: 'SEG. FAC', valor: b.gestionado_facultades == 1 ? '✓' : '✗' }
-            ];
-            
-            let html = '';
-            campos.forEach(campo => { html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td>`; });
-            $('#tablaResumenSeguimientoCuerpo').html(html);
-        }
-
         function validarPestanas() {
             const camposFormulacion = [
                 $('#formulacion_linea').val(),
@@ -1997,7 +1933,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 $('#formulacion_ponderacion_proyectos').val(),
                 $('#formulacion_actividad').val(),
                 $('#formulacion_ponderacion_actividades').val(),
-                $('#formulacion_responsable').val(),
+                $('#formulacion_responsable_hidden').val(),
                 $('#formulacion_id_indicador').val()
             ];
             
@@ -2400,7 +2336,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
                     actividad_proyecto: $('#formulacion_actividad').val(),
                     ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
-                    responsable_formulacion: $('#formulacion_responsable').val(),
+                    responsable_formulacion: $('#formulacion_responsable_hidden').val(),
                     id_indicador: $('#formulacion_id_indicador').val(),
                     gestionado_facultades: gestionado,
                     nombre_indicador: $('#formulacion_nombre_indicador').val(),
@@ -2425,7 +2361,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         if (response.success) {
                             mostrarAutoSaveIndicator();
                             validarPestanas();
-                            cargarTablaResumen();
                         }
                     }
                 });
@@ -2598,7 +2533,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_ponderacion_proyectos').val(b.ponderacion_proyectos);
                             $('#formulacion_actividad').val(b.actividad_proyecto);
                             $('#formulacion_ponderacion_actividades').val(b.ponderacion_actividades);
-                            $('#formulacion_responsable').val(b.responsable_formulacion);
+                            const responsableGuardado = b.responsable_formulacion || '';
+                            $('#formulacion_responsable_hidden').val(responsableGuardado);
+                            const responsablesArray = responsableGuardado
+                                ? responsableGuardado.split(',').map(s => s.trim()).filter(s => s !== '')
+                                : [];
+                            $('#formulacion_responsable').val(responsablesArray).trigger('change.select2');
                             $('#formulacion_id_indicador').val(b.id_indicador);
                             $('#formulacion_gestionado_facultades').prop('checked', b.gestionado_facultades == 1);
                             $('#formulacion_nombre_indicador').val(b.nombre_indicador);
@@ -2621,7 +2561,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 actualizarCampoOculto();
                             }
                             
-                            cargarTablaResumen();
                             $('#modalFormulacion').modal('show');
                             setTimeout(validarPestanas, 500);
                         } else {
@@ -2637,7 +2576,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#seguimiento_responsable').val(b.responsable_seguimiento);
                             $('#seguimiento_observaciones').val(b.observaciones);
                             cargarDatosFormulacionEnSeguimiento(b);
-                            cargarTablaResumenSeguimiento(b);
                             $('#modalSeguimiento').modal('show');
                         }
                     }
@@ -2724,13 +2662,36 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
         $(document).ready(function() {
             console.log('=== SISTEMA CARGADO CORRECTAMENTE ===');
+
+            // ── SELECT2: Responsable múltiple con buscador (máx. 3) ─────────
+            $('#formulacion_responsable').select2({
+                placeholder: 'Seleccione uno o más responsables',
+                allowClear: true,
+                maximumSelectionLength: 3,
+                language: {
+                    noResults: function() { return 'No se encontraron resultados'; },
+                    searching:  function() { return 'Buscando...'; },
+                    maximumSelected: function() {
+                        return '<span class="select2-max-reached">Máximo 3 responsables permitidos</span>';
+                    }
+                },
+                escapeMarkup: function(m) { return m; },
+                dropdownParent: $('#modalFormulacion')
+            });
+
+            $('#formulacion_responsable').on('change', function() {
+                const seleccionados = $(this).val() || [];
+                $('#formulacion_responsable_hidden').val(seleccionados.join(', '));
+                autoGuardarFormulacion();
+                validarPestanas();
+            });
+            // ────────────────────────────────────────────────────────────────
+
             $('#modalFormulacion').on('shown.bs.modal', function() {
                 validarPestanas();
-                cargarTablaResumen();
                 calcularValorAnual();
             });
             $('#formulacion_nombre_indicador, #formulacion_formula_medicion, #formulacion_frecuencia_medicion, #formulacion_unidad_medida, #formulacion_tipo_medicion, #formulacion_descripcion_indicador, #formulacion_linea_base_meta, #formulacion_meta_s1, #formulacion_meta_s2, #formulacion_gestionado_facultades').on('input change', function() {
-                cargarTablaResumen();
                 calcularValorAnual();
             });
         });
