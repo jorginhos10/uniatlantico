@@ -26,7 +26,6 @@ class Modulo144Controller {
 
         $estado_fechas = $this->model->verificarFechaHabil($formulario);
         
-        // Cargar datos necesarios para la vista
         $anos = $this->model->getAnos();
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         $cargos = $this->model->getCargos();

@@ -26,9 +26,7 @@ class Modulo144Model {
                 'planes_institucionales',
                 'linea_base_meta', 'anio_base_meta', 'meta_s1', 'meta_s2',
                 'facultad_id',
-                // Nuevos campos para gestión semestral
                 'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
-                // Campos para la tabla de 3 filas
                 'tabla_fila1_sem1', 'tabla_fila1_sem2',
                 'tabla_fila2_sem1', 'tabla_fila2_sem2',
                 'tabla_fila3_sem1', 'tabla_fila3_sem2'
@@ -109,9 +107,6 @@ class Modulo144Model {
         return $this->modulos;
     }
 
-    /**
-     * Obtener años de la tabla ano-for-de-144
-     */
     public function getAnos() {
         try {
             $stmt = $this->db->prepare("SELECT id, anio FROM `ano-for-de-144` WHERE activo = 1 ORDER BY anio DESC");
@@ -189,9 +184,6 @@ class Modulo144Model {
         return ['valido' => true, 'mensaje' => 'Vigente', 'clase' => 'vigente'];
     }
 
-    /**
-     * Obtener líneas estratégicas de la tabla lineas_estrategicas
-     */
     public function getLineasEstrategicas() {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre, objetivo FROM lineas_estrategicas WHERE activo = 1 ORDER BY codigo");
@@ -203,9 +195,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener estrategias de la tabla estrategias
-     */
     public function getEstrategias() {
         try {
             $stmt = $this->db->prepare("SELECT e.id, e.linea_id, e.descripcion, l.codigo as linea_codigo, l.nombre as linea_nombre 
@@ -221,9 +210,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener estrategias por línea estratégica
-     */
     public function getEstrategiasPorLinea($linea_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, descripcion FROM estrategias WHERE linea_id = :linea_id AND activo = 1 ORDER BY id");
@@ -235,9 +221,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener motores por línea estratégica
-     */
     public function getMotoresPorLinea($linea_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre");
@@ -249,9 +232,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener proyectos por línea y motor
-     */
     public function getProyectosPorLineaYMotor($linea_id, $motor_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM proyectos WHERE linea_id = :linea_id AND motor_id = :motor_id AND activo = 1 ORDER BY codigo");
@@ -266,9 +246,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener todos los proyectos
-     */
     public function getProyectos() {
         try {
             $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,
@@ -287,9 +264,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener cargos de la tabla cargos
-     */
     public function getCargos() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM cargos WHERE activo = 1 ORDER BY nombre");
@@ -301,9 +275,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener planes institucionales de la tabla planes_institucionales
-     */
     public function getPlanesInstitucionales() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");
@@ -315,9 +286,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener todas las facultades activas de la tabla facultades
-     */
     public function getFacultades() {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre, estado FROM facultades WHERE estado = 1 ORDER BY codigo, nombre");
@@ -329,9 +297,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener borradores por facultad
-     */
     public function getBorradoresPorFacultad($facultad_id, $formulario_id) {
         try {
             $tabla = $this->modulos['formulacion']['tabla'];
@@ -350,9 +315,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtiene registros por estado (usando el campo de estado específico del módulo)
-     */
     public function getByEstado($modulo, $formulario_id, $estado) {
         try {
             $modulo_config = $this->modulos[$modulo];
@@ -385,9 +347,6 @@ class Modulo144Model {
         return $this->getByEstado($modulo, $formulario_id, 1);
     }
 
-    /**
-     * Crear un nuevo borrador (solo desde formulación)
-     */
     public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1, $facultad_id = null) {
         try {
             if ($modulo !== 'formulacion') {
@@ -431,9 +390,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener un registro por ID
-     */
     public function getById($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
@@ -446,9 +402,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Actualizar campos específicos del módulo
-     */
     public function actualizar($modulo, $id, $data) {
         try {
             $modulo_config = $this->modulos[$modulo];
@@ -485,9 +438,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Cambiar estado de un módulo específico
-     */
     public function cambiarEstado($modulo, $id, $estado) {
         try {
             $modulo_config = $this->modulos[$modulo];
@@ -519,9 +469,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Eliminar un registro
-     */
     public function eliminar($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
@@ -533,9 +480,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Duplicar un registro completo
-     */
     public function duplicar($modulo, $id, $nuevo_nombre, $creado_por = 1) {
         try {
             $original = $this->getById($modulo, $id);
@@ -648,9 +592,6 @@ class Modulo144Model {
         }
     }
     
-    /**
-     * Actualizar específicamente los campos de gestión semestral
-     */
     public function actualizarGestionSemestral($id, $data) {
         try {
             $tabla = $this->modulos['formulacion']['tabla'];
