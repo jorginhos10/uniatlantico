@@ -1327,7 +1327,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
@@ -1353,9 +1353,15 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                            <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
                                             <span class="input-group-text">%</span>
+                                            <span class="input-group-text px-3" id="acumulado_actividades_badge" 
+                                                  title="Total acumulado para este proyecto (incluyendo este registro)"
+                                                  style="font-size:0.82rem; font-weight:600; min-width:110px; justify-content:center; background:#f8f9fa; color:#6c757d; border-left: 2px solid #dee2e6;">
+                                                Acum: — / 100%
+                                            </span>
                                         </div>
+                                        <div id="acumulado_actividades_msg" class="mt-1" style="font-size:0.8rem; display:none;"></div>
                                     </div>
 
                                     <div class="col-md-6 mb-3">
@@ -1623,6 +1629,30 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
         
+        // Datos de formulaciones existentes para calcular ponderación acumulada por proyecto
+        const formulacionesExistentes = <?php
+            $todas = [];
+            $modulos_check = ['formulacion'];
+            foreach ($modulos_check as $mk) {
+                if (isset($datos_modulos[$mk])) {
+                    foreach (['borradores', 'publicados'] as $estado) {
+                        if (isset($datos_modulos[$mk][$estado])) {
+                            foreach ($datos_modulos[$mk][$estado] as $b) {
+                                if (!empty($b['proyecto']) && isset($b['ponderacion_actividades'])) {
+                                    $todas[] = [
+                                        'id' => $b['id'],
+                                        'proyecto' => $b['proyecto'],
+                                        'ponderacion_actividades' => floatval($b['ponderacion_actividades'])
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            echo json_encode($todas);
+        ?>;
+
         let timeoutId = null;
         let currentModule = null;
         let editandoTitulo = false;
@@ -1713,6 +1743,65 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     .css({ 'background-color': '', 'opacity': '', 'cursor': '' });
             }
         }
+        
+        // ── ACUMULADO DE PONDERACIÓN DE ACTIVIDADES POR PROYECTO ────────────
+        // Calcula cuánto % ya está usado por el proyecto seleccionado
+        // en TODOS los registros (excluyendo el borrador que se está editando)
+        function calcularAcumuladoActividades() {
+            const proyectoSeleccionado = $('#formulacion_proyecto').val();
+            const idActual = $('#formulacion_id').val() ? parseInt($('#formulacion_id').val()) : null;
+            const valorActual = parseFloat($('#formulacion_ponderacion_actividades').val()) || 0;
+            const badge = $('#acumulado_actividades_badge');
+            const msg   = $('#acumulado_actividades_msg');
+            const input = $('#formulacion_ponderacion_actividades');
+
+            if (!proyectoSeleccionado) {
+                badge.text('Acum: — / 100%').css({ color: '#6c757d', background: '#f8f9fa', borderColor: '#dee2e6' });
+                msg.hide();
+                return;
+            }
+
+            // Suma de otros registros con el mismo proyecto (excluye el actual)
+            let acumuladoOtros = 0;
+            formulacionesExistentes.forEach(function(f) {
+                if (f.proyecto === proyectoSeleccionado && f.id !== idActual) {
+                    acumuladoOtros += f.ponderacion_actividades;
+                }
+            });
+
+            const totalConActual = acumuladoOtros + valorActual;
+            const disponible     = 100 - acumuladoOtros;
+
+            // Actualizar badge
+            badge.text('Acum: ' + totalConActual.toFixed(2) + ' / 100%');
+
+            if (totalConActual > 100) {
+                // Excede el 100%
+                badge.css({ color: '#fff', background: '#E74C3C', borderColor: '#E74C3C' });
+                msg.html('<i class="fas fa-exclamation-triangle me-1"></i>Supera el 100%. Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#E74C3C').show();
+                input.css({ borderColor: '#E74C3C', boxShadow: '0 0 0 0.2rem rgba(231,76,60,0.25)' });
+            } else if (totalConActual === 100) {
+                // Completo justo
+                badge.css({ color: '#fff', background: '#27AE60', borderColor: '#27AE60' });
+                msg.html('<i class="fas fa-check-circle me-1"></i>Completo al 100%')
+                   .css('color', '#27AE60').show();
+                input.css({ borderColor: '#27AE60', boxShadow: '0 0 0 0.2rem rgba(39,174,96,0.25)' });
+            } else if (totalConActual > 80) {
+                // Advertencia: casi lleno
+                badge.css({ color: '#fff', background: '#F39C12', borderColor: '#F39C12' });
+                msg.html('<i class="fas fa-info-circle me-1"></i>Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#F39C12').show();
+                input.css({ borderColor: '#F39C12', boxShadow: '0 0 0 0.2rem rgba(243,156,18,0.25)' });
+            } else {
+                // Normal
+                badge.css({ color: '#2C3E50', background: '#f0f8ff', borderColor: '#3498DB' });
+                msg.html('<i class="fas fa-info-circle me-1"></i>Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#3498DB').show();
+                input.css({ borderColor: '#ced4da', boxShadow: '' });
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────
         
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
         function actualizarContador() {
@@ -2552,6 +2641,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             
                             // Calcular valor anual después de cargar valores
                             calcularValorAnual();
+                            setTimeout(calcularAcumuladoActividades, 400);
                             
                             if (b.planes_institucionales) {
                                 cargarPlanesDesdeBD(b.planes_institucionales);
