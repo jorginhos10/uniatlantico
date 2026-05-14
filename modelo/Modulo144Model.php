@@ -263,6 +263,22 @@ class Modulo144Model {
         }
     }
 
+    public function getPonderacionProyecto($proyecto_id, $motor_id, $anio) {
+        try {
+            $stmt = $this->db->prepare("SELECT porcentaje FROM data_proyectos WHERE proyecto_id = :proyecto_id AND motor_id = :motor_id AND anio = :anio LIMIT 1");
+            $stmt->execute([
+                ':proyecto_id' => $proyecto_id,
+                ':motor_id'    => $motor_id,
+                ':anio'        => $anio
+            ]);
+            $row = $stmt->fetch();
+            return $row ? $row['porcentaje'] : null;
+        } catch (PDOException $e) {
+            error_log("Error getPonderacionProyecto: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function getProyectos() {
         try {
             $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,
@@ -379,24 +395,32 @@ class Modulo144Model {
                 error_log("Error: La tabla '{$tabla}' no existe");
                 return false;
             }
+
+            // Obtener el año del formulario padre automáticamente
+            $stmtAnio = $this->db->prepare("SELECT anio FROM formularios WHERE id = :formulario_id LIMIT 1");
+            $stmtAnio->execute([':formulario_id' => $formulario_id]);
+            $rowAnio = $stmtAnio->fetch();
+            $anio = $rowAnio ? $rowAnio['anio'] : null;
             
             if ($facultad_id) {
                 $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                            (formulario_id, nombre_borrador, facultad_id, estado_formulacion, estado_seguimiento, creado_por) 
-                                            VALUES (:formulario_id, :nombre, :facultad_id, 0, 0, :creado_por)");
+                                            (formulario_id, nombre_borrador, facultad_id, anio, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, :facultad_id, :anio, 0, 0, :creado_por)");
                 return $stmt->execute([
                     ':formulario_id' => $formulario_id,
                     ':nombre' => $nombre_borrador,
                     ':facultad_id' => $facultad_id,
+                    ':anio' => $anio,
                     ':creado_por' => $creado_por
                 ]);
             } else {
                 $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                            (formulario_id, nombre_borrador, estado_formulacion, estado_seguimiento, creado_por) 
-                                            VALUES (:formulario_id, :nombre, 0, 0, :creado_por)");
+                                            (formulario_id, nombre_borrador, anio, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, :anio, 0, 0, :creado_por)");
                 return $stmt->execute([
                     ':formulario_id' => $formulario_id,
                     ':nombre' => $nombre_borrador,
+                    ':anio' => $anio,
                     ':creado_por' => $creado_por
                 ]);
             }

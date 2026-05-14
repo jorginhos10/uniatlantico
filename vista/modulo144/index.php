@@ -1296,7 +1296,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                             <!-- PESTAÑA 1: FORMULACIÓN -->
                             <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-12 mb-3">
                                         <label class="form-label">1. LÍNEA ESTRATÉGICA</label>
                                         <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas()">
                                             <option value="">Seleccione línea estratégica</option>
@@ -1331,7 +1331,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()">
+                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
@@ -1344,7 +1344,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                            <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" readonly placeholder="0.00" style="background-color: #e9ecef; cursor: not-allowed;">
                                             <span class="input-group-text">%</span>
                                         </div>
                                     </div>
@@ -1632,6 +1632,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <script>
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
+        const formularioAnio = <?php echo intval($formulario['anio'] ?? 0); ?>; // Año heredado del formulario padre
         
         // Datos de formulaciones existentes para calcular ponderación acumulada por proyecto
         const formulacionesExistentes = <?php
@@ -1807,6 +1808,47 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         }
         // ────────────────────────────────────────────────────────────────────
         
+        // ── CARGA AUTOMÁTICA DE PONDERACIÓN DE PROYECTOS DESDE data_proyectos ──
+        function cargarPonderacionProyecto() {
+            const selectProyecto = document.getElementById('formulacion_proyecto');
+            const proyectoOption = selectProyecto ? selectProyecto.options[selectProyecto.selectedIndex] : null;
+            const proyectoId = proyectoOption ? proyectoOption.getAttribute('data-proyecto-id') : null;
+
+            const selectMotor = document.getElementById('formulacion_motor');
+            const motorOption = selectMotor ? selectMotor.options[selectMotor.selectedIndex] : null;
+            const motorId = motorOption ? motorOption.getAttribute('data-motor-id') : null;
+
+            // El año viene del formulario padre (formularios.anio)
+            const anio = formularioAnio;
+
+            const input = $('#formulacion_ponderacion_proyectos');
+
+            if (!proyectoId || !motorId || !anio) {
+                input.val('');
+                return;
+            }
+
+            $.ajax({
+                url: basePath + '/modulo144/getPonderacionProyecto',
+                type: 'GET',
+                data: { proyecto_id: proyectoId, motor_id: motorId, anio: anio },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.porcentaje !== null) {
+                        input.val(parseFloat(response.porcentaje).toFixed(2));
+                    } else {
+                        input.val('');
+                    }
+                    autoGuardarFormulacion();
+                    validarPestanas();
+                },
+                error: function() {
+                    input.val('');
+                }
+            });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
         function actualizarContador() {
             const fechaCierre = new Date('<?php echo $fecha_cierre; ?>').getTime();
@@ -2192,6 +2234,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                             response.proyectos.forEach(function(proyecto) {
                                 const option = document.createElement('option');
                                 option.value = proyecto.nombre;
+                                option.setAttribute('data-proyecto-id', proyecto.id);
                                 option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
                                 selectProyecto.appendChild(option);
                             });
@@ -2420,6 +2463,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                 
                 const data = {
                     modulo: 'formulacion', id: id,
+                    anio: formularioAnio,
                     linea_estrategica: $('#formulacion_linea').val(),
                     objetivo: $('#formulacion_objetivo').val(),
                     estrategia: $('#formulacion_estrategia').val(),
@@ -2606,10 +2650,14 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                                 res.proyectos.forEach(function(proyecto) {
                                                     const option = document.createElement('option');
                                                     option.value = proyecto.nombre;
+                                                    option.setAttribute('data-proyecto-id', proyecto.id);
                                                     option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
                                                     selectProyecto.appendChild(option);
                                                 });
-                                                if (valorProyecto) $('#formulacion_proyecto').val(valorProyecto);
+                                                if (valorProyecto) {
+                                                    $('#formulacion_proyecto').val(valorProyecto);
+                                                    setTimeout(cargarPonderacionProyecto, 100);
+                                                }
                                             } else {
                                                 selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
                                             }
