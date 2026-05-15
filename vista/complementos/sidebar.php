@@ -87,6 +87,14 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </li>
             <?php endif; ?>
             
+            <!-- Mensajes (disponible para todos los usuarios logueados) -->
+            <li class="navItem <?php echo ($paginaActual ?? '') === 'mensajes' ? 'active' : ''; ?>">
+                <a href="<?php echo $basePath; ?>/mensajes" class="navLink" data-tooltip="Mensajes">
+                    <i class="fas fa-envelope"></i>
+                    <span>Mensajes</span>
+                </a>
+            </li>
+
             <!-- Configuración - Permiso ID: 5 (configurar_sistema) -->
             <?php if (tienePermisoPorId(PERMISO_CONFIG_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
                 <li class="navItem <?php echo ($paginaActual ?? '') === 'configuraciones' ? 'active' : ''; ?>">

@@ -31,6 +31,13 @@
     font-size: 22px;
 }
 
+/* Lado derecho del header */
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
 /* Dropdown de usuario */
 .userDropdown {
     position: relative;
@@ -188,6 +195,250 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 16px rgba(0, 113, 227, 0.35);
 }
+
+/* ══════════════════════════════════════════
+   NOTIFICACIONES (prefijo ntf-)
+   Clases aisladas para evitar colisiones
+   ══════════════════════════════════════════ */
+
+/* Contenedor raíz */
+.ntf-wrap {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    margin-right: 6px !important;
+}
+
+/* Botón campana */
+.ntf-btn {
+    position: relative !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    border: none !important;
+    background: rgba(0,0,0,0.05) !important;
+    cursor: pointer !important;
+    color: #3a3a3c !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.18s, color 0.18s !important;
+    padding: 0 !important;
+    outline: none !important;
+}
+.ntf-btn:hover {
+    background: rgba(0,113,227,0.12) !important;
+    color: #0071e3 !important;
+}
+.ntf-btn.ntf-open {
+    background: rgba(0,113,227,0.12) !important;
+    color: #0071e3 !important;
+}
+
+.ntf-icon {
+    font-size: 17px !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+}
+
+/* Animación ring */
+@keyframes ntfRing {
+    0%,100% { transform: rotate(0deg); }
+    15%      { transform: rotate(14deg); }
+    35%      { transform: rotate(-12deg); }
+    55%      { transform: rotate(8deg); }
+    75%      { transform: rotate(-5deg); }
+}
+.ntf-btn.ntf-ring .ntf-icon { animation: ntfRing 0.55s ease; }
+
+/* Badge contador */
+.ntf-badge {
+    position: absolute !important;
+    top: 3px !important;
+    right: 3px !important;
+    min-width: 16px !important;
+    height: 16px !important;
+    background: #ff3b30 !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    padding: 0 3px !important;
+    border: 2px solid #fff !important;
+    display: none !important;   /* JS lo pone en flex cuando n>0 */
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: none !important;
+    box-shadow: 0 1px 3px rgba(255,59,48,.35) !important;
+}
+.ntf-badge.ntf-visible {
+    display: inline-flex !important;
+}
+
+/* Panel desplegable — OCULTO por defecto */
+.ntf-panel {
+    display: none !important;        /* oculto hasta ntf-show */
+    position: absolute !important;
+    top: calc(100% + 10px) !important;
+    right: -4px !important;
+    width: 308px !important;
+    background: #ffffff !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.04),
+                0 16px 48px rgba(0,0,0,0.14),
+                0 0 0 1px rgba(0,0,0,0.06) !important;
+    z-index: 99999 !important;
+    overflow: hidden !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif !important;
+}
+.ntf-panel.ntf-show {
+    display: block !important;
+}
+
+/* Triángulo apuntando al botón */
+.ntf-panel::before {
+    content: '' !important;
+    position: absolute !important;
+    top: -5px !important;
+    right: 14px !important;
+    width: 10px !important;
+    height: 10px !important;
+    background: #fff !important;
+    border-left: 1px solid rgba(0,0,0,0.07) !important;
+    border-top: 1px solid rgba(0,0,0,0.07) !important;
+    transform: rotate(45deg) !important;
+}
+
+/* Cabecera del panel */
+.ntf-panel-head {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 13px 15px 10px !important;
+    border-bottom: 1px solid rgba(0,0,0,0.07) !important;
+}
+.ntf-panel-title {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #1d1d1f !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+.ntf-panel-title i { color: #0071e3 !important; }
+
+.ntf-link-all {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #0071e3 !important;
+    text-decoration: none !important;
+    padding: 3px 9px !important;
+    border-radius: 7px !important;
+    transition: background 0.15s !important;
+    background: rgba(0,113,227,0.08) !important;
+}
+.ntf-link-all:hover { background: rgba(0,113,227,0.15) !important; }
+
+/* Lista de ítems */
+.ntf-panel-list {
+    max-height: 268px !important;
+    overflow-y: auto !important;
+}
+
+/* Ítem individual */
+.ntf-item {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 11px 15px !important;
+    text-decoration: none !important;
+    color: #1d1d1f !important;
+    border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+    transition: background 0.12s !important;
+    cursor: pointer !important;
+    position: relative !important;
+}
+.ntf-item:last-child { border-bottom: none !important; }
+.ntf-item:hover { background: #f0f5ff !important; }
+
+/* Punto azul "no leído" */
+.ntf-item::after {
+    content: '' !important;
+    position: absolute !important;
+    right: 13px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 7px !important;
+    height: 7px !important;
+    border-radius: 50% !important;
+    background: #0071e3 !important;
+}
+
+.ntf-av { flex-shrink: 0 !important; margin-top: 2px !important; }
+
+.ntf-body {
+    flex: 1 !important;
+    min-width: 0 !important;
+    padding-right: 14px !important;
+}
+.ntf-from {
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #1d1d1f !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    line-height: 1.3 !important;
+}
+.ntf-subj {
+    font-size: 12px !important;
+    color: #6e6e73 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin-top: 2px !important;
+}
+.ntf-time {
+    font-size: 11px !important;
+    color: #aeaeb2 !important;
+    margin-top: 3px !important;
+}
+
+/* Estado vacío */
+.ntf-empty {
+    padding: 26px 16px !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+.ntf-empty i {
+    font-size: 28px !important;
+    color: #34c759 !important;
+    display: block !important;
+}
+.ntf-empty span {
+    font-size: 13px !important;
+    color: #aeaeb2 !important;
+    font-weight: 500 !important;
+}
+
+/* Pie del panel */
+.ntf-panel-footer {
+    display: block !important;
+    text-align: center !important;
+    padding: 10px 15px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #0071e3 !important;
+    text-decoration: none !important;
+    border-top: 1px solid rgba(0,0,0,0.06) !important;
+    background: #fafafa !important;
+    transition: background 0.15s !important;
+}
+.ntf-panel-footer:hover { background: #f0f5ff !important; }
 
 /* Content Wrapper */
 .contentWrapper {

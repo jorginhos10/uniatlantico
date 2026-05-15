@@ -517,6 +517,42 @@ switch ($action) {
 
     // ====================================================
 
+    // ====================================================
+    // SECCIÓN PARA MENSAJES
+    // ====================================================
+    case 'mensajes':
+        require_once 'config/security.php';
+        require_once 'controlador/MensajesController.php';
+        $mensajesController = new MensajesController();
+
+        $actionParam = $_GET['action'] ?? ($urlParts[1] ?? 'index');
+
+        switch ($actionParam) {
+            case 'listar':
+                $mensajesController->listar();
+                break;
+            case 'crear':
+                $mensajesController->crear();
+                break;
+            case 'ver':
+                $mensajesController->ver();
+                break;
+            case 'eliminar':
+                $mensajesController->eliminar();
+                break;
+            case 'contarNoLeidos':
+                $mensajesController->contarNoLeidos();
+                break;
+            case 'recientesNoLeidos':
+                $mensajesController->recientesNoLeidos();
+                break;
+            case 'index':
+            default:
+                $mensajesController->index();
+                break;
+        }
+        break;
+
     case 'publica':
         require_once 'vista/publica/index.php';
         break;
