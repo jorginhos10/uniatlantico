@@ -384,6 +384,54 @@ class Modulo144Model {
         return $this->getByEstado($modulo, $formulario_id, 0);
     }
 
+    // Devuelve id, proyecto y ponderacion_actividades de TODAS las formulaciones del formulario
+    public function getPonderacionesPorFormulario($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id, proyecto, ponderacion_actividades
+                 FROM formulacion_144
+                 WHERE formulario_id = :fid"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getPonderacionesPorFormulario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Suma la ponderacion_actividades de un proyecto excluyendo un id dado
+    public function getAcumuladoProyecto($formulario_id, $proyecto, $excluir_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COALESCE(SUM(ponderacion_actividades), 0) as total
+                 FROM formulacion_144
+                 WHERE formulario_id = :fid
+                   AND proyecto = :proyecto
+                   AND id != :excluir"
+            );
+            $stmt->execute([':fid' => $formulario_id, ':proyecto' => $proyecto, ':excluir' => $excluir_id]);
+            $row = $stmt->fetch();
+            return (float)($row['total'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error getAcumuladoProyecto: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Cuenta el total de registros del formulario (para polling de cambios)
+    public function contarRegistros($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) as total FROM formulacion_144 WHERE formulario_id = :fid"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
     public function getPublicados($modulo, $formulario_id) {
         return $this->getByEstado($modulo, $formulario_id, 2);
     }

@@ -332,6 +332,12 @@ switch ($action) {
             case 'saveFilterPreference':
                 $modulo144Controller->saveFilterPreference();
                 break;
+            case 'getPonderaciones':
+                $modulo144Controller->getPonderaciones();
+                break;
+            case 'contarRegistros':
+                $modulo144Controller->contarRegistros();
+                break;
             case 'index':
             default:
                 $modulo144Controller->index();
@@ -447,7 +453,70 @@ switch ($action) {
         }
         break;
     // ====================================================
-        
+    // SECCIÓN PARA ROLES / CARGOS (CRUD)
+    // ====================================================
+    case 'roles':
+        require_once 'config/security.php';
+        require_once 'controlador/rolesController.php';
+        $rolesController = new RolesController();
+
+        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+
+        switch ($actionParam) {
+            case 'listar':
+                $rolesController->listar();
+                break;
+            case 'activos':
+                $rolesController->activos();
+                break;
+            case 'actualizarNombre':
+                $rolesController->actualizarNombre();
+                break;
+            case 'index':
+            default:
+                $rolesController->index();
+                break;
+        }
+        break;
+
+    // ====================================================
+    // SECCIÓN PARA DEPENDENCIAS (CRUD)
+    // ====================================================
+    case 'dependencias':
+        require_once 'config/security.php';
+        require_once 'controlador/dependenciasController.php';
+        $dependenciasController = new DependenciasController();
+
+        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+
+        switch ($actionParam) {
+            case 'listar':
+                $dependenciasController->listar();
+                break;
+            case 'crear':
+                $dependenciasController->crear();
+                break;
+            case 'get':
+                $dependenciasController->get();
+                break;
+            case 'actualizar':
+                $dependenciasController->actualizar();
+                break;
+            case 'eliminar':
+                $dependenciasController->eliminar();
+                break;
+            case 'cambiarEstado':
+                $dependenciasController->cambiarEstado();
+                break;
+            case 'index':
+            default:
+                $dependenciasController->index();
+                break;
+        }
+        break;
+
+    // ====================================================
+
     case 'publica':
         require_once 'vista/publica/index.php';
         break;

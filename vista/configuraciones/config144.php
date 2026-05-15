@@ -1,33 +1,28 @@
 <?php
 // vista/configuraciones/config144.php
-$basePath = Config::getBasePath();
+require_once __DIR__ . '/../../config/security.php';
+
+$titulo       = 'CONFIG-144 — Configuración de Años';
+$paginaActual = 'configuraciones/config144';
+$basePath     = Config::getBasePath();
+$baseUrl      = Config::getBaseUrl();
+
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA 144 - Configuración de Años</title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    
-    <style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
         :root {
-            --color-primary: #2C3E50;
-            --color-primary-light: #34495E;
-            --color-success: #27AE60;
-            --color-warning: #F39C12;
-            --color-danger: #E74C3C;
-            --color-info: #3498DB;
-            --color-bg: #F8F9FA;
+            --color-primary: #007AFF;
+            --color-primary-light: #0A84FF;
+            --color-success: #34C759;
+            --color-warning: #FF9500;
+            --color-danger: #FF3B30;
+            --color-info: #007AFF;
+            --color-bg: #F2F2F7;
         }
-        
+
         body {
-            background-color: var(--color-bg);
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
         .header-info {
@@ -41,15 +36,16 @@ $basePath = Config::getBasePath();
         
         .card {
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
             margin-bottom: 20px;
         }
-        
+
         .card-header {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
+            background: var(--color-bg);
+            color: #000000;
+            border-radius: 16px 16px 0 0 !important;
+            border-bottom: 1px solid rgba(60,60,67,.12);
             padding: 15px 20px;
             font-weight: 600;
         }
@@ -67,7 +63,7 @@ $basePath = Config::getBasePath();
         
         .sortable-ghost {
             opacity: 0.5;
-            background: #c8e6c9 !important;
+            background: rgba(52,199,89,.15) !important;
             border: 2px dashed var(--color-success) !important;
         }
         
@@ -87,9 +83,9 @@ $basePath = Config::getBasePath();
         }
         
         .sortable-rows tbody tr:hover {
-            background-color: #f0f7ff;
+            background-color: rgba(0,122,255,.06);
             transform: scale(1.002);
-            box-shadow: 0 2px 8px rgba(44,62,80,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
         
         .drag-handle {
@@ -126,12 +122,12 @@ $basePath = Config::getBasePath();
         }
         
         .badge-activo {
-            background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);
+            background: #34C759;
             color: white;
         }
-        
+
         .badge-inactivo {
-            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
+            background: #FF3B30;
             color: white;
         }
         
@@ -145,19 +141,17 @@ $basePath = Config::getBasePath();
         }
         
         .modal-content {
-            border-radius: 15px;
+            border-radius: 16px;
             border: none;
+            overflow: hidden;
         }
-        
+
         .modal-header {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 15px 20px;
-        }
-        
-        .modal-header .btn-close {
-            filter: invert(1) brightness(2);
+            background: #FFFFFF;
+            color: #000000;
+            border-radius: 16px 16px 0 0;
+            border-bottom: 1px solid rgba(60,60,67,.12);
+            padding: 18px 22px;
         }
         
         .form-control, .form-select {
@@ -229,9 +223,9 @@ $basePath = Config::getBasePath();
         }
 
         #resumenDistribucionBody tr:hover {
-            background-color: #f0f7ff;
+            background-color: rgba(0,122,255,.06);
             transform: scale(1.002);
-            box-shadow: 0 2px 8px rgba(44,62,80,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
         }
 
         #resumenDistribucionBody tr td:first-child {
@@ -279,11 +273,11 @@ $basePath = Config::getBasePath();
         }
 
         .nivel-proyecto {
-            background: #4CAF50;
+            background: #34C759;
         }
     </style>
-</head>
-<body>
+<?php $cssExtra = ob_get_clean();
+require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <div class="header-info">
             <div class="row align-items-center">
@@ -453,7 +447,7 @@ $basePath = Config::getBasePath();
     <div class="modal fade" id="modalVerAno" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Detalles del Año</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -468,7 +462,7 @@ $basePath = Config::getBasePath();
     <div class="modal fade" id="modalGuardarOrden" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                <div class="modal-header">
                     <h5 class="modal-title"><i class="fas fa-save me-2"></i>Guardar Orden</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -492,8 +486,8 @@ $basePath = Config::getBasePath();
     <div class="modal fade" id="modalDistribucionPorcentajes" tabindex="-1" data-bs-backdrop="static" data-bs-size="xl">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
-                    <h5 class="modal-title">
+                <div class="modal-header" style="background: #007AFF;">
+                    <h5 class="modal-title" style="color: white;">
                         <i class="fas fa-percent me-2"></i>DISTRIBUCIÓN PORCENTUAL POR LÍNEAS ESTRATÉGICAS
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -587,7 +581,7 @@ $basePath = Config::getBasePath();
     <div class="modal fade" id="modalEditarPorcentaje" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-edit me-2"></i>EDITAR PORCENTAJE DE LÍNEA
                     </h5>
@@ -1693,7 +1687,7 @@ $basePath = Config::getBasePath();
                     <div class="modal fade" id="modalEditarPorcentajeMotor" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                                <div class="modal-header">
                                     <h5 class="modal-title"><i class="fas fa-edit me-2"></i>EDITAR PORCENTAJE DE MOTOR</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
@@ -1799,7 +1793,7 @@ $basePath = Config::getBasePath();
                     <div class="modal fade" id="modalEditarPorcentajeProyecto" tabindex="-1">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                                <div class="modal-header">
                                     <h5 class="modal-title"><i class="fas fa-edit me-2"></i>EDITAR PORCENTAJE DE PROYECTO</h5>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
@@ -1893,5 +1887,4 @@ $basePath = Config::getBasePath();
             });
         }
     </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>

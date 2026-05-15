@@ -398,11 +398,32 @@ class Modulo144Controller {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $modulo = $_POST['modulo'] ?? '';
-            $id = $_POST['id'] ?? 0;
-            
-            if (empty($modulo) || empty($id) || $id <= 0) {
+            $id     = intval($_POST['id'] ?? 0);
+
+            if (empty($modulo) || $id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
+            }
+
+            // Validación server-side: ponderación acumulada no puede superar 100%
+            if ($modulo === 'formulacion' && isset($_POST['ponderacion_actividades']) && $_POST['ponderacion_actividades'] !== '') {
+                $proyecto      = $_POST['proyecto']              ?? '';
+                $formulario_id = intval($_POST['formulario_id']  ?? 0);
+                $nueva         = (float)$_POST['ponderacion_actividades'];
+
+                if ($formulario_id > 0 && $proyecto !== '') {
+                    $acumulado = $this->model->getAcumuladoProyecto($formulario_id, $proyecto, $id);
+                    if (($acumulado + $nueva) > 100.005) {
+                        $disponible = max(0, 100 - $acumulado);
+                        echo json_encode([
+                            'success'   => false,
+                            'message'   => "La ponderación supera el 100% para este proyecto. Disponible: {$disponible}%",
+                            'acumulado' => $acumulado,
+                            'disponible'=> $disponible
+                        ]);
+                        return;
+                    }
+                }
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
@@ -411,6 +432,30 @@ class Modulo144Controller {
                 'message' => $resultado ? 'Guardado exitosamente' : 'Error al guardar'
             ]);
         }
+    }
+
+    // Devuelve id, proyecto, ponderacion_actividades de todas las formulaciones del formulario
+    public function getPonderaciones() {
+        header('Content-Type: application/json');
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $data = $this->model->getPonderacionesPorFormulario($formulario_id);
+        echo json_encode(['success' => true, 'formulaciones' => $data]);
+    }
+
+    // Devuelve el conteo de registros del formulario (para polling de cambios en la lista)
+    public function contarRegistros() {
+        header('Content-Type: application/json');
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false]);
+            return;
+        }
+        $total = $this->model->contarRegistros($formulario_id);
+        echo json_encode(['success' => true, 'total' => $total]);
     }
     
     public function guardarGestionSemestral() {

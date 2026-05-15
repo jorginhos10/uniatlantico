@@ -1,24 +1,23 @@
 <?php
 // vista/modulo144/index.php
+require_once __DIR__ . '/../../config/security.php';
+
 $basePath = Config::getBasePath();
-// Solo asignar fecha_cierre si es formulario de rango con fecha válida
+$baseUrl  = Config::getBaseUrl();
+
 $fecha_cierre = null;
 if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_cierre'])) {
     $fecha_cierre = $formulario['fecha_cierre'];
 }
+
+$titulo       = 'SISTEMA 144 — ' . htmlspecialchars($formulario['titulo'] ?? '');
+$paginaActual = 'modulo144';
+
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA 144 - <?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
         .select2-container--default .select2-selection--multiple {
             border: 1px solid #ced4da;
             border-radius: 8px;
@@ -27,7 +26,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         }
         .select2-container--default.select2-container--focus .select2-selection--multiple {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
+            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
         }
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #1D71B8;
@@ -51,7 +50,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         .select2-dropdown {
             border: 1px solid #ced4da;
             border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
         }
         .select2-container--default .select2-results__option--highlighted[aria-selected] {
             background-color: var(--color-primary);
@@ -72,44 +71,42 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     
     <style>
         :root {
-            --color-primary: #2C3E50;
-            --color-primary-light: #34495E;
-            --color-success: #27AE60;
-            --color-warning: #F39C12;
-            --color-danger: #E74C3C;
-            --color-info: #3498DB;
-            --color-bg: #F8F9FA;
+            --color-primary: #007AFF;
+            --color-primary-light: #0A84FF;
+            --color-success: #34C759;
+            --color-warning: #FF9500;
+            --color-danger: #FF3B30;
+            --color-info: #007AFF;
+            --color-bg: #F2F2F7;
             --color-white: #FFFFFF;
-            --color-tab-incomplete: #6c757d;
-            --color-tab-complete: #27AE60;
+            --color-tab-incomplete: #8E8E93;
+            --color-tab-complete: #34C759;
         }
-        
+
         .facultad-color-0 { border-left-color: #9C27B0; }
-        .facultad-color-1 { border-left-color: #FF9800; }
-        .facultad-color-2 { border-left-color: #2196F3; }
-        .facultad-color-3 { border-left-color: #4CAF50; }
-        .facultad-color-4 { border-left-color: #F44336; }
+        .facultad-color-1 { border-left-color: #FF9500; }
+        .facultad-color-2 { border-left-color: #007AFF; }
+        .facultad-color-3 { border-left-color: #34C759; }
+        .facultad-color-4 { border-left-color: #FF3B30; }
         .facultad-color-5 { border-left-color: #673AB7; }
-        .facultad-color-6 { border-left-color: #FF5722; }
-        .facultad-color-7 { border-left-color: #009688; }
+        .facultad-color-6 { border-left-color: #FF6230; }
+        .facultad-color-7 { border-left-color: #32ADE6; }
         .facultad-color-8 { border-left-color: #3F51B5; }
-        .facultad-color-9 { border-left-color: #E91E63; }
-        
+        .facultad-color-9 { border-left-color: #FF2D55; }
+
         .badge-facultad-0 { background-color: #9C27B0; }
-        .badge-facultad-1 { background-color: #FF9800; }
-        .badge-facultad-2 { background-color: #2196F3; }
-        .badge-facultad-3 { background-color: #4CAF50; }
-        .badge-facultad-4 { background-color: #F44336; }
+        .badge-facultad-1 { background-color: #FF9500; }
+        .badge-facultad-2 { background-color: #007AFF; }
+        .badge-facultad-3 { background-color: #34C759; }
+        .badge-facultad-4 { background-color: #FF3B30; }
         .badge-facultad-5 { background-color: #673AB7; }
-        .badge-facultad-6 { background-color: #FF5722; }
-        .badge-facultad-7 { background-color: #009688; }
+        .badge-facultad-6 { background-color: #FF6230; }
+        .badge-facultad-7 { background-color: #32ADE6; }
         .badge-facultad-8 { background-color: #3F51B5; }
-        .badge-facultad-9 { background-color: #E91E63; }
-        
+        .badge-facultad-9 { background-color: #FF2D55; }
+
         body {
-            background-color: var(--color-bg);
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
         .header-info {
@@ -118,7 +115,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             padding: 30px;
             border-radius: 15px;
             margin-bottom: 30px;
-            box-shadow: 0 8px 20px rgba(44,62,80,0.2);
+            box-shadow: 0 6px 24px rgba(0,122,255,0.25);
         }
         
         .countdown-container {
@@ -164,7 +161,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             margin-bottom: 20px;
             border-radius: 15px !important;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
         }
         
         .accordion-button {
@@ -355,9 +352,9 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         .empty-state {
             text-align: center;
             padding: 30px;
-            background: #f8f9fc;
-            border-radius: 12px;
-            border: 1px dashed #dee2e6;
+            background: #F2F2F7;
+            border-radius: 14px;
+            border: 1px dashed rgba(60,60,67,.2);
         }
         
         .empty-state i {
@@ -373,51 +370,52 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             white-space: nowrap;
         }
         
-        .estado-borrador { background: linear-gradient(135deg, #7F8C8D 0%, #95A5A6 100%); }
-        .estado-publicado { background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); }
-        .estado-cancelado { background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); }
-        .estado-expirado { background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); }
-        .estado-vigente { background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); }
-        .estado-sin-fechas { background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%); }
+        .estado-borrador   { background: #8E8E93; }
+        .estado-publicado  { background: #34C759; }
+        .estado-cancelado  { background: #FF3B30; }
+        .estado-expirado   { background: #FF3B30; }
+        .estado-vigente    { background: #34C759; }
+        .estado-sin-fechas { background: #007AFF; }
         
         .modal-content {
-            border-radius: 15px;
+            border-radius: 16px;
             border: none;
+            overflow: hidden;
         }
-        
+
         .modal-header {
             color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 20px;
+            border-radius: 16px 16px 0 0;
+            padding: 18px 22px;
         }
-        
+
         .modal-header .modal-title {
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background-color .2s;
         }
-        
+
         .modal-header .modal-title:hover {
             background-color: rgba(255, 255, 255, 0.2);
         }
-        
+
         .modal-header .modal-title-input {
-            background: transparent;
-            border: 2px solid white;
+            background: rgba(255,255,255,.15);
+            border: 1.5px solid rgba(255,255,255,.5);
             color: white;
-            font-size: 1.25rem;
-            font-weight: 500;
+            font-size: 1.15rem;
+            font-weight: 600;
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 8px;
             width: 100%;
         }
-        
+
         .modal-header .modal-title-input:focus {
             outline: none;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.22);
         }
-        
+
         .btn-close-white {
             filter: invert(1) brightness(2);
         }
@@ -430,7 +428,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         
         .form-control:focus, .form-select:focus {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
+            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
         }
         
         .form-control[readonly] {
@@ -518,7 +516,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         
         .nav-tabs .nav-link:hover {
             border-bottom-color: var(--color-primary-light);
-            background-color: rgba(44, 62, 80, 0.05);
+            background-color: rgba(0, 122, 255, 0.05);
         }
         
         .nav-tabs .nav-link.active {
@@ -616,7 +614,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
             border-left: 4px solid;
             transition: all 0.3s ease;
         }
@@ -698,7 +696,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             border-radius: 12px;
             font-size: 0.7rem;
             font-weight: 600;
-            background-color: #27AE60;
+            background-color: #34C759;
             color: white;
             margin-left: 8px;
         }
@@ -746,8 +744,8 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             border: 1px solid rgba(0,122,255,0.18);
         }
     </style>
-</head>
-<body>
+<?php $cssExtra = ob_get_clean();
+require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <div class="header-info">
             <div class="row align-items-center">
@@ -1417,7 +1415,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalNuevoBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nuevo Borrador</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1442,7 +1440,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalNuevoBorradorFacultad" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Formulación - <span id="facultadNombreModal"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1468,7 +1466,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalDuplicarBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Formulación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1493,7 +1491,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalGestionSemestral" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                <div class="modal-header" style="background: #FF9500;">
                     <h5 class="modal-title">
                         <i class="fas fa-calendar-alt me-2"></i>GESTIÓN SEMESTRAL - <span id="gestionTituloSpan"></span>
                     </h5>
@@ -1563,7 +1561,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title" id="tituloFormulacion" ondblclick="editarTituloModal('formulacion')">
                         <i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan"></span>
                     </h5>
@@ -1631,7 +1629,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
+                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(true); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
@@ -1836,7 +1834,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                <div class="modal-header" style="background: #34C759;">
                     <h5 class="modal-title" id="tituloSeguimiento" ondblclick="editarTituloModal('seguimiento')">
                         <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan"></span>
                     </h5>
@@ -1912,7 +1910,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Ver Formulación - <span id="ver_titulo"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1949,8 +1947,8 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         ?>;
         const FILTER_PREFS = <?php echo json_encode($filter_preferences ?? []); ?>;
         
-        // Datos de formulaciones existentes para calcular ponderación acumulada por proyecto
-        const formulacionesExistentes = <?php
+        // Datos de formulaciones — se refresca vía AJAX para mantener sincronía
+        let formulacionesExistentes = <?php
             $todas = [];
             $modulos_check = ['formulacion'];
             foreach ($modulos_check as $mk) {
@@ -1960,7 +1958,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                             foreach ($datos_modulos[$mk][$estado] as $b) {
                                 if (!empty($b['proyecto']) && isset($b['ponderacion_actividades'])) {
                                     $todas[] = [
-                                        'id' => $b['id'],
+                                        'id' => intval($b['id']),
                                         'proyecto' => $b['proyecto'],
                                         'ponderacion_actividades' => floatval($b['ponderacion_actividades'])
                                     ];
@@ -1972,6 +1970,51 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             }
             echo json_encode($todas);
         ?>;
+
+        let _listaTotalRegistros = <?php echo $todas ? count($todas) : 0; ?>;
+
+        // Refresca formulacionesExistentes desde el servidor
+        function refrescarFormulacionesExistentes(callback) {
+            $.ajax({
+                url: basePath + '/modulo144/getPonderaciones?formulario_id=' + formularioId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        formulacionesExistentes = res.formulaciones.map(function(f) {
+                            return { id: parseInt(f.id), proyecto: f.proyecto, ponderacion_actividades: parseFloat(f.ponderacion_actividades) || 0 };
+                        });
+                    }
+                    if (typeof callback === 'function') callback();
+                },
+                error: function() {
+                    if (typeof callback === 'function') callback();
+                }
+            });
+        }
+
+        // Polling: si cambia el número de registros recarga la lista automáticamente
+        function iniciarPollingLista() {
+            setInterval(function() {
+                // Solo hacer polling si no hay modal abierto (evita interrumpir edición activa)
+                if ($('.modal.show').length > 0) return;
+                $.ajax({
+                    url: basePath + '/modulo144/contarRegistros?formulario_id=' + formularioId,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.success && res.total !== _listaTotalRegistros) {
+                            _listaTotalRegistros = res.total;
+                            location.reload();
+                        }
+                    }
+                });
+            }, 20000); // cada 20 segundos
+        }
+
+        $(document).ready(function() {
+            iniciarPollingLista();
+        });
 
         let timeoutId = null;
         let currentModule = null;
@@ -2065,9 +2108,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         }
         
         // ── ACUMULADO DE PONDERACIÓN DE ACTIVIDADES POR PROYECTO ────────────
-        // Calcula cuánto % ya está usado por el proyecto seleccionado
-        // en TODOS los registros (excluyendo el borrador que se está editando)
-        function calcularAcumuladoActividades() {
+        function _ejecutarCalculoAcumulado() {
             const proyectoSeleccionado = $('#formulacion_proyecto').val();
             const idActual = $('#formulacion_id').val() ? parseInt($('#formulacion_id').val()) : null;
             const valorActual = parseFloat($('#formulacion_ponderacion_actividades').val()) || 0;
@@ -2082,10 +2123,11 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             }
 
             // Suma de otros registros con el mismo proyecto (excluye el actual)
+            // Usamos == en lugar de !== para evitar bug string vs integer (PDO retorna strings)
             let acumuladoOtros = 0;
             formulacionesExistentes.forEach(function(f) {
-                if (f.proyecto === proyectoSeleccionado && f.id !== idActual) {
-                    acumuladoOtros += f.ponderacion_actividades;
+                if (f.proyecto === proyectoSeleccionado && parseInt(f.id) !== idActual) {
+                    acumuladoOtros += parseFloat(f.ponderacion_actividades) || 0;
                 }
             });
 
@@ -2145,8 +2187,17 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                 input.css({ borderColor: '#ced4da', boxShadow: '' });
             }
         }
+
+        // Wrapper: refresca datos del servidor antes de calcular cuando cambia el proyecto
+        function calcularAcumuladoActividades(forzarRefresh) {
+            if (forzarRefresh) {
+                refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+            } else {
+                _ejecutarCalculoAcumulado();
+            }
+        }
         // ────────────────────────────────────────────────────────────────────
-        
+
         // ── CARGA AUTOMÁTICA DE PONDERACIÓN DE PROYECTOS DESDE data_proyectos ──
         function cargarPonderacionProyecto() {
             const selectProyecto = document.getElementById('formulacion_proyecto');
@@ -2802,6 +2853,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                 
                 const data = {
                     modulo: 'formulacion', id: id,
+                    formulario_id: formularioId,
                     anio: formularioAnio,
                     linea_estrategica: $('#formulacion_linea').val(),
                     objetivo: $('#formulacion_objetivo').val(),
@@ -2837,6 +2889,18 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                         if (response.success) {
                             mostrarAutoSaveIndicator();
                             validarPestanas();
+                            // Refrescar datos locales tras guardar exitoso
+                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                        } else if (response.acumulado !== undefined) {
+                            // Error de ponderación server-side: actualizar badge y bloquear
+                            formulacionesExistentes = formulacionesExistentes; // forzar recalculo
+                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Ponderación excedida',
+                                text: response.message,
+                                confirmButtonColor: '#007AFF'
+                            });
                         }
                     }
                 });
@@ -3396,5 +3460,4 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         });
 
     </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>

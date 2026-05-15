@@ -26,15 +26,7 @@ require_once __DIR__ . '/../complementos/header.php';
   <div class="mosaic-grid">
     <!-- Fila 1 -->
 
-    <div class="mosaic-item">
-      <div class="item-icon" style="background-color: #16a085;">
-        <i class="fas fa-network-wired"></i>
-      </div>
-      <h3>Dependencias</h3>
-      <p>Configura la creacion eliminacion y edicion de dependencias</p>
-    </div>
-
-    <a style="text-decoration:none;" href="./config-formularios">
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/config144">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #4a6ee0;">
         <i class="fas fa-wpforms"></i>
@@ -61,13 +53,15 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
     
     <!-- Fila 2 -->
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/roles">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #fbbc05;">
-        <i class="fas fa-language"></i>
+        <i class="fas fa-user-tie"></i>
       </div>
-      <h3>Idioma</h3>
-      <p>Selecciona el idioma y configuración regional</p>
+      <h3>Dependencias</h3>
+      <p>Gestiona la creación, edición y eliminación de dependencias</p>
     </div>
+    </a>
     
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #8e44ad;">
@@ -79,6 +73,16 @@ require_once __DIR__ . '/../complementos/header.php';
     
     
     <!-- Fila 3 -->
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/roles">
+    <div class="mosaic-item">
+      <div class="item-icon" style="background-color: #8e44ad;">
+        <i class="fas fa-shield-alt"></i>
+      </div>
+      <h3>Roles</h3>
+      <p>Define los roles disponibles para los usuarios del sistema</p>
+    </div>
+    </a>
+
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #e74c3c;">
         <i class="fas fa-file-export"></i>
@@ -87,6 +91,7 @@ require_once __DIR__ . '/../complementos/header.php';
       <p>Configura formatos, rutas y opciones de exportación</p>
     </div>
     
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/usuarios">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #3498db;">
         <i class="fas fa-users-cog"></i>
@@ -94,6 +99,7 @@ require_once __DIR__ . '/../complementos/header.php';
       <h3>Usuarios</h3>
       <p>Administra perfiles, roles y permisos de usuarios</p>
     </div>
+    </a>
     
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #2ecc71;">
