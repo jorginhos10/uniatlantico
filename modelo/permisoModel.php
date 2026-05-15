@@ -70,32 +70,27 @@ class PermisoModel {
      */
     private function formatearNombrePermiso($nombre) {
         $nombres = [
-            'crear_usuarios' => 'Crear Usuarios',
-            'editar_usuarios' => 'Editar Usuarios',
-            'eliminar_usuarios' => 'Eliminar Usuarios',
-            'ver_reportes' => 'Ver Reportes',
-            'gestionar_inventario' => 'Gestionar Inventario',
-            'ver_dashboard' => 'Ver Dashboard',
-            'configurar_sistema' => 'Configurar Sistema'
+            'ver_dashboard'       => 'Dashboard',
+            'gestionar_recetas'   => 'Formato FOR-DE-144',
+            'for_de_144'          => 'Formato FOR-DE-144',
+            'configurar_sistema'  => 'Configuraciones',
+            'gestionar_usuarios'  => 'Gestionar Usuarios',
+            'gestionar_permisos'  => 'Gestionar Permisos',
         ];
-        
+
         return $nombres[$nombre] ?? ucwords(str_replace('_', ' ', $nombre));
     }
 
-    /**
-     * Obtener descripción del permiso
-     */
     private function getDescripcionPermiso($nombre) {
         $descripciones = [
-            'crear_usuarios' => 'Permite crear nuevos usuarios en el sistema',
-            'editar_usuarios' => 'Permite editar información de usuarios existentes',
-            'eliminar_usuarios' => 'Permite eliminar usuarios del sistema',
-            'ver_reportes' => 'Permite ver reportes y estadísticas del sistema',
-            'gestionar_inventario' => 'Permite gestionar el inventario de productos',
-            'ver_dashboard' => 'Permite ver el panel principal de control',
-            'configurar_sistema' => 'Permite configurar ajustes del sistema'
+            'ver_dashboard'       => 'Permite acceder al panel principal',
+            'gestionar_recetas'   => 'Permite acceder y gestionar el Formato FOR-DE-144',
+            'for_de_144'          => 'Permite acceder y gestionar el Formato FOR-DE-144',
+            'configurar_sistema'  => 'Permite acceder a las configuraciones del sistema',
+            'gestionar_usuarios'  => 'Permite crear, editar y eliminar usuarios',
+            'gestionar_permisos'  => 'Permite gestionar los permisos de otros usuarios',
         ];
-        
+
         return $descripciones[$nombre] ?? 'Permiso del sistema';
     }
 
@@ -249,10 +244,16 @@ class PermisoModel {
             if ($usuario) {
                 // Formatear rol para mostrar
                 $roles = [
-                    'admin' => 'Administrador',
-                    'cocina' => 'Cocina',
-                    'inventario' => 'Inventario',
-                    'mesero' => 'Mesero'
+                    'admin'        => 'Administrador',
+                    'director'     => 'Director',
+                    'coordinador'  => 'Coordinador',
+                    'jefe'         => 'Jefe de Área',
+                    'analista'     => 'Analista',
+                    'secretario'   => 'Secretario(a)',
+                    'auxiliar'     => 'Auxiliar',
+                    'tecnico'      => 'Técnico',
+                    'asesor'       => 'Asesor',
+                    'pasante'      => 'Pasante',
                 ];
                 $usuario['rol_formateado'] = $roles[$usuario['rol']] ?? ucfirst($usuario['rol']);
                 

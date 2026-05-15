@@ -44,6 +44,15 @@ class Modulo144Controller {
             ];
         }
 
+        // Cargar preferencias de filtro del usuario actual
+        $filter_preferences = [];
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        if ($uid) {
+            foreach ($modulos as $key => $modulo) {
+                $filter_preferences[$key] = $this->model->getFilterPreference($uid, $id, $key);
+            }
+        }
+
         $vistaPath = 'vista/modulo144/index.php';
         if (!file_exists($vistaPath)) {
             die("Error crítico: No se encuentra la vista en: " . $vistaPath);
@@ -358,7 +367,7 @@ class Modulo144Controller {
                 return;
             }
 
-            $creado_por = $_SESSION['user_id'] ?? 1;
+            $creado_por = $_SESSION['usuario_id'] ?? 1;
             $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por, $facultad_id);
 
             if ($resultado) {
@@ -484,8 +493,8 @@ class Modulo144Controller {
             $modulo = $_POST['modulo'] ?? '';
             $id = $_POST['id'] ?? 0;
             $nombre = $_POST['nombre_duplicado'] ?? 'Copia de ' . date('d/m/Y H:i');
-            $creado_por = $_SESSION['user_id'] ?? 1;
-            
+            $creado_por = $_SESSION['usuario_id'] ?? 1;
+
             if (empty($modulo) || empty($id) || $id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
@@ -497,6 +506,34 @@ class Modulo144Controller {
                 'message' => $resultado ? 'Duplicado exitosamente' : 'Error al duplicar'
             ]);
         }
+    }
+
+    public function getFilterPreference() {
+        header('Content-Type: application/json');
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        $modulo = $_GET['modulo'] ?? '';
+        if (!$uid || !$formulario_id || !$modulo) {
+            echo json_encode(['success' => false, 'tipo_filtro' => 'todos', 'valor_filtro' => null]);
+            return;
+        }
+        $pref = $this->model->getFilterPreference($uid, $formulario_id, $modulo);
+        echo json_encode(['success' => true] + $pref);
+    }
+
+    public function saveFilterPreference() {
+        header('Content-Type: application/json');
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        if (!$uid) { echo json_encode(['success' => false]); return; }
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $result = $this->model->saveFilterPreference(
+            $uid,
+            intval($input['formulario_id'] ?? 0),
+            $input['modulo'] ?? '',
+            $input['tipo_filtro'] ?? 'todos',
+            $input['valor_filtro'] ?? null
+        );
+        echo json_encode(['success' => $result]);
     }
 }
 ?>

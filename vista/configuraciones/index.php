@@ -105,3 +105,5 @@ require_once __DIR__ . '/../complementos/header.php';
   </div>
 
 </div>
+
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>

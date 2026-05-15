@@ -353,10 +353,22 @@ class Modulo144Model {
             $modulo_config = $this->modulos[$modulo];
             $tabla = $modulo_config['tabla'];
             $campo_estado = $modulo_config['campo_estado'];
-            
-            $stmt = $this->db->prepare("SELECT * FROM {$tabla} 
-                                        WHERE formulario_id = :formulario_id AND {$campo_estado} = :estado 
-                                        ORDER BY fecha_creacion DESC");
+
+            $stmt = $this->db->prepare("SELECT f.*,
+                                        le.codigo  AS linea_codigo,
+                                        m.id       AS motor_id_num,
+                                        p.codigo   AS proyecto_codigo,
+                                        u.nombre   AS creado_por_nombre,
+                                        u.cargo_id AS creado_por_cargo_id,
+                                        c.nombre   AS creado_por_cargo_nombre
+                                        FROM {$tabla} f
+                                        LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                                        LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                                        LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                                        LEFT JOIN usuarios u ON f.creado_por = u.id
+                                        LEFT JOIN cargos c ON u.cargo_id = c.id
+                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
+                                        ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
             $stmt->execute([
                 ':formulario_id' => $formulario_id,
                 ':estado' => $estado
@@ -665,6 +677,41 @@ class Modulo144Model {
             return $stmt->execute($params);
         } catch (PDOException $e) {
             error_log("Error actualizarGestionSemestral: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getFilterPreference($usuario_id, $formulario_id, $modulo) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT tipo_filtro, valor_filtro FROM user_filter_preferences
+                 WHERE usuario_id = :uid AND formulario_id = :fid AND modulo = :mod LIMIT 1"
+            );
+            $stmt->execute([':uid' => $usuario_id, ':fid' => $formulario_id, ':mod' => $modulo]);
+            $row = $stmt->fetch();
+            return $row ?: ['tipo_filtro' => 'todos', 'valor_filtro' => null];
+        } catch (PDOException $e) {
+            error_log("Error getFilterPreference: " . $e->getMessage());
+            return ['tipo_filtro' => 'todos', 'valor_filtro' => null];
+        }
+    }
+
+    public function saveFilterPreference($usuario_id, $formulario_id, $modulo, $tipo_filtro, $valor_filtro) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO user_filter_preferences (usuario_id, formulario_id, modulo, tipo_filtro, valor_filtro)
+                 VALUES (:uid, :fid, :mod, :tipo, :valor)
+                 ON DUPLICATE KEY UPDATE tipo_filtro = VALUES(tipo_filtro), valor_filtro = VALUES(valor_filtro)"
+            );
+            return $stmt->execute([
+                ':uid'   => $usuario_id,
+                ':fid'   => $formulario_id,
+                ':mod'   => $modulo,
+                ':tipo'  => $tipo_filtro,
+                ':valor' => $valor_filtro ?: null,
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error saveFilterPreference: " . $e->getMessage());
             return false;
         }
     }

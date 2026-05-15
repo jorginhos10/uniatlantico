@@ -21,6 +21,26 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/dashboard.css">
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/header.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --apple-blue: #0071e3;
+            --apple-green: #34c759;
+            --apple-red: #ff3b30;
+            --apple-orange: #ff9f0a;
+            --apple-purple: #af52de;
+            --apple-text: #1d1d1f;
+            --apple-text-secondary: #6e6e73;
+            --apple-text-tertiary: #86868b;
+            --apple-bg: #f5f5f7;
+            --apple-card: #ffffff;
+            --apple-border: rgba(0,0,0,0.06);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
     <?php echo $cssExtra ?? ''; ?>
 </head>
 <body>

@@ -53,8 +53,49 @@ class UsuarioModel {
         }
     }
 
+    public function obtenerRoles() {
+        try {
+            $stmt = $this->db->query("SHOW COLUMNS FROM usuarios LIKE 'rol'");
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            preg_match_all("/'([^']+)'/", $row['Type'], $matches);
+            return $matches[1] ?? ['admin'];
+        } catch (PDOException $e) {
+            error_log("Error obteniendo roles: " . $e->getMessage());
+            return ['admin'];
+        }
+    }
+
+    public function obtenerCargos() {
+        $sql = "SELECT id, nombre FROM cargos WHERE activo = 1 ORDER BY nombre";
+        try {
+            $stmt = $this->db->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo cargos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function obtenerPerfilCompleto($id) {
+        $sql = "SELECT u.id, u.username, u.nombre, u.email, u.rol, u.avatar,
+                       u.activo, u.cargo_id, u.fecha_creacion, u.ultimo_login,
+                       c.nombre AS cargo_nombre
+                FROM usuarios u
+                LEFT JOIN cargos c ON u.cargo_id = c.id
+                WHERE u.id = :id";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error en obtenerPerfilCompleto: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function obtenerUsuarioPorId($id) {
-        $sql = "SELECT id, username, nombre, email, rol, avatar, activo, fecha_creacion, ultimo_login 
+        $sql = "SELECT id, username, nombre, email, rol, avatar, activo, cargo_id, fecha_creacion, ultimo_login
                 FROM usuarios WHERE id = :id";
         
         try {
@@ -70,8 +111,8 @@ class UsuarioModel {
     }
 
     public function crearUsuario($datos) {
-        $sql = "INSERT INTO usuarios (username, password, nombre, email, rol, avatar, activo) 
-                VALUES (:username, :password, :nombre, :email, :rol, :avatar, :activo)";
+        $sql = "INSERT INTO usuarios (username, password, nombre, email, rol, avatar, activo, cargo_id)
+                VALUES (:username, :password, :nombre, :email, :rol, :avatar, :activo, :cargo_id)";
         
         try {
             $stmt = $this->db->prepare($sql);
@@ -84,7 +125,9 @@ class UsuarioModel {
             $stmt->bindParam(':rol', $datos['rol']);
             $stmt->bindParam(':avatar', $datos['avatar']);
             $stmt->bindParam(':activo', $datos['activo'], PDO::PARAM_INT);
-            
+            $cargoId = !empty($datos['cargo_id']) ? (int)$datos['cargo_id'] : null;
+            $stmt->bindParam(':cargo_id', $cargoId, PDO::PARAM_INT);
+
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Error creando usuario: " . $e->getMessage());
@@ -93,9 +136,12 @@ class UsuarioModel {
     }
 
     public function obtenerTodosUsuarios() {
-        $sql = "SELECT id, username, nombre, email, rol, avatar, activo, fecha_creacion, ultimo_login 
-                FROM usuarios 
-                ORDER BY fecha_creacion DESC";
+        $sql = "SELECT u.id, u.username, u.nombre, u.email, u.rol, u.avatar, u.activo,
+                       u.cargo_id, u.fecha_creacion, u.ultimo_login,
+                       c.nombre AS cargo_nombre
+                FROM usuarios u
+                LEFT JOIN cargos c ON u.cargo_id = c.id
+                ORDER BY u.fecha_creacion DESC";
         
         try {
             $stmt = $this->db->query($sql);
@@ -120,21 +166,24 @@ class UsuarioModel {
     }
 
     public function actualizarUsuario($id, $datos) {
-        $sql = "UPDATE usuarios SET 
+        $sql = "UPDATE usuarios SET
                 nombre = :nombre,
                 email = :email,
                 rol = :rol,
-                activo = :activo
+                activo = :activo,
+                cargo_id = :cargo_id
                 WHERE id = :id";
-        
+
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':nombre', $datos['nombre']);
             $stmt->bindParam(':email', $datos['email']);
             $stmt->bindParam(':rol', $datos['rol']);
             $stmt->bindParam(':activo', $datos['activo'], PDO::PARAM_INT);
+            $cargoId = !empty($datos['cargo_id']) ? (int)$datos['cargo_id'] : null;
+            $stmt->bindParam(':cargo_id', $cargoId, PDO::PARAM_INT);
             $stmt->bindParam(':id', $id, PDO::PARAM_INT);
-            
+
             return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Error actualizando usuario: " . $e->getMessage());

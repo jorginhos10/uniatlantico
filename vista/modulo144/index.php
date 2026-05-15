@@ -199,48 +199,159 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         }
         
         .lista-item {
-            padding: 15px;
+            padding: 12px 15px;
             border-bottom: 1px solid #e9ecef;
-            transition: all 0.3s ease;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
+            transition: background 0.2s ease;
         }
-        
+
         .lista-item:hover {
             background-color: #f8f9fa;
         }
-        
+
         .lista-item:last-child {
             border-bottom: none;
         }
-        
-        .lista-item-info {
-            flex: 1;
-        }
-        
+
         .lista-item-titulo {
             font-weight: 600;
             color: var(--color-primary);
-            margin-bottom: 5px;
-        }
-        
-        .lista-item-detalles {
+            margin-bottom: 3px;
+            font-size: 0.95rem;
             display: flex;
-            gap: 15px;
+            align-items: center;
+            gap: 8px;
             flex-wrap: wrap;
-            font-size: 0.85rem;
-            color: #6c757d;
         }
-        
+
+        .lista-item-sub {
+            font-size: 0.78rem;
+            color: #8a95a0;
+            margin-top: 2px;
+        }
+
+        .lista-item-fecha {
+            font-size: 0.82rem;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .lista-item-autor {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.82rem;
+            color: var(--apple-text, #1d1d1f);
+            font-weight: 500;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .lista-item-autor.sin-datos {
+            color: #b0b0b5;
+            font-style: italic;
+        }
+        .lista-item-autor i {
+            font-size: 0.72rem;
+            color: var(--apple-blue, #0071e3);
+            flex-shrink: 0;
+        }
+
         .lista-item-actions {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
+            align-items: center;
         }
-        
+
+        .lmp-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #4338ca;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
+        .lmp-badge i {
+            font-size: 0.72rem;
+            opacity: 0.65;
+        }
+
+        .lmp-badge.sin-datos {
+            background: #f5f5f7;
+            border-color: #e0e0e0;
+            color: #b0b0b5;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        /* Línea exactamente al 100% → verde */
+        .lmp-badge.lmp-completo {
+            background: rgba(52, 199, 89, 0.12);
+            border-color: rgba(52, 199, 89, 0.4);
+            color: #248a3d;
+            cursor: help;
+        }
+        .lmp-badge.lmp-completo i { opacity: 0.8; }
+        .lmp-badge.lmp-completo .lmp-suma {
+            background: rgba(52,199,89,0.2);
+            opacity: 1;
+        }
+
+        /* Línea excedida (>100%) → rojo */
+        .lmp-badge.lmp-excedido {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.4);
+            color: #d70015;
+            cursor: help;
+            animation: pulseRed 2s infinite;
+        }
+        .lmp-badge.lmp-excedido i { opacity: 0.8; }
+        .lmp-badge.lmp-excedido .lmp-suma {
+            background: rgba(255,59,48,0.18);
+            opacity: 1;
+        }
+        @keyframes pulseRed {
+            0%, 100% { border-color: rgba(255,59,48,0.4); }
+            50%       { border-color: rgba(255,59,48,0.9); }
+        }
+
+        .lmp-suma {
+            font-size: 0.68rem;
+            font-weight: 600;
+            opacity: 0.75;
+            background: rgba(0,0,0,0.06);
+            border-radius: 10px;
+            padding: 1px 5px;
+            margin-left: 2px;
+        }
+
+        /* Nombre verde cuando linea completa (exactamente 100) */
+        .titulo-linea-completa {
+            color: #248a3d !important;
+        }
+        .titulo-linea-completa::after {
+            content: ' ✓';
+            font-size: 0.75rem;
+            color: #34c759;
+        }
+        /* Nombre rojo cuando excedido */
+        .titulo-linea-excedida {
+            color: #d70015 !important;
+        }
+        .titulo-linea-excedida::after {
+            content: ' ⚠';
+            font-size: 0.75rem;
+            color: #ff3b30;
+        }
+
         .empty-state {
             text-align: center;
             padding: 30px;
@@ -596,6 +707,44 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             font-size: 0.6rem;
             margin-right: 3px;
         }
+
+        /* === FILTRO DE LISTA === */
+        .filtro-lista-bar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 18px;
+        }
+        .filtro-lista-bar .filtro-label {
+            font-size: 0.82rem; font-weight: 600; color: #6c757d; white-space: nowrap;
+        }
+        .filtro-tipo-select {
+            border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+            padding: 5px 10px; font-size: 0.83rem; background: white; color: #1d1d1f; cursor: pointer;
+        }
+        .filtro-input-wrap { position: relative; min-width: 200px; max-width: 300px; }
+        .filtro-texto-input {
+            width: 100%; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+            padding: 5px 10px; font-size: 0.83rem;
+        }
+        .filtro-sugerencias {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: white; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 9999; max-height: 220px; overflow-y: auto;
+        }
+        .filtro-sugerencias .sug-item {
+            padding: 8px 14px; cursor: pointer; font-size: 0.83rem;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        .filtro-sugerencias .sug-item:last-child { border-bottom: none; }
+        .filtro-sugerencias .sug-item:hover { background: rgba(0,122,255,0.08); }
+        .filtro-resultado-badge {
+            font-size: 0.75rem; padding: 2px 9px; border-radius: 10px;
+            background: rgba(0,122,255,0.09); color: #007aff;
+            border: 1px solid rgba(0,122,255,0.18);
+        }
     </style>
 </head>
 <body>
@@ -699,6 +848,32 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                             <?php endif; ?>
                         </div>
                         
+                        <!-- FILTRO DE LISTA -->
+                        <?php $pref_key = $filter_preferences[$key] ?? ['tipo_filtro' => 'todos', 'valor_filtro' => null]; ?>
+                        <div class="filtro-lista-bar" id="filtroBar-<?php echo $key; ?>">
+                            <span class="filtro-label"><i class="fas fa-filter me-1"></i>Ver:</span>
+                            <select class="filtro-tipo-select" id="filtroTipo-<?php echo $key; ?>"
+                                    onchange="onFiltroTipoChange('<?php echo $key; ?>')">
+                                <option value="todos"       <?php echo $pref_key['tipo_filtro']==='todos'       ? 'selected':''; ?>>Todos</option>
+                                <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Solo mío</option>
+                                <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
+                                <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
+                            </select>
+                            <div class="filtro-input-wrap" id="filtroInputWrap-<?php echo $key; ?>"
+                                 style="display:<?php echo in_array($pref_key['tipo_filtro'],['dependencia','persona']) ? 'block':'none'; ?>">
+                                <input type="text" class="filtro-texto-input"
+                                       id="filtroTexto-<?php echo $key; ?>"
+                                       autocomplete="off"
+                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : 'Buscar dependencia...'; ?>"
+                                       value="<?php echo htmlspecialchars($pref_key['valor_filtro'] ?? ''); ?>"
+                                       oninput="onFiltroTextoInput('<?php echo $key; ?>')"
+                                       onfocus="mostrarSugerencias('<?php echo $key; ?>')"
+                                       onblur="setTimeout(function(){ ocultarSugerencias('<?php echo $key; ?>') }, 200)">
+                                <div class="filtro-sugerencias" id="filtroSugerencias-<?php echo $key; ?>"></div>
+                            </div>
+                            <span class="filtro-resultado-badge" id="filtroResultado-<?php echo $key; ?>" style="display:none;"></span>
+                        </div>
+
                         <!-- BORRADORES -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
@@ -713,54 +888,95 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-6">Nombre</div>
-                                            <div class="col-md-3">Fecha de creación</div>
-                                            <div class="col-md-3">Acciones</div>
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de creación</div>
+                                            <div class="col-md-2">Acciones</div>
                                         </div>
                                     </div>
-                                    <?php foreach ($modulo['borradores'] as $borrador): ?>
-                                    <div class="lista-item">
-                                        <div class="lista-item-info">
-                                            <div class="lista-item-titulo">
-                                                <?php echo htmlspecialchars($borrador['nombre_borrador']); ?>
-                                                <?php if ($borrador['gestionado_facultades'] == 1): ?>
-                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="lista-item-detalles">
-                                                <span><i class="far fa-calendar-alt me-1"></i> <?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?></span>
+                                    <?php
+                                    // Pre-calcular suma de ponderacion_actividades por linea_codigo
+                                    $pond_por_linea_b = [];
+                                    foreach ($modulo['borradores'] as $_b) {
+                                        $lk = $_b['linea_codigo'] ?? '__';
+                                        $pond_por_linea_b[$lk] = ($pond_por_linea_b[$lk] ?? 0) + (float)($_b['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['borradores'] as $borrador):
+                                        $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
+                                        $m   = !empty($borrador['motor_id_num'])    ? 'M'.$borrador['motor_id_num']: null;
+                                        $p   = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_b[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($borrador['nombre_borrador']); ?>
+                                                    <?php if ($borrador['gestionado_facultades'] == 1): ?>
+                                                    <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                    <?php endif; ?>
+                                                </div>
                                                 <?php if (!empty($borrador['anio'])): ?>
-                                                <span><i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?></div>
                                                 <?php endif; ?>
                                             </div>
-                                        </div>
-                                        <div class="lista-item-actions">
-                                            <?php if ($key === 'formulacion'): ?>
-                                            <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <?php else: ?>
-                                            <button class="btn btn-sm btn-info" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            <?php endif; ?>
-                                            
-                                            <?php if ($key === 'formulacion'): ?>
-                                            <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
-                                                <i class="fas fa-times"></i>
-                                            </button>
-                                            <?php else: ?>
-                                            <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                            <?php endif; ?>
-                                            
-                                            <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
-                                                <i class="fas fa-copy"></i>
-                                            </button>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($borrador['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($borrador['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
+                                                    <?php if ($key === 'formulacion'): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-info" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <?php endif; ?>
+                                                    <?php if ($key === 'formulacion'): ?>
+                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                    <?php endif; ?>
+                                                    <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
+                                                        <i class="fas fa-copy"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -788,37 +1004,79 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-6">Nombre</div>
-                                            <div class="col-md-3">Fecha de publicación</div>
-                                            <div class="col-md-3">Acciones</div>
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de publicación</div>
+                                            <div class="col-md-2">Acciones</div>
                                         </div>
                                     </div>
-                                    <?php foreach ($modulo['publicados'] as $publicado): ?>
-                                    <div class="lista-item">
-                                        <div class="lista-item-info">
-                                            <div class="lista-item-titulo">
-                                                <?php echo htmlspecialchars($publicado['nombre_borrador']); ?>
-                                                <?php if ($publicado['gestionado_facultades'] == 1): ?>
-                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <div class="lista-item-detalles">
-                                                <span><i class="far fa-calendar-alt me-1"></i> <?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?></span>
+                                    <?php
+                                    $pond_por_linea_p = [];
+                                    foreach ($modulo['publicados'] as $_p) {
+                                        $lk = $_p['linea_codigo'] ?? '__';
+                                        $pond_por_linea_p[$lk] = ($pond_por_linea_p[$lk] ?? 0) + (float)($_p['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['publicados'] as $publicado):
+                                        $l   = !empty($publicado['linea_codigo'])    ? $publicado['linea_codigo']    : null;
+                                        $m   = !empty($publicado['motor_id_num'])    ? 'M'.$publicado['motor_id_num']: null;
+                                        $p   = !empty($publicado['proyecto_codigo']) ? $publicado['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_p[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($publicado['nombre_borrador']); ?>
+                                                    <?php if ($publicado['gestionado_facultades'] == 1): ?>
+                                                    <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                    <?php endif; ?>
+                                                </div>
                                                 <?php if (!empty($publicado['anio'])): ?>
-                                                <span><i class="fas fa-calendar me-1"></i> Año: <?php echo $publicado['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $publicado['anio']; ?></div>
                                                 <?php endif; ?>
                                             </div>
-                                        </div>
-                                        <div class="lista-item-actions">
-                                            <?php if ($key === 'formulacion'): ?>
-                                            <button class="btn btn-sm btn-primary" onclick="verBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
-                                                <i class="fas fa-eye me-1"></i>Ver
-                                            </button>
-                                            <?php else: ?>
-                                            <button class="btn btn-sm btn-primary" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
-                                                <i class="fas fa-eye me-1"></i>Ver
-                                            </button>
-                                            <?php endif; ?>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($publicado['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($publicado['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
+                                                    <?php if ($key === 'formulacion'): ?>
+                                                    <button class="btn btn-sm btn-primary" onclick="verBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
+                                                        <i class="fas fa-eye me-1"></i>Ver
+                                                    </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-primary" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
+                                                        <i class="fas fa-eye me-1"></i>Ver
+                                                    </button>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -846,28 +1104,70 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-6">Nombre</div>
-                                            <div class="col-md-3">Fecha de cancelación</div>
-                                            <div class="col-md-3">Acciones</div>
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de cancelación</div>
+                                            <div class="col-md-2">Acciones</div>
                                         </div>
                                     </div>
-                                    <?php foreach ($modulo['cancelados'] as $cancelado): ?>
-                                    <div class="lista-item">
-                                        <div class="lista-item-info">
-                                            <div class="lista-item-titulo">
-                                                <?php echo htmlspecialchars($cancelado['nombre_borrador']); ?>
-                                            </div>
-                                            <div class="lista-item-detalles">
-                                                <span><i class="far fa-calendar-alt me-1"></i> <?php echo date('d/m/Y H:i', strtotime($cancelado['fecha_creacion'])); ?></span>
+                                    <?php
+                                    $pond_por_linea_c = [];
+                                    foreach ($modulo['cancelados'] as $_c) {
+                                        $lk = $_c['linea_codigo'] ?? '__';
+                                        $pond_por_linea_c[$lk] = ($pond_por_linea_c[$lk] ?? 0) + (float)($_c['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['cancelados'] as $cancelado):
+                                        $l   = !empty($cancelado['linea_codigo'])    ? $cancelado['linea_codigo']    : null;
+                                        $m   = !empty($cancelado['motor_id_num'])    ? 'M'.$cancelado['motor_id_num']: null;
+                                        $p   = !empty($cancelado['proyecto_codigo']) ? $cancelado['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_c[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($cancelado['nombre_borrador']); ?>
+                                                </div>
                                                 <?php if (!empty($cancelado['anio'])): ?>
-                                                <span><i class="fas fa-calendar me-1"></i> Año: <?php echo $cancelado['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $cancelado['anio']; ?></div>
                                                 <?php endif; ?>
                                             </div>
-                                        </div>
-                                        <div class="lista-item-actions">
-                                            <button class="btn btn-sm btn-outline-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $cancelado['id']; ?>)">
-                                                <i class="fas fa-trash me-1"></i>Eliminar
-                                            </button>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($cancelado['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($cancelado['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($cancelado['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
+                                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $cancelado['id']; ?>)">
+                                                        <i class="fas fa-trash me-1"></i>Eliminar
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
@@ -1298,7 +1598,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                 <div class="row">
                                     <div class="col-md-12 mb-3">
                                         <label class="form-label">1. LÍNEA ESTRATÉGICA</label>
-                                        <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas()">
+                                        <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione línea estratégica</option>
                                             <?php foreach ($lineas_estrategicas as $linea): ?>
                                             <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
@@ -1324,14 +1624,14 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">4. MOTOR DE DESARROLLO</label>
-                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas()">
+                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un motor de desarrollo</option>
                                         </select>
                                     </div>
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas()">
+                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
@@ -1633,6 +1933,21 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
         const formularioAnio = <?php echo intval($formulario['anio'] ?? 0); ?>; // Año heredado del formulario padre
+
+        const FILTER_USUARIO_ID = <?php echo (int)($_SESSION['usuario_id'] ?? 0); ?>;
+        const FILTER_CARGOS     = <?php echo json_encode($cargos); ?>;
+        const FILTER_CREADORES  = <?php
+            $todos_creadores_js = [];
+            foreach ($datos_modulos as $_km => $_mod) {
+                foreach (array_merge($_mod['borradores'], $_mod['publicados'], $_mod['cancelados']) as $_it) {
+                    if (!empty($_it['creado_por']) && !empty($_it['creado_por_nombre'])) {
+                        $todos_creadores_js[$_it['creado_por']] = ['id' => $_it['creado_por'], 'nombre' => $_it['creado_por_nombre']];
+                    }
+                }
+            }
+            echo json_encode(array_values($todos_creadores_js));
+        ?>;
+        const FILTER_PREFS = <?php echo json_encode($filter_preferences ?? []); ?>;
         
         // Datos de formulaciones existentes para calcular ponderación acumulada por proyecto
         const formulacionesExistentes = <?php
@@ -1774,14 +2089,38 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                 }
             });
 
-            const totalConActual = acumuladoOtros + valorActual;
-            const disponible     = 100 - acumuladoOtros;
+            const disponible = Math.max(0, 100 - acumuladoOtros);
+
+            // Ajustar el atributo max del input al disponible real
+            input.attr('max', disponible.toFixed(2));
+
+            // Si el valor escrito supera lo disponible, lo recortamos al máximo
+            let valorFinal = valorActual;
+            if (valorActual > disponible) {
+                valorFinal = parseFloat(disponible.toFixed(2));
+                input.val(valorFinal);
+            }
+
+            // Actualizar data-ponderacion del item activo en el DOM
+            const borradorId = $('#formulacion_id').val();
+            if (borradorId) {
+                const listItem = document.querySelector(`.lista-item[data-item-id="${borradorId}"]`);
+                if (listItem) {
+                    listItem.setAttribute('data-ponderacion', valorFinal);
+                    const lineaItem = listItem.getAttribute('data-linea-item');
+                    const moduloItem = listItem.getAttribute('data-modulo');
+                    // Repintar todos los badges de esa línea en tiempo real
+                    actualizarBadgesLinea(lineaItem, moduloItem);
+                }
+            }
+
+            const totalConActual = acumuladoOtros + valorFinal;
 
             // Actualizar badge
             badge.text('Acum: ' + totalConActual.toFixed(2) + ' / 100%');
 
             if (totalConActual > 100) {
-                // Excede el 100%
+                // No debería llegar aquí tras el clamp, pero por seguridad
                 badge.css({ color: '#fff', background: '#E74C3C', borderColor: '#E74C3C' });
                 msg.html('<i class="fas fa-exclamation-triangle me-1"></i>Supera el 100%. Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
                    .css('color', '#E74C3C').show();
@@ -2545,6 +2884,109 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
             setTimeout(function() { indicator.style.display = 'none'; }, 2000);
         }
 
+        // Recalcula y repinta badges de TODOS los items de una línea (acotado al mismo módulo)
+        function actualizarBadgesLinea(lineaCodigo, moduloCodigo) {
+            if (!lineaCodigo) return;
+
+            // Selector base: items de esta línea; si se conoce el módulo, filtrarlo para evitar doble conteo
+            const selector = moduloCodigo
+                ? `.lista-item[data-linea-item="${lineaCodigo}"][data-modulo="${moduloCodigo}"]`
+                : `.lista-item[data-linea-item="${lineaCodigo}"]`;
+
+            // Sumar ponderaciones de todos los items de esa línea desde el DOM
+            let suma = 0;
+            document.querySelectorAll(selector).forEach(function(item) {
+                suma += parseFloat(item.getAttribute('data-ponderacion') || 0);
+            });
+
+            const completo = suma >= 99.99 && suma <= 100.01;
+            const excedido = suma > 100.01;
+
+            // Actualizar cada badge de esa línea que pertenezca al mismo módulo
+            // Los badges están dentro de .lista-item, así que los buscamos dentro del scope correcto
+            document.querySelectorAll(selector).forEach(function(item) {
+                const badge = item.querySelector(`.lmp-badge[data-linea="${lineaCodigo}"]`);
+                if (!badge) return;
+
+                // Suma visible
+                const sumaEl = badge.querySelector('.lmp-suma');
+                if (sumaEl) sumaEl.textContent = suma.toFixed(1);
+
+                // Clases de color
+                badge.classList.remove('lmp-completo', 'lmp-excedido');
+                if (completo) badge.classList.add('lmp-completo');
+                else if (excedido) badge.classList.add('lmp-excedido');
+
+                // Tooltip
+                const aviso = excedido ? ' ⚠ Excede el 100%' : '';
+                badge.setAttribute('title', `Ponderación línea: ${suma.toFixed(2)} / 100${aviso}`);
+            });
+
+            // Actualizar color del nombre
+            document.querySelectorAll(selector).forEach(function(item) {
+                const titulo = item.querySelector('.lista-item-titulo');
+                if (!titulo) return;
+                titulo.classList.remove('titulo-linea-completa', 'titulo-linea-excedida');
+                if (completo) titulo.classList.add('titulo-linea-completa');
+                else if (excedido) titulo.classList.add('titulo-linea-excedida');
+            });
+        }
+
+        // Actualiza la badge LMP en la lista para el borrador actualmente abierto
+        function actualizarLmpBadgeEnLista() {
+            const borradorId = $('#formulacion_id').val();
+            if (!borradorId) return;
+
+            const lineaSelect  = document.getElementById('formulacion_linea');
+            const motorSelect  = document.getElementById('formulacion_motor');
+            const proyectoSelect = document.getElementById('formulacion_proyecto');
+
+            // Extraer código de línea (texto "L1 - nombre" → "L1")
+            let lineaCodigo = null;
+            if (lineaSelect && lineaSelect.selectedIndex > 0) {
+                const txt = lineaSelect.options[lineaSelect.selectedIndex].textContent.trim();
+                lineaCodigo = txt.split(' - ')[0];
+            }
+
+            // Extraer ID motor → "M{id}"
+            let motorCodigo = null;
+            if (motorSelect && motorSelect.selectedIndex > 0) {
+                const mid = motorSelect.options[motorSelect.selectedIndex].getAttribute('data-motor-id');
+                if (mid) motorCodigo = 'M' + mid;
+            }
+
+            // Extraer código proyecto (texto "P1 - nombre" → "P1")
+            let proyectoCodigo = null;
+            if (proyectoSelect && proyectoSelect.selectedIndex > 0) {
+                const txt = proyectoSelect.options[proyectoSelect.selectedIndex].textContent.trim();
+                proyectoCodigo = txt.split(' - ')[0];
+            }
+
+            const parts = [lineaCodigo, motorCodigo, proyectoCodigo].filter(Boolean);
+            const listItem = document.querySelector(`.lista-item[data-item-id="${borradorId}"]`);
+            if (!listItem) return;
+
+            const badge = listItem.querySelector('.lmp-badge');
+            if (!badge) return;
+
+            if (parts.length > 0) {
+                const sumaEl = badge.querySelector('.lmp-suma');
+                const sumaHtml = sumaEl ? sumaEl.outerHTML : '';
+                badge.className = 'lmp-badge';
+                badge.setAttribute('data-linea', lineaCodigo || '');
+                badge.innerHTML = '<i class="fas fa-sitemap"></i>' + parts.join(' - ') + sumaHtml;
+            } else {
+                badge.className = 'lmp-badge sin-datos';
+                badge.innerHTML = '—';
+            }
+
+            // Actualizar color del título
+            const titulo = listItem.querySelector('.lista-item-titulo');
+            if (titulo && lineaCodigo) {
+                // Mantener clase verde si ya era completa (suma se recalcula en backend)
+            }
+        }
+
         function editarBorrador(modulo, id) {
             $.ajax({
                 url: basePath + '/modulo144/getBorrador?modulo=' + modulo + '&id=' + id,
@@ -2657,6 +3099,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                                                 if (valorProyecto) {
                                                     $('#formulacion_proyecto').val(valorProyecto);
                                                     setTimeout(cargarPonderacionProyecto, 100);
+                                                    setTimeout(actualizarLmpBadgeEnLista, 150);
                                                 }
                                             } else {
                                                 selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
@@ -2837,6 +3280,121 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
                 calcularValorAnual();
             });
         });
+
+        /* ===== FILTRO DE LISTA ===== */
+
+        function onFiltroTipoChange(modulo) {
+            const tipo  = document.getElementById('filtroTipo-' + modulo).value;
+            const wrap  = document.getElementById('filtroInputWrap-' + modulo);
+            const input = document.getElementById('filtroTexto-' + modulo);
+            if (tipo === 'dependencia' || tipo === 'persona') {
+                wrap.style.display = 'block';
+                input.placeholder  = tipo === 'persona' ? 'Buscar persona...' : 'Buscar dependencia...';
+                input.value = '';
+            } else {
+                wrap.style.display = 'none';
+            }
+            aplicarFiltro(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        function onFiltroTextoInput(modulo) {
+            aplicarFiltro(modulo);
+            mostrarSugerencias(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        function aplicarFiltro(modulo) {
+            const tipo  = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
+            const texto = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
+            const items = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
+            let visibles = 0;
+
+            items.forEach(function(item) {
+                let visible = true;
+                if (tipo === 'mio') {
+                    visible = item.getAttribute('data-creado-por') == FILTER_USUARIO_ID;
+                } else if (tipo === 'dependencia' && texto) {
+                    visible = (item.getAttribute('data-cargo-nombre') || '').toLowerCase().includes(texto);
+                } else if (tipo === 'persona' && texto) {
+                    visible = (item.getAttribute('data-creado-por-nombre') || '').toLowerCase().includes(texto);
+                }
+                item.style.display = visible ? '' : 'none';
+                if (visible) visibles++;
+            });
+
+            const badge = document.getElementById('filtroResultado-' + modulo);
+            if (badge) {
+                badge.style.display = tipo === 'todos' ? 'none' : '';
+                badge.textContent   = visibles + ' de ' + items.length;
+            }
+        }
+
+        function mostrarSugerencias(modulo) {
+            const tipo   = document.getElementById('filtroTipo-' + modulo)?.value;
+            const texto  = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
+            const box    = document.getElementById('filtroSugerencias-' + modulo);
+            if (!box || (tipo !== 'dependencia' && tipo !== 'persona')) return;
+
+            const fuente = tipo === 'dependencia'
+                ? FILTER_CARGOS.map(function(c) { return c.nombre; })
+                : FILTER_CREADORES.map(function(c) { return c.nombre; });
+
+            const filtrados = texto ? fuente.filter(function(n) { return n.toLowerCase().includes(texto); }) : fuente;
+
+            if (!filtrados.length) { box.style.display = 'none'; return; }
+
+            box.innerHTML = filtrados.slice(0, 12).map(function(nombre) {
+                const safe = nombre.replace(/'/g, "\\'");
+                return `<div class="sug-item" onmousedown="seleccionarSugerencia('${modulo}','${safe}')">${nombre}</div>`;
+            }).join('');
+            box.style.display = 'block';
+        }
+
+        function ocultarSugerencias(modulo) {
+            const box = document.getElementById('filtroSugerencias-' + modulo);
+            if (box) box.style.display = 'none';
+        }
+
+        function seleccionarSugerencia(modulo, valor) {
+            const input = document.getElementById('filtroTexto-' + modulo);
+            if (input) input.value = valor;
+            ocultarSugerencias(modulo);
+            aplicarFiltro(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        const _filtroSaveTimeout = {};
+        function guardarFiltroPreferencia(modulo) {
+            clearTimeout(_filtroSaveTimeout[modulo]);
+            _filtroSaveTimeout[modulo] = setTimeout(function() {
+                const tipo  = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
+                const texto = document.getElementById('filtroTexto-' + modulo)?.value || null;
+                fetch(basePath + '/modulo144/saveFilterPreference', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        formulario_id: formularioId,
+                        modulo:        modulo,
+                        tipo_filtro:   tipo,
+                        valor_filtro:  (tipo === 'dependencia' || tipo === 'persona') ? texto : null
+                    })
+                });
+            }, 800);
+        }
+
+        // Aplicar filtros guardados al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php foreach ($datos_modulos as $key => $modulo): ?>
+            (function() {
+                const pref = FILTER_PREFS['<?php echo $key; ?>'];
+                if (pref && pref.tipo_filtro && pref.tipo_filtro !== 'todos') {
+                    aplicarFiltro('<?php echo $key; ?>');
+                }
+            })();
+            <?php endforeach; ?>
+        });
+
     </script>
 </body>
 </html>

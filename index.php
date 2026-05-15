@@ -41,6 +41,24 @@ switch ($action) {
         require_once 'vista/dashboard/index.php';
         break;
 
+    case 'perfil':
+        require_once 'config/security.php';
+        require_once 'controlador/perfilController.php';
+        $perfilController = new PerfilController();
+        $subaction = $urlParts[1] ?? 'index';
+        switch ($subaction) {
+            case 'update-avatar':
+                $perfilController->updateAvatar();
+                break;
+            case 'update-password':
+                $perfilController->updatePassword();
+                break;
+            default:
+                $perfilController->index();
+                break;
+        }
+        break;
+
     case '403':
         require_once 'config/security.php';
         require_once 'vista/complementos/403.php';
@@ -307,6 +325,12 @@ switch ($action) {
                 break;
             case 'getProyectosPorLineaYMotor':
                 $modulo144Controller->getProyectosPorLineaYMotor();
+                break;
+            case 'getFilterPreference':
+                $modulo144Controller->getFilterPreference();
+                break;
+            case 'saveFilterPreference':
+                $modulo144Controller->saveFilterPreference();
                 break;
             case 'index':
             default:

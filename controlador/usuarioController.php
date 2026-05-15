@@ -12,6 +12,8 @@ class UsuarioController {
 
     public function index() {
         $usuarios = $this->usuarioModel->obtenerTodosUsuarios();
+        $cargos   = $this->usuarioModel->obtenerCargos();
+        $roles    = $this->usuarioModel->obtenerRoles();
         require_once 'vista/usuarios/index.php';
     }
 
@@ -35,11 +37,12 @@ class UsuarioController {
         $datos = [
             'username' => trim($_POST['username'] ?? ''),
             'password' => $_POST['password'] ?? '',
-            'nombre' => trim($_POST['nombre'] ?? ''),
-            'email' => trim($_POST['email'] ?? ''),
-            'rol' => $_POST['rol'] ?? 'cocina',
-            'avatar' => 'default.png',
-            'activo' => isset($_POST['activo']) ? (int)$_POST['activo'] : 1
+            'nombre'   => trim($_POST['nombre'] ?? ''),
+            'email'    => trim($_POST['email'] ?? ''),
+            'rol'      => $_POST['rol'] ?? 'auxiliar',
+            'avatar'   => 'default.png',
+            'activo'   => isset($_POST['activo']) ? (int)$_POST['activo'] : 1,
+            'cargo_id' => !empty($_POST['cargo_id']) ? (int)$_POST['cargo_id'] : null,
         ];
 
         // Validaciones
@@ -187,10 +190,11 @@ class UsuarioController {
         
         $id = $input['id'] ?? 0;
         $datos = [
-            'nombre' => trim($input['nombre'] ?? ''),
-            'email' => trim($input['email'] ?? ''),
-            'rol' => $input['rol'] ?? 'cocina',
-            'activo' => isset($input['activo']) ? (int)$input['activo'] : 0
+            'nombre'   => trim($input['nombre'] ?? ''),
+            'email'    => trim($input['email'] ?? ''),
+            'rol'      => $input['rol'] ?? 'cocina',
+            'activo'   => isset($input['activo']) ? (int)$input['activo'] : 0,
+            'cargo_id' => !empty($input['cargo_id']) ? (int)$input['cargo_id'] : null,
         ];
 
         // Validaciones

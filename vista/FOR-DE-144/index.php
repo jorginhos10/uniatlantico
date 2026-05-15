@@ -1,32 +1,15 @@
 <?php
-// vista/FOR-DE-144/index.php - VERSIÓN CORREGIDA
+// vista/FOR-DE-144/index.php
 
-// 🔐 INCLUIR SEGURIDAD - Redirige si no hay sesión
 require_once __DIR__ . '/../../config/security.php';
 
-// Configurar variables para el header
 $titulo = 'FOR-DE-144 - CHEFCONTROL';
-$tituloHeader = 'Gestión de Formularios';
-$subtituloHeader = 'Administra los formularios FOR-DE-144';
 $paginaActual = 'FOR-DE-144';
 
-// Incluir header
-require_once __DIR__ . '/../complementos/header.php';
+ob_start();
 ?>
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOR-DE-144 - Gestión de Formularios</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
         :root {
             --color-primary: #2C3E50;
             --color-primary-light: #34495E;
@@ -384,8 +367,8 @@ require_once __DIR__ . '/../complementos/header.php';
             }
         }
     </style>
-</head>
-<body>
+<?php $cssExtra = ob_get_clean();
+require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <!-- Encabezado -->
         <div class="header-section">
@@ -1046,9 +1029,5 @@ require_once __DIR__ . '/../complementos/header.php';
             });
         }
     </script>
-</body>
-</html>
-<?php 
-// Incluir footer
-require_once __DIR__ . '/../complementos/footer.php'; 
-?>
+
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>

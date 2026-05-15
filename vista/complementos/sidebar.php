@@ -42,14 +42,12 @@ function tienePermisoPorId($permisoId, $permisosActivosIds, $esAdmin = false) {
     return in_array($permisoId, $permisosActivosIds);
 }
 
-// Definir los IDs de permisos (debes ajustarlos según tu base de datos)
-define('PERMISO_DASHBOARD_ID', 1);    // ver_dashboard
-define('PERMISO_RECETAS_ID', 2);      // gestionar_recetas
-define('PERMISO_INVENTARIO_ID', 3);   // gestionar_inventario
-define('PERMISO_REPORTES_ID', 4);     // ver_reportes
-define('PERMISO_CONFIG_ID', 5);       // configurar_sistema
-define('PERMISO_USUARIOS_ID', 6);     // gestionar_usuarios (crear/editar/eliminar)
-define('PERMISO_PERMISOS_ID', 7);     // gestionar_permisos
+// IDs de permisos
+define('PERMISO_DASHBOARD_ID', 1);   // ver_dashboard
+define('PERMISO_FOR144_ID',    2);   // Formato FOR-DE-144
+define('PERMISO_CONFIG_ID',    5);   // configurar_sistema
+define('PERMISO_USUARIOS_ID',  6);   // gestionar_usuarios
+define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
 ?>
 <nav class="sidebar">
     <div class="logo">
@@ -79,53 +77,12 @@ define('PERMISO_PERMISOS_ID', 7);     // gestionar_permisos
                 </li>
             <?php endif; ?>
             
-            <!-- Formato FOR-DE-144 con submenú - Permiso ID: 2 (gestionar_recetas) -->
-            <?php if (tienePermisoPorId(PERMISO_RECETAS_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem dropdown <?php echo ($paginaActual ?? '') === 'recetas' || ($paginaActual ?? '') === 'formatos' ? 'active' : ''; ?>">
-                    <a href="javascript:void(0)" class="navLink" data-tooltip="Formatos">
+            <!-- Formato FOR-DE-144 - Permiso ID: 2 -->
+            <?php if (tienePermisoPorId(PERMISO_FOR144_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
+                <li class="navItem <?php echo ($paginaActual ?? '') === 'for-de-144' || ($paginaActual ?? '') === 'formatos' ? 'active' : ''; ?>">
+                    <a href="<?php echo $basePath; ?>/FOR-DE-144" class="navLink" data-tooltip="FOR-DE-144">
                         <i class="fas fa-book"></i>
                         <span>Formato FOR-DE-144</span>
-                        <i class="fas fa-chevron-down dropdown-arrow"></i>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'ver-formatos' ? 'active' : ''; ?>">
-                            <a href="<?php echo $basePath; ?>/FOR-DE-144">
-                                <i class="fas fa-list"></i>
-                                <span>Ver Formatos</span>
-                            </a>
-                        </li>
-                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'plantillas' ? 'active' : ''; ?>">
-                            <a href="<?php echo $basePath; ?>/recetas/plantillas">
-                                <i class="fas fa-file-alt"></i>
-                                <span>Plantillas</span>
-                            </a>
-                        </li>
-                        <li class="submenu-item <?php echo ($subpaginaActual ?? '') === 'historial' ? 'active' : ''; ?>">
-                            <a href="<?php echo $basePath; ?>/recetas/historial">
-                                <i class="fas fa-history"></i>
-                                <span>Historial</span>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            <?php endif; ?>
-            
-            <!-- Inventario - Permiso ID: 3 (gestionar_inventario) -->
-            <?php if (tienePermisoPorId(PERMISO_INVENTARIO_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo ($paginaActual ?? '') === 'inventario' ? 'active' : ''; ?>">
-                    <a href="<?php echo $basePath; ?>/inventario" class="navLink" data-tooltip="Inventario">
-                        <i class="fas fa-boxes"></i>
-                        <span>Inventario</span>
-                    </a>
-                </li>
-            <?php endif; ?>
-            
-            <!-- Reportes - Permiso ID: 4 (ver_reportes) -->
-            <?php if (tienePermisoPorId(PERMISO_REPORTES_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo ($paginaActual ?? '') === 'reportes' ? 'active' : ''; ?>">
-                    <a href="<?php echo $basePath; ?>/reportes" class="navLink" data-tooltip="Reportes">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Reportes</span>
                     </a>
                 </li>
             <?php endif; ?>

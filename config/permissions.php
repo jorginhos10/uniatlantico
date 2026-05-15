@@ -5,14 +5,12 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/../modelo/permisoModel.php';
 
 class Permisos {
-    // CONSTANTES DE PERMISOS (AJUSTA SEGÚN TU BASE DE DATOS)
-    const DASHBOARD = 1;        // ver_dashboard
-    const RECETAS = 2;          // gestionar_recetas
-    const INVENTARIO = 3;       // gestionar_inventario
-    const REPORTES = 4;         // ver_reportes
+    // CONSTANTES DE PERMISOS
+    const DASHBOARD       = 1;  // ver_dashboard
+    const FOR_DE_144      = 2;  // for_de_144 (gestionar_recetas en DB legacy)
     const CONFIGURACIONES = 5;  // configurar_sistema
-    const USUARIOS = 6;         // gestionar_usuarios
-    const PERMISOS = 7;         // gestionar_permisos
+    const USUARIOS        = 6;  // gestionar_usuarios
+    const PERMISOS        = 7;  // gestionar_permisos
     
     private static $permisosCache = null;
     
