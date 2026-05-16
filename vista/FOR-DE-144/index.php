@@ -255,6 +255,7 @@ ob_start();
     .btn-warning          { background: var(--ios-orange); color: #fff; }
     .btn-danger           { background: var(--ios-red);    color: #fff; }
     .btn-success:disabled { background: rgba(52,199,89,.35); color: rgba(255,255,255,.7); cursor: not-allowed; }
+    .btn-info             { background: var(--ios-blue);    color: #fff; }
 
     /* Bootstrap badges override */
     .badge { padding: 4px 9px; font-weight: 600; border-radius: 20px; font-size: 11px; }
@@ -441,11 +442,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div id="formulariosContainer" class="card-grid">
 
         <!-- Add new -->
+        <?php if ($perms_f144['crear']): ?>
         <div class="formulario-add" data-bs-toggle="modal" data-bs-target="#modalAgregar">
             <i class="fas fa-plus-circle add-icon"></i>
             <h3>Nuevo Formulario</h3>
             <p>Toca para crear un nuevo formulario</p>
         </div>
+        <?php endif; ?>
 
         <?php
         if (isset($formularios) && is_array($formularios) && count($formularios) > 0):
@@ -534,17 +537,30 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </div>
 
             <div class="btn-actions">
+                <?php if ($perms_f144['informe']): ?>
+                <a class="btn btn-sm btn-info"
+                   href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=informePage&id=<?php echo $formulario['id']; ?>"
+                   target="_blank">
+                    <i class="fas fa-chart-bar me-1"></i>Informe
+                </a>
+                <?php endif; ?>
+                <?php if ($perms_f144['ver']): ?>
                 <button class="btn btn-sm btn-success"
                         onclick="window.location.href='<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>'"
                         <?php echo !$disponible ? 'disabled' : ''; ?>>
                     <i class="fas fa-eye me-1"></i>Ver
                 </button>
+                <?php endif; ?>
+                <?php if ($perms_f144['editar']): ?>
                 <button class="btn btn-sm btn-warning" onclick="editarFormulario(<?php echo $formulario['id']; ?>)">
                     <i class="fas fa-edit me-1"></i>Editar
                 </button>
+                <?php endif; ?>
+                <?php if ($perms_f144['eliminar']): ?>
                 <button class="btn btn-sm btn-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)">
                     <i class="fas fa-trash me-1"></i>Eliminar
                 </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -741,10 +757,108 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 </div>
 
 
+<!-- ══════════════ MODAL INFORME ══════════════ -->
+<div class="modal fade" id="modalInforme" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border-radius:20px;overflow:hidden;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#007AFF,#5856D6);border-bottom:none;padding:20px 24px;">
+                <div>
+                    <h5 class="modal-title" style="color:#fff;font-size:18px;font-weight:700;letter-spacing:-.3px;margin:0 0 2px;">
+                        <i class="fas fa-chart-bar me-2"></i><span id="infTitulo">Informe</span>
+                    </h5>
+                    <small style="color:rgba(255,255,255,.75);font-size:13px;">Cumplimiento · Líneas Estratégicas · Dependencias</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="background:#F2F2F7;padding:20px;">
+
+                <!-- Loading state -->
+                <div id="infLoading" class="text-center py-5">
+                    <i class="fas fa-spinner fa-spin fa-2x" style="color:#007AFF;"></i>
+                    <p class="mt-3" style="color:#6e6e73;font-size:14px;">Generando informe…</p>
+                </div>
+
+                <!-- Content (hidden until loaded) -->
+                <div id="infContent" style="display:none;">
+
+                    <!-- Global stats row -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div style="background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center;">
+                                <div style="font-size:13px;color:#6e6e73;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Cumplimiento Global</div>
+                                <div id="infPct" style="font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;color:#007AFF;">—</div>
+                                <div style="font-size:13px;color:#aeaeb2;margin-top:4px;">promedio</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div style="background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center;">
+                                <div style="font-size:13px;color:#6e6e73;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Total Indicadores</div>
+                                <div id="infTotal" style="font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;color:#1d1d1f;">—</div>
+                                <div style="font-size:13px;color:#aeaeb2;margin-top:4px;">registros</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div style="background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 1px 4px rgba(0,0,0,.07);text-align:center;">
+                                <div style="font-size:13px;color:#6e6e73;font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;">Líneas Estratégicas</div>
+                                <div id="infLineas" style="font-size:48px;font-weight:800;letter-spacing:-2px;line-height:1;color:#AF52DE;">—</div>
+                                <div style="font-size:13px;color:#aeaeb2;margin-top:4px;">con registros</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Líneas estratégicas grid -->
+                    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:20px;">
+                        <div style="font-size:15px;font-weight:700;color:#1d1d1f;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-layer-group" style="color:#007AFF;"></i>Líneas Estratégicas
+                        </div>
+                        <div id="infLineasGrid" class="row g-3"></div>
+                    </div>
+
+                    <!-- Chart -->
+                    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);margin-bottom:20px;">
+                        <div style="font-size:15px;font-weight:700;color:#1d1d1f;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-chart-bar" style="color:#34C759;"></i>Cumplimiento por Línea
+                        </div>
+                        <div style="position:relative;height:220px;">
+                            <canvas id="infChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Dependencias table -->
+                    <div style="background:#fff;border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.07);">
+                        <div style="font-size:15px;font-weight:700;color:#1d1d1f;margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                            <i class="fas fa-university" style="color:#FF9500;"></i>Estadísticas por Dependencia
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:14px;">
+                                <thead>
+                                    <tr style="background:#F2F2F7;">
+                                        <th style="padding:10px 14px;font-weight:600;color:#6e6e73;font-size:12px;text-transform:uppercase;letter-spacing:.4px;border-radius:8px 0 0 8px;">Dependencia</th>
+                                        <th style="padding:10px 14px;font-weight:600;color:#6e6e73;font-size:12px;text-transform:uppercase;letter-spacing:.4px;text-align:center;">Total Indicadores</th>
+                                        <th style="padding:10px 14px;font-weight:600;color:#6e6e73;font-size:12px;text-transform:uppercase;letter-spacing:.4px;text-align:center;">Indicadores ≥80%</th>
+                                        <th style="padding:10px 14px;font-weight:600;color:#6e6e73;font-size:12px;text-transform:uppercase;letter-spacing:.4px;text-align:center;border-radius:0 8px 8px 0;">Cumplimiento</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="infDepBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div><!-- /infContent -->
+            </div>
+            <div class="modal-footer" style="background:#fff;border-top:.5px solid rgba(60,60,67,.1);padding:14px 20px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ══════════════════════════════════════════ -->
+
 <!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <script>
     const basePath = '<?php echo Config::getBasePath(); ?>';
@@ -864,6 +978,161 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         });
     }
+
+    var infChart = null;
+
+    function verInforme(id, titulo) {
+        document.getElementById('infTitulo').textContent = titulo;
+        document.getElementById('infLoading').style.display = '';
+        document.getElementById('infContent').style.display = 'none';
+
+        var modal = new bootstrap.Modal(document.getElementById('modalInforme'));
+        modal.show();
+
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=informe&id=' + id,
+            type: 'GET',
+            dataType: 'json',
+            success: function(r) {
+                if (!r.success) {
+                    document.getElementById('infLoading').innerHTML =
+                        '<i class="fas fa-exclamation-circle fa-2x" style="color:#FF3B30;"></i>'
+                        + '<p class="mt-3" style="color:#6e6e73;">No se pudo cargar el informe.</p>';
+                    return;
+                }
+                renderInforme(r.data);
+            },
+            error: function() {
+                document.getElementById('infLoading').innerHTML =
+                    '<i class="fas fa-wifi fa-2x" style="color:#FF9500;"></i>'
+                    + '<p class="mt-3" style="color:#6e6e73;">Error de conexión.</p>';
+            }
+        });
+    }
+
+    function badgeColor(pct) {
+        if (pct >= 80) return { bg:'rgba(52,199,89,.15)', color:'#1A7A35' };
+        if (pct >= 60) return { bg:'rgba(255,149,0,.15)',  color:'#7A4500' };
+        return              { bg:'rgba(255,59,48,.12)',  color:'#C0392B' };
+    }
+
+    function renderInforme(data) {
+        var g      = data.global     || {};
+        var lineas = data.lineas     || [];
+        var deps   = data.dependencias || [];
+
+        var pct    = parseFloat(g.cumplimiento_global || 0);
+        var total  = parseInt(g.total || 0);
+
+        // Global numbers
+        document.getElementById('infPct').textContent   = pct.toFixed(1) + '%';
+        document.getElementById('infTotal').textContent = total;
+        document.getElementById('infLineas').textContent = lineas.length;
+
+        // Color of global percentage
+        var bc = badgeColor(pct);
+        document.getElementById('infPct').style.color = bc.color;
+
+        // Líneas grid
+        var grid = document.getElementById('infLineasGrid');
+        grid.innerHTML = '';
+        if (lineas.length === 0) {
+            grid.innerHTML = '<div class="col-12"><p style="color:#aeaeb2;text-align:center;font-size:14px;">Sin datos de líneas estratégicas.</p></div>';
+        }
+        lineas.forEach(function(l) {
+            var p = parseFloat(l.cumplimiento || 0);
+            var c = badgeColor(p);
+            var barColor = p >= 80 ? '#34C759' : (p >= 60 ? '#FF9500' : '#FF3B30');
+            grid.innerHTML +=
+                '<div class="col-md-6 col-lg-4">'
+                + '<div style="background:#F2F2F7;border-radius:12px;padding:14px 16px;">'
+                + '<div style="font-size:11px;font-weight:700;color:#007AFF;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">' + esc(l.codigo) + '</div>'
+                + '<div style="font-size:13px;font-weight:600;color:#1d1d1f;margin-bottom:10px;line-height:1.3;">' + esc(l.linea) + '</div>'
+                + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">'
+                + '<div style="flex:1;background:rgba(0,0,0,.06);border-radius:6px;height:8px;overflow:hidden;">'
+                + '<div style="width:' + Math.min(p,100) + '%;height:100%;background:' + barColor + ';border-radius:6px;transition:width .6s;"></div>'
+                + '</div>'
+                + '<span style="font-size:13px;font-weight:700;color:' + c.color + ';white-space:nowrap;">' + p.toFixed(1) + '%</span>'
+                + '</div>'
+                + '<div style="font-size:11px;color:#aeaeb2;">' + l.total + ' indicador' + (l.total != 1 ? 'es' : '') + '</div>'
+                + '</div></div>';
+        });
+
+        // Chart
+        if (infChart) { infChart.destroy(); infChart = null; }
+        if (lineas.length > 0) {
+            var ctx = document.getElementById('infChart').getContext('2d');
+            var labels  = lineas.map(function(l){ return l.codigo !== '—' ? l.codigo : l.linea.substring(0,20); });
+            var valores = lineas.map(function(l){ return parseFloat(l.cumplimiento || 0).toFixed(1); });
+            var colors  = lineas.map(function(l){
+                var p = parseFloat(l.cumplimiento || 0);
+                return p >= 80 ? 'rgba(52,199,89,.85)' : (p >= 60 ? 'rgba(255,149,0,.85)' : 'rgba(255,59,48,.85)');
+            });
+            infChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cumplimiento (%)',
+                        data: valores,
+                        backgroundColor: colors,
+                        borderRadius: 8,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function(ctx){ return ctx.parsed.y + '%'; } } }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true, max: 100,
+                            ticks: { callback: function(v){ return v + '%'; }, font: { size: 11 } },
+                            grid: { color: 'rgba(0,0,0,.05)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Dependencias table
+        var tbody = document.getElementById('infDepBody');
+        tbody.innerHTML = '';
+        if (deps.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="padding:20px;text-align:center;color:#aeaeb2;font-size:14px;">Sin datos de dependencias.</td></tr>';
+        }
+        deps.forEach(function(d, i) {
+            var p  = parseFloat(d.cumplimiento || 0);
+            var bc = badgeColor(p);
+            var bg = i % 2 === 0 ? '#fff' : '#fafafa';
+            tbody.innerHTML +=
+                '<tr style="background:' + bg + ';">'
+                + '<td style="padding:12px 14px;font-weight:500;color:#1d1d1f;">' + esc(d.dependencia) + '</td>'
+                + '<td style="padding:12px 14px;text-align:center;color:#3a3a3c;">' + d.total_indicadores + '</td>'
+                + '<td style="padding:12px 14px;text-align:center;"><span style="background:rgba(52,199,89,.15);color:#1A7A35;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;">' + (d.indicadores_alto || 0) + '</span></td>'
+                + '<td style="padding:12px 14px;text-align:center;"><span style="background:' + bc.bg + ';color:' + bc.color + ';padding:3px 12px;border-radius:20px;font-size:13px;font-weight:700;">' + p.toFixed(1) + '%</span></td>'
+                + '</tr>';
+        });
+
+        document.getElementById('infLoading').style.display = 'none';
+        document.getElementById('infContent').style.display = '';
+    }
+
+    function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Destroy chart when modal closes to avoid canvas reuse issues
+    document.getElementById('modalInforme').addEventListener('hidden.bs.modal', function() {
+        if (infChart) { infChart.destroy(); infChart = null; }
+    });
 
     function editarFormulario(id) {
         Swal.fire({ title: 'Cargando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });

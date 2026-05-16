@@ -528,6 +528,130 @@
     font-size: 14px;
 }
 
+/* ── Sub-permisos inline (debajo del toggle principal) ── */
+.permiso-item-popup.has-sub {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0;
+    overflow: hidden;
+}
+
+.permiso-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 14px;
+}
+
+.permiso-sub-group {
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    padding: 10px 14px 11px;
+    background: rgba(0, 0, 0, 0.015);
+}
+
+.permiso-sub-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+}
+
+.permiso-sub-checks .permiso-check-item {
+    flex: 0 0 auto;
+    padding: 0;
+    border-bottom: none;
+    gap: 6px;
+}
+
+.permiso-sub-checks .permiso-check-item label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #2d3748;
+    gap: 5px;
+}
+
+.permiso-sub-checks .permiso-check-item label i {
+    display: none;
+}
+
+.permiso-sub-checks .permiso-check-item input:checked + label {
+    color: #007AFF;
+    font-weight: 600;
+}
+
+/* ── Grupo colapsable de permisos (ej. FOR-DE-144) ── */
+.permiso-grupo-item {
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.09);
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.permiso-grupo-header {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 12px 14px;
+    cursor: pointer;
+    background: #f5f5f7;
+    user-select: none;
+    transition: background 0.15s;
+}
+
+.permiso-grupo-header:hover { background: #eef4ff; }
+
+.permiso-grupo-icono {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, #0a1628 0%, #1a3c7a 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; flex-shrink: 0;
+}
+
+.permiso-grupo-info { flex: 1; min-width: 0; }
+.permiso-grupo-nombre { font-size: 14px; font-weight: 600; color: #1d1d1f; }
+.permiso-grupo-desc  { font-size: 12px; color: #6b7280; margin-top: 1px; }
+
+.permiso-grupo-badge {
+    background: #e3f0ff; color: #007AFF;
+    border-radius: 20px; padding: 2px 9px;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+}
+
+.permiso-grupo-arrow {
+    color: #9ca3af; font-size: 13px; flex-shrink: 0;
+    transition: transform 0.22s;
+}
+.permiso-grupo-item.open .permiso-grupo-arrow { transform: rotate(180deg); }
+
+.permiso-grupo-body {
+    display: none;
+    padding: 4px 12px 10px;
+    background: #fff;
+    border-top: 1px solid rgba(0,0,0,0.06);
+}
+.permiso-grupo-item.open .permiso-grupo-body { display: block; }
+
+.permiso-check-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px;
+    border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+.permiso-check-item:last-child { border-bottom: none; }
+
+.permiso-check-item input[type="checkbox"] {
+    width: 16px; height: 16px; cursor: pointer;
+    accent-color: #007AFF; flex-shrink: 0;
+}
+.permiso-check-item label {
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; font-size: 13.5px; color: #2d3748; font-weight: 500; flex: 1; margin: 0;
+}
+.permiso-check-item label i { width: 15px; color: #9ca3af; font-size: 13px; }
+.permiso-check-item input:checked + label i  { color: #007AFF; }
+.permiso-check-item input:checked + label    { color: #007AFF; }
+.permiso-check-item input:disabled           { opacity: 0.5; cursor: not-allowed; }
+
 /* Animaciones */
 @keyframes spin {
     0% { transform: rotate(0deg); }

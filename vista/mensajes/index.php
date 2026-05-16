@@ -738,8 +738,9 @@ function getAvatarColor(string $nombre, array $colors): string {
     /* ── Opciones de destinatario por tipo ── */
     const opcionesPorTipo = {
         usuario: <?php echo json_encode(array_map(fn($u) => [
-            'value' => (string)$u['id'],
-            'label' => $u['nombre'] . ' (' . ucfirst($u['rol']) . ')'
+            'value'  => (string)$u['id'],
+            'label'  => $u['nombre'] . ' (' . ucfirst($u['rol']) . ')',
+            'avatar' => $u['avatar'] ?? ''
         ], $usuarios)); ?>,
         dependencia: <?php echo json_encode(array_map(fn($d) => [
             'value' => (string)$d['id'],
@@ -809,7 +810,7 @@ function getAvatarColor(string $nombre, array $colors): string {
                 ? (m.destinatario_nombre || 'Desconocido')
                 : (m.remitente_nombre    || 'Desconocido');
             const avHtml  = avatarHtml(
-                carpeta === 'enviados' ? '' : (m.remitente_avatar || ''),
+                carpeta === 'enviados' ? (m.destinatario_avatar || '') : (m.remitente_avatar || ''),
                 nombre, 32
             );
             const asunto  = escHtml(m.asunto || '');
@@ -960,13 +961,12 @@ function getAvatarColor(string $nombre, array $colors): string {
             return;
         }
         acList.innerHTML = filtered.map((o, i) => {
-            const parts = o.label.split(' (');
+            const parts  = o.label.split(' (');
             const nombre = parts[0] || o.label;
             const rol    = parts[1] ? parts[1].replace(')','') : '';
-            const init   = nombre.trim().split(' ').map(w => w[0]||'').join('').toUpperCase().slice(0,2);
-            const col    = avatarColors[Math.abs([...nombre].reduce((a,c) => a+c.charCodeAt(0),0)) % avatarColors.length];
+            const avHtml = avatarHtml(o.avatar || '', nombre, 28);
             return `<div class="msg-ac-item" data-value="${escHtml(o.value)}" data-label="${escHtml(nombre)}" data-idx="${i}">
-                <div class="msg-ac-av" style="background:${col}">${init}</div>
+                <div class="msg-ac-av" style="background:none;padding:0">${avHtml}</div>
                 <div class="msg-ac-info">
                     <div class="msg-ac-nombre">${escHtml(nombre)}</div>
                     ${rol ? `<div class="msg-ac-rol">${escHtml(rol)}</div>` : ''}

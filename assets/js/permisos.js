@@ -303,7 +303,7 @@ class PermisosManager {
             console.log('📦 Respuesta del servidor:', result);
             
             if (result.success) {
-                this.renderizarPermisos(result.permisos, result.usuario, result.estadisticas);
+                this.renderizarPermisos(result.permisos, result.usuario, result.estadisticas, result.subpermisos || []);
             } else {
                 console.error('❌ Error del servidor:', result.message);
                 this.mostrarMensajePopup(result.message, 'error');
@@ -323,13 +323,11 @@ class PermisosManager {
     }
     
     // Renderizar permisos en el popup
-    renderizarPermisos(permisos, usuarioInfo, estadisticas) {
+    renderizarPermisos(permisos, usuarioInfo, estadisticas, subpermisos = []) {
         console.log('🎨 Renderizando permisos ACTIVOS:', permisos);
-        
-        // Actualizar estadísticas
+
         this.actualizarEstadisticas(estadisticas);
-        
-        // Actualizar información adicional del usuario
+
         if (usuarioInfo) {
             const infoElement = document.getElementById('popupUsuarioInfo');
             if (infoElement) {
@@ -339,88 +337,92 @@ class PermisosManager {
                 `;
             }
         }
-        
-        // Renderizar lista de permisos
+
         const container = document.getElementById('permisosListaPopup');
-        
-        if (!container) {
-            console.error('❌ Contenedor de permisos no encontrado');
-            return;
-        }
-        
-        // Filtrar solo permisos activos (si por algún motivo llegan inactivos)
-        const permisosActivos = permisos.filter(permiso => permiso.activo !== undefined);
-        
-        if (!permisosActivos || permisosActivos.length === 0) {
+        if (!container) return;
+
+        const todos = permisos.filter(p => p.activo !== undefined);
+        if (!todos.length) {
             container.innerHTML = `
                 <div class="no-permisos">
                     <i class="fas fa-exclamation-triangle"></i>
                     <h4>No hay permisos activos disponibles</h4>
                     <p>No se encontraron permisos con estado = 1 en el sistema</p>
-                    <small>Contacta al administrador para activar permisos en lista_permisos</small>
-                </div>
-            `;
+                </div>`;
             return;
         }
-        
+
+        const DEFAULT_SUBS = ['Crear', 'Editar', 'Eliminar', 'Ver', 'Informe'];
+
         let html = '';
-        
-        permisosActivos.forEach(permiso => {
-            const tienePermiso = permiso.activo == 1;
-            const switchId = `permiso_popup_${permiso.id}`;
-            const nombreMostrar = permiso.nombre_formateado || permiso.nombre;
+
+        todos.forEach(permiso => {
+            const tiene       = permiso.activo == 1;
+            const switchId    = `permiso_popup_${permiso.id}`;
+            const nombre      = permiso.nombre_formateado || permiso.nombre;
             const descripcion = permiso.descripcion || '';
-            
-            // Determinar clase CSS según si está asignado o no
-            const estadoClase = tienePermiso ? 'activo' : 'inactivo';
-            const estadoTexto = tienePermiso ? '✅ Asignado' : '❌ No asignado';
-            const fechaAsignacion = permiso.fecha_asignacion ? 
-                new Date(permiso.fecha_asignacion).toLocaleDateString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric'
-                }) : null;
-            
+            const estadoClase = tiene ? 'activo' : 'inactivo';
+            const estadoTexto = tiene ? '✅ Asignado' : '❌ No asignado';
+            const fecha       = permiso.fecha_asignacion
+                ? new Date(permiso.fecha_asignacion).toLocaleDateString('es-ES', {day:'2-digit',month:'2-digit',year:'numeric'})
+                : null;
+
+            const isMainF144 = permiso.nombre === 'for_de_144' || permiso.nombre === 'gestionar_recetas';
+
+            let subsHtml;
+            if (isMainF144 && subpermisos.length > 0) {
+                subsHtml = subpermisos.map(s => `
+                    <div class="permiso-check-item">
+                        <input type="checkbox" id="subperm_${s.id}"
+                               class="permiso-check-f144" data-subpermiso-id="${s.id}"
+                               ${s.activo == 1 ? 'checked' : ''}>
+                        <label for="subperm_${s.id}"><span>${s.etiqueta}</span></label>
+                    </div>`).join('');
+            } else {
+                subsHtml = DEFAULT_SUBS.map(label => {
+                    const cbId = `subperm_${permiso.id}_${label.toLowerCase()}`;
+                    return `<div class="permiso-check-item">
+                        <input type="checkbox" id="${cbId}"
+                               class="permiso-check-default" data-permiso-id="${permiso.id}" data-accion="${label.toLowerCase()}">
+                        <label for="${cbId}"><span>${label}</span></label>
+                    </div>`;
+                }).join('');
+            }
+
+            const infoHtml = `
+                <div class="permiso-info-popup">
+                    <div class="permiso-nombre-popup">
+                        <i class="fas fa-${tiene ? 'check-circle' : 'times-circle'}"></i>
+                        ${nombre}
+                    </div>
+                    ${descripcion ? `<div class="permiso-descripcion-popup">${descripcion}</div>` : ''}
+                    ${fecha ? `<div class="permiso-fecha-popup"><i class="fas fa-calendar-alt"></i> Asignado: ${fecha}</div>` : ''}
+                </div>`;
+
+            const switchHtml = `
+                <div class="permiso-switch-container-popup">
+                    <span class="permiso-status-popup ${estadoClase}">${estadoTexto}</span>
+                    <label class="permiso-switch-popup">
+                        <input type="checkbox" id="${switchId}" class="permiso-checkbox"
+                               data-permiso-id="${permiso.id}" ${tiene ? 'checked' : ''}>
+                        <span class="permiso-slider-popup"></span>
+                    </label>
+                </div>`;
+
             html += `
-                <div class="permiso-item-popup ${estadoClase}" data-permiso-id="${permiso.id}">
-                    <div class="permiso-info-popup">
-                        <div class="permiso-nombre-popup">
-                            <i class="fas fa-${tienePermiso ? 'check-circle' : 'times-circle'}"></i>
-                            ${nombreMostrar}
-                        </div>
-                        ${descripcion ? 
-                            `<div class="permiso-descripcion-popup">${descripcion}</div>` : ''
-                        }
-                        ${fechaAsignacion ? 
-                            `<div class="permiso-fecha-popup">
-                                <i class="fas fa-calendar-alt"></i>
-                                Asignado: ${fechaAsignacion}
-                            </div>` : ''
-                        }
+                <div class="permiso-item-popup ${estadoClase} has-sub" data-permiso-id="${permiso.id}">
+                    <div class="permiso-main-row">${infoHtml}${switchHtml}</div>
+                    <div class="permiso-sub-group">
+                        <div class="permiso-sub-checks">${subsHtml}</div>
                     </div>
-                    <div class="permiso-switch-container-popup">
-                        <span class="permiso-status-popup ${estadoClase}">
-                            ${estadoTexto}
-                        </span>
-                        <label class="permiso-switch-popup">
-                            <input type="checkbox" 
-                                   id="${switchId}"
-                                   class="permiso-checkbox"
-                                   data-permiso-id="${permiso.id}"
-                                   ${tienePermiso ? 'checked' : ''}>
-                            <span class="permiso-slider-popup"></span>
-                        </label>
-                    </div>
-                </div>
-            `;
+                </div>`;
         });
-        
+
         container.innerHTML = html;
-        
-        // Configurar event listeners para los switches
         this.configurarSwitchesPermisos();
-        
-        console.log(`✅ ${permisosActivos.length} permisos activos renderizados correctamente`);
+        this.configurarCheckboxesGrupo();
+
+        console.log(`✅ ${todos.length} permisos + ${subpermisos.length} sub-permisos FOR-DE-144`);
     }
     
     // Actualizar estadísticas
@@ -489,19 +491,27 @@ class PermisosManager {
                             this.actualizarEstadisticas(result.estadisticas);
                             this.animarContador('permisosAsignadosCount', result.estadisticas.permisos_asignados);
                         }
-                        
+
                         // Actualizar estado visual
                         this.actualizarEstadoPermisoVisual(permisoId, nuevoEstado);
-                        
+
+                        // Sincronizar checkboxes de sub-permisos con el estado devuelto por el servidor
+                        if (result.subpermisos) {
+                            result.subpermisos.forEach(s => {
+                                const cb = document.getElementById(`subperm_${s.id}`);
+                                if (cb) cb.checked = s.activo == 1;
+                            });
+                        }
+
                         // Mostrar mensaje de éxito
                         this.mostrarMensajePopup(result.message, 'success', true);
-                        
+
                         // Animar el cambio
                         permisoItem.classList.add('changed');
                         setTimeout(() => {
                             permisoItem.classList.remove('changed');
                         }, 1000);
-                        
+
                         console.log(`✅ Permiso ${nuevoEstado ? 'asignado' : 'removido'} correctamente`);
                     } else {
                         // Revertir switch
@@ -526,8 +536,9 @@ class PermisosManager {
     actualizarEstadoPermisoVisual(permisoId, nuevoEstado) {
         const permisoItem = document.querySelector(`.permiso-item-popup[data-permiso-id="${permisoId}"]`);
         if (permisoItem) {
-            // Cambiar clase CSS
-            permisoItem.className = `permiso-item-popup ${nuevoEstado ? 'activo' : 'inactivo'}`;
+            // Cambiar clase CSS (preservar has-sub si existe)
+            const hasSub = permisoItem.classList.contains('has-sub') ? ' has-sub' : '';
+            permisoItem.className = `permiso-item-popup ${nuevoEstado ? 'activo' : 'inactivo'}${hasSub}`;
             
             // Actualizar icono
             const icono = permisoItem.querySelector('.permiso-nombre-popup i');
@@ -635,6 +646,46 @@ class PermisosManager {
         }
     }
     
+    // Configurar checkboxes del grupo FOR-DE-144
+    configurarCheckboxesGrupo() {
+        document.querySelectorAll('.permiso-check-f144').forEach(cb => {
+            cb.addEventListener('change', async (e) => {
+                const subpermisoId = e.target.getAttribute('data-subpermiso-id');
+                const nuevoEstado  = e.target.checked ? 1 : 0;
+                e.target.disabled  = true;
+
+                try {
+                    const response = await fetch(`${this.baseUrl}/permisos/subpermiso-toggle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        body: JSON.stringify({ usuario_id: this.currentUsuarioId, subpermiso_id: subpermisoId, nuevo_estado: nuevoEstado })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        if (result.estadisticas) {
+                            this.actualizarEstadisticas(result.estadisticas);
+                            this.animarContador('permisosAsignadosCount', result.estadisticas.permisos_asignados);
+                        }
+                        this.actualizarBadgeGrupo();
+                        this.mostrarMensajePopup(result.message, 'success', true);
+                    } else {
+                        e.target.checked = !e.target.checked;
+                        this.mostrarMensajePopup(result.message, 'error');
+                    }
+                } catch (err) {
+                    e.target.checked = !e.target.checked;
+                    this.mostrarMensajePopup('Error de conexión al servidor', 'error');
+                } finally {
+                    e.target.disabled = false;
+                }
+            });
+        });
+    }
+
+    actualizarBadgeGrupo() {
+        // Solo actualiza el contador global de estadísticas (no hay badge separado)
+    }
+
     // Método para debugging - mostrar datos de ejemplo
     mostrarDatosEjemplo() {
         console.log('🛠️ Mostrando datos de ejemplo para debugging');

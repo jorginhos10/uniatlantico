@@ -109,75 +109,143 @@ ob_start();
             font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
+        /* ═══ HEADER ═══ */
         .header-info {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            background: #fff;
+            color: #1d1d1f;
+            padding: 18px 22px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 0 0 .5px rgba(60,60,67,.1);
+        }
+
+        .header-icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0,122,255,.32);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 6px 24px rgba(0,122,255,0.25);
+            font-size: 22px;
         }
-        
+
+        .header-eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #007AFF;
+            margin-bottom: 2px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1d1d1f;
+            margin: 0 0 3px;
+            letter-spacing: -.3px;
+            line-height: 1.2;
+        }
+
+        .header-desc {
+            font-size: 13px;
+            color: #6e6e73;
+            margin: 0;
+        }
+
+        .header-meta {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aeaeb2;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* ═══ COUNTDOWN ═══ */
         .countdown-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
+            background: rgba(0,122,255,.04);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-top: 14px;
+            border: 1px solid rgba(0,122,255,.12);
         }
-        
+
         .countdown-timer {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .countdown-box {
-            background: rgba(0, 0, 0, 0.2);
+            background: #fff;
             border-radius: 10px;
-            padding: 15px;
-            min-width: 100px;
+            padding: 10px 14px;
+            min-width: 72px;
             text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07);
         }
-        
+
         .countdown-number {
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 800;
             line-height: 1;
-            margin-bottom: 5px;
-            color: white;
+            margin-bottom: 4px;
+            color: #007AFF;
         }
-        
+
         .countdown-label {
-            font-size: 0.85rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: .4px;
+            color: #aeaeb2;
+            font-weight: 600;
         }
-        
+
+        /* ═══ ACCORDION ═══ */
         .accordion-item {
             border: none;
-            margin-bottom: 20px;
-            border-radius: 15px !important;
+            margin-bottom: 10px;
+            border-radius: 14px !important;
             overflow: hidden;
-            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.06);
         }
-        
+
         .accordion-button {
-            padding: 20px 25px;
-            font-size: 1.3rem;
-            font-weight: 700;
+            padding: 14px 20px !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
             color: white !important;
-            border-radius: 15px !important;
+            border-radius: 14px !important;
+            min-height: 60px;
         }
-        
+
+        .accordion-button .fa-2x {
+            font-size: 1.15rem !important;
+        }
+
         .accordion-button:not(.collapsed) {
             box-shadow: none;
         }
-        
+
         .accordion-button::after {
             filter: brightness(0) invert(1);
+        }
+
+        .accordion-button .badge.bg-light {
+            background: rgba(255,255,255,.18) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,.25) !important;
+            border-radius: 20px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            padding: 4px 12px !important;
+            letter-spacing: .2px !important;
         }
         
         .lista-container {
@@ -362,20 +430,23 @@ ob_start();
         }
         
         .estado-badge {
-            padding: 4px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 13px;
             border-radius: 20px;
-            font-size: 0.75rem;
+            font-size: 12px;
             font-weight: 600;
-            color: white;
             white-space: nowrap;
         }
-        
-        .estado-borrador   { background: #8E8E93; }
-        .estado-publicado  { background: #34C759; }
-        .estado-cancelado  { background: #FF3B30; }
-        .estado-expirado   { background: #FF3B30; }
-        .estado-vigente    { background: #34C759; }
-        .estado-sin-fechas { background: #007AFF; }
+
+        .estado-borrador   { background: rgba(142,142,147,.12); color: #6e6e73; }
+        .estado-publicado  { background: rgba(52,199,89,.12);   color: #1A7A35; }
+        .estado-cancelado  { background: rgba(255,59,48,.1);    color: #C0392B; }
+        .estado-expirado   { background: rgba(255,59,48,.1);    color: #C0392B; }
+        .estado-vigente    { background: rgba(52,199,89,.12);   color: #1A7A35; }
+        .estado-sin-fechas { background: rgba(0,122,255,.1);    color: #007AFF; }
+        .estado-no-iniciado { background: rgba(255,149,0,.12);  color: #8B5E00; }
         
         .modal-content {
             border-radius: 16px;
@@ -706,6 +777,41 @@ ob_start();
             margin-right: 3px;
         }
 
+        /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
+        /* !important beats inline style on span/small inside accordion button */
+        .accordion-button > div > span:first-child {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+        }
+        .accordion-button > div > small {
+            font-size: 12px !important;
+            opacity: .82;
+        }
+
+        /* Reduce top margin between accordion groups */
+        #accordionFacultades,
+        [id^="accordionEval"] {
+            margin-top: 10px !important;
+        }
+
+        /* Container padding reduction */
+        .container-fluid {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* Accordion body padding */
+        .accordion-body {
+            padding: 20px !important;
+        }
+
+        /* Section sub-headers inside accordion */
+        .mb-5 > .d-flex > h5 {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #1d1d1f !important;
+        }
+
         /* === FILTRO DE LISTA === */
         .filtro-lista-bar {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -748,41 +854,46 @@ ob_start();
 require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <div class="header-info">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="fas fa-cubes me-3"></i>SISTEMA 144
-                    </h1>
-                    <h4 class="mb-0"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h4>
-                    <p class="mb-0 mt-2 opacity-75">
-                        <i class="fas fa-info-circle me-1"></i>
-                        <?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?>
-                    </p>
-                    <div class="fechas-info mt-3">
+            <div style="display:flex;align-items:flex-start;gap:16px;">
+                <!-- Icon -->
+                <div class="header-icon-box">
+                    <i class="fas fa-cubes"></i>
+                </div>
+
+                <!-- Text block -->
+                <div style="flex:1;min-width:0;">
+                    <div class="header-eyebrow">SISTEMA 144</div>
+                    <h1 class="header-title"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h1>
+                    <p class="header-desc"><?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?></p>
+                    <?php if (!empty($formulario['fecha_inicio']) || !empty($formulario['fecha_cierre'])): ?>
+                    <div class="header-meta">
                         <?php if (!empty($formulario['fecha_inicio'])): ?>
-                        <span class="me-3"><i class="fas fa-play-circle"></i> Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></span>
+                        <span><i class="fas fa-play-circle me-1" style="color:#34C759;"></i>Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($formulario['fecha_cierre'])): ?>
-                        <span class="me-3"><i class="fas fa-stop-circle"></i> Cierre: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])); ?></span>
+                        <span><i class="fas fa-stop-circle me-1" style="color:#FF3B30;"></i>Cierre: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])); ?></span>
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?> mb-2">
-                        <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?> me-1"></i>
+
+                <!-- Right: status + back -->
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+                    <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?>">
+                        <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?>"></i>
                         <?php echo $estado_fechas['mensaje']; ?>
                     </span>
-                    <br>
-                    <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-1"></i>Volver
+                    <a href="<?php echo $basePath; ?>/FOR-DE-144"
+                       style="display:inline-flex;align-items:center;gap:6px;background:#F2F2F7;color:#1d1d1f;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:none;transition:background .15s;">
+                        <i class="fas fa-arrow-left" style="font-size:11px;"></i>Volver
                     </a>
                 </div>
             </div>
-            
+
             <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
             <div class="countdown-container">
-                <div class="countdown-title text-center mb-3">
-                    <i class="fas fa-hourglass-half me-2"></i>Tiempo restante para el cierre:
+                <div style="text-align:center;font-size:12px;font-weight:600;color:#6e6e73;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">
+                    <i class="fas fa-hourglass-half me-1" style="color:#007AFF;"></i>Tiempo restante
                 </div>
                 <div class="countdown-timer" id="countdown-timer">
                     <div class="countdown-box"><div class="countdown-number" id="days">00</div><div class="countdown-label">Días</div></div>
@@ -857,6 +968,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
                                 <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
                             </select>
+                            <select class="filtro-tipo-select" id="filtroLinea-<?php echo $key; ?>"
+                                    onchange="onFiltroLineaChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Línea: Todas</option>
+                            </select>
+                            <select class="filtro-tipo-select" id="filtroMotor-<?php echo $key; ?>"
+                                    onchange="onFiltroMotorChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Motor: Todos</option>
+                            </select>
+                            <select class="filtro-tipo-select" id="filtroProyecto-<?php echo $key; ?>"
+                                    onchange="onFiltroProyectoChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Proyecto: Todos</option>
+                            </select>
                             <div class="filtro-input-wrap" id="filtroInputWrap-<?php echo $key; ?>"
                                  style="display:<?php echo in_array($pref_key['tipo_filtro'],['dependencia','persona']) ? 'block':'none'; ?>">
                                 <input type="text" class="filtro-texto-input"
@@ -910,7 +1033,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1025,7 +1148,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1971,7 +2094,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             echo json_encode($todas);
         ?>;
 
-        let _listaTotalRegistros = <?php echo $todas ? count($todas) : 0; ?>;
 
         // Refresca formulacionesExistentes desde el servidor
         function refrescarFormulacionesExistentes(callback) {
@@ -1993,27 +2115,34 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
-        // Polling: si cambia el número de registros recarga la lista automáticamente
-        function iniciarPollingLista() {
-            setInterval(function() {
-                // Solo hacer polling si no hay modal abierto (evita interrumpir edición activa)
-                if ($('.modal.show').length > 0) return;
-                $.ajax({
-                    url: basePath + '/modulo144/contarRegistros?formulario_id=' + formularioId,
-                    type: 'GET',
-                    dataType: 'json',
-                    success: function(res) {
-                        if (res.success && res.total !== _listaTotalRegistros) {
-                            _listaTotalRegistros = res.total;
-                            location.reload();
-                        }
-                    }
-                });
-            }, 20000); // cada 20 segundos
+        function guardarEstadoAcordeon() {
+            const abierto = document.querySelector('#accordionModulos .accordion-collapse.show');
+            if (abierto) {
+                sessionStorage.setItem('mod144_acordeon_' + formularioId, abierto.id);
+            } else {
+                sessionStorage.removeItem('mod144_acordeon_' + formularioId);
+            }
+        }
+
+        function restaurarEstadoAcordeon() {
+            const id = sessionStorage.getItem('mod144_acordeon_' + formularioId);
+            if (!id) return;
+            sessionStorage.removeItem('mod144_acordeon_' + formularioId);
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            // Colapsar el que esté abierto por defecto y abrir el guardado
+            document.querySelectorAll('#accordionModulos .accordion-collapse.show').forEach(function(el) {
+                el.classList.remove('show');
+                const btn = document.querySelector('[data-bs-target="#' + el.id + '"]');
+                if (btn) btn.classList.add('collapsed');
+            });
+            panel.classList.add('show');
+            const btn = document.querySelector('[data-bs-target="#' + id + '"]');
+            if (btn) btn.classList.remove('collapsed');
         }
 
         $(document).ready(function() {
-            iniciarPollingLista();
+            restaurarEstadoAcordeon();
         });
 
         let timeoutId = null;
@@ -2250,7 +2379,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 document.getElementById('hours').innerHTML = '00';
                 document.getElementById('minutes').innerHTML = '00';
                 document.getElementById('seconds').innerHTML = '00';
-                setTimeout(() => location.reload(), 3000);
+                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 3000);
                 return;
             }
             
@@ -2306,6 +2435,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
+                                    guardarEstadoAcordeon();
                                     location.reload();
                                 });
                             } else {
@@ -2347,7 +2477,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -2365,7 +2495,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -2390,7 +2520,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Duplicado!', response.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     }
                 }
             });
@@ -3275,7 +3405,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                             }
                         }
                     });
@@ -3301,7 +3431,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Eliminado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                             }
                         }
                     });
@@ -3369,10 +3499,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function aplicarFiltro(modulo) {
-            const tipo  = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
-            const texto = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
-            const items = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
-            let visibles = 0;
+            const tipo     = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
+            const texto    = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
+            const linea    = document.getElementById('filtroLinea-' + modulo)?.value || '';
+            const motor    = document.getElementById('filtroMotor-' + modulo)?.value || '';
+            const proyecto = document.getElementById('filtroProyecto-' + modulo)?.value || '';
+            const items    = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
+            let visibles   = 0;
 
             items.forEach(function(item) {
                 let visible = true;
@@ -3383,15 +3516,197 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 } else if (tipo === 'persona' && texto) {
                     visible = (item.getAttribute('data-creado-por-nombre') || '').toLowerCase().includes(texto);
                 }
+                if (visible && linea) {
+                    visible = (item.getAttribute('data-linea-filtro') || '') === linea;
+                }
+                if (visible && motor) {
+                    visible = (item.getAttribute('data-motor-filtro') || '') === motor;
+                }
+                if (visible && proyecto) {
+                    visible = (item.getAttribute('data-proyecto-filtro') || '') === proyecto;
+                }
                 item.style.display = visible ? '' : 'none';
                 if (visible) visibles++;
             });
 
-            const badge = document.getElementById('filtroResultado-' + modulo);
+            const badge     = document.getElementById('filtroResultado-' + modulo);
+            const anyActive = tipo !== 'todos' || linea !== '' || motor !== '' || proyecto !== '';
             if (badge) {
-                badge.style.display = tipo === 'todos' ? 'none' : '';
+                badge.style.display = anyActive ? '' : 'none';
                 badge.textContent   = visibles + ' de ' + items.length;
             }
+        }
+
+        function poblarSelectsFiltro(modulo) {
+            const items = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
+            const lineas = new Set();
+            const motoresPorLinea = {};
+            const proyectosPorMotor = {};
+
+            items.forEach(function(item) {
+                const lin = item.getAttribute('data-linea-filtro') || '';
+                const mot = item.getAttribute('data-motor-filtro') || '';
+                const pro = item.getAttribute('data-proyecto-filtro') || '';
+                if (lin) {
+                    lineas.add(lin);
+                    if (!motoresPorLinea[lin]) motoresPorLinea[lin] = new Set();
+                    if (mot) {
+                        motoresPorLinea[lin].add(mot);
+                        const pkey = lin + '||' + mot;
+                        if (!proyectosPorMotor[pkey]) proyectosPorMotor[pkey] = new Set();
+                        if (pro) proyectosPorMotor[pkey].add(pro);
+                    }
+                }
+            });
+
+            const bar = document.getElementById('filtroBar-' + modulo);
+            if (bar) {
+                bar._motoresPorLinea    = motoresPorLinea;
+                bar._proyectosPorMotor  = proyectosPorMotor;
+            }
+
+            const selLinea = document.getElementById('filtroLinea-' + modulo);
+            if (!selLinea) return;
+
+            selLinea.innerHTML = '<option value="">Línea: Todas</option>';
+            [...lineas].sort().forEach(function(lin) {
+                const opt = document.createElement('option');
+                opt.value = lin;
+                opt.textContent = lin;
+                selLinea.appendChild(opt);
+            });
+            selLinea.style.display = lineas.size > 0 ? '' : 'none';
+            restaurarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function actualizarMotores(modulo) {
+            const bar        = document.getElementById('filtroBar-' + modulo);
+            const selLinea   = document.getElementById('filtroLinea-' + modulo);
+            const selMotor   = document.getElementById('filtroMotor-' + modulo);
+            const selProy    = document.getElementById('filtroProyecto-' + modulo);
+            if (!bar || !selLinea || !selMotor || !selProy) return;
+
+            const linea = selLinea.value;
+            const motoresPorLinea = bar._motoresPorLinea || {};
+            const motores = linea && motoresPorLinea[linea]
+                ? [...motoresPorLinea[linea]].sort()
+                : [];
+
+            selMotor.innerHTML = '<option value="">Motor: Todos</option>';
+            motores.forEach(function(mot) {
+                const opt = document.createElement('option');
+                opt.value = mot;
+                opt.textContent = mot;
+                selMotor.appendChild(opt);
+            });
+            selMotor.style.display = (linea && motores.length > 0) ? '' : 'none';
+            selMotor.value = '';
+
+            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+            selProy.style.display = 'none';
+            selProy.value = '';
+        }
+
+        function actualizarProyectos(modulo) {
+            const bar      = document.getElementById('filtroBar-' + modulo);
+            const selLinea = document.getElementById('filtroLinea-' + modulo);
+            const selMotor = document.getElementById('filtroMotor-' + modulo);
+            const selProy  = document.getElementById('filtroProyecto-' + modulo);
+            if (!bar || !selLinea || !selMotor || !selProy) return;
+
+            const linea   = selLinea.value;
+            const motor   = selMotor.value;
+            const proyectosPorMotor = bar._proyectosPorMotor || {};
+            const pkey    = linea + '||' + motor;
+            const proyectos = (linea && motor && proyectosPorMotor[pkey])
+                ? [...proyectosPorMotor[pkey]].sort()
+                : [];
+
+            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+            proyectos.forEach(function(pro) {
+                const opt = document.createElement('option');
+                opt.value = pro;
+                opt.textContent = pro;
+                selProy.appendChild(opt);
+            });
+            selProy.style.display = (linea && motor && proyectos.length > 0) ? '' : 'none';
+            selProy.value = '';
+        }
+
+        function guardarFiltrosLineamiento(modulo) {
+            const linea   = document.getElementById('filtroLinea-'    + modulo)?.value || '';
+            const motor   = document.getElementById('filtroMotor-'    + modulo)?.value || '';
+            const proyecto = document.getElementById('filtroProyecto-' + modulo)?.value || '';
+            sessionStorage.setItem(
+                'mod144_lineas_' + formularioId + '_' + modulo,
+                JSON.stringify({ linea: linea, motor: motor, proyecto: proyecto })
+            );
+        }
+
+        function restaurarFiltrosLineamiento(modulo) {
+            const raw = sessionStorage.getItem('mod144_lineas_' + formularioId + '_' + modulo);
+            if (!raw) return;
+            let saved;
+            try { saved = JSON.parse(raw); } catch(e) { return; }
+
+            const selLinea = document.getElementById('filtroLinea-'    + modulo);
+            const selMotor = document.getElementById('filtroMotor-'    + modulo);
+            const selProy  = document.getElementById('filtroProyecto-' + modulo);
+            if (!selLinea) return;
+
+            if (saved.linea) {
+                selLinea.value = saved.linea;
+                // Rebuild motor options for this linea
+                const bar = document.getElementById('filtroBar-' + modulo);
+                const motoresPorLinea = bar ? (bar._motoresPorLinea || {}) : {};
+                const motores = motoresPorLinea[saved.linea]
+                    ? [...motoresPorLinea[saved.linea]].sort() : [];
+                if (selMotor) {
+                    selMotor.innerHTML = '<option value="">Motor: Todos</option>';
+                    motores.forEach(function(mot) {
+                        const opt = document.createElement('option');
+                        opt.value = mot; opt.textContent = mot;
+                        selMotor.appendChild(opt);
+                    });
+                    selMotor.style.display = motores.length > 0 ? '' : 'none';
+                    if (saved.motor) {
+                        selMotor.value = saved.motor;
+                        // Rebuild proyecto options for this motor
+                        const proyectosPorMotor = bar ? (bar._proyectosPorMotor || {}) : {};
+                        const pkey = saved.linea + '||' + saved.motor;
+                        const proyectos = proyectosPorMotor[pkey]
+                            ? [...proyectosPorMotor[pkey]].sort() : [];
+                        if (selProy) {
+                            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+                            proyectos.forEach(function(pro) {
+                                const opt = document.createElement('option');
+                                opt.value = pro; opt.textContent = pro;
+                                selProy.appendChild(opt);
+                            });
+                            selProy.style.display = (proyectos.length > 0) ? '' : 'none';
+                            if (saved.proyecto) selProy.value = saved.proyecto;
+                        }
+                    }
+                }
+            }
+        }
+
+        function onFiltroLineaChange(modulo) {
+            actualizarMotores(modulo);
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function onFiltroMotorChange(modulo) {
+            actualizarProyectos(modulo);
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function onFiltroProyectoChange(modulo) {
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
         }
 
         function mostrarSugerencias(modulo) {
@@ -3451,6 +3766,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         document.addEventListener('DOMContentLoaded', function() {
             <?php foreach ($datos_modulos as $key => $modulo): ?>
             (function() {
+                poblarSelectsFiltro('<?php echo $key; ?>');
                 const pref = FILTER_PREFS['<?php echo $key; ?>'];
                 if (pref && pref.tipo_filtro && pref.tipo_filtro !== 'todos') {
                     aplicarFiltro('<?php echo $key; ?>');

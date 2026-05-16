@@ -102,6 +102,7 @@ class MensajesModel {
                         WHEN 'rol'          THEN CONCAT('Rol: ', m.destinatario_id)
                         ELSE m.destinatario_id
                     END AS destinatario_nombre,
+                    u2.avatar AS destinatario_avatar,
                     1 AS leido
                  FROM mensajes m
                  LEFT JOIN usuarios u2

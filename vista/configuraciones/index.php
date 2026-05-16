@@ -36,13 +36,15 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
     </a>
     
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/novedades">
     <div class="mosaic-item">
-      <div class="item-icon" style="background-color: #34a853;">
-        <i class="fas fa-bell"></i>
+      <div class="item-icon" style="background-color: #FF9500;">
+        <i class="fas fa-bullhorn"></i>
       </div>
-      <h3>Notificaciones</h3>
-      <p>Gestiona alertas, sonidos y preferencias de notificación</p>
+      <h3>Novedades</h3>
+      <p>Publica y gestiona novedades que aparecen en el dashboard</p>
     </div>
+    </a>
     
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #ea4335;">

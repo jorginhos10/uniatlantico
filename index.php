@@ -7,12 +7,27 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$url = $_GET['url'] ?? 'login';
+$basePath = Config::getBasePath();
+
+// Support both Apache mod_rewrite (?url=X) and direct-server setups (PHP built-in, nginx)
+if (isset($_GET['url']) && $_GET['url'] !== '') {
+    $url = $_GET['url'];
+} else {
+    // Parse from REQUEST_URI — strip base path and query string
+    $reqPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $reqPath = str_replace('\\', '/', $reqPath ?? '/');
+    if ($basePath !== '' && strpos($reqPath, $basePath) === 0) {
+        $reqPath = substr($reqPath, strlen($basePath));
+    }
+    $url = ltrim($reqPath, '/') ?: 'login';
+    // Strip index.php from path if present
+    if ($url === 'index.php') $url = 'login';
+}
+
 $url = rtrim($url, '/');
 $urlParts = explode('/', $url);
 
 $action = $urlParts[0] ?? 'login';
-$basePath = Config::getBasePath();
 
 switch ($action) {
     case 'login':
@@ -172,6 +187,9 @@ switch ($action) {
             case 'popup-toggle':
                 $permisoController->togglePermisoPopup();
                 break;
+            case 'subpermiso-toggle':
+                $permisoController->toggleSubpermisoPopup();
+                break;
             case 'all':
                 $permisoController->getAllPermisos();
                 break;
@@ -226,7 +244,17 @@ switch ($action) {
                 $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
                 $forde144Controller->getFormulario($id);
                 break;
-                
+
+            case 'informe':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->informe($id);
+                break;
+
+            case 'informePage':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->informePage($id);
+                break;
+
             case 'verificarDisponibilidad':
                 $forde144Controller->verificarDisponibilidad();
                 break;
@@ -550,6 +578,23 @@ switch ($action) {
             default:
                 $mensajesController->index();
                 break;
+        }
+        break;
+
+    case 'novedades':
+        require_once 'config/security.php';
+        require_once 'controlador/NovedadesController.php';
+        $novedadesController = new NovedadesController();
+        $actionParam = $urlParts[1] ?? 'index';
+        switch ($actionParam) {
+            case 'listar':    $novedadesController->listar();      break;
+            case 'get':       $novedadesController->get();         break;
+            case 'crear':     $novedadesController->crear();       break;
+            case 'actualizar':$novedadesController->actualizar();  break;
+            case 'eliminar':  $novedadesController->eliminar();    break;
+            case 'toggle':    $novedadesController->toggleActivo();  break;
+            case 'reordenar': $novedadesController->reordenar();    break;
+            default:          $novedadesController->index();       break;
         }
         break;
 

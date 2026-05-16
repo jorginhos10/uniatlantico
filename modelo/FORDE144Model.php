@@ -169,6 +169,138 @@ class FORDE144Model {
         }
     }
 
+    public function getInformeCompleto($formulario_id) {
+        // porcentaje_avance (0-100) is the user-entered progress field in formulacion_144
+        $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
+
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT
+                    COALESCE(f.linea_estrategica,'Sin línea') as linea,
+                    COALESCE(le.codigo,'—') as linea_codigo,
+                    COALESCE(f.motor_desarrollo,'Sin motor') as motor,
+                    COALESCE(f.proyecto,'Sin proyecto') as proyecto,
+                    COUNT(f.id) as total,
+                    ROUND(AVG($calc),2) as cumplimiento_proyecto
+                 FROM formulacion_144 f
+                 LEFT JOIN lineas_estrategicas le
+                        ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 WHERE f.formulario_id = :fid
+                 GROUP BY f.linea_estrategica, le.codigo, f.motor_desarrollo, f.proyecto
+                 ORDER BY le.codigo ASC, f.linea_estrategica ASC, f.motor_desarrollo ASC, f.proyecto ASC"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            $rows = $stmt->fetchAll();
+
+            $lineasMap = [];
+            foreach ($rows as $row) {
+                $lKey = $row['linea'];
+                $mKey = $row['motor'];
+                if (!isset($lineasMap[$lKey])) {
+                    $lineasMap[$lKey] = ['codigo' => $row['linea_codigo'], 'titulo' => $lKey, 'motores' => [], '_vals' => []];
+                }
+                if (!isset($lineasMap[$lKey]['motores'][$mKey])) {
+                    $lineasMap[$lKey]['motores'][$mKey] = ['nombre' => $mKey, 'proyectos' => [], '_vals' => []];
+                }
+                $pct = (float)$row['cumplimiento_proyecto'];
+                $lineasMap[$lKey]['motores'][$mKey]['proyectos'][] = [
+                    'nombre' => $row['proyecto'], 'total' => (int)$row['total'], 'cumplimiento' => $pct
+                ];
+                $lineasMap[$lKey]['motores'][$mKey]['_vals'][] = $pct;
+                $lineasMap[$lKey]['_vals'][] = $pct;
+            }
+
+            $lineas = [];
+            foreach ($lineasMap as $lKey => $linea) {
+                $motores = [];
+                foreach ($linea['motores'] as $motor) {
+                    $mc = count($motor['_vals']) > 0 ? array_sum($motor['_vals']) / count($motor['_vals']) : 0;
+                    $motores[] = ['nombre' => $motor['nombre'], 'cumplimiento' => round($mc, 2), 'proyectos' => $motor['proyectos']];
+                }
+                $lc = count($linea['_vals']) > 0 ? array_sum($linea['_vals']) / count($linea['_vals']) : 0;
+                $titulo = ($linea['codigo'] !== '—') ? $linea['codigo'] . ' - ' . $lKey : $lKey;
+                $lineas[] = ['codigo' => $linea['codigo'], 'titulo' => $titulo, 'cumplimiento' => round($lc, 2), 'motores' => $motores];
+            }
+
+            $global = count($lineas) > 0 ? array_sum(array_column($lineas, 'cumplimiento')) / count($lineas) : 0;
+
+            $stmtD = $this->db->prepare(
+                "SELECT
+                    COALESCE(fa.nombre, CONCAT('Dependencia #', f.facultad_id)) as dependencia,
+                    COUNT(f.id) as total_indicadores,
+                    SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_80,
+                    ROUND(AVG($calc),2) as cumplimiento
+                 FROM formulacion_144 f
+                 LEFT JOIN facultades fa ON f.facultad_id = fa.id
+                 WHERE f.formulario_id = :fid
+                 GROUP BY f.facultad_id, fa.nombre
+                 ORDER BY cumplimiento DESC"
+            );
+            $stmtD->execute([':fid' => $formulario_id]);
+            $dependencias = $stmtD->fetchAll();
+
+            return [
+                'global_cumplimiento' => round($global, 2),
+                'lineas'              => $lineas,
+                'dependencias'        => $dependencias,
+            ];
+        } catch (PDOException $e) {
+            error_log("Error getInformeCompleto: " . $e->getMessage());
+            return ['global_cumplimiento' => 0, 'lineas' => [], 'dependencias' => [], 'error' => $e->getMessage()];
+        }
+    }
+
+    public function getInforme($formulario_id) {
+        $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
+
+        try {
+            $stmtG = $this->db->prepare(
+                "SELECT COUNT(f.id) as total, ROUND(AVG($calc),2) as cumplimiento_global
+                 FROM formulacion_144 f WHERE f.formulario_id = :fid"
+            );
+            $stmtG->execute([':fid' => $formulario_id]);
+            $global = $stmtG->fetch();
+
+            $stmtL = $this->db->prepare(
+                "SELECT COALESCE(f.linea_estrategica,'Sin línea') as linea,
+                        COALESCE(le.codigo,'—') as codigo,
+                        COUNT(f.id) as total,
+                        ROUND(AVG($calc),2) as cumplimiento
+                 FROM formulacion_144 f
+                 LEFT JOIN lineas_estrategicas le
+                        ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 WHERE f.formulario_id = :fid
+                 GROUP BY f.linea_estrategica, le.codigo
+                 ORDER BY le.codigo ASC, f.linea_estrategica"
+            );
+            $stmtL->execute([':fid' => $formulario_id]);
+            $lineas = $stmtL->fetchAll();
+
+            $stmtD = $this->db->prepare(
+                "SELECT COALESCE(fa.nombre, CONCAT('Dependencia #', f.facultad_id)) as dependencia,
+                        COUNT(f.id) as total_indicadores,
+                        SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_alto,
+                        ROUND(AVG($calc),2) as cumplimiento
+                 FROM formulacion_144 f
+                 LEFT JOIN facultades fa ON f.facultad_id = fa.id
+                 WHERE f.formulario_id = :fid
+                 GROUP BY f.facultad_id, fa.nombre
+                 ORDER BY cumplimiento DESC"
+            );
+            $stmtD->execute([':fid' => $formulario_id]);
+            $dependencias = $stmtD->fetchAll();
+
+            return [
+                'global'       => $global,
+                'lineas'       => $lineas,
+                'dependencias' => $dependencias,
+            ];
+        } catch (PDOException $e) {
+            error_log("Error getInforme: " . $e->getMessage());
+            return ['global' => ['total' => 0, 'cumplimiento_global' => 0], 'lineas' => [], 'dependencias' => []];
+        }
+    }
+
     /**
      * Verifica si un formulario está disponible según su configuración de tiempo
      */

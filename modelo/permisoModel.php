@@ -329,6 +329,109 @@ class PermisoModel {
     }
     
     /**
+     * Obtiene los sub-permisos de un permiso, con estado asignado/no para un usuario
+     */
+    public function getSubpermisosConEstadoUsuario(int $usuario_id): array {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT s.*,
+                        CASE WHEN ds.id IS NOT NULL THEN 1 ELSE 0 END AS activo,
+                        ds.fecha_asignacion
+                 FROM subpermisos s
+                 LEFT JOIN detalle_subpermiso ds
+                        ON s.id = ds.subpermiso_id AND ds.usuario_id = :uid
+                 WHERE s.estado = 1
+                 ORDER BY s.permiso_id ASC, s.orden ASC"
+            );
+            $stmt->execute([':uid' => $usuario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getSubpermisosConEstadoUsuario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Activa o desactiva un sub-permiso para un usuario
+     */
+    public function toggleSubpermiso(int $usuario_id, int $subpermiso_id, int $estado): bool {
+        try {
+            if ($estado === 1) {
+                $stmt = $this->db->prepare(
+                    "INSERT IGNORE INTO detalle_subpermiso (usuario_id, subpermiso_id, fecha_asignacion)
+                     VALUES (:uid, :sid, NOW())"
+                );
+            } else {
+                $stmt = $this->db->prepare(
+                    "DELETE FROM detalle_subpermiso WHERE usuario_id = :uid AND subpermiso_id = :sid"
+                );
+            }
+            $stmt->execute([':uid' => $usuario_id, ':sid' => $subpermiso_id]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Error toggleSubpermiso: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Devuelve solo los nombres de sub-permisos activos de un usuario (para el controlador de vistas)
+     */
+    public function getSubpermisosActivosUsuario(int $usuario_id): array {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT s.nombre, s.permiso_id
+                 FROM subpermisos s
+                 JOIN detalle_subpermiso ds ON s.id = ds.subpermiso_id AND ds.usuario_id = :uid
+                 WHERE s.estado = 1"
+            );
+            $stmt->execute([':uid' => $usuario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getSubpermisosActivosUsuario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Asigna el sub-permiso "ver" de un permiso cuando éste se habilita por primera vez.
+     * Solo actúa si ese permiso tiene sub-permisos definidos en la tabla subpermisos.
+     */
+    public function asignarSubpermisoVer(int $usuario_id, int $permiso_id): void {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id FROM subpermisos
+                 WHERE permiso_id = :pid AND nombre = 'ver' AND estado = 1
+                 LIMIT 1"
+            );
+            $stmt->execute([':pid' => $permiso_id]);
+            $sub = $stmt->fetch();
+            if ($sub) {
+                $this->toggleSubpermiso($usuario_id, (int)$sub['id'], 1);
+            }
+        } catch (PDOException $e) {
+            error_log("Error asignarSubpermisoVer: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Elimina todos los sub-permisos de un permiso para un usuario
+     * cuando ese permiso principal se deshabilita.
+     */
+    public function quitarTodosSubpermisosPermiso(int $usuario_id, int $permiso_id): void {
+        try {
+            $stmt = $this->db->prepare(
+                "DELETE ds FROM detalle_subpermiso ds
+                 JOIN subpermisos s ON ds.subpermiso_id = s.id
+                 WHERE ds.usuario_id = :uid AND s.permiso_id = :pid"
+            );
+            $stmt->execute([':uid' => $usuario_id, ':pid' => $permiso_id]);
+        } catch (PDOException $e) {
+            error_log("Error quitarTodosSubpermisosPermiso: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Obtener conexión a DB (para debugging)
      */
     public function getDB() {

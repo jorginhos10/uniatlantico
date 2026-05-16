@@ -125,6 +125,13 @@ if ($pdo) {
         }
     } catch (PDOException $e) { error_log("Dash userStats: " . $e->getMessage()); }
 
+    // 10. Novedades activas para el carrusel
+    try {
+        $novedades = $pdo->query(
+            "SELECT titulo, contenido FROM novedades WHERE activo = 1 ORDER BY orden ASC, fecha_creacion DESC LIMIT 10"
+        )->fetchAll();
+    } catch (PDOException $e) { $novedades = []; }
+
     // 9. Últimos mensajes no leídos (widget)
     try {
         $s = $pdo->prepare(
@@ -201,8 +208,17 @@ ob_start();
 /* ── Tarjetas de stats ── */
 .db-stats {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    grid-template-columns: repeat(5, 1fr) 2fr;
     gap: 14px;
+    align-items: stretch;
+}
+@media (max-width: 1100px) {
+    .db-stats { grid-template-columns: repeat(3, 1fr); }
+    .db-stat-novedades { grid-column: span 3; }
+}
+@media (max-width: 700px) {
+    .db-stats { grid-template-columns: repeat(2, 1fr); }
+    .db-stat-novedades { grid-column: span 2; }
 }
 .db-stat {
     background: var(--d-card);
@@ -327,6 +343,80 @@ ob_start();
 .db-msg-subj { font-size: 12px; color: var(--d-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .db-msg-empty { display: flex; align-items: center; gap: 8px; padding: 20px 18px; color: var(--d-sub); font-size: 13px; }
 .db-msg-empty i { color: var(--d-green); }
+
+/* ── Novedades carrusel ── */
+.nov-wrap { position: relative; overflow: hidden; min-height: 120px; flex: 1; }
+.nov-track {
+    display: flex;
+    transition: transform .45s cubic-bezier(0.4,0,0.2,1);
+}
+.nov-slide { min-width: 100%; padding: 14px 46px 34px; box-sizing: border-box; }
+.nov-slide-card {
+    background: linear-gradient(135deg, #f0f4ff 0%, #fafbff 100%);
+    border-radius: 12px; padding: 14px 16px;
+    border: 1px solid rgba(0,122,255,.12);
+}
+.nov-slide-titulo {
+    font-size: 13px; font-weight: 700; color: var(--d-text);
+    margin-bottom: 6px; line-height: 1.3;
+}
+.nov-slide-cuerpo {
+    font-size: 12px; color: var(--d-sub); line-height: 1.6;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.nov-ver-mas {
+    display: inline-block; margin-top: 5px; font-size: 11.5px; font-weight: 600;
+    color: var(--d-blue); cursor: pointer; background: none; border: none; padding: 0;
+}
+.nov-ver-mas:hover { text-decoration: underline; }
+/* Popup ver más */
+.nov-popup-ov {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000; opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.nov-popup-ov.open { opacity: 1; pointer-events: all; }
+.nov-popup {
+    background: #fff; border-radius: 18px; width: 100%; max-width: 460px; margin: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    transform: scale(.95) translateY(8px);
+    transition: transform .25s cubic-bezier(0.34,1.56,0.64,1);
+}
+.nov-popup-ov.open .nov-popup { transform: scale(1) translateY(0); }
+.nov-popup-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 20px 14px; border-bottom: 1px solid rgba(0,0,0,.07);
+}
+.nov-popup-head h4 { margin: 0; font-size: 16px; font-weight: 700; color: #1d1d1f; flex: 1; padding-right: 12px; }
+.nov-popup-close {
+    width: 28px; height: 28px; border-radius: 50%; border: none; flex-shrink: 0;
+    background: rgba(0,0,0,.06); cursor: pointer; font-size: 13px; color: #6e6e73;
+    display: flex; align-items: center; justify-content: center;
+}
+.nov-popup-body { padding: 16px 20px 22px; font-size: 14px; color: #3a3a3c; line-height: 1.7; white-space: pre-wrap; max-height: 60vh; overflow-y: auto; }
+.nov-nav {
+    position: absolute; top: 50%; transform: translateY(-60%);
+    background: rgba(255,255,255,.92); border: 1px solid var(--d-border);
+    border-radius: 50%; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 12px; color: var(--d-text);
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    transition: background .15s; z-index: 2;
+}
+.nov-nav:hover { background: #fff; }
+.nov-prev { left: 8px; }
+.nov-next { right: 8px; }
+.nov-dots {
+    position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 5px; align-items: center;
+}
+.nov-dot {
+    width: 6px; height: 6px; border-radius: 3px;
+    background: rgba(0,0,0,.15); cursor: pointer;
+    transition: width .25s, background .25s;
+}
+.nov-dot.active { width: 16px; background: var(--d-blue); }
 </style>
 <?php
 $cssExtra = ob_get_clean();
@@ -429,6 +519,45 @@ $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
             <div class="db-stat-note"><a href="<?php echo $basePath; ?>/dependencias" style="color:var(--d-orange);text-decoration:none">Administrar →</a></div>
             <?php endif; ?>
         </div>
+
+        <!-- Novedades inline en el row de stats -->
+        <?php if (!empty($novedades)): ?>
+        <div class="db-stat db-stat-novedades" style="padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:160px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px;border-bottom:1px solid var(--d-border);flex-shrink:0;">
+                <span style="font-size:13px;font-weight:700;color:var(--d-text);display:flex;align-items:center;gap:7px;">
+                    <i class="fas fa-bullhorn" style="color:var(--d-orange);font-size:13px;"></i> Novedades
+                </span>
+                <?php if ($esAdmin): ?>
+                <a href="<?php echo $basePath; ?>/novedades" style="font-size:11px;font-weight:600;color:var(--d-blue);text-decoration:none;padding:3px 9px;border-radius:7px;background:rgba(0,122,255,.08);">Gestionar</a>
+                <?php endif; ?>
+            </div>
+            <div class="nov-wrap" style="flex:1;display:flex;flex-direction:column;justify-content:center;">
+                <div class="nov-track" id="novTrack">
+                    <?php foreach ($novedades as $nov): ?>
+                    <div class="nov-slide">
+                        <div class="nov-slide-card">
+                            <div class="nov-slide-titulo"><?php echo htmlspecialchars($nov['titulo']); ?></div>
+                            <div class="nov-slide-cuerpo"><?php echo htmlspecialchars($nov['contenido']); ?></div>
+                            <button class="nov-ver-mas"
+                                    onclick="novVerMas(<?php echo htmlspecialchars(json_encode($nov['titulo'])); ?>, <?php echo htmlspecialchars(json_encode($nov['contenido'])); ?>)">
+                                Ver más →
+                            </button>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <?php if (count($novedades) > 1): ?>
+                <button class="nov-nav nov-prev" onclick="novSlide(-1)"><i class="fas fa-chevron-left"></i></button>
+                <button class="nov-nav nov-next" onclick="novSlide(1)"><i class="fas fa-chevron-right"></i></button>
+                <div class="nov-dots" id="novDots">
+                    <?php foreach ($novedades as $i => $nov): ?>
+                    <div class="nov-dot <?php echo $i === 0 ? 'active' : ''; ?>" onclick="novGoTo(<?php echo $i; ?>)"></div>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
 
     </div>
 
@@ -572,6 +701,17 @@ $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
 
 </div>
 
+<!-- Popup Ver más novedades -->
+<div class="nov-popup-ov" id="novPopupOv" onclick="if(event.target===this)novCerrarPopup()">
+    <div class="nov-popup">
+        <div class="nov-popup-head">
+            <h4 id="novPopupTitulo"></h4>
+            <button class="nov-popup-close" onclick="novCerrarPopup()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="nov-popup-body" id="novPopupBody"></div>
+    </div>
+</div>
+
 <script>
 // Reloj en tiempo real
 (function() {
@@ -582,6 +722,40 @@ $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
         el.textContent = String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0') + ':' + String(n.getSeconds()).padStart(2,'0');
     }, 1000);
 })();
+
+// Carrusel de novedades
+(function() {
+    var track = document.getElementById('novTrack');
+    if (!track) return;
+    var slides = track.querySelectorAll('.nov-slide');
+    if (slides.length < 2) return;
+    var total = slides.length, current = 0, timer;
+
+    function goTo(idx) {
+        var prev = document.querySelector('#novDots .nov-dot.active');
+        if (prev) prev.classList.remove('active');
+        current = ((idx % total) + total) % total;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        var dots = document.querySelectorAll('#novDots .nov-dot');
+        if (dots[current]) dots[current].classList.add('active');
+        clearInterval(timer);
+        timer = setInterval(function() { goTo(current + 1); }, 8000);
+    }
+
+    window.novSlide = function(dir) { goTo(current + dir); };
+    window.novGoTo  = function(idx) { goTo(idx); };
+
+    timer = setInterval(function() { goTo(current + 1); }, 8000);
+})();
+
+function novVerMas(titulo, contenido) {
+    document.getElementById('novPopupTitulo').textContent = titulo;
+    document.getElementById('novPopupBody').textContent   = contenido;
+    document.getElementById('novPopupOv').classList.add('open');
+}
+function novCerrarPopup() {
+    document.getElementById('novPopupOv').classList.remove('open');
+}
 </script>
 
 <?php require_once __DIR__ . '/../complementos/footer.php'; ?>
