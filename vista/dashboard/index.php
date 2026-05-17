@@ -154,8 +154,34 @@ if ($pdo) {
 }
 
 // Hora del saludo
-$hora = (int)date('G');
-$saludo = $hora < 12 ? 'Buenos días' : ($hora < 19 ? 'Buenas tardes' : 'Buenas noches');
+$hora     = (int)date('G');
+$minuto   = (int)date('i');
+$minTotal = $hora * 60 + $minuto;
+
+// 6:00–16:29 → día | 16:30–18:59 → atardecer | resto → noche
+if ($minTotal >= 360 && $minTotal < 990) {
+    $bannerTema = 'dia';
+    $saludo     = 'Buenos días';
+} elseif ($minTotal >= 990 && $minTotal < 1140) {
+    $bannerTema = 'atardecer';
+    $saludo     = 'Buenas tardes';
+} else {
+    $bannerTema = 'noche';
+    $saludo     = 'Buenas noches';
+}
+
+// Estrellas generadas con seed fijo por día para consistencia
+srand((int)date('Ymd'));
+$estrellas = [];
+for ($i = 0; $i < 28; $i++) {
+    $estrellas[] = [
+        'x'    => rand(2, 96),
+        'y'    => rand(5, 80),
+        'size' => rand(1, 3),
+        'delay'=> round(rand(0, 3000) / 1000, 2),
+        'dur'  => round(rand(15, 35) / 10, 1),
+    ];
+}
 
 ob_start();
 ?>
@@ -181,29 +207,131 @@ ob_start();
 
 /* ── Bienvenida ── */
 .db-welcome {
-    background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+    position: relative;
+    overflow: hidden;
     border-radius: var(--d-r);
     padding: 26px 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     color: #fff;
-    box-shadow: 0 4px 20px rgba(0,122,255,.3);
+}
+.db-welcome.dia {
+    background: linear-gradient(160deg, #4FC3F7 0%, #81D4FA 40%, #B3E5FC 100%);
+    box-shadow: 0 4px 20px rgba(79,195,247,.4);
+}
+.db-welcome.noche {
+    background: linear-gradient(160deg, #0d1b3e 0%, #1a2d5a 50%, #0f2347 100%);
+    box-shadow: 0 4px 20px rgba(13,27,62,.5);
+}
+.db-welcome.atardecer {
+    background: linear-gradient(160deg, #3d1c72 0%, #9b3a6a 28%, #e8563a 58%, #f4913a 80%, #ffd060 100%);
+    box-shadow: 0 4px 20px rgba(232,86,58,.4);
 }
 .db-welcome-left h1 {
     font-size: 22px;
     font-weight: 700;
     margin: 0 0 4px;
     letter-spacing: -0.4px;
+    position: relative; z-index: 2;
 }
-.db-welcome-left p { margin: 0; font-size: 14px; opacity: .82; }
+.db-welcome-left p { margin: 0; font-size: 14px; opacity: .88; position: relative; z-index: 2; }
 .db-welcome-right {
     font-size: 13px;
-    opacity: .78;
+    opacity: .84;
     text-align: right;
     line-height: 1.6;
+    position: relative; z-index: 2;
 }
 .db-welcome-right strong { font-size: 15px; font-weight: 700; opacity: 1; }
+/* Decoraciones: cielo */
+.db-sky { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+
+/* Sol */
+.db-sun {
+    position: absolute;
+    right: 110px; top: -18px;
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #FFE066 30%, #FFD000 70%, #FFA500 100%);
+    box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10);
+    animation: dbSunPulse 4s ease-in-out infinite;
+}
+@keyframes dbSunPulse {
+    0%,100% { box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10); }
+    50%      { box-shadow: 0 0 0 18px rgba(255,220,0,.22), 0 0 0 40px rgba(255,200,0,.12); }
+}
+/* Nubes */
+.db-cloud {
+    position: absolute;
+    background: rgba(255,255,255,.82);
+    border-radius: 50px;
+    animation: dbFloat linear infinite;
+}
+.db-cloud::before, .db-cloud::after {
+    content: '';
+    position: absolute;
+    background: inherit;
+    border-radius: 50%;
+}
+.db-cloud-1 { width: 80px; height: 28px; top: 12px; right: 170px; animation-duration: 18s; animation-delay: 0s; }
+.db-cloud-1::before { width: 36px; height: 36px; top: -18px; left: 12px; }
+.db-cloud-1::after  { width: 26px; height: 26px; top: -13px; left: 34px; }
+.db-cloud-2 { width: 56px; height: 20px; top: 32px; right: 250px; opacity: .65; animation-duration: 25s; animation-delay: -8s; }
+.db-cloud-2::before { width: 26px; height: 26px; top: -14px; left: 8px; }
+.db-cloud-2::after  { width: 18px; height: 18px; top: -10px; left: 26px; }
+.db-cloud-3 { width: 44px; height: 16px; bottom: 14px; right: 190px; opacity: .5; animation-duration: 30s; animation-delay: -14s; }
+.db-cloud-3::before { width: 22px; height: 22px; top: -12px; left: 6px; }
+.db-cloud-3::after  { width: 16px; height: 16px; top: -9px; left: 20px; }
+@keyframes dbFloat {
+    0%   { transform: translateX(0); }
+    50%  { transform: translateX(-14px); }
+    100% { transform: translateX(0); }
+}
+
+/* Sol atardecer — bajo, cálido */
+.db-sun-tard {
+    position: absolute;
+    right: 100px; bottom: -22px;
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff5b0 15%, #FFD000 45%, #FF6B00 80%);
+    box-shadow: 0 0 0 14px rgba(255,160,0,.20), 0 0 0 34px rgba(255,100,0,.12);
+    animation: dbSunPulse 4s ease-in-out infinite;
+}
+/* Nubes cálidas atardecer */
+.db-cloud-tard {
+    background: rgba(255,180,120,.75);
+}
+.db-cloud-tard::before, .db-cloud-tard::after {
+    background: rgba(255,180,120,.75);
+}
+
+/* Luna */
+.db-moon {
+    position: absolute;
+    right: 100px; top: 50%; transform: translateY(-50%);
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: #E8EBF4;
+    box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25);
+    animation: dbMoonGlow 5s ease-in-out infinite;
+}
+@keyframes dbMoonGlow {
+    0%,100% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); }
+    50%      { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 36px rgba(200,210,255,.45); }
+}
+/* Estrellas */
+.db-star {
+    position: absolute;
+    border-radius: 50%;
+    background: #fff;
+    animation: dbTwinkle ease-in-out infinite;
+}
+@keyframes dbTwinkle {
+    0%,100% { opacity: .9; transform: scale(1); }
+    50%     { opacity: .2; transform: scale(.6); }
+}
 
 /* ── Tarjetas de stats ── */
 .db-stats {
@@ -441,9 +569,37 @@ $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
 <div class="db-page">
 
     <!-- ── Bienvenida ── -->
-    <div class="db-welcome">
+    <div class="db-welcome <?php echo $bannerTema; ?>">
+
+        <!-- Decoración de cielo -->
+        <div class="db-sky">
+            <?php if ($bannerTema === 'dia'): ?>
+                <div class="db-sun"></div>
+                <div class="db-cloud db-cloud-1"></div>
+                <div class="db-cloud db-cloud-2"></div>
+                <div class="db-cloud db-cloud-3"></div>
+            <?php elseif ($bannerTema === 'atardecer'): ?>
+                <div class="db-sun-tard"></div>
+                <div class="db-cloud db-cloud-tard db-cloud-1"></div>
+                <div class="db-cloud db-cloud-tard db-cloud-2"></div>
+                <div class="db-cloud db-cloud-tard db-cloud-3"></div>
+            <?php else: ?>
+                <div class="db-moon"></div>
+                <?php foreach ($estrellas as $s): ?>
+                <div class="db-star" style="
+                    left:<?php echo $s['x']; ?>%;
+                    top:<?php echo $s['y']; ?>%;
+                    width:<?php echo $s['size']; ?>px;
+                    height:<?php echo $s['size']; ?>px;
+                    animation-duration:<?php echo $s['dur']; ?>s;
+                    animation-delay:-<?php echo $s['delay']; ?>s;
+                "></div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+
         <div class="db-welcome-left">
-            <h1><?php echo $saludo . ', ' . htmlspecialchars(explode(' ', $unombre)[0]); ?> 👋</h1>
+            <h1><?php echo $saludo . ', ' . htmlspecialchars(explode(' ', $unombre)[0]); ?></h1>
             <p>Universidad del Atlántico — Sistema de Gestión Institucional 144</p>
         </div>
         <div class="db-welcome-right">
