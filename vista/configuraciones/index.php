@@ -35,7 +35,17 @@ require_once __DIR__ . '/../complementos/header.php';
       <p>Configura campos, validaciones y plantillas de formularios</p>
     </div>
     </a>
-    
+
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/catalogos144">
+    <div class="mosaic-item">
+      <div class="item-icon" style="background-color: #007AFF;">
+        <i class="fas fa-sitemap"></i>
+      </div>
+      <h3>Líneas, Motores y Proyectos</h3>
+      <p>Crea y administra las líneas estratégicas, motores y proyectos del FOR-DE-144</p>
+    </div>
+    </a>
+
     <a style="text-decoration:none;" href="<?php echo $basePath; ?>/novedades">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #FF9500;">

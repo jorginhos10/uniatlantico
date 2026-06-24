@@ -481,6 +481,91 @@ switch ($action) {
         }
         break;
     // ====================================================
+    // SECCIÓN CATALOGOS 144: LÍNEAS ESTRATÉGICAS, MOTORES, PROYECTOS (CRUD)
+    // ====================================================
+    case 'catalogos144':
+        require_once 'config/security.php';
+        require_once 'controlador/catalogos144Controller.php';
+        $catalogos144Controller = new Catalogos144Controller();
+
+        $actionParam = isset($_GET['action']) ? $_GET['action'] : (isset($urlParts[1]) ? $urlParts[1] : 'index');
+
+        switch ($actionParam) {
+            // Líneas estratégicas
+            case 'listarLineas':
+                $catalogos144Controller->listarLineas();
+                break;
+            case 'getLinea':
+                $catalogos144Controller->getLinea();
+                break;
+            case 'crearLinea':
+                $catalogos144Controller->crearLinea();
+                break;
+            case 'actualizarLinea':
+                $catalogos144Controller->actualizarLinea();
+                break;
+            case 'cambiarEstadoLinea':
+                $catalogos144Controller->cambiarEstadoLinea();
+                break;
+            case 'eliminarLinea':
+                $catalogos144Controller->eliminarLinea();
+                break;
+
+            // Motores
+            case 'listarMotores':
+                $catalogos144Controller->listarMotores();
+                break;
+            case 'getMotor':
+                $catalogos144Controller->getMotor();
+                break;
+            case 'crearMotor':
+                $catalogos144Controller->crearMotor();
+                break;
+            case 'actualizarMotor':
+                $catalogos144Controller->actualizarMotor();
+                break;
+            case 'cambiarEstadoMotor':
+                $catalogos144Controller->cambiarEstadoMotor();
+                break;
+            case 'eliminarMotor':
+                $catalogos144Controller->eliminarMotor();
+                break;
+
+            // Proyectos
+            case 'listarProyectos':
+                $catalogos144Controller->listarProyectos();
+                break;
+            case 'getProyecto':
+                $catalogos144Controller->getProyecto();
+                break;
+            case 'crearProyecto':
+                $catalogos144Controller->crearProyecto();
+                break;
+            case 'actualizarProyecto':
+                $catalogos144Controller->actualizarProyecto();
+                break;
+            case 'cambiarEstadoProyecto':
+                $catalogos144Controller->cambiarEstadoProyecto();
+                break;
+            case 'eliminarProyecto':
+                $catalogos144Controller->eliminarProyecto();
+                break;
+
+            // Auxiliares
+            case 'lineasActivas':
+                $catalogos144Controller->lineasActivas();
+                break;
+            case 'motoresPorLinea':
+                $catalogos144Controller->motoresPorLinea();
+                break;
+
+            case 'index':
+            default:
+                $catalogos144Controller->index();
+                break;
+        }
+        break;
+    // ====================================================
     // SECCIÓN PARA ROLES / CARGOS (CRUD)
     // ====================================================
     case 'roles':
