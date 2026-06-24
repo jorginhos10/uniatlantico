@@ -109,6 +109,95 @@ class Catalogos144Model {
         }
     }
 
+    // ============= ESTRATEGIAS =============
+
+    public function getAllEstrategias() {
+        try {
+            $stmt = $this->db->query(
+                "SELECT e.id, e.linea_id, e.descripcion, e.activo, e.fecha_creacion,
+                        l.codigo AS linea_codigo, l.nombre AS linea_nombre
+                 FROM estrategias e
+                 INNER JOIN lineas_estrategicas l ON e.linea_id = l.id
+                 ORDER BY l.codigo ASC, e.id ASC"
+            );
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAllEstrategias: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getEstrategiaById($id) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM estrategias WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Error getEstrategiaById: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function crearEstrategia($linea_id, $descripcion, $activo = 1) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO estrategias (linea_id, descripcion, activo)
+                 VALUES (:linea_id, :descripcion, :activo)"
+            );
+            $stmt->execute([
+                ':linea_id' => $linea_id,
+                ':descripcion' => $descripcion,
+                ':activo' => $activo,
+            ]);
+            return ['success' => true, 'message' => 'Estrategia creada exitosamente', 'id' => $this->db->lastInsertId()];
+        } catch (PDOException $e) {
+            error_log("Error crearEstrategia: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al crear la estrategia'];
+        }
+    }
+
+    public function actualizarEstrategia($id, $linea_id, $descripcion, $activo) {
+        try {
+            $stmt = $this->db->prepare(
+                "UPDATE estrategias
+                 SET linea_id = :linea_id, descripcion = :descripcion, activo = :activo
+                 WHERE id = :id"
+            );
+            $stmt->execute([
+                ':id' => $id,
+                ':linea_id' => $linea_id,
+                ':descripcion' => $descripcion,
+                ':activo' => $activo,
+            ]);
+            return ['success' => true, 'message' => 'Estrategia actualizada exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error actualizarEstrategia: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al actualizar la estrategia'];
+        }
+    }
+
+    public function cambiarEstadoEstrategia($id, $activo) {
+        try {
+            $stmt = $this->db->prepare("UPDATE estrategias SET activo = :activo WHERE id = :id");
+            $stmt->execute([':id' => $id, ':activo' => $activo]);
+            return ['success' => true, 'message' => $activo ? 'Estrategia activada' : 'Estrategia desactivada'];
+        } catch (PDOException $e) {
+            error_log("Error cambiarEstadoEstrategia: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al cambiar el estado'];
+        }
+    }
+
+    public function eliminarEstrategia($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM estrategias WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            return ['success' => true, 'message' => 'Estrategia eliminada exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error eliminarEstrategia: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al eliminar la estrategia'];
+        }
+    }
+
     // ============= MOTORES =============
 
     public function getAllMotores() {

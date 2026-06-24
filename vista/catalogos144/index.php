@@ -219,6 +219,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-estrategias-btn" data-bs-toggle="tab" data-bs-target="#tab-estrategias" type="button">
+                <i class="fas fa-chess me-1"></i> Estrategias
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-motores-btn" data-bs-toggle="tab" data-bs-target="#tab-motores" type="button">
                 <i class="fas fa-cogs me-1"></i> Motores
             </button>
@@ -262,6 +267,41 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </thead>
                         <tbody id="tablaLineasBody">
                             <tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== TAB ESTRATEGIAS ===================== -->
+        <div class="tab-pane fade" id="tab-estrategias" role="tabpanel">
+            <div class="table-card">
+                <div class="table-card-header">
+                    <div class="table-card-title">
+                        <i class="fas fa-list" style="color:var(--ios-blue);"></i>
+                        Estrategias
+                        <span class="badge-count" id="badge-count-estrategias">0</span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <input type="text" class="search-input" id="searchEstrategias" placeholder="Buscar estrategia...">
+                        <button class="btn-nueva" style="background:var(--ios-blue);" onclick="abrirModalCrearEstrategia()">
+                            <i class="fas fa-plus"></i> Nueva Estrategia
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="cat-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Línea</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEstrategiasBody">
+                            <tr class="empty-row"><td colspan="5"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -377,6 +417,43 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="modal-footer">
                     <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardarLinea"><i class="fas fa-save me-1"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Estrategia -->
+<div class="modal fade" id="modalEstrategia" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEstrategiaTitulo">Nueva Estrategia</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formEstrategia">
+                <input type="hidden" id="estrategia_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Línea Estratégica *</label>
+                        <select class="form-select" name="linea_id" id="estrategia_linea_id" required>
+                            <option value="">Seleccione una línea...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción *</label>
+                        <textarea class="form-control" name="descripcion" id="estrategia_descripcion" rows="3" required placeholder="Describa la estrategia"></textarea>
+                    </div>
+                    <div class="mb-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="activo" id="estrategia_activo" value="1" checked>
+                            <label class="form-check-label" for="estrategia_activo"><strong>Activo</strong></label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardarEstrategia"><i class="fas fa-save me-1"></i> Guardar</button>
                 </div>
             </form>
         </div>
@@ -503,15 +580,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 <script>
     const basePath = '<?php echo $basePath; ?>';
     let todasLineas = [];
+    let todasEstrategias = [];
     let todosMotores = [];
     let todosProyectos = [];
 
     $(document).ready(function() {
         cargarLineas();
+        cargarEstrategias();
         cargarMotores();
         cargarProyectos();
 
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
+        $('#searchEstrategias').on('input', function() { filtrarEstrategias($(this).val().toLowerCase()); });
         $('#searchMotores').on('input', function() { filtrarMotores($(this).val().toLowerCase()); });
         $('#searchProyectos').on('input', function() { filtrarProyectos($(this).val().toLowerCase()); });
     });
@@ -652,6 +732,132 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
         $('#motor_linea_id').html(options);
         $('#proyecto_linea_id').html(options);
+        $('#estrategia_linea_id').html(options);
+    }
+
+    // ===================== ESTRATEGIAS =====================
+
+    function cargarEstrategias() {
+        $.ajax({
+            url: basePath + '/catalogos144/listarEstrategias',
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    todasEstrategias = res.estrategias;
+                    renderTablaEstrategias(todasEstrategias);
+                } else { mostrarErrorEstrategias(); }
+            },
+            error: function() { mostrarErrorEstrategias(); }
+        });
+    }
+
+    function mostrarErrorEstrategias() {
+        $('#tablaEstrategiasBody').html('<tr class="empty-row"><td colspan="5"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar las estrategias</div></td></tr>');
+    }
+
+    function renderTablaEstrategias(estrategias) {
+        $('#badge-count-estrategias').text(estrategias.length);
+        if (estrategias.length === 0) {
+            $('#tablaEstrategiasBody').html('<tr class="empty-row"><td colspan="5"><div class="empty-icon"><i class="fas fa-chess"></i></div><div>No hay estrategias registradas</div></td></tr>');
+            return;
+        }
+        let html = '';
+        estrategias.forEach(function(e) {
+            const estadoClass = e.activo == 1 ? 'badge-activo' : 'badge-inactivo';
+            const estadoText  = e.activo == 1 ? '<i class="fas fa-check-circle"></i> Activo' : '<i class="fas fa-times-circle"></i> Inactivo';
+            const toggleClass = e.activo == 1 ? 'btn-toggle-on' : 'btn-toggle-off';
+            const toggleIcon  = e.activo == 1 ? 'fa-ban' : 'fa-check-circle';
+            const desc = (e.descripcion || '');
+            html += `<tr>
+                <td><strong style="color:var(--ios-blue);">#${e.id}</strong></td>
+                <td><span class="badge-codigo">${escHtml(e.linea_codigo)}</span> <small class="text-muted">${escHtml(e.linea_nombre)}</small></td>
+                <td style="color:var(--ios-label2);font-size:13px;max-width:380px;">${escHtml(desc.substring(0, 140))}${desc.length > 140 ? '…' : ''}</td>
+                <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
+                <td>
+                    <button class="btn-action btn-edit" onclick="editarEstrategia(${e.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action ${toggleClass}" onclick="cambiarEstadoEstrategia(${e.id}, ${e.activo == 1 ? 0 : 1})"><i class="fas ${toggleIcon}"></i></button>
+                    <button class="btn-action btn-delete" onclick="pedirEliminar(${e.id}, 'esta estrategia', 'estrategia')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        $('#tablaEstrategiasBody').html(html);
+    }
+
+    function filtrarEstrategias(q) {
+        if (!q) { renderTablaEstrategias(todasEstrategias); return; }
+        renderTablaEstrategias(todasEstrategias.filter(e =>
+            (e.descripcion || '').toLowerCase().includes(q) ||
+            (e.linea_nombre || '').toLowerCase().includes(q) ||
+            (e.linea_codigo || '').toLowerCase().includes(q)
+        ));
+    }
+
+    function abrirModalCrearEstrategia() {
+        $('#modalEstrategiaTitulo').text('Nueva Estrategia');
+        $('#formEstrategia')[0].reset();
+        $('#estrategia_id').val('');
+        $('#estrategia_activo').prop('checked', true);
+        $('#modalEstrategia').modal('show');
+    }
+
+    function editarEstrategia(id) {
+        $.ajax({
+            url: basePath + '/catalogos144/getEstrategia?id=' + id,
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    const e = res.estrategia;
+                    $('#modalEstrategiaTitulo').text('Editar Estrategia');
+                    $('#estrategia_id').val(e.id);
+                    $('#estrategia_linea_id').val(e.linea_id);
+                    $('#estrategia_descripcion').val(e.descripcion);
+                    $('#estrategia_activo').prop('checked', e.activo == 1);
+                    $('#modalEstrategia').modal('show');
+                } else { Swal.fire('Error', res.message, 'error'); }
+            },
+            error: function() { Swal.fire('Error', 'No se pudo cargar la estrategia', 'error'); }
+        });
+    }
+
+    $('#formEstrategia').on('submit', function(e) {
+        e.preventDefault();
+        const id  = $('#estrategia_id').val();
+        const url = id ? basePath + '/catalogos144/actualizarEstrategia' : basePath + '/catalogos144/crearEstrategia';
+        const data = {
+            id: id,
+            linea_id: $('#estrategia_linea_id').val(),
+            descripcion: $('#estrategia_descripcion').val(),
+            activo: $('#estrategia_activo').is(':checked') ? 1 : 0
+        };
+        $('#btnGuardarEstrategia').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
+        $.ajax({
+            url: url, type: 'POST', data: data, dataType: 'json',
+            success: function(res) {
+                $('#btnGuardarEstrategia').prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar');
+                if (res.success) {
+                    Swal.fire({ icon: 'success', title: '¡Guardado!', text: res.message, timer: 1800, showConfirmButton: false });
+                    $('#modalEstrategia').modal('hide');
+                    cargarEstrategias();
+                } else { Swal.fire('Error', res.message, 'error'); }
+            },
+            error: function() {
+                $('#btnGuardarEstrategia').prop('disabled', false).html('<i class="fas fa-save me-1"></i> Guardar');
+                Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
+            }
+        });
+    });
+
+    function cambiarEstadoEstrategia(id, nuevoEstado) {
+        $.ajax({
+            url: basePath + '/catalogos144/cambiarEstadoEstrategia',
+            type: 'POST', data: { id: id, activo: nuevoEstado }, dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    Swal.fire({ icon: 'success', title: res.message, timer: 1400, showConfirmButton: false, toast: true, position: 'top-end' });
+                    cargarEstrategias();
+                } else { Swal.fire('Error', res.message, 'error'); }
+            }
+        });
     }
 
     // ===================== MOTORES =====================
@@ -936,9 +1142,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const id   = $('#id_eliminar').val();
         const tipo = $('#tipo_eliminar').val();
         const endpoints = {
-            linea:    { url: '/catalogos144/eliminarLinea',    reload: cargarLineas },
-            motor:    { url: '/catalogos144/eliminarMotor',    reload: cargarMotores },
-            proyecto: { url: '/catalogos144/eliminarProyecto', reload: cargarProyectos }
+            linea:      { url: '/catalogos144/eliminarLinea',      reload: cargarLineas },
+            estrategia: { url: '/catalogos144/eliminarEstrategia', reload: cargarEstrategias },
+            motor:      { url: '/catalogos144/eliminarMotor',      reload: cargarMotores },
+            proyecto:   { url: '/catalogos144/eliminarProyecto',   reload: cargarProyectos }
         };
         const cfg = endpoints[tipo];
         if (!cfg) return;

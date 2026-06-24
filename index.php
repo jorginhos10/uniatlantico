@@ -511,6 +511,26 @@ switch ($action) {
                 $catalogos144Controller->eliminarLinea();
                 break;
 
+            // Estrategias
+            case 'listarEstrategias':
+                $catalogos144Controller->listarEstrategias();
+                break;
+            case 'getEstrategia':
+                $catalogos144Controller->getEstrategia();
+                break;
+            case 'crearEstrategia':
+                $catalogos144Controller->crearEstrategia();
+                break;
+            case 'actualizarEstrategia':
+                $catalogos144Controller->actualizarEstrategia();
+                break;
+            case 'cambiarEstadoEstrategia':
+                $catalogos144Controller->cambiarEstadoEstrategia();
+                break;
+            case 'eliminarEstrategia':
+                $catalogos144Controller->eliminarEstrategia();
+                break;
+
             // Motores
             case 'listarMotores':
                 $catalogos144Controller->listarMotores();

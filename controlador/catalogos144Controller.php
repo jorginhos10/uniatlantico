@@ -105,6 +105,96 @@ class Catalogos144Controller {
         echo json_encode($this->model->eliminarLinea($id));
     }
 
+    // ============= ESTRATEGIAS =============
+
+    public function listarEstrategias() {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'estrategias' => $this->model->getAllEstrategias()]);
+    }
+
+    public function getEstrategia() {
+        header('Content-Type: application/json');
+        $id = intval($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID invalido']);
+            return;
+        }
+        $estrategia = $this->model->getEstrategiaById($id);
+        if ($estrategia) {
+            echo json_encode(['success' => true, 'estrategia' => $estrategia]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Estrategia no encontrada']);
+        }
+    }
+
+    public function crearEstrategia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+            return;
+        }
+
+        $linea_id    = intval($_POST['linea_id'] ?? 0);
+        $descripcion = trim($_POST['descripcion'] ?? '');
+        $activo      = isset($_POST['activo']) ? intval($_POST['activo']) : 1;
+
+        if ($linea_id <= 0 || $descripcion === '') {
+            echo json_encode(['success' => false, 'message' => 'La linea estrategica y la descripcion son obligatorias']);
+            return;
+        }
+
+        echo json_encode($this->model->crearEstrategia($linea_id, $descripcion, $activo));
+    }
+
+    public function actualizarEstrategia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+            return;
+        }
+
+        $id          = intval($_POST['id'] ?? 0);
+        $linea_id    = intval($_POST['linea_id'] ?? 0);
+        $descripcion = trim($_POST['descripcion'] ?? '');
+        $activo      = isset($_POST['activo']) ? intval($_POST['activo']) : 1;
+
+        if ($id <= 0 || $linea_id <= 0 || $descripcion === '') {
+            echo json_encode(['success' => false, 'message' => 'Datos invalidos']);
+            return;
+        }
+
+        echo json_encode($this->model->actualizarEstrategia($id, $linea_id, $descripcion, $activo));
+    }
+
+    public function cambiarEstadoEstrategia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+            return;
+        }
+        $id     = intval($_POST['id'] ?? 0);
+        $activo = intval($_POST['activo'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID invalido']);
+            return;
+        }
+        echo json_encode($this->model->cambiarEstadoEstrategia($id, $activo));
+    }
+
+    public function eliminarEstrategia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Metodo no permitido']);
+            return;
+        }
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID invalido']);
+            return;
+        }
+        echo json_encode($this->model->eliminarEstrategia($id));
+    }
+
     // ============= MOTORES =============
 
     public function listarMotores() {
