@@ -1,0 +1,12 @@
+{
+  "admin":        "Administrador",
+  "director":     "Director",
+  "coordinador":  "Coordinador",
+  "jefe":         "Jefe",
+  "analista":     "Analista",
+  "secretario":   "Secretario",
+  "auxiliar":     "Auxiliar",
+  "tecnico":      "Técnico",
+  "asesor":       "Asesor",
+  "pasante":      "Pasante"
+}

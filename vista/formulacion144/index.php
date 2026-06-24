@@ -1,43 +1,38 @@
 <?php
 // vista/formulacion144/index.php
-$basePath = Config::getBasePath();
+require_once __DIR__ . '/../../config/security.php';
+
+$basePath     = Config::getBasePath();
+$baseUrl      = Config::getBaseUrl();
 $fecha_cierre = $formulario['fecha_cierre'] ?? null;
 $fecha_inicio = $formulario['fecha_inicio'] ?? null;
 $fecha_actual = date('Y-m-d H:i:s');
 
-// Determinar qué vista estamos mostrando (formulación o seguimiento)
 $es_seguimiento = isset($_GET['tipo']) && $_GET['tipo'] == 'seguimiento';
-$titulo_pagina = $es_seguimiento ? 'SEGUIMIENTO 144' : 'FORMULACIÓN 144';
-$icono_pagina = $es_seguimiento ? 'fa-chart-line' : 'fa-clipboard-list';
-$color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
+$titulo_pagina  = $es_seguimiento ? 'SEGUIMIENTO 144' : 'FORMULACIÓN 144';
+$icono_pagina   = $es_seguimiento ? 'fa-chart-line' : 'fa-clipboard-list';
+$color_pagina   = '#007AFF';
+
+$titulo       = $titulo_pagina . ' — ' . htmlspecialchars($formulario['titulo'] ?? '');
+$paginaActual = 'formulacion144';
+
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $titulo_pagina; ?> - <?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    
-    <style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
         :root {
-            --color-primary: #2C3E50;
-            --color-primary-light: #34495E;
-            --color-success: #27AE60;
-            --color-warning: #F39C12;
-            --color-danger: #E74C3C;
-            --color-info: #3498DB;
-            --color-bg: #F8F9FA;
+            --color-primary: #007AFF;
+            --color-primary-light: #0A84FF;
+            --color-success: #34C759;
+            --color-warning: #FF9500;
+            --color-danger: #FF3B30;
+            --color-info: #007AFF;
+            --color-bg: #F2F2F7;
             --color-white: #FFFFFF;
         }
-        
+
         body {
-            background-color: var(--color-bg);
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
         .header-info {
@@ -46,9 +41,9 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
             padding: 30px;
             border-radius: 15px;
             margin-bottom: 30px;
-            box-shadow: 0 8px 20px rgba(44,62,80,0.2);
+            box-shadow: 0 6px 24px rgba(0,122,255,0.25);
         }
-        
+
         .countdown-container {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
@@ -122,10 +117,10 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
         
         .section-card {
             background: white;
-            border-radius: 15px;
+            border-radius: 16px;
             padding: 25px;
             margin-bottom: 30px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
             border-left: 5px solid <?php echo $color_pagina; ?>;
         }
         
@@ -139,33 +134,33 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
         }
         
         .item-card {
-            background: #f8f9fc;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
+            background: #F2F2F7;
+            border: 1px solid rgba(60,60,67,.12);
+            border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
-            transition: all 0.3s ease;
+            transition: transform .2s, box-shadow .2s;
         }
-        
+
         .item-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 15px rgba(44,62,80,0.1);
+            box-shadow: 0 8px 15px rgba(0,0,0,.1);
             border-left: 4px solid <?php echo $color_pagina; ?>;
         }
         
         .btn-success {
-            background: linear-gradient(135deg, var(--color-success) 0%, #2ECC71 100%);
+            background: var(--color-success);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 10px 20px;
             font-weight: 600;
             color: white;
         }
-        
+
         .btn-primary {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            background: var(--color-primary);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 10px 20px;
             font-weight: 600;
             color: white;
@@ -198,28 +193,22 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
             display: inline-block;
         }
         
-        .estado-borrador {
-            background: linear-gradient(135deg, #7F8C8D 0%, #95A5A6 100%);
-        }
-        
-        .estado-publicado {
-            background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);
-        }
-        
-        .estado-cancelado {
-            background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%);
-        }
+        .estado-borrador  { background: #8E8E93; }
+        .estado-publicado { background: #34C759; }
+        .estado-cancelado { background: #FF3B30; }
         
         .modal-content {
-            border-radius: 15px;
+            border-radius: 16px;
             border: none;
+            overflow: hidden;
         }
-        
+
         .modal-header {
-            background: linear-gradient(135deg, <?php echo $color_pagina; ?> 0%, <?php echo $es_seguimiento ? '#2980B9' : '#34495E'; ?> 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 20px;
+            background: #FFFFFF;
+            color: #000000;
+            border-radius: 16px 16px 0 0;
+            border-bottom: 1px solid rgba(60,60,67,.12);
+            padding: 18px 22px;
         }
         
         .form-control, .form-select {
@@ -229,13 +218,13 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
         }
         
         .form-control:focus, .form-select:focus {
-            border-color: <?php echo $color_pagina; ?>;
-            box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
         }
-        
+
         .form-label {
             font-weight: 600;
-            color: <?php echo $color_pagina; ?>;
+            color: #000000;
             margin-bottom: 8px;
         }
         
@@ -285,8 +274,8 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
             }
         }
     </style>
-</head>
-<body>
+<?php $cssExtra = ob_get_clean();
+require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <!-- HEADER CON INFORMACIÓN DEL FORMULARIO Y CONTADOR -->
         <div class="header-info">
@@ -719,7 +708,7 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-chart-line me-2"></i>Registrar Avances - <span id="tituloSeguimiento"></span>
                     </h5>
@@ -819,7 +808,7 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, <?php echo $color_pagina; ?> 0%, <?php echo $es_seguimiento ? '#2980B9' : '#34495E'; ?> 100%);">
+                <div class="modal-header">
                     <h5 class="modal-title">
                         <i class="fas fa-eye me-2"></i>Ver Detalle - <span id="ver_titulo"></span>
                     </h5>
@@ -1188,5 +1177,4 @@ $color_pagina = $es_seguimiento ? '#3498DB' : '#2C3E50';
             });
         }
     </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>

@@ -8,19 +8,25 @@ class Config {
     const DB_PASS = 'jorginho10.';
     const DB_CHARSET = 'utf8';
     
+    
     const SESSION_TIMEOUT = 1800;
     
-    public static function getBaseUrl() {
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-        $host = $_SERVER['HTTP_HOST'];
-        $script = $_SERVER['SCRIPT_NAME'];
-        $basePath = str_replace('/index.php', '', $script);
-        return $protocol . "://" . $host . $basePath;
-    }
-    
     public static function getBasePath() {
-        $script = $_SERVER['SCRIPT_NAME'];
-        return str_replace('/index.php', '', $script);
+        // Use filesystem paths — reliable regardless of how SCRIPT_NAME is set by the server
+        if (!empty($_SERVER['DOCUMENT_ROOT']) && !empty($_SERVER['SCRIPT_FILENAME'])) {
+            $docRoot  = rtrim(str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']), '/');
+            $appDir   = str_replace('\\', '/', dirname($_SERVER['SCRIPT_FILENAME']));
+            if ($docRoot !== '' && stripos($appDir, $docRoot) === 0) {
+                return substr($appDir, strlen($docRoot)) ?: '';
+            }
+        }
+        // Fallback for environments where the above vars are unavailable
+        return str_replace('/index.php', '', $_SERVER['SCRIPT_NAME'] ?? '');
+    }
+
+    public static function getBaseUrl() {
+        $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        return $protocol . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . self::getBasePath();
     }
 }
 

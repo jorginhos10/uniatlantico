@@ -26,6 +26,7 @@ class Modulo144Controller {
 
         $estado_fechas = $this->model->verificarFechaHabil($formulario);
         
+        $anos = $this->model->getAnos();
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         $cargos = $this->model->getCargos();
         $planes_institucionales = $this->model->getPlanesInstitucionales();
@@ -41,6 +42,15 @@ class Modulo144Controller {
                 'publicados' => $this->model->getPublicados($key, $id),
                 'cancelados' => $this->model->getCancelados($key, $id)
             ];
+        }
+
+        // Cargar preferencias de filtro del usuario actual
+        $filter_preferences = [];
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        if ($uid) {
+            foreach ($modulos as $key => $modulo) {
+                $filter_preferences[$key] = $this->model->getFilterPreference($uid, $id, $key);
+            }
         }
 
         $vistaPath = 'vista/modulo144/index.php';
@@ -112,6 +122,26 @@ class Modulo144Controller {
         echo json_encode([
             'success' => true, 
             'proyectos' => $proyectos
+        ]);
+    }
+
+    public function getPonderacionProyecto() {
+        header('Content-Type: application/json');
+
+        $proyecto_id = isset($_GET['proyecto_id']) ? intval($_GET['proyecto_id']) : 0;
+        $motor_id    = isset($_GET['motor_id'])    ? intval($_GET['motor_id'])    : 0;
+        $anio        = isset($_GET['anio'])         ? intval($_GET['anio'])        : 0;
+
+        if ($proyecto_id <= 0 || $motor_id <= 0 || $anio <= 0) {
+            echo json_encode(['success' => false, 'porcentaje' => null, 'message' => 'Parámetros inválidos']);
+            return;
+        }
+
+        $porcentaje = $this->model->getPonderacionProyecto($proyecto_id, $motor_id, $anio);
+
+        echo json_encode([
+            'success'    => true,
+            'porcentaje' => $porcentaje
         ]);
     }
 
@@ -337,7 +367,7 @@ class Modulo144Controller {
                 return;
             }
 
-            $creado_por = $_SESSION['user_id'] ?? 1;
+            $creado_por = $_SESSION['usuario_id'] ?? 1;
             $resultado = $this->model->crearBorrador($modulo, $formulario_id, $nombre, $creado_por, $facultad_id);
 
             if ($resultado) {
@@ -368,11 +398,32 @@ class Modulo144Controller {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $modulo = $_POST['modulo'] ?? '';
-            $id = $_POST['id'] ?? 0;
-            
-            if (empty($modulo) || empty($id) || $id <= 0) {
+            $id     = intval($_POST['id'] ?? 0);
+
+            if (empty($modulo) || $id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
+            }
+
+            // Validación server-side: ponderación acumulada no puede superar 100%
+            if ($modulo === 'formulacion' && isset($_POST['ponderacion_actividades']) && $_POST['ponderacion_actividades'] !== '') {
+                $proyecto      = $_POST['proyecto']              ?? '';
+                $formulario_id = intval($_POST['formulario_id']  ?? 0);
+                $nueva         = (float)$_POST['ponderacion_actividades'];
+
+                if ($formulario_id > 0 && $proyecto !== '') {
+                    $acumulado = $this->model->getAcumuladoProyecto($formulario_id, $proyecto, $id);
+                    if (($acumulado + $nueva) > 100.005) {
+                        $disponible = max(0, 100 - $acumulado);
+                        echo json_encode([
+                            'success'   => false,
+                            'message'   => "La ponderación supera el 100% para este proyecto. Disponible: {$disponible}%",
+                            'acumulado' => $acumulado,
+                            'disponible'=> $disponible
+                        ]);
+                        return;
+                    }
+                }
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
@@ -382,10 +433,31 @@ class Modulo144Controller {
             ]);
         }
     }
+
+    // Devuelve id, proyecto, ponderacion_actividades de todas las formulaciones del formulario
+    public function getPonderaciones() {
+        header('Content-Type: application/json');
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $data = $this->model->getPonderacionesPorFormulario($formulario_id);
+        echo json_encode(['success' => true, 'formulaciones' => $data]);
+    }
+
+    // Devuelve el conteo de registros del formulario (para polling de cambios en la lista)
+    public function contarRegistros() {
+        header('Content-Type: application/json');
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false]);
+            return;
+        }
+        $total = $this->model->contarRegistros($formulario_id);
+        echo json_encode(['success' => true, 'total' => $total]);
+    }
     
-    /**
-     * Guardar específicamente los campos de gestión semestral
-     */
     public function guardarGestionSemestral() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -466,8 +538,8 @@ class Modulo144Controller {
             $modulo = $_POST['modulo'] ?? '';
             $id = $_POST['id'] ?? 0;
             $nombre = $_POST['nombre_duplicado'] ?? 'Copia de ' . date('d/m/Y H:i');
-            $creado_por = $_SESSION['user_id'] ?? 1;
-            
+            $creado_por = $_SESSION['usuario_id'] ?? 1;
+
             if (empty($modulo) || empty($id) || $id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
@@ -479,6 +551,34 @@ class Modulo144Controller {
                 'message' => $resultado ? 'Duplicado exitosamente' : 'Error al duplicar'
             ]);
         }
+    }
+
+    public function getFilterPreference() {
+        header('Content-Type: application/json');
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        $modulo = $_GET['modulo'] ?? '';
+        if (!$uid || !$formulario_id || !$modulo) {
+            echo json_encode(['success' => false, 'tipo_filtro' => 'todos', 'valor_filtro' => null]);
+            return;
+        }
+        $pref = $this->model->getFilterPreference($uid, $formulario_id, $modulo);
+        echo json_encode(['success' => true] + $pref);
+    }
+
+    public function saveFilterPreference() {
+        header('Content-Type: application/json');
+        $uid = $_SESSION['usuario_id'] ?? 0;
+        if (!$uid) { echo json_encode(['success' => false]); return; }
+        $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $result = $this->model->saveFilterPreference(
+            $uid,
+            intval($input['formulario_id'] ?? 0),
+            $input['modulo'] ?? '',
+            $input['tipo_filtro'] ?? 'todos',
+            $input['valor_filtro'] ?? null
+        );
+        echo json_encode(['success' => $result]);
     }
 }
 ?>

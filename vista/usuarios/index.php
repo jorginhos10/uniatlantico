@@ -16,22 +16,32 @@ $cssExtra = '<link rel="stylesheet" href="' . $baseUrl . '/assets/css/usuarios.c
 $cssExtra .= '<link rel="stylesheet" href="' . $baseUrl . '/assets/css/permisos.css">';
 $cssExtra .= '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">';
 $jsExtra = '<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>';
-$jsExtra .= '<script src="' . $baseUrl . '/assets/js/usuarios.js"></script>';
+$jsExtra .= '<script src="' . $baseUrl . '/assets/js/usuarios.js?v=' . filemtime(__DIR__ . '/../../assets/js/usuarios.js') . '"></script>';
 $jsExtra .= '<script src="' . $baseUrl . '/assets/js/permisos.js"></script>';
 
 // Calcular estadísticas
 $totalUsuarios = count($usuarios);
 $usuariosActivos = array_filter($usuarios, fn($u) => $u['activo'] == 1);
-$admins = array_filter($usuarios, fn($u) => $u['rol'] == 'admin');
-$cocina = array_filter($usuarios, fn($u) => $u['rol'] == 'cocina');
-$inventario = array_filter($usuarios, fn($u) => $u['rol'] == 'inventario');
-$meseros = array_filter($usuarios, fn($u) => $u['rol'] == 'mesero');
+$admins      = array_filter($usuarios, fn($u) => $u['rol'] == 'admin');
+$directores  = array_filter($usuarios, fn($u) => $u['rol'] == 'director');
+$coordinadores = array_filter($usuarios, fn($u) => $u['rol'] == 'coordinador');
+$jefes       = array_filter($usuarios, fn($u) => $u['rol'] == 'jefe');
+$analistas   = array_filter($usuarios, fn($u) => $u['rol'] == 'analista');
+$secretarios = array_filter($usuarios, fn($u) => $u['rol'] == 'secretario');
+$auxiliares  = array_filter($usuarios, fn($u) => $u['rol'] == 'auxiliar');
+$tecnicos    = array_filter($usuarios, fn($u) => $u['rol'] == 'tecnico');
+$asesores    = array_filter($usuarios, fn($u) => $u['rol'] == 'asesor');
+$pasantes    = array_filter($usuarios, fn($u) => $u['rol'] == 'pasante');
 
 require_once __DIR__ . '/../complementos/header.php';
 ?>
 
 <meta name="base-url" content="<?php echo $baseUrl; ?>">
 <meta name="current-user-id" content="<?php echo $_SESSION['usuario_id'] ?? '0'; ?>">
+<script>
+    window.CARGOS_LIST = <?php echo json_encode($cargos ?? [], JSON_UNESCAPED_UNICODE); ?>;
+    window.ROLES_LIST  = <?php echo json_encode($roles  ?? [], JSON_UNESCAPED_UNICODE); ?>;
+</script>
 
 <div class="usuarios-container">
     <div class="usuarios-header">
@@ -129,8 +139,8 @@ require_once __DIR__ . '/../complementos/header.php';
                             <span>Nombre</span>
                             <span class="sort-indicator"></span>
                         </th>
-                        <th class="sortable" data-sort="email">
-                            <span>Email</span>
+                        <th class="sortable" data-sort="dependencia">
+                            <span>Dependencia</span>
                             <span class="sort-indicator"></span>
                         </th>
                         <th class="sortable" data-sort="rol">
@@ -204,21 +214,31 @@ require_once __DIR__ . '/../complementos/header.php';
                             <?php endif; ?>
                         </td>
                         <td>
-                            <a href="mailto:<?php echo htmlspecialchars($usuario['email']); ?>" 
-                               style="color: #3498db; text-decoration: none;">
-                                <i class="fas fa-envelope"></i> <?php echo htmlspecialchars($usuario['email']); ?>
-                            </a>
+                            <?php if (!empty($usuario['cargo_nombre'])): ?>
+                                <span style="display:inline-flex;align-items:center;gap:6px;font-size:0.85rem;color:var(--apple-text,#1d1d1f);">
+                                    <i class="fas fa-building" style="color:var(--apple-blue,#0071e3);font-size:0.75rem;"></i>
+                                    <?php echo htmlspecialchars($usuario['cargo_nombre']); ?>
+                                </span>
+                            <?php else: ?>
+                                <span style="color:#b0b0b5;font-size:0.82rem;font-style:italic;">Sin asignar</span>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <span class="badge badge-<?php echo $usuario['rol']; ?>">
                                 <?php 
-                                switch($usuario['rol']) {
-                                    case 'admin': echo 'Administrador'; break;
-                                    case 'cocina': echo 'Cocina'; break;
-                                    case 'inventario': echo 'Inventario'; break;
-                                    case 'mesero': echo 'Mesero'; break;
-                                    default: echo ucfirst($usuario['rol']);
-                                }
+                                $roles_labels = [
+                                    'admin'       => 'Administrador',
+                                    'director'    => 'Director',
+                                    'coordinador' => 'Coordinador',
+                                    'jefe'        => 'Jefe de Área',
+                                    'analista'    => 'Analista',
+                                    'secretario'  => 'Secretario(a)',
+                                    'auxiliar'    => 'Auxiliar Adm.',
+                                    'tecnico'     => 'Técnico',
+                                    'asesor'      => 'Asesor',
+                                    'pasante'     => 'Pasante',
+                                ];
+                                echo $roles_labels[$usuario['rol']] ?? ucfirst($usuario['rol']);
                                 ?>
                             </span>
                         </td>
@@ -316,18 +336,29 @@ require_once __DIR__ . '/../complementos/header.php';
                     Mostrando <strong><?php echo $totalUsuarios; ?></strong> usuario(s)
                 </div>
                 <div>
-                    <span class="badge badge-admin" style="margin-right: 5px;">
-                        <span id="adminsBadgeCount"><?php echo count($admins); ?></span> Admin
+                    <?php
+                    $rol_badges = [
+                        'admin'       => ['label' => 'Admin',       'class' => 'badge-admin'],
+                        'director'    => ['label' => 'Director',    'class' => 'badge-director'],
+                        'coordinador' => ['label' => 'Coordinador', 'class' => 'badge-coordinador'],
+                        'jefe'        => ['label' => 'Jefe',        'class' => 'badge-jefe'],
+                        'analista'    => ['label' => 'Analista',    'class' => 'badge-analista'],
+                        'secretario'  => ['label' => 'Secretario',  'class' => 'badge-secretario'],
+                        'auxiliar'    => ['label' => 'Auxiliar',    'class' => 'badge-auxiliar'],
+                        'tecnico'     => ['label' => 'Técnico',     'class' => 'badge-tecnico'],
+                        'asesor'      => ['label' => 'Asesor',      'class' => 'badge-asesor'],
+                        'pasante'     => ['label' => 'Pasante',     'class' => 'badge-pasante'],
+                    ];
+                    $conteos = [];
+                    foreach ($usuarios as $u) { $conteos[$u['rol']] = ($conteos[$u['rol']] ?? 0) + 1; }
+                    foreach ($rol_badges as $rol => $info):
+                        $cnt = $conteos[$rol] ?? 0;
+                        if ($cnt > 0):
+                    ?>
+                    <span class="badge <?php echo $info['class']; ?>" style="margin-right:4px;">
+                        <?php echo $cnt; ?> <?php echo $info['label']; ?>
                     </span>
-                    <span class="badge badge-cocina" style="margin-right: 5px;">
-                        <span id="cocinaBadgeCount"><?php echo count($cocina); ?></span> Cocina
-                    </span>
-                    <span class="badge badge-inventario" style="margin-right: 5px;">
-                        <span id="inventarioBadgeCount"><?php echo count($inventario); ?></span> Inventario
-                    </span>
-                    <span class="badge badge-mesero">
-                        <span id="meserosBadgeCount"><?php echo count($meseros); ?></span> Mesero
-                    </span>
+                    <?php endif; endforeach; ?>
                 </div>
             </div>
         </div>

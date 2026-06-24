@@ -26,9 +26,7 @@ class Modulo144Model {
                 'planes_institucionales',
                 'linea_base_meta', 'anio_base_meta', 'meta_s1', 'meta_s2',
                 'facultad_id',
-                // Nuevos campos para gestión semestral
                 'gestion_sem1', 'gestion_sem2', 'vigencia', 'descripcion_gestion',
-                // Campos para la tabla de 3 filas
                 'tabla_fila1_sem1', 'tabla_fila1_sem2',
                 'tabla_fila2_sem1', 'tabla_fila2_sem2',
                 'tabla_fila3_sem1', 'tabla_fila3_sem2'
@@ -109,18 +107,31 @@ class Modulo144Model {
         return $this->modulos;
     }
 
+    public function getAnos() {
+        try {
+            $stmt = $this->db->prepare("SELECT id, anio FROM `ano-for-de-144` WHERE activo = 1 ORDER BY anio DESC");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAnos: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function verificarFormulario($id) {
         try {
             $stmt = $this->db->prepare("SELECT *, 
-                                        fecha_fin as fecha_cierre,
+                                        CASE WHEN tipo_tiempo = 'libre' THEN NULL ELSE fecha_fin END as fecha_cierre,
                                         NOW() as fecha_actual,
-                                        TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) as segundos_restantes,
+                                        CASE WHEN tipo_tiempo = 'rango' AND fecha_fin IS NOT NULL 
+                                             THEN TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) 
+                                             ELSE NULL END as segundos_restantes,
                                         CASE 
-                                            WHEN fecha_inicio IS NOT NULL AND NOW() < fecha_inicio THEN 'no_iniciado'
-                                            WHEN fecha_fin IS NOT NULL AND NOW() > fecha_fin THEN 'expirado'
-                                            WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_fin THEN 'vigente'
-                                            WHEN fecha_inicio IS NULL AND fecha_fin IS NULL THEN 'sin_fechas'
-                                            ELSE 'vigente'
+                                            WHEN tipo_tiempo = 'libre' THEN 'sin_fechas'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_inicio IS NOT NULL AND NOW() < fecha_inicio THEN 'no_iniciado'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_fin IS NOT NULL AND NOW() > fecha_fin THEN 'expirado'
+                                            WHEN tipo_tiempo = 'rango' AND fecha_inicio IS NOT NULL AND fecha_fin IS NOT NULL AND NOW() BETWEEN fecha_inicio AND fecha_fin THEN 'vigente'
+                                            ELSE 'sin_fechas'
                                         END as estado_fecha
                                         FROM formularios 
                                         WHERE id = :id AND estado = 1");
@@ -141,9 +152,23 @@ class Modulo144Model {
             ];
         }
 
+        // Formulario con tiempo libre: siempre disponible, sin fechas
+        if (($formulario['tipo_tiempo'] ?? '') === 'libre') {
+            return [
+                'valido' => true,
+                'mensaje' => 'Siempre disponible',
+                'clase' => 'sin-fechas'
+            ];
+        }
+
         $fecha_actual = date('Y-m-d H:i:s');
-        
-        if (empty($formulario['fecha_inicio']) && empty($formulario['fecha_fin'])) {
+
+        // Formulario con rango: verificar fechas
+        $fi = $formulario['fecha_inicio'] ?? null;
+        $ff = $formulario['fecha_fin']    ?? null;
+
+        if (empty($fi) && empty($ff)) {
+            // Rango pero sin fechas cargadas → tratar como libre
             return [
                 'valido' => true,
                 'mensaje' => 'Sin restricción de fechas',
@@ -151,33 +176,31 @@ class Modulo144Model {
             ];
         }
 
-        if (!empty($formulario['fecha_inicio']) && !empty($formulario['fecha_fin'])) {
-            if ($fecha_actual < $formulario['fecha_inicio']) {
+        if (!empty($fi) && !empty($ff)) {
+            if ($fecha_actual < $fi) {
                 return [
                     'valido' => false,
-                    'mensaje' => 'Disponible desde: ' . date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])),
+                    'mensaje' => 'Disponible desde: ' . date('d/m/Y H:i', strtotime($fi)),
                     'clase' => 'no-iniciado'
                 ];
-            } elseif ($fecha_actual > $formulario['fecha_fin']) {
+            } elseif ($fecha_actual > $ff) {
                 return [
                     'valido' => false,
-                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
+                    'mensaje' => '⚠️ EXPIRADO: ' . date('d/m/Y H:i', strtotime($ff)),
                     'clase' => 'expirado'
                 ];
             } else {
                 return [
                     'valido' => true,
-                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($formulario['fecha_fin'])),
+                    'mensaje' => 'Vigente hasta: ' . date('d/m/Y H:i', strtotime($ff)),
                     'clase' => 'vigente'
                 ];
             }
         }
+
         return ['valido' => true, 'mensaje' => 'Vigente', 'clase' => 'vigente'];
     }
 
-    /**
-     * Obtener líneas estratégicas de la tabla lineas_estrategicas
-     */
     public function getLineasEstrategicas() {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre, objetivo FROM lineas_estrategicas WHERE activo = 1 ORDER BY codigo");
@@ -189,9 +212,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener estrategias de la tabla estrategias
-     */
     public function getEstrategias() {
         try {
             $stmt = $this->db->prepare("SELECT e.id, e.linea_id, e.descripcion, l.codigo as linea_codigo, l.nombre as linea_nombre 
@@ -207,9 +227,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener estrategias por línea estratégica
-     */
     public function getEstrategiasPorLinea($linea_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, descripcion FROM estrategias WHERE linea_id = :linea_id AND activo = 1 ORDER BY id");
@@ -221,9 +238,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener motores por línea estratégica
-     */
     public function getMotoresPorLinea($linea_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre");
@@ -235,9 +249,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener proyectos por línea y motor
-     */
     public function getProyectosPorLineaYMotor($linea_id, $motor_id) {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM proyectos WHERE linea_id = :linea_id AND motor_id = :motor_id AND activo = 1 ORDER BY codigo");
@@ -252,9 +263,22 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener todos los proyectos
-     */
+    public function getPonderacionProyecto($proyecto_id, $motor_id, $anio) {
+        try {
+            $stmt = $this->db->prepare("SELECT porcentaje FROM data_proyectos WHERE proyecto_id = :proyecto_id AND motor_id = :motor_id AND anio = :anio LIMIT 1");
+            $stmt->execute([
+                ':proyecto_id' => $proyecto_id,
+                ':motor_id'    => $motor_id,
+                ':anio'        => $anio
+            ]);
+            $row = $stmt->fetch();
+            return $row ? $row['porcentaje'] : null;
+        } catch (PDOException $e) {
+            error_log("Error getPonderacionProyecto: " . $e->getMessage());
+            return null;
+        }
+    }
+
     public function getProyectos() {
         try {
             $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,
@@ -273,9 +297,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener cargos de la tabla cargos
-     */
     public function getCargos() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM cargos WHERE activo = 1 ORDER BY nombre");
@@ -287,9 +308,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener planes institucionales de la tabla planes_institucionales
-     */
     public function getPlanesInstitucionales() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");
@@ -301,9 +319,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener todas las facultades activas de la tabla facultades
-     */
     public function getFacultades() {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre, estado FROM facultades WHERE estado = 1 ORDER BY codigo, nombre");
@@ -315,9 +330,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener borradores por facultad
-     */
     public function getBorradoresPorFacultad($facultad_id, $formulario_id) {
         try {
             $tabla = $this->modulos['formulacion']['tabla'];
@@ -336,18 +348,27 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtiene registros por estado (usando el campo de estado específico del módulo)
-     */
     public function getByEstado($modulo, $formulario_id, $estado) {
         try {
             $modulo_config = $this->modulos[$modulo];
             $tabla = $modulo_config['tabla'];
             $campo_estado = $modulo_config['campo_estado'];
-            
-            $stmt = $this->db->prepare("SELECT * FROM {$tabla} 
-                                        WHERE formulario_id = :formulario_id AND {$campo_estado} = :estado 
-                                        ORDER BY fecha_creacion DESC");
+
+            $stmt = $this->db->prepare("SELECT f.*,
+                                        le.codigo  AS linea_codigo,
+                                        m.id       AS motor_id_num,
+                                        p.codigo   AS proyecto_codigo,
+                                        u.nombre   AS creado_por_nombre,
+                                        u.cargo_id AS creado_por_cargo_id,
+                                        c.nombre   AS creado_por_cargo_nombre
+                                        FROM {$tabla} f
+                                        LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                                        LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                                        LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                                        LEFT JOIN usuarios u ON f.creado_por = u.id
+                                        LEFT JOIN cargos c ON u.cargo_id = c.id
+                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
+                                        ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
             $stmt->execute([
                 ':formulario_id' => $formulario_id,
                 ':estado' => $estado
@@ -363,6 +384,54 @@ class Modulo144Model {
         return $this->getByEstado($modulo, $formulario_id, 0);
     }
 
+    // Devuelve id, proyecto y ponderacion_actividades de TODAS las formulaciones del formulario
+    public function getPonderacionesPorFormulario($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id, proyecto, ponderacion_actividades
+                 FROM formulacion_144
+                 WHERE formulario_id = :fid"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getPonderacionesPorFormulario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Suma la ponderacion_actividades de un proyecto excluyendo un id dado
+    public function getAcumuladoProyecto($formulario_id, $proyecto, $excluir_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COALESCE(SUM(ponderacion_actividades), 0) as total
+                 FROM formulacion_144
+                 WHERE formulario_id = :fid
+                   AND proyecto = :proyecto
+                   AND id != :excluir"
+            );
+            $stmt->execute([':fid' => $formulario_id, ':proyecto' => $proyecto, ':excluir' => $excluir_id]);
+            $row = $stmt->fetch();
+            return (float)($row['total'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error getAcumuladoProyecto: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    // Cuenta el total de registros del formulario (para polling de cambios)
+    public function contarRegistros($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT COUNT(*) as total FROM formulacion_144 WHERE formulario_id = :fid"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return (int)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            return 0;
+        }
+    }
+
     public function getPublicados($modulo, $formulario_id) {
         return $this->getByEstado($modulo, $formulario_id, 2);
     }
@@ -371,9 +440,6 @@ class Modulo144Model {
         return $this->getByEstado($modulo, $formulario_id, 1);
     }
 
-    /**
-     * Crear un nuevo borrador (solo desde formulación)
-     */
     public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1, $facultad_id = null) {
         try {
             if ($modulo !== 'formulacion') {
@@ -389,24 +455,32 @@ class Modulo144Model {
                 error_log("Error: La tabla '{$tabla}' no existe");
                 return false;
             }
+
+            // Obtener el año del formulario padre automáticamente
+            $stmtAnio = $this->db->prepare("SELECT anio FROM formularios WHERE id = :formulario_id LIMIT 1");
+            $stmtAnio->execute([':formulario_id' => $formulario_id]);
+            $rowAnio = $stmtAnio->fetch();
+            $anio = $rowAnio ? $rowAnio['anio'] : null;
             
             if ($facultad_id) {
                 $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                            (formulario_id, nombre_borrador, facultad_id, estado_formulacion, estado_seguimiento, creado_por) 
-                                            VALUES (:formulario_id, :nombre, :facultad_id, 0, 0, :creado_por)");
+                                            (formulario_id, nombre_borrador, facultad_id, anio, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, :facultad_id, :anio, 0, 0, :creado_por)");
                 return $stmt->execute([
                     ':formulario_id' => $formulario_id,
                     ':nombre' => $nombre_borrador,
                     ':facultad_id' => $facultad_id,
+                    ':anio' => $anio,
                     ':creado_por' => $creado_por
                 ]);
             } else {
                 $stmt = $this->db->prepare("INSERT INTO {$tabla} 
-                                            (formulario_id, nombre_borrador, estado_formulacion, estado_seguimiento, creado_por) 
-                                            VALUES (:formulario_id, :nombre, 0, 0, :creado_por)");
+                                            (formulario_id, nombre_borrador, anio, estado_formulacion, estado_seguimiento, creado_por) 
+                                            VALUES (:formulario_id, :nombre, :anio, 0, 0, :creado_por)");
                 return $stmt->execute([
                     ':formulario_id' => $formulario_id,
                     ':nombre' => $nombre_borrador,
+                    ':anio' => $anio,
                     ':creado_por' => $creado_por
                 ]);
             }
@@ -417,9 +491,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Obtener un registro por ID
-     */
     public function getById($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
@@ -432,9 +503,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Actualizar campos específicos del módulo
-     */
     public function actualizar($modulo, $id, $data) {
         try {
             $modulo_config = $this->modulos[$modulo];
@@ -471,9 +539,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Cambiar estado de un módulo específico
-     */
     public function cambiarEstado($modulo, $id, $estado) {
         try {
             $modulo_config = $this->modulos[$modulo];
@@ -505,9 +570,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Eliminar un registro
-     */
     public function eliminar($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
@@ -519,9 +581,6 @@ class Modulo144Model {
         }
     }
 
-    /**
-     * Duplicar un registro completo
-     */
     public function duplicar($modulo, $id, $nuevo_nombre, $creado_por = 1) {
         try {
             $original = $this->getById($modulo, $id);
@@ -634,9 +693,6 @@ class Modulo144Model {
         }
     }
     
-    /**
-     * Actualizar específicamente los campos de gestión semestral
-     */
     public function actualizarGestionSemestral($id, $data) {
         try {
             $tabla = $this->modulos['formulacion']['tabla'];
@@ -669,6 +725,41 @@ class Modulo144Model {
             return $stmt->execute($params);
         } catch (PDOException $e) {
             error_log("Error actualizarGestionSemestral: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getFilterPreference($usuario_id, $formulario_id, $modulo) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT tipo_filtro, valor_filtro FROM user_filter_preferences
+                 WHERE usuario_id = :uid AND formulario_id = :fid AND modulo = :mod LIMIT 1"
+            );
+            $stmt->execute([':uid' => $usuario_id, ':fid' => $formulario_id, ':mod' => $modulo]);
+            $row = $stmt->fetch();
+            return $row ?: ['tipo_filtro' => 'todos', 'valor_filtro' => null];
+        } catch (PDOException $e) {
+            error_log("Error getFilterPreference: " . $e->getMessage());
+            return ['tipo_filtro' => 'todos', 'valor_filtro' => null];
+        }
+    }
+
+    public function saveFilterPreference($usuario_id, $formulario_id, $modulo, $tipo_filtro, $valor_filtro) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO user_filter_preferences (usuario_id, formulario_id, modulo, tipo_filtro, valor_filtro)
+                 VALUES (:uid, :fid, :mod, :tipo, :valor)
+                 ON DUPLICATE KEY UPDATE tipo_filtro = VALUES(tipo_filtro), valor_filtro = VALUES(valor_filtro)"
+            );
+            return $stmt->execute([
+                ':uid'   => $usuario_id,
+                ':fid'   => $formulario_id,
+                ':mod'   => $modulo,
+                ':tipo'  => $tipo_filtro,
+                ':valor' => $valor_filtro ?: null,
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error saveFilterPreference: " . $e->getMessage());
             return false;
         }
     }

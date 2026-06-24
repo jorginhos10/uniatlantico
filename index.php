@@ -7,12 +7,27 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$url = $_GET['url'] ?? 'login';
+$basePath = Config::getBasePath();
+
+// Support both Apache mod_rewrite (?url=X) and direct-server setups (PHP built-in, nginx)
+if (isset($_GET['url']) && $_GET['url'] !== '') {
+    $url = $_GET['url'];
+} else {
+    // Parse from REQUEST_URI — strip base path and query string
+    $reqPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+    $reqPath = str_replace('\\', '/', $reqPath ?? '/');
+    if ($basePath !== '' && strpos($reqPath, $basePath) === 0) {
+        $reqPath = substr($reqPath, strlen($basePath));
+    }
+    $url = ltrim($reqPath, '/') ?: 'login';
+    // Strip index.php from path if present
+    if ($url === 'index.php') $url = 'login';
+}
+
 $url = rtrim($url, '/');
 $urlParts = explode('/', $url);
 
 $action = $urlParts[0] ?? 'login';
-$basePath = Config::getBasePath();
 
 switch ($action) {
     case 'login':
@@ -39,6 +54,24 @@ switch ($action) {
     case 'dashboard':
         require_once 'config/security.php';
         require_once 'vista/dashboard/index.php';
+        break;
+
+    case 'perfil':
+        require_once 'config/security.php';
+        require_once 'controlador/perfilController.php';
+        $perfilController = new PerfilController();
+        $subaction = $urlParts[1] ?? 'index';
+        switch ($subaction) {
+            case 'update-avatar':
+                $perfilController->updateAvatar();
+                break;
+            case 'update-password':
+                $perfilController->updatePassword();
+                break;
+            default:
+                $perfilController->index();
+                break;
+        }
         break;
 
     case '403':
@@ -79,9 +112,22 @@ switch ($action) {
 
     case 'configuraciones':
         require_once 'config/security.php';
-        require_once 'vista/configuraciones/index.php';
+        
+        $subaction = $urlParts[1] ?? 'index';
+        
+        switch ($subaction) {
+            case 'config-formularios':
+                require_once 'vista/configuraciones/config-formularios.php';
+                break;
+            case 'proveedores':
+                require_once 'vista/configuraciones/proveedores.php';
+                break;
+            default:
+                require_once 'vista/configuraciones/index.php';
+                break;
+        }
         break;
-     
+   
     case 'usuarios':
         require_once 'config/security.php';
         require_once 'controlador/usuarioController.php';
@@ -125,6 +171,7 @@ switch ($action) {
         }
         break;
         
+    
     case 'permisos':
         require_once 'config/security.php';
         require_once 'controlador/permisoPopupController.php';
@@ -140,6 +187,9 @@ switch ($action) {
             case 'popup-toggle':
                 $permisoController->togglePermisoPopup();
                 break;
+            case 'subpermiso-toggle':
+                $permisoController->toggleSubpermisoPopup();
+                break;
             case 'all':
                 $permisoController->getAllPermisos();
                 break;
@@ -149,6 +199,14 @@ switch ($action) {
         }
         break;
         
+    // ====================================================
+    // SECCIÓN PARA FORMULARIOS (Página principal de formularios)
+    // ====================================================
+    case 'config-formularios':
+        require_once 'config/security.php';
+        require_once 'vista/configuraciones/formularios.php';
+        break;
+    
     // ====================================================
     // SECCIÓN PARA FOR-DE-144 (Formularios base)
     // ====================================================
@@ -186,7 +244,17 @@ switch ($action) {
                 $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
                 $forde144Controller->getFormulario($id);
                 break;
-                
+
+            case 'informe':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->informe($id);
+                break;
+
+            case 'informePage':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->informePage($id);
+                break;
+
             case 'verificarDisponibilidad':
                 $forde144Controller->verificarDisponibilidad();
                 break;
@@ -286,14 +354,250 @@ switch ($action) {
             case 'getProyectosPorLineaYMotor':
                 $modulo144Controller->getProyectosPorLineaYMotor();
                 break;
+            case 'getFilterPreference':
+                $modulo144Controller->getFilterPreference();
+                break;
+            case 'saveFilterPreference':
+                $modulo144Controller->saveFilterPreference();
+                break;
+            case 'getPonderaciones':
+                $modulo144Controller->getPonderaciones();
+                break;
+            case 'contarRegistros':
+                $modulo144Controller->contarRegistros();
+                break;
             case 'index':
             default:
                 $modulo144Controller->index();
                 break;
         }
         break;
+    
     // ====================================================
+    // SECCIÓN PARA CONFIG-144 (Configuración de años) - VERSIÓN COMPLETA CON NUEVAS TABLAS
+    // ====================================================
+    case 'config144':
+        require_once 'config/security.php';
+        require_once 'controlador/config144Controller.php';
+        $config144Controller = new config144Controller();
         
+        if (isset($_GET['action'])) {
+            $actionParam = $_GET['action'];
+        } else {
+            $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+        }
+        
+        switch ($actionParam) {
+            // Endpoints básicos para años
+            case 'listar':
+                $config144Controller->listar();
+                break;
+            case 'activos':
+                $config144Controller->activos();
+                break;
+            case 'crear':
+                $config144Controller->crear();
+                break;
+            case 'get':
+                $config144Controller->get();
+                break;
+            case 'actualizar':
+                $config144Controller->actualizar();
+                break;
+            case 'cambiarEstado':
+                $config144Controller->cambiarEstado();
+                break;
+            case 'eliminar':
+                $config144Controller->eliminar();
+                break;
+            case 'actualizarOrden':
+                $config144Controller->actualizarOrden();
+                break;
+            
+            // Endpoints para obtener datos de líneas, motores y proyectos
+            case 'getLineasEstrategicas':
+                $config144Controller->getLineasEstrategicas();
+                break;
+            case 'getMotoresPorLinea':
+                $config144Controller->getMotoresPorLinea();
+                break;
+            case 'getProyectosPorMotor':
+                $config144Controller->getProyectosPorMotor();
+                break;
+            
+            // NUEVOS ENDPOINTS para las tablas data_*
+            case 'getDataMotores':
+                $config144Controller->getDataMotores();
+                break;
+            case 'getDataProyectos':
+                $config144Controller->getDataProyectos();
+                break;
+            case 'guardarDataMotores':
+                $config144Controller->guardarDataMotores();
+                break;
+            case 'guardarDataProyectos':
+                $config144Controller->guardarDataProyectos();
+                break;
+            case 'getDataDistribucionPorAnio':
+                $config144Controller->getDataDistribucionPorAnio();
+                break;
+            case 'guardarDataDistribucion':
+                $config144Controller->guardarDataDistribucion();
+                break;
+            case 'verificarDatos':
+                $config144Controller->verificarDatos();
+                break;
+            
+            // ENDPOINTS ANTIGUOS (mantenidos por compatibilidad, pero redirigidos a los nuevos)
+            case 'getPorcentajesMotores':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataMotores();
+                break;
+            case 'getPorcentajesProyectos':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataProyectos();
+                break;
+            case 'guardarPorcentajesMotores':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataMotores();
+                break;
+            case 'guardarPorcentajesProyectos':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataProyectos();
+                break;
+            case 'getDistribucionPorAnio':
+                // Redirigir al nuevo endpoint
+                $config144Controller->getDataDistribucionPorAnio();
+                break;
+            case 'guardarDistribucion':
+                // Redirigir al nuevo endpoint
+                $config144Controller->guardarDataDistribucion();
+                break;
+            
+            case 'index':
+            default:
+                $config144Controller->index();
+                break;
+        }
+        break;
+    // ====================================================
+    // SECCIÓN PARA ROLES / CARGOS (CRUD)
+    // ====================================================
+    case 'roles':
+        require_once 'config/security.php';
+        require_once 'controlador/rolesController.php';
+        $rolesController = new RolesController();
+
+        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+
+        switch ($actionParam) {
+            case 'listar':
+                $rolesController->listar();
+                break;
+            case 'activos':
+                $rolesController->activos();
+                break;
+            case 'actualizarNombre':
+                $rolesController->actualizarNombre();
+                break;
+            case 'index':
+            default:
+                $rolesController->index();
+                break;
+        }
+        break;
+
+    // ====================================================
+    // SECCIÓN PARA DEPENDENCIAS (CRUD)
+    // ====================================================
+    case 'dependencias':
+        require_once 'config/security.php';
+        require_once 'controlador/dependenciasController.php';
+        $dependenciasController = new DependenciasController();
+
+        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+
+        switch ($actionParam) {
+            case 'listar':
+                $dependenciasController->listar();
+                break;
+            case 'crear':
+                $dependenciasController->crear();
+                break;
+            case 'get':
+                $dependenciasController->get();
+                break;
+            case 'actualizar':
+                $dependenciasController->actualizar();
+                break;
+            case 'eliminar':
+                $dependenciasController->eliminar();
+                break;
+            case 'cambiarEstado':
+                $dependenciasController->cambiarEstado();
+                break;
+            case 'index':
+            default:
+                $dependenciasController->index();
+                break;
+        }
+        break;
+
+    // ====================================================
+
+    // ====================================================
+    // SECCIÓN PARA MENSAJES
+    // ====================================================
+    case 'mensajes':
+        require_once 'config/security.php';
+        require_once 'controlador/MensajesController.php';
+        $mensajesController = new MensajesController();
+
+        $actionParam = $_GET['action'] ?? ($urlParts[1] ?? 'index');
+
+        switch ($actionParam) {
+            case 'listar':
+                $mensajesController->listar();
+                break;
+            case 'crear':
+                $mensajesController->crear();
+                break;
+            case 'ver':
+                $mensajesController->ver();
+                break;
+            case 'eliminar':
+                $mensajesController->eliminar();
+                break;
+            case 'contarNoLeidos':
+                $mensajesController->contarNoLeidos();
+                break;
+            case 'recientesNoLeidos':
+                $mensajesController->recientesNoLeidos();
+                break;
+            case 'index':
+            default:
+                $mensajesController->index();
+                break;
+        }
+        break;
+
+    case 'novedades':
+        require_once 'config/security.php';
+        require_once 'controlador/NovedadesController.php';
+        $novedadesController = new NovedadesController();
+        $actionParam = $urlParts[1] ?? 'index';
+        switch ($actionParam) {
+            case 'listar':    $novedadesController->listar();      break;
+            case 'get':       $novedadesController->get();         break;
+            case 'crear':     $novedadesController->crear();       break;
+            case 'actualizar':$novedadesController->actualizar();  break;
+            case 'eliminar':  $novedadesController->eliminar();    break;
+            case 'toggle':    $novedadesController->toggleActivo();  break;
+            case 'reordenar': $novedadesController->reordenar();    break;
+            default:          $novedadesController->index();       break;
+        }
+        break;
+
     case 'publica':
         require_once 'vista/publica/index.php';
         break;

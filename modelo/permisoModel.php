@@ -70,32 +70,27 @@ class PermisoModel {
      */
     private function formatearNombrePermiso($nombre) {
         $nombres = [
-            'crear_usuarios' => 'Crear Usuarios',
-            'editar_usuarios' => 'Editar Usuarios',
-            'eliminar_usuarios' => 'Eliminar Usuarios',
-            'ver_reportes' => 'Ver Reportes',
-            'gestionar_inventario' => 'Gestionar Inventario',
-            'ver_dashboard' => 'Ver Dashboard',
-            'configurar_sistema' => 'Configurar Sistema'
+            'ver_dashboard'       => 'Dashboard',
+            'gestionar_recetas'   => 'Formato FOR-DE-144',
+            'for_de_144'          => 'Formato FOR-DE-144',
+            'configurar_sistema'  => 'Configuraciones',
+            'gestionar_usuarios'  => 'Gestionar Usuarios',
+            'gestionar_permisos'  => 'Gestionar Permisos',
         ];
-        
+
         return $nombres[$nombre] ?? ucwords(str_replace('_', ' ', $nombre));
     }
 
-    /**
-     * Obtener descripción del permiso
-     */
     private function getDescripcionPermiso($nombre) {
         $descripciones = [
-            'crear_usuarios' => 'Permite crear nuevos usuarios en el sistema',
-            'editar_usuarios' => 'Permite editar información de usuarios existentes',
-            'eliminar_usuarios' => 'Permite eliminar usuarios del sistema',
-            'ver_reportes' => 'Permite ver reportes y estadísticas del sistema',
-            'gestionar_inventario' => 'Permite gestionar el inventario de productos',
-            'ver_dashboard' => 'Permite ver el panel principal de control',
-            'configurar_sistema' => 'Permite configurar ajustes del sistema'
+            'ver_dashboard'       => 'Permite acceder al panel principal',
+            'gestionar_recetas'   => 'Permite acceder y gestionar el Formato FOR-DE-144',
+            'for_de_144'          => 'Permite acceder y gestionar el Formato FOR-DE-144',
+            'configurar_sistema'  => 'Permite acceder a las configuraciones del sistema',
+            'gestionar_usuarios'  => 'Permite crear, editar y eliminar usuarios',
+            'gestionar_permisos'  => 'Permite gestionar los permisos de otros usuarios',
         ];
-        
+
         return $descripciones[$nombre] ?? 'Permiso del sistema';
     }
 
@@ -249,10 +244,16 @@ class PermisoModel {
             if ($usuario) {
                 // Formatear rol para mostrar
                 $roles = [
-                    'admin' => 'Administrador',
-                    'cocina' => 'Cocina',
-                    'inventario' => 'Inventario',
-                    'mesero' => 'Mesero'
+                    'admin'        => 'Administrador',
+                    'director'     => 'Director',
+                    'coordinador'  => 'Coordinador',
+                    'jefe'         => 'Jefe de Área',
+                    'analista'     => 'Analista',
+                    'secretario'   => 'Secretario(a)',
+                    'auxiliar'     => 'Auxiliar',
+                    'tecnico'      => 'Técnico',
+                    'asesor'       => 'Asesor',
+                    'pasante'      => 'Pasante',
                 ];
                 $usuario['rol_formateado'] = $roles[$usuario['rol']] ?? ucfirst($usuario['rol']);
                 
@@ -327,6 +328,109 @@ class PermisoModel {
         }
     }
     
+    /**
+     * Obtiene los sub-permisos de un permiso, con estado asignado/no para un usuario
+     */
+    public function getSubpermisosConEstadoUsuario(int $usuario_id): array {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT s.*,
+                        CASE WHEN ds.id IS NOT NULL THEN 1 ELSE 0 END AS activo,
+                        ds.fecha_asignacion
+                 FROM subpermisos s
+                 LEFT JOIN detalle_subpermiso ds
+                        ON s.id = ds.subpermiso_id AND ds.usuario_id = :uid
+                 WHERE s.estado = 1
+                 ORDER BY s.permiso_id ASC, s.orden ASC"
+            );
+            $stmt->execute([':uid' => $usuario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getSubpermisosConEstadoUsuario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Activa o desactiva un sub-permiso para un usuario
+     */
+    public function toggleSubpermiso(int $usuario_id, int $subpermiso_id, int $estado): bool {
+        try {
+            if ($estado === 1) {
+                $stmt = $this->db->prepare(
+                    "INSERT IGNORE INTO detalle_subpermiso (usuario_id, subpermiso_id, fecha_asignacion)
+                     VALUES (:uid, :sid, NOW())"
+                );
+            } else {
+                $stmt = $this->db->prepare(
+                    "DELETE FROM detalle_subpermiso WHERE usuario_id = :uid AND subpermiso_id = :sid"
+                );
+            }
+            $stmt->execute([':uid' => $usuario_id, ':sid' => $subpermiso_id]);
+            return true;
+        } catch (PDOException $e) {
+            error_log("Error toggleSubpermiso: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Devuelve solo los nombres de sub-permisos activos de un usuario (para el controlador de vistas)
+     */
+    public function getSubpermisosActivosUsuario(int $usuario_id): array {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT s.nombre, s.permiso_id
+                 FROM subpermisos s
+                 JOIN detalle_subpermiso ds ON s.id = ds.subpermiso_id AND ds.usuario_id = :uid
+                 WHERE s.estado = 1"
+            );
+            $stmt->execute([':uid' => $usuario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getSubpermisosActivosUsuario: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Asigna el sub-permiso "ver" de un permiso cuando éste se habilita por primera vez.
+     * Solo actúa si ese permiso tiene sub-permisos definidos en la tabla subpermisos.
+     */
+    public function asignarSubpermisoVer(int $usuario_id, int $permiso_id): void {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT id FROM subpermisos
+                 WHERE permiso_id = :pid AND nombre = 'ver' AND estado = 1
+                 LIMIT 1"
+            );
+            $stmt->execute([':pid' => $permiso_id]);
+            $sub = $stmt->fetch();
+            if ($sub) {
+                $this->toggleSubpermiso($usuario_id, (int)$sub['id'], 1);
+            }
+        } catch (PDOException $e) {
+            error_log("Error asignarSubpermisoVer: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Elimina todos los sub-permisos de un permiso para un usuario
+     * cuando ese permiso principal se deshabilita.
+     */
+    public function quitarTodosSubpermisosPermiso(int $usuario_id, int $permiso_id): void {
+        try {
+            $stmt = $this->db->prepare(
+                "DELETE ds FROM detalle_subpermiso ds
+                 JOIN subpermisos s ON ds.subpermiso_id = s.id
+                 WHERE ds.usuario_id = :uid AND s.permiso_id = :pid"
+            );
+            $stmt->execute([':uid' => $usuario_id, ':pid' => $permiso_id]);
+        } catch (PDOException $e) {
+            error_log("Error quitarTodosSubpermisosPermiso: " . $e->getMessage());
+        }
+    }
+
     /**
      * Obtener conexión a DB (para debugging)
      */

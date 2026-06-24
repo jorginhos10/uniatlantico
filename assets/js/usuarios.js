@@ -269,14 +269,26 @@ class UsuariosManager {
                                     <label for="modalRol" class="form-label">Rol *</label>
                                     <select id="modalRol" name="rol" class="form-select" required>
                                         <option value="">Selecciona un rol</option>
-                                        <option value="cocina">Cocina</option>
-                                        <option value="inventario">Inventario</option>
-                                        <option value="mesero">Mesero</option>
                                         <option value="admin">Administrador</option>
-                                        <option value="admin">Calidad</option>
+                                        <option value="director">Director</option>
+                                        <option value="coordinador">Coordinador</option>
+                                        <option value="jefe">Jefe de Área</option>
+                                        <option value="analista">Analista</option>
+                                        <option value="secretario">Secretario(a)</option>
+                                        <option value="auxiliar">Auxiliar Administrativo</option>
+                                        <option value="tecnico">Técnico</option>
+                                        <option value="asesor">Asesor</option>
+                                        <option value="pasante">Pasante</option>
                                     </select>
                                 </div>
                                 
+                                <div class="form-group">
+                                    <label for="modalCargo" class="form-label">Dependencia</label>
+                                    <select id="modalCargo" name="cargo_id" class="form-select">
+                                        <option value="">— Sin asignar —</option>
+                                    </select>
+                                </div>
+
                                 <div class="switch-container">
                                     <label class="switch-label">Estado:</label>
                                     <label class="switch">
@@ -286,7 +298,7 @@ class UsuariosManager {
                                 </div>
                             </form>
                         </div>
-                        
+
                         <div class="modal-footer">
                             <button type="button" class="btn-secondary" id="cancelModal">
                                 <i class="fas fa-times"></i>
@@ -306,8 +318,38 @@ class UsuariosManager {
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Poblar select de cargos en modal crear
+            const createCargoSelect = document.getElementById('modalCargo');
+            if (createCargoSelect && window.CARGOS_LIST) {
+                window.CARGOS_LIST.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.nombre;
+                    createCargoSelect.appendChild(opt);
+                });
+            }
+
+            // Poblar select de roles desde ENUM de la BD
+            const rolLabelsCreate = {
+                admin: 'Administrador', director: 'Director', coordinador: 'Coordinador',
+                jefe: 'Jefe de Área', analista: 'Analista', secretario: 'Secretario(a)',
+                auxiliar: 'Auxiliar Administrativo', tecnico: 'Técnico',
+                asesor: 'Asesor', pasante: 'Pasante',
+                cocina: 'Cocina', inventario: 'Inventario', mesero: 'Mesero'
+            };
+            const createRolSelect = document.getElementById('modalRol');
+            if (createRolSelect && window.ROLES_LIST && window.ROLES_LIST.length) {
+                createRolSelect.innerHTML = '<option value="">Selecciona un rol</option>';
+                window.ROLES_LIST.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = rolLabelsCreate[r] || r.charAt(0).toUpperCase() + r.slice(1);
+                    createRolSelect.appendChild(opt);
+                });
+            }
         }
-        
+
         // Modal para editar usuario
         if (!document.getElementById('modalEditarUsuario')) {
             const editModalHTML = `
@@ -365,13 +407,26 @@ class UsuariosManager {
                                     <label for="editRol" class="form-label">Rol *</label>
                                     <select id="editRol" name="rol" class="form-select" required>
                                         <option value="">Selecciona un rol</option>
-                                        <option value="cocina">Cocina</option>
-                                        <option value="inventario">Inventario</option>
-                                        <option value="mesero">Mesero</option>
                                         <option value="admin">Administrador</option>
+                                        <option value="director">Director</option>
+                                        <option value="coordinador">Coordinador</option>
+                                        <option value="jefe">Jefe de Área</option>
+                                        <option value="analista">Analista</option>
+                                        <option value="secretario">Secretario(a)</option>
+                                        <option value="auxiliar">Auxiliar Administrativo</option>
+                                        <option value="tecnico">Técnico</option>
+                                        <option value="asesor">Asesor</option>
+                                        <option value="pasante">Pasante</option>
                                     </select>
                                 </div>
                                 
+                                <div class="form-group">
+                                    <label for="editCargo" class="form-label">Dependencia</label>
+                                    <select id="editCargo" name="cargo_id" class="form-select">
+                                        <option value="">— Sin asignar —</option>
+                                    </select>
+                                </div>
+
                                 <div class="switch-container">
                                     <label class="switch-label">Estado:</label>
                                     <label class="switch">
@@ -401,6 +456,36 @@ class UsuariosManager {
             `;
             
             document.body.insertAdjacentHTML('beforeend', editModalHTML);
+
+            // Poblar select de roles desde ENUM de la BD
+            const rolLabels = {
+                admin: 'Administrador', director: 'Director', coordinador: 'Coordinador',
+                jefe: 'Jefe de Área', analista: 'Analista', secretario: 'Secretario(a)',
+                auxiliar: 'Auxiliar Administrativo', tecnico: 'Técnico',
+                asesor: 'Asesor', pasante: 'Pasante',
+                cocina: 'Cocina', inventario: 'Inventario', mesero: 'Mesero'
+            };
+            const editRolSelect = document.getElementById('editRol');
+            if (editRolSelect && window.ROLES_LIST && window.ROLES_LIST.length) {
+                editRolSelect.innerHTML = '<option value="">Selecciona un rol</option>';
+                window.ROLES_LIST.forEach(r => {
+                    const opt = document.createElement('option');
+                    opt.value = r;
+                    opt.textContent = rolLabels[r] || r.charAt(0).toUpperCase() + r.slice(1);
+                    editRolSelect.appendChild(opt);
+                });
+            }
+
+            // Poblar select de cargos desde datos PHP
+            const cargoSelect = document.getElementById('editCargo');
+            if (cargoSelect && window.CARGOS_LIST) {
+                window.CARGOS_LIST.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id;
+                    opt.textContent = c.nombre;
+                    cargoSelect.appendChild(opt);
+                });
+            }
         }
         
         // Modal de confirmación para eliminar
@@ -629,6 +714,12 @@ class UsuariosManager {
             }
         }
         
+        // Seleccionar cargo
+        const cargoSelect = document.getElementById('editCargo');
+        if (cargoSelect) {
+            cargoSelect.value = userData.cargo_id || '';
+        }
+
         // Configurar switch de estado
         const activoCheckbox = document.getElementById('editActivo');
         if (activoCheckbox) {

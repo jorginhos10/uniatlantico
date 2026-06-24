@@ -1,223 +1,492 @@
 <?php
 // vista/modulo144/index.php
+require_once __DIR__ . '/../../config/security.php';
+
 $basePath = Config::getBasePath();
-$fecha_cierre = $formulario['fecha_cierre'] ?? null;
+$baseUrl  = Config::getBaseUrl();
+
+$fecha_cierre = null;
+if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_cierre'])) {
+    $fecha_cierre = $formulario['fecha_cierre'];
+}
+
+$titulo       = 'SISTEMA 144 — ' . htmlspecialchars($formulario['titulo'] ?? '');
+$paginaActual = 'modulo144';
+
+ob_start();
 ?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SISTEMA 144 - <?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></title>
-    
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<style>
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            padding: 4px 8px;
+            min-height: 48px;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--multiple {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #1D71B8;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            padding: 2px 10px;
+            font-size: 0.82rem;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice:first-of-type {
+            background-color: #D85819;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: rgba(255,255,255,0.8);
+            margin-right: 5px;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: white;
+            background: transparent;
+        }
+        .select2-dropdown {
+            border: 1px solid #ced4da;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--color-primary);
+        }
+        .select2-search--dropdown .select2-search__field {
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            padding: 6px 10px;
+        }
+        .select2-container { width: 100% !important; }
+        .select2-max-reached {
+            padding: 6px 12px;
+            color: #D85819;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+    </style>
     
     <style>
         :root {
-            --color-primary: #2C3E50;
-            --color-primary-light: #34495E;
-            --color-success: #27AE60;
-            --color-warning: #F39C12;
-            --color-danger: #E74C3C;
-            --color-info: #3498DB;
-            --color-bg: #F8F9FA;
+            --color-primary: #007AFF;
+            --color-primary-light: #0A84FF;
+            --color-success: #34C759;
+            --color-warning: #FF9500;
+            --color-danger: #FF3B30;
+            --color-info: #007AFF;
+            --color-bg: #F2F2F7;
             --color-white: #FFFFFF;
-            --color-tab-incomplete: #6c757d;
-            --color-tab-complete: #27AE60;
+            --color-tab-incomplete: #8E8E93;
+            --color-tab-complete: #34C759;
         }
-        
-        /* Colores dinámicos para facultades */
+
         .facultad-color-0 { border-left-color: #9C27B0; }
-        .facultad-color-1 { border-left-color: #FF9800; }
-        .facultad-color-2 { border-left-color: #2196F3; }
-        .facultad-color-3 { border-left-color: #4CAF50; }
-        .facultad-color-4 { border-left-color: #F44336; }
+        .facultad-color-1 { border-left-color: #FF9500; }
+        .facultad-color-2 { border-left-color: #007AFF; }
+        .facultad-color-3 { border-left-color: #34C759; }
+        .facultad-color-4 { border-left-color: #FF3B30; }
         .facultad-color-5 { border-left-color: #673AB7; }
-        .facultad-color-6 { border-left-color: #FF5722; }
-        .facultad-color-7 { border-left-color: #009688; }
+        .facultad-color-6 { border-left-color: #FF6230; }
+        .facultad-color-7 { border-left-color: #32ADE6; }
         .facultad-color-8 { border-left-color: #3F51B5; }
-        .facultad-color-9 { border-left-color: #E91E63; }
-        
+        .facultad-color-9 { border-left-color: #FF2D55; }
+
         .badge-facultad-0 { background-color: #9C27B0; }
-        .badge-facultad-1 { background-color: #FF9800; }
-        .badge-facultad-2 { background-color: #2196F3; }
-        .badge-facultad-3 { background-color: #4CAF50; }
-        .badge-facultad-4 { background-color: #F44336; }
+        .badge-facultad-1 { background-color: #FF9500; }
+        .badge-facultad-2 { background-color: #007AFF; }
+        .badge-facultad-3 { background-color: #34C759; }
+        .badge-facultad-4 { background-color: #FF3B30; }
         .badge-facultad-5 { background-color: #673AB7; }
-        .badge-facultad-6 { background-color: #FF5722; }
-        .badge-facultad-7 { background-color: #009688; }
+        .badge-facultad-6 { background-color: #FF6230; }
+        .badge-facultad-7 { background-color: #32ADE6; }
         .badge-facultad-8 { background-color: #3F51B5; }
-        .badge-facultad-9 { background-color: #E91E63; }
-        
+        .badge-facultad-9 { background-color: #FF2D55; }
+
         body {
-            background-color: var(--color-bg);
-            font-family: 'Segoe UI', sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
         }
         
+        /* ═══ HEADER ═══ */
         .header-info {
-            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            background: #fff;
+            color: #1d1d1f;
+            padding: 18px 22px;
+            border-radius: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 0 0 .5px rgba(60,60,67,.1);
+        }
+
+        .header-icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0,122,255,.32);
             color: white;
-            padding: 30px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 20px rgba(44,62,80,0.2);
+            font-size: 22px;
         }
-        
+
+        .header-eyebrow {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #007AFF;
+            margin-bottom: 2px;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #1d1d1f;
+            margin: 0 0 3px;
+            letter-spacing: -.3px;
+            line-height: 1.2;
+        }
+
+        .header-desc {
+            font-size: 13px;
+            color: #6e6e73;
+            margin: 0;
+        }
+
+        .header-meta {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #aeaeb2;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        /* ═══ COUNTDOWN ═══ */
         .countdown-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
+            background: rgba(0,122,255,.04);
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-top: 14px;
+            border: 1px solid rgba(0,122,255,.12);
         }
-        
+
         .countdown-timer {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             justify-content: center;
             flex-wrap: wrap;
         }
-        
+
         .countdown-box {
-            background: rgba(0, 0, 0, 0.2);
+            background: #fff;
             border-radius: 10px;
-            padding: 15px;
-            min-width: 100px;
+            padding: 10px 14px;
+            min-width: 72px;
             text-align: center;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07);
         }
-        
+
         .countdown-number {
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 1.8rem;
+            font-weight: 800;
             line-height: 1;
-            margin-bottom: 5px;
-            color: white;
+            margin-bottom: 4px;
+            color: #007AFF;
         }
-        
+
         .countdown-label {
-            font-size: 0.85rem;
+            font-size: 0.72rem;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.8);
+            letter-spacing: .4px;
+            color: #aeaeb2;
+            font-weight: 600;
         }
-        
+
+        /* ═══ ACCORDION ═══ */
         .accordion-item {
             border: none;
-            margin-bottom: 20px;
-            border-radius: 15px !important;
+            margin-bottom: 10px;
+            border-radius: 14px !important;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,.08), 0 0 0 .5px rgba(0,0,0,.06);
         }
-        
+
         .accordion-button {
-            padding: 20px 25px;
-            font-size: 1.3rem;
-            font-weight: 700;
+            padding: 14px 20px !important;
+            font-size: 15px !important;
+            font-weight: 700 !important;
             color: white !important;
-            border-radius: 15px !important;
+            border-radius: 14px !important;
+            min-height: 60px;
         }
-        
+
+        .accordion-button .fa-2x {
+            font-size: 1.15rem !important;
+        }
+
         .accordion-button:not(.collapsed) {
             box-shadow: none;
         }
-        
+
         .accordion-button::after {
             filter: brightness(0) invert(1);
         }
+
+        .accordion-button .badge.bg-light {
+            background: rgba(255,255,255,.18) !important;
+            color: white !important;
+            border: 1px solid rgba(255,255,255,.25) !important;
+            border-radius: 20px !important;
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            padding: 4px 12px !important;
+            letter-spacing: .2px !important;
+        }
         
-        .item-card {
+        .lista-container {
             background: white;
             border: 1px solid #e9ecef;
             border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .lista-header {
+            background: #f8f9fa;
+            padding: 12px 15px;
+            border-bottom: 2px solid #dee2e6;
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+        
+        .lista-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.2s ease;
+        }
+
+        .lista-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .lista-item:last-child {
+            border-bottom: none;
+        }
+
+        .lista-item-titulo {
+            font-weight: 600;
+            color: var(--color-primary);
+            margin-bottom: 3px;
+            font-size: 0.95rem;
             display: flex;
-            flex-direction: column;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            height: 100%;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
-        
-        .item-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-            border-left: 4px solid var(--color-primary);
+
+        .lista-item-sub {
+            font-size: 0.78rem;
+            color: #8a95a0;
+            margin-top: 2px;
         }
-        
-        .item-actions {
+
+        .lista-item-fecha {
+            font-size: 0.82rem;
+            color: #6c757d;
+            line-height: 1.6;
+        }
+
+        .lista-item-autor {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.82rem;
+            color: var(--apple-text, #1d1d1f);
+            font-weight: 500;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .lista-item-autor.sin-datos {
+            color: #b0b0b5;
+            font-style: italic;
+        }
+        .lista-item-autor i {
+            font-size: 0.72rem;
+            color: var(--apple-blue, #0071e3);
+            flex-shrink: 0;
+        }
+
+        .lista-item-actions {
             display: flex;
             gap: 5px;
             flex-wrap: wrap;
+            align-items: center;
         }
-        
-        .estado-badge {
-            padding: 4px 12px;
+
+        .lmp-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
             border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: white;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #4338ca;
             white-space: nowrap;
+            letter-spacing: 0.3px;
         }
-        
-        .estado-borrador { background: linear-gradient(135deg, #7F8C8D 0%, #95A5A6 100%); }
-        .estado-publicado { background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); }
-        .estado-cancelado { background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); }
-        .estado-expirado { background: linear-gradient(135deg, #E74C3C 0%, #C0392B 100%); }
-        .estado-vigente { background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); }
-        .estado-sin-fechas { background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%); }
-        
+
+        .lmp-badge i {
+            font-size: 0.72rem;
+            opacity: 0.65;
+        }
+
+        .lmp-badge.sin-datos {
+            background: #f5f5f7;
+            border-color: #e0e0e0;
+            color: #b0b0b5;
+            font-weight: 500;
+            font-style: italic;
+        }
+
+        /* Línea exactamente al 100% → verde */
+        .lmp-badge.lmp-completo {
+            background: rgba(52, 199, 89, 0.12);
+            border-color: rgba(52, 199, 89, 0.4);
+            color: #248a3d;
+            cursor: help;
+        }
+        .lmp-badge.lmp-completo i { opacity: 0.8; }
+        .lmp-badge.lmp-completo .lmp-suma {
+            background: rgba(52,199,89,0.2);
+            opacity: 1;
+        }
+
+        /* Línea excedida (>100%) → rojo */
+        .lmp-badge.lmp-excedido {
+            background: rgba(255, 59, 48, 0.1);
+            border-color: rgba(255, 59, 48, 0.4);
+            color: #d70015;
+            cursor: help;
+            animation: pulseRed 2s infinite;
+        }
+        .lmp-badge.lmp-excedido i { opacity: 0.8; }
+        .lmp-badge.lmp-excedido .lmp-suma {
+            background: rgba(255,59,48,0.18);
+            opacity: 1;
+        }
+        @keyframes pulseRed {
+            0%, 100% { border-color: rgba(255,59,48,0.4); }
+            50%       { border-color: rgba(255,59,48,0.9); }
+        }
+
+        .lmp-suma {
+            font-size: 0.68rem;
+            font-weight: 600;
+            opacity: 0.75;
+            background: rgba(0,0,0,0.06);
+            border-radius: 10px;
+            padding: 1px 5px;
+            margin-left: 2px;
+        }
+
+        /* Nombre verde cuando linea completa (exactamente 100) */
+        .titulo-linea-completa {
+            color: #248a3d !important;
+        }
+        .titulo-linea-completa::after {
+            content: ' ✓';
+            font-size: 0.75rem;
+            color: #34c759;
+        }
+        /* Nombre rojo cuando excedido */
+        .titulo-linea-excedida {
+            color: #d70015 !important;
+        }
+        .titulo-linea-excedida::after {
+            content: ' ⚠';
+            font-size: 0.75rem;
+            color: #ff3b30;
+        }
+
         .empty-state {
             text-align: center;
             padding: 30px;
-            background: #f8f9fc;
-            border-radius: 12px;
-            border: 1px dashed #dee2e6;
+            background: #F2F2F7;
+            border-radius: 14px;
+            border: 1px dashed rgba(60,60,67,.2);
         }
         
         .empty-state i {
             color: #adb5bd;
         }
         
-        .modal-content {
-            border-radius: 15px;
-            border: none;
+        .estado-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 13px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
         }
+
+        .estado-borrador   { background: rgba(142,142,147,.12); color: #6e6e73; }
+        .estado-publicado  { background: rgba(52,199,89,.12);   color: #1A7A35; }
+        .estado-cancelado  { background: rgba(255,59,48,.1);    color: #C0392B; }
+        .estado-expirado   { background: rgba(255,59,48,.1);    color: #C0392B; }
+        .estado-vigente    { background: rgba(52,199,89,.12);   color: #1A7A35; }
+        .estado-sin-fechas { background: rgba(0,122,255,.1);    color: #007AFF; }
+        .estado-no-iniciado { background: rgba(255,149,0,.12);  color: #8B5E00; }
         
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            overflow: hidden;
+        }
+
         .modal-header {
             color: white;
-            border-radius: 15px 15px 0 0;
-            padding: 20px;
+            border-radius: 16px 16px 0 0;
+            padding: 18px 22px;
         }
-        
+
         .modal-header .modal-title {
             cursor: pointer;
-            padding: 5px 10px;
-            border-radius: 5px;
-            transition: background-color 0.3s;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background-color .2s;
         }
-        
+
         .modal-header .modal-title:hover {
             background-color: rgba(255, 255, 255, 0.2);
         }
-        
+
         .modal-header .modal-title-input {
-            background: transparent;
-            border: 2px solid white;
+            background: rgba(255,255,255,.15);
+            border: 1.5px solid rgba(255,255,255,.5);
             color: white;
-            font-size: 1.25rem;
-            font-weight: 500;
+            font-size: 1.15rem;
+            font-weight: 600;
             padding: 5px 10px;
-            border-radius: 5px;
+            border-radius: 8px;
             width: 100%;
         }
-        
+
         .modal-header .modal-title-input:focus {
             outline: none;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255, 255, 255, 0.22);
         }
-        
+
         .btn-close-white {
             filter: invert(1) brightness(2);
         }
@@ -230,7 +499,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         
         .form-control:focus, .form-select:focus {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 0.25rem rgba(44,62,80,0.15);
+            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
         }
         
         .form-control[readonly] {
@@ -299,9 +568,16 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             .countdown-number {
                 font-size: 1.8rem;
             }
+            .lista-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .lista-item-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
         }
 
-        /* Estilos para pestañas */
         .nav-tabs .nav-link {
             border: none;
             border-bottom: 3px solid transparent;
@@ -311,7 +587,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         
         .nav-tabs .nav-link:hover {
             border-bottom-color: var(--color-primary-light);
-            background-color: rgba(44, 62, 80, 0.05);
+            background-color: rgba(0, 122, 255, 0.05);
         }
         
         .nav-tabs .nav-link.active {
@@ -320,7 +596,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             color: var(--color-primary) !important;
         }
         
-        /* Estilos para el estado de las pestañas */
         .nav-tabs .nav-link.tab-incomplete {
             color: var(--color-tab-incomplete) !important;
         }
@@ -333,7 +608,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             color: var(--color-tab-complete);
         }
 
-        /* Estilos para campos de indicador */
         .indicador-section {
             background-color: #f8f9fa;
             padding: 15px;
@@ -349,7 +623,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             border-bottom: 2px solid var(--color-primary-light);
         }
 
-        /* Estilos para tabla de metas */
         .meta-section {
             background-color: #f0f8ff;
             padding: 20px;
@@ -365,56 +638,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             font-size: 1.2rem;
         }
 
-        /* Estilos para tabla de resumen */
-        .resumen-section {
-            background-color: #fff3e0;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-            border-left: 4px solid #ff9800;
-        }
-        
-        .resumen-title {
-            color: #e65100;
-            font-weight: 700;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .resumen-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .resumen-table th {
-            background-color: #ffb74d;
-            color: #fff;
-            font-weight: 600;
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ff9800;
-        }
-        
-        .resumen-table td {
-            padding: 10px;
-            text-align: center;
-            border: 1px solid #ff9800;
-            background-color: #fff;
-        }
-        
-        .resumen-table .subtotal {
-            background-color: #ffe0b2;
-            font-weight: 600;
-        }
-
-        /* Estilos para scroll en modales */
         .modal-body-scroll {
             max-height: 70vh;
             overflow-y: auto;
             padding: 20px;
         }
 
-        /* Estilos para la sección de desarrollo */
         .desarrollo-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
@@ -451,13 +680,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
-        /* Estilos para el acordeón de facultades */
         .facultad-card {
             background: white;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0,0,0,.08);
             border-left: 4px solid;
             transition: all 0.3s ease;
         }
@@ -494,29 +722,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             border-top: 1px solid #e9ecef;
         }
         
-        .facultad-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        
-        .facultad-table th {
-            background-color: #f8f9fa;
-            padding: 12px;
-            text-align: left;
-            font-weight: 600;
-            color: var(--color-primary);
-        }
-        
-        .facultad-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .facultad-table tr:hover {
-            background-color: #f8f9fa;
-        }
-        
         .badge-facultad {
             padding: 4px 8px;
             border-radius: 12px;
@@ -525,7 +730,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             color: white;
         }
 
-        /* Estilos para items de formulación en facultades */
         .facultad-item {
             background: #f8f9fa;
             border-radius: 8px;
@@ -557,14 +761,13 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             gap: 5px;
         }
 
-        /* Indicador de checkbox activo */
         .gestionado-indicador {
             display: inline-block;
             padding: 2px 8px;
             border-radius: 12px;
             font-size: 0.7rem;
             font-weight: 600;
-            background-color: #27AE60;
+            background-color: #34C759;
             color: white;
             margin-left: 8px;
         }
@@ -574,62 +777,123 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             margin-right: 3px;
         }
 
-        /* Animación para fade in/out */
-        .fade-out {
-            opacity: 0;
-            transform: translateX(-10px);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+        /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
+        /* !important beats inline style on span/small inside accordion button */
+        .accordion-button > div > span:first-child {
+            font-size: 15px !important;
+            font-weight: 700 !important;
         }
-        
-        .fade-in {
-            opacity: 1;
-            transform: translateX(0);
-            transition: opacity 0.3s ease, transform 0.3s ease;
+        .accordion-button > div > small {
+            font-size: 12px !important;
+            opacity: .82;
         }
-        
-        .facultad-item {
-            transition: all 0.3s ease;
+
+        /* Reduce top margin between accordion groups */
+        #accordionFacultades,
+        [id^="accordionEval"] {
+            margin-top: 10px !important;
+        }
+
+        /* Container padding reduction */
+        .container-fluid {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* Accordion body padding */
+        .accordion-body {
+            padding: 20px !important;
+        }
+
+        /* Section sub-headers inside accordion */
+        .mb-5 > .d-flex > h5 {
+            font-size: 15px !important;
+            font-weight: 700 !important;
+            color: #1d1d1f !important;
+        }
+
+        /* === FILTRO DE LISTA === */
+        .filtro-lista-bar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 12px;
+            padding: 10px 16px;
+            margin-bottom: 18px;
+        }
+        .filtro-lista-bar .filtro-label {
+            font-size: 0.82rem; font-weight: 600; color: #6c757d; white-space: nowrap;
+        }
+        .filtro-tipo-select {
+            border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+            padding: 5px 10px; font-size: 0.83rem; background: white; color: #1d1d1f; cursor: pointer;
+        }
+        .filtro-input-wrap { position: relative; min-width: 200px; max-width: 300px; }
+        .filtro-texto-input {
+            width: 100%; border: 1px solid rgba(0,0,0,0.12); border-radius: 8px;
+            padding: 5px 10px; font-size: 0.83rem;
+        }
+        .filtro-sugerencias {
+            display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: white; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12); z-index: 9999; max-height: 220px; overflow-y: auto;
+        }
+        .filtro-sugerencias .sug-item {
+            padding: 8px 14px; cursor: pointer; font-size: 0.83rem;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+        }
+        .filtro-sugerencias .sug-item:last-child { border-bottom: none; }
+        .filtro-sugerencias .sug-item:hover { background: rgba(0,122,255,0.08); }
+        .filtro-resultado-badge {
+            font-size: 0.75rem; padding: 2px 9px; border-radius: 10px;
+            background: rgba(0,122,255,0.09); color: #007aff;
+            border: 1px solid rgba(0,122,255,0.18);
         }
     </style>
-</head>
-<body>
+<?php $cssExtra = ob_get_clean();
+require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
         <div class="header-info">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h1 class="mb-2">
-                        <i class="fas fa-cubes me-3"></i>SISTEMA 144
-                    </h1>
-                    <h4 class="mb-0"><?php echo htmlspecialchars($formulario['titulo'] ?? 'Sin título'); ?></h4>
-                    <p class="mb-0 mt-2 opacity-75">
-                        <i class="fas fa-info-circle me-1"></i>
-                        <?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?>
-                    </p>
-                    <div class="fechas-info mt-3">
+            <div style="display:flex;align-items:flex-start;gap:16px;">
+                <!-- Icon -->
+                <div class="header-icon-box">
+                    <i class="fas fa-cubes"></i>
+                </div>
+
+                <!-- Text block -->
+                <div style="flex:1;min-width:0;">
+                    <div class="header-eyebrow">SISTEMA 144</div>
+                    <h1 class="header-title"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h1>
+                    <p class="header-desc"><?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?></p>
+                    <?php if (!empty($formulario['fecha_inicio']) || !empty($formulario['fecha_cierre'])): ?>
+                    <div class="header-meta">
                         <?php if (!empty($formulario['fecha_inicio'])): ?>
-                        <span class="me-3"><i class="fas fa-play-circle"></i> Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></span>
+                        <span><i class="fas fa-play-circle me-1" style="color:#34C759;"></i>Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></span>
                         <?php endif; ?>
                         <?php if (!empty($formulario['fecha_cierre'])): ?>
-                        <span class="me-3"><i class="fas fa-stop-circle"></i> Cierre: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])); ?></span>
+                        <span><i class="fas fa-stop-circle me-1" style="color:#FF3B30;"></i>Cierre: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])); ?></span>
                         <?php endif; ?>
                     </div>
+                    <?php endif; ?>
                 </div>
-                <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                    <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?> mb-2">
-                        <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?> me-1"></i>
+
+                <!-- Right: status + back -->
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+                    <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?>">
+                        <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?>"></i>
                         <?php echo $estado_fechas['mensaje']; ?>
                     </span>
-                    <br>
-                    <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn btn-light">
-                        <i class="fas fa-arrow-left me-1"></i>Volver
+                    <a href="<?php echo $basePath; ?>/FOR-DE-144"
+                       style="display:inline-flex;align-items:center;gap:6px;background:#F2F2F7;color:#1d1d1f;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:none;transition:background .15s;">
+                        <i class="fas fa-arrow-left" style="font-size:11px;"></i>Volver
                     </a>
                 </div>
             </div>
-            
+
             <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
             <div class="countdown-container">
-                <div class="countdown-title text-center mb-3">
-                    <i class="fas fa-hourglass-half me-2"></i>Tiempo restante para el cierre:
+                <div style="text-align:center;font-size:12px;font-weight:600;color:#6e6e73;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">
+                    <i class="fas fa-hourglass-half me-1" style="color:#007AFF;"></i>Tiempo restante
                 </div>
                 <div class="countdown-timer" id="countdown-timer">
                     <div class="countdown-box"><div class="countdown-number" id="days">00</div><div class="countdown-label">Días</div></div>
@@ -652,7 +916,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
         <?php else: ?>
 
-        <!-- Acordeón 1: Módulos existentes (FORMULACIÓN 144 y SEGUIMIENTO 144) -->
+        <!-- Acordeón 1: Módulos existentes -->
         <div class="accordion" id="accordionModulos">
             <?php $primer_modulo = false; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
@@ -693,6 +957,45 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
                         
+                        <!-- FILTRO DE LISTA -->
+                        <?php $pref_key = $filter_preferences[$key] ?? ['tipo_filtro' => 'todos', 'valor_filtro' => null]; ?>
+                        <div class="filtro-lista-bar" id="filtroBar-<?php echo $key; ?>">
+                            <span class="filtro-label"><i class="fas fa-filter me-1"></i>Ver:</span>
+                            <select class="filtro-tipo-select" id="filtroTipo-<?php echo $key; ?>"
+                                    onchange="onFiltroTipoChange('<?php echo $key; ?>')">
+                                <option value="todos"       <?php echo $pref_key['tipo_filtro']==='todos'       ? 'selected':''; ?>>Todos</option>
+                                <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Solo mío</option>
+                                <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
+                                <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
+                            </select>
+                            <select class="filtro-tipo-select" id="filtroLinea-<?php echo $key; ?>"
+                                    onchange="onFiltroLineaChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Línea: Todas</option>
+                            </select>
+                            <select class="filtro-tipo-select" id="filtroMotor-<?php echo $key; ?>"
+                                    onchange="onFiltroMotorChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Motor: Todos</option>
+                            </select>
+                            <select class="filtro-tipo-select" id="filtroProyecto-<?php echo $key; ?>"
+                                    onchange="onFiltroProyectoChange('<?php echo $key; ?>')" style="display:none;">
+                                <option value="">Proyecto: Todos</option>
+                            </select>
+                            <div class="filtro-input-wrap" id="filtroInputWrap-<?php echo $key; ?>"
+                                 style="display:<?php echo in_array($pref_key['tipo_filtro'],['dependencia','persona']) ? 'block':'none'; ?>">
+                                <input type="text" class="filtro-texto-input"
+                                       id="filtroTexto-<?php echo $key; ?>"
+                                       autocomplete="off"
+                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : 'Buscar dependencia...'; ?>"
+                                       value="<?php echo htmlspecialchars($pref_key['valor_filtro'] ?? ''); ?>"
+                                       oninput="onFiltroTextoInput('<?php echo $key; ?>')"
+                                       onfocus="mostrarSugerencias('<?php echo $key; ?>')"
+                                       onblur="setTimeout(function(){ ocultarSugerencias('<?php echo $key; ?>') }, 200)">
+                                <div class="filtro-sugerencias" id="filtroSugerencias-<?php echo $key; ?>"></div>
+                            </div>
+                            <span class="filtro-resultado-badge" id="filtroResultado-<?php echo $key; ?>" style="display:none;"></span>
+                        </div>
+
+                        <!-- BORRADORES -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-secondary bg-opacity-10 p-2 rounded-circle me-2">
@@ -703,28 +1006,72 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             
                             <?php if (count($modulo['borradores']) > 0): ?>
-                                <div class="row g-3">
-                                    <?php foreach ($modulo['borradores'] as $borrador): ?>
-                                    <div class="col-xl-4 col-lg-6 col-md-6">
-                                        <div class="item-card h-100">
-                                            <div class="w-100">
-                                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                                    <h5 class="mb-0"><?php echo htmlspecialchars($borrador['nombre_borrador']); ?></h5>
-                                                    <span class="estado-badge estado-borrador ms-2">Borrador</span>
-                                                </div>
-                                                <div class="mb-2">
-                                                    <small class="text-muted">
-                                                        <i class="far fa-calendar-alt me-1"></i>
-                                                        <?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
-                                                    </small>
+                                <div class="lista-container">
+                                    <div class="lista-header">
+                                        <div class="row">
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de creación</div>
+                                            <div class="col-md-2">Acciones</div>
+                                        </div>
+                                    </div>
+                                    <?php
+                                    // Pre-calcular suma de ponderacion_actividades por linea_codigo
+                                    $pond_por_linea_b = [];
+                                    foreach ($modulo['borradores'] as $_b) {
+                                        $lk = $_b['linea_codigo'] ?? '__';
+                                        $pond_por_linea_b[$lk] = ($pond_por_linea_b[$lk] ?? 0) + (float)($_b['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['borradores'] as $borrador):
+                                        $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
+                                        $m   = !empty($borrador['motor_id_num'])    ? 'M'.$borrador['motor_id_num']: null;
+                                        $p   = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_b[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($borrador['nombre_borrador']); ?>
+                                                    <?php if ($borrador['gestionado_facultades'] == 1): ?>
+                                                    <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($borrador['anio'])): ?>
-                                                <span class="badge bg-secondary mb-2">Año: <?php echo $borrador['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?></div>
                                                 <?php endif; ?>
-                                                <?php if ($borrador['gestionado_facultades'] == 1): ?>
-                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
-                                                <div class="item-actions mt-3">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($borrador['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($borrador['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
                                                         <i class="fas fa-edit"></i>
@@ -734,7 +1081,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <?php endif; ?>
-                                                    
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
                                                         <i class="fas fa-check"></i>
@@ -747,7 +1093,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                         <i class="fas fa-trash"></i>
                                                     </button>
                                                     <?php endif; ?>
-                                                    
                                                     <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
                                                         <i class="fas fa-copy"></i>
                                                     </button>
@@ -766,6 +1111,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
 
+                        <!-- PUBLICADOS -->
                         <div class="mb-5">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
@@ -776,35 +1122,78 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             
                             <?php if (count($modulo['publicados']) > 0): ?>
-                                <div class="row g-3">
-                                    <?php foreach ($modulo['publicados'] as $publicado): ?>
-                                    <div class="col-xl-4 col-lg-6 col-md-6">
-                                        <div class="item-card h-100">
-                                            <div class="w-100">
-                                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                                    <h5 class="mb-0"><?php echo htmlspecialchars($publicado['nombre_borrador']); ?></h5>
-                                                    <span class="estado-badge estado-publicado ms-2">Publicado</span>
-                                                </div>
-                                                <div class="mb-2">
-                                                    <small class="text-muted">
-                                                        <i class="far fa-calendar-alt me-1"></i>
-                                                        <?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?>
-                                                    </small>
+                                <div class="lista-container">
+                                    <div class="lista-header">
+                                        <div class="row">
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de publicación</div>
+                                            <div class="col-md-2">Acciones</div>
+                                        </div>
+                                    </div>
+                                    <?php
+                                    $pond_por_linea_p = [];
+                                    foreach ($modulo['publicados'] as $_p) {
+                                        $lk = $_p['linea_codigo'] ?? '__';
+                                        $pond_por_linea_p[$lk] = ($pond_por_linea_p[$lk] ?? 0) + (float)($_p['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['publicados'] as $publicado):
+                                        $l   = !empty($publicado['linea_codigo'])    ? $publicado['linea_codigo']    : null;
+                                        $m   = !empty($publicado['motor_id_num'])    ? 'M'.$publicado['motor_id_num']: null;
+                                        $p   = !empty($publicado['proyecto_codigo']) ? $publicado['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_p[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($publicado['nombre_borrador']); ?>
+                                                    <?php if ($publicado['gestionado_facultades'] == 1): ?>
+                                                    <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($publicado['anio'])): ?>
-                                                <span class="badge bg-secondary mb-2">Año: <?php echo $publicado['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $publicado['anio']; ?></div>
                                                 <?php endif; ?>
-                                                <?php if ($publicado['gestionado_facultades'] == 1): ?>
-                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
-                                                <div class="mt-3">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($publicado['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($publicado['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
-                                                        <i class="fas fa-eye me-1"></i>Ver detalles
+                                                        <i class="fas fa-eye me-1"></i>Ver
                                                     </button>
                                                     <?php else: ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
-                                                        <i class="fas fa-eye me-1"></i>Ver detalles
+                                                        <i class="fas fa-eye me-1"></i>Ver
                                                     </button>
                                                     <?php endif; ?>
                                                 </div>
@@ -822,6 +1211,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endif; ?>
                         </div>
 
+                        <!-- CANCELADOS -->
                         <div class="mb-3">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-danger bg-opacity-10 p-2 rounded-circle me-2">
@@ -832,28 +1222,68 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                             
                             <?php if (count($modulo['cancelados']) > 0): ?>
-                                <div class="row g-3">
-                                    <?php foreach ($modulo['cancelados'] as $cancelado): ?>
-                                    <div class="col-xl-4 col-lg-6 col-md-6">
-                                        <div class="item-card h-100">
-                                            <div class="w-100">
-                                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                                    <h5 class="mb-0"><?php echo htmlspecialchars($cancelado['nombre_borrador']); ?></h5>
-                                                    <span class="estado-badge estado-cancelado ms-2">Cancelado</span>
-                                                </div>
-                                                <div class="mb-2">
-                                                    <small class="text-muted">
-                                                        <i class="far fa-calendar-alt me-1"></i>
-                                                        <?php echo date('d/m/Y H:i', strtotime($cancelado['fecha_creacion'])); ?>
-                                                    </small>
+                                <div class="lista-container">
+                                    <div class="lista-header">
+                                        <div class="row">
+                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-2">L - M - P</div>
+                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Fecha de cancelación</div>
+                                            <div class="col-md-2">Acciones</div>
+                                        </div>
+                                    </div>
+                                    <?php
+                                    $pond_por_linea_c = [];
+                                    foreach ($modulo['cancelados'] as $_c) {
+                                        $lk = $_c['linea_codigo'] ?? '__';
+                                        $pond_por_linea_c[$lk] = ($pond_por_linea_c[$lk] ?? 0) + (float)($_c['ponderacion_actividades'] ?? 0);
+                                    }
+                                    ?>
+                                    <?php foreach ($modulo['cancelados'] as $cancelado):
+                                        $l   = !empty($cancelado['linea_codigo'])    ? $cancelado['linea_codigo']    : null;
+                                        $m   = !empty($cancelado['motor_id_num'])    ? 'M'.$cancelado['motor_id_num']: null;
+                                        $p   = !empty($cancelado['proyecto_codigo']) ? $cancelado['proyecto_codigo'] : null;
+                                        $lmp = array_filter([$l, $m, $p]);
+                                        $suma_linea = $l ? ($pond_por_linea_c[$l] ?? 0) : 0;
+                                        $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
+                                        $linea_excedida = $suma_linea > 100.01;
+                                    ?>
+                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>">
+                                        <div class="row align-items-center g-2">
+                                            <div class="col-md-4">
+                                                <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
+                                                    <?php echo htmlspecialchars($cancelado['nombre_borrador']); ?>
                                                 </div>
                                                 <?php if (!empty($cancelado['anio'])): ?>
-                                                <span class="badge bg-secondary mb-2">Año: <?php echo $cancelado['anio']; ?></span>
+                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $cancelado['anio']; ?></div>
                                                 <?php endif; ?>
-                                                <?php if ($cancelado['gestionado_facultades'] == 1): ?>
-                                                <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($lmp)): ?>
+                                                <span class="lmp-badge <?php echo $linea_completa ? 'lmp-completo' : ($linea_excedida ? 'lmp-excedido' : ''); ?>"
+                                                      data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
+                                                      title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
+                                                    <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
-                                                <div class="mt-3">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <?php if (!empty($cancelado['creado_por_nombre'])): ?>
+                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($cancelado['creado_por_nombre']); ?></span>
+                                                <?php else: ?>
+                                                <span class="lista-item-autor sin-datos">—</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-fecha">
+                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($cancelado['fecha_creacion'])); ?>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="lista-item-actions">
                                                     <button class="btn btn-sm btn-outline-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $cancelado['id']; ?>)">
                                                         <i class="fas fa-trash me-1"></i>Eliminar
                                                     </button>
@@ -878,7 +1308,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             <?php endforeach; ?>
         </div>
 
-        <!-- Acordeón 2: Formulación y Seguimiento por Facultades - CON ACTUALIZACIÓN EN TIEMPO REAL -->
+        <!-- Acordeón 2: Formulación y Seguimiento por Facultades -->
         <div class="accordion mt-4" id="accordionFacultades">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingFacultades">
@@ -907,15 +1337,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             
                             <?php foreach ($facultades as $index => $facultad): ?>
                                 <?php 
-                                // Solo mostrar facultades activas (estado = 1)
                                 if ($facultad['estado'] != 1) continue; 
-                                $colorIndex = $index % 10; // Para variedad de colores
+                                $colorIndex = $index % 10;
                                 $facultadId = $facultad['id'];
                                 
-                                // Filtrar SOLO las formulaciones que tengan gestionado_facultades = 1
                                 $formulaciones_con_check = [];
                                 
-                                // Filtrar borradores con gestionado_facultades = 1
                                 if (isset($datos_modulos['formulacion']['borradores'])) {
                                     foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
                                         if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
@@ -924,7 +1351,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     }
                                 }
                                 
-                                // Filtrar publicados con gestionado_facultades = 1
                                 if (isset($datos_modulos['formulacion']['publicados'])) {
                                     foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
                                         if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
@@ -933,13 +1359,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                     }
                                 }
                                 
-                                // Ordenar por fecha de creación (más recientes primero)
                                 usort($formulaciones_con_check, function($a, $b) {
                                     return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
                                 });
                                 ?>
                                 
-                                <!-- Facultad dinámica desde BD -->
                                 <div class="facultad-card facultad-color-<?php echo $colorIndex; ?>" id="facultad-card-<?php echo $facultadId; ?>">
                                     <div class="facultad-header" data-bs-toggle="collapse" data-bs-target="#facultad<?php echo $facultadId; ?>" aria-expanded="false">
                                         <h5 class="mb-0">
@@ -973,7 +1397,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                         
                                                         $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
                                                         ?>
-                                                        <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>">
+                                                        <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>" data-facultad-id="<?php echo $facultadId; ?>">
                                                             <div class="facultad-item-info">
                                                                 <h6>
                                                                     <?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?>
@@ -993,7 +1417,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                                 <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Editar">
                                                                     <i class="fas fa-edit"></i>
                                                                 </button>
-                                                                <!-- NUEVO BOTÓN PARA GESTIÓN SEMESTRAL -->
                                                                 <button class="btn btn-sm" style="background-color: #FF9800; color: white;" onclick="abrirGestionSemestral(<?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Gestión Semestral">
                                                                     <i class="fas fa-calendar-alt"></i>
                                                                 </button>
@@ -1026,7 +1449,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     <p class="text-muted small mb-0 mt-2">
                                                         Para que aparezcan aquí, marca la opción:
                                                         <br>
-                                                        <strong>"13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
+                                                        <strong>"12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
                                                     </p>
                                                 </div>
                                             <?php endif; ?>
@@ -1042,7 +1465,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             <?php endforeach; ?>
 
                         <?php else: ?>
-                            <!-- Si no hay facultades en la BD -->
                             <div class="desarrollo-section">
                                 <div class="desarrollo-icon">
                                     <i class="fas fa-database"></i>
@@ -1062,7 +1484,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             </div>
         </div>
 
-        <!-- Acordeón 3: Evaluación Líneas (NUEVO) -->
+        <!-- Acordeón 3: Evaluación Líneas -->
         <div class="accordion mt-4" id="accordionEvaluacion">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingEvaluacion">
@@ -1083,7 +1505,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                      class="accordion-collapse collapse" 
                      data-bs-parent="#accordionEvaluacion">
                     <div class="accordion-body p-4">
-                        
                         <div class="desarrollo-section">
                             <div class="desarrollo-icon">
                                 <i class="fas fa-chart-pie"></i>
@@ -1101,7 +1522,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 </p>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -1110,16 +1530,15 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         <?php endif; ?>
     </div>
 
-    <!-- Indicador de auto-guardado -->
     <div class="auto-save-indicator" id="autoSaveIndicator">
         <i class="fas fa-check-circle me-2"></i> Guardado automático
     </div>
 
-    <!-- MODAL PARA NUEVO BORRADOR (solo para formulación) -->
+    <!-- MODALES -->
     <div class="modal fade" id="modalNuevoBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nuevo Borrador</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1141,11 +1560,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA NUEVO BORRADOR DE FACULTAD -->
     <div class="modal fade" id="modalNuevoBorradorFacultad" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Formulación - <span id="facultadNombreModal"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1168,11 +1586,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA DUPLICAR BORRADOR -->
     <div class="modal fade" id="modalDuplicarBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Formulación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1194,11 +1611,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA GESTIÓN SEMESTRAL (ACTUALIZADO - SIN TABLA) -->
     <div class="modal fade" id="modalGestionSemestral" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+                <div class="modal-header" style="background: #FF9500;">
                     <h5 class="modal-title">
                         <i class="fas fa-calendar-alt me-2"></i>GESTIÓN SEMESTRAL - <span id="gestionTituloSpan"></span>
                     </h5>
@@ -1208,7 +1624,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" id="gestion_id" name="id">
                     
                     <div class="modal-body">
-                        <!-- Sección de arquitectura con 3 inputs -->
                         <div class="row mb-4">
                             <div class="col-md-12">
                                 <h6 class="text-muted mb-3" style="border-bottom: 2px solid #FF9800; padding-bottom: 10px;">
@@ -1216,19 +1631,16 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 </h6>
                             </div>
                             
-                            <!-- SEM. 1 -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">SEM. 1</label>
                                 <input type="text" class="form-control" name="gestion_sem1" id="gestion_sem1" placeholder="Ingrese gestión semestre 1">
                             </div>
                             
-                            <!-- SEM. 2 -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">SEM. 2</label>
                                 <input type="text" class="form-control" name="gestion_sem2" id="gestion_sem2" placeholder="Ingrese gestión semestre 2">
                             </div>
                             
-                            <!-- VIGENCIA -->
                             <div class="col-md-4 mb-3">
                                 <label class="form-label fw-bold">VIGENCIA</label>
                                 <select class="form-select" name="vigencia" id="gestion_vigencia">
@@ -1240,7 +1652,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             </div>
                         </div>
                         
-                        <!-- SEGUIMIENTO (0/0) y DESCRIPCIÓN DE LA GESTIÓN -->
                         <div class="row">
                             <div class="col-md-12">
                                 <div class="card border-warning">
@@ -1269,11 +1680,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA FORMULACIÓN CON PESTAÑAS Y SCROLL -->
+    <!-- MODAL PARA FORMULACIÓN -->
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title" id="tituloFormulacion" ondblclick="editarTituloModal('formulacion')">
                         <i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan"></span>
                     </h5>
@@ -1283,7 +1694,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="modulo" value="formulacion">
                     <input type="hidden" id="formulacion_id" name="id">
                     
-                    <!-- PESTAÑAS -->
                     <ul class="nav nav-tabs px-3 pt-3" id="formulacionTabs" role="tablist" style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active tab-incomplete" id="tab-formulacion" data-bs-toggle="tab" data-bs-target="#formulacion" type="button" role="tab" aria-controls="formulacion" aria-selected="true" style="font-weight: 600;">
@@ -1302,27 +1712,14 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         </li>
                     </ul>
                     
-                    <!-- CONTENIDO DE LAS PESTAÑAS CON SCROLL -->
                     <div class="modal-body-scroll">
                         <div class="tab-content">
-                            <!-- PESTAÑA 1: FORMULACIÓN (campos 1-13) -->
+                            <!-- PESTAÑA 1: FORMULACIÓN -->
                             <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
                                 <div class="row">
-                                    <!-- 1. AÑO -->
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">1. AÑO</label>
-                                        <select class="form-select" name="anio" id="formulacion_anio" onchange="autoGuardarFormulacion(); validarPestanas()">
-                                            <option value="">Seleccione año</option>
-                                            <?php for ($i = date('Y'); $i <= date('Y') + 5; $i++): ?>
-                                            <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                            <?php endfor; ?>
-                                        </select>
-                                    </div>
-
-                                    <!-- 2. LÍNEA ESTRATÉGICA -->
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">2. LÍNEA ESTRATÉGICA</label>
-                                        <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas()">
+                                    <div class="col-md-12 mb-3">
+                                        <label class="form-label">1. LÍNEA ESTRATÉGICA</label>
+                                        <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione línea estratégica</option>
                                             <?php foreach ($lineas_estrategicas as $linea): ?>
                                             <option value="<?php echo htmlspecialchars($linea['nombre']); ?>" 
@@ -1334,120 +1731,112 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </select>
                                     </div>
 
-                                    <!-- 3. OBJETIVO -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">3. OBJETIVO</label>
+                                        <label class="form-label">2. OBJETIVO</label>
                                         <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
                                     </div>
 
-                                    <!-- 4. ESTRATEGIA -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">4. ESTRATEGIA</label>
+                                        <label class="form-label">3. ESTRATEGIA</label>
                                         <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione una estrategia</option>
                                         </select>
                                     </div>
 
-                                    <!-- 5. MOTOR DE DESARROLLO -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">5. MOTOR DE DESARROLLO</label>
-                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas()">
+                                        <label class="form-label">4. MOTOR DE DESARROLLO</label>
+                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un motor de desarrollo</option>
                                         </select>
                                     </div>
 
-                                    <!-- 6. PROYECTO -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">6. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                        <label class="form-label">5. PROYECTO</label>
+                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(true); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
 
-                                    <!-- 7. META DE RESULTADO -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">7. META DE RESULTADO</label>
+                                        <label class="form-label">6. META DE RESULTADO</label>
                                         <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
                                     </div>
 
-                                    <!-- 8. PONDERACIÓN DE LOS PROYECTOS -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">8. PONDERACIÓN DE LOS PROYECTOS</label>
+                                        <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                            <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" readonly placeholder="0.00" style="background-color: #e9ecef; cursor: not-allowed;">
                                             <span class="input-group-text">%</span>
                                         </div>
                                     </div>
 
-                                    <!-- 9. ACTIVIDAD DEL PROYECTO (205) -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">9. ACTIVIDAD DEL PROYECTO (205)</label>
+                                        <label class="form-label">8. ACTIVIDAD DEL PROYECTO (205)</label>
                                         <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
                                     </div>
 
-                                    <!-- 10. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">10. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
+                                        <label class="form-label">9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                            <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
                                             <span class="input-group-text">%</span>
+                                            <span class="input-group-text px-3" id="acumulado_actividades_badge" 
+                                                  title="Total acumulado para este proyecto (incluyendo este registro)"
+                                                  style="font-size:0.82rem; font-weight:600; min-width:110px; justify-content:center; background:#f8f9fa; color:#6c757d; border-left: 2px solid #dee2e6;">
+                                                Acum: — / 100%
+                                            </span>
                                         </div>
+                                        <div id="acumulado_actividades_msg" class="mt-1" style="font-size:0.8rem; display:none;"></div>
                                     </div>
 
-                                    <!-- 11. RESPONSABLE (select de cargos) -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">11. RESPONSABLE</label>
-                                        <select class="form-select" name="responsable_formulacion" id="formulacion_responsable" onchange="autoGuardarFormulacion(); validarPestanas()">
-                                            <option value="">Seleccione un cargo</option>
+                                        <label class="form-label">10. RESPONSABLE</label>
+                                        <select class="form-select" name="responsable_formulacion_multi[]" id="formulacion_responsable" multiple="multiple">
                                             <?php foreach ($cargos as $cargo): ?>
                                             <option value="<?php echo htmlspecialchars($cargo['nombre']); ?>">
                                                 <?php echo htmlspecialchars($cargo['nombre']); ?>
                                             </option>
                                             <?php endforeach; ?>
                                         </select>
+                                        <input type="hidden" name="responsable_formulacion" id="formulacion_responsable_hidden">
                                     </div>
 
-                                    <!-- 12. ID INDICADOR -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">12. ID INDICADOR</label>
+                                        <label class="form-label">11. ID INDICADOR</label>
                                         <input type="text" class="form-control" name="id_indicador" id="formulacion_id_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el ID del indicador">
                                     </div>
 
-                                    <!-- 13. GESTIONADO EN FACULTADES -->
                                     <div class="col-12 mb-3">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this)">
                                             <label class="form-check-label" for="formulacion_gestionado_facultades">
-                                                <strong>13. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
+                                                <strong>12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
                                             </label>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            <!-- PESTAÑA 2: INDICADOR DE RESULTADO (con METAS PROPUESTAS y TABLA DE RESUMEN) -->
+                            <!-- PESTAÑA 2: INDICADOR DE RESULTADO -->
                             <div class="tab-pane fade" id="indicador" role="tabpanel" aria-labelledby="tab-indicador">
                                 <div class="row">
                                     <div class="col-12 mb-4">
                                         <h5 class="indicador-title">INFORMACIÓN DEL INDICADOR</h5>
                                     </div>
                                     
-                                    <!-- 16.1 NOMBRE DEL INDICADOR -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">16.1 NOMBRE DEL INDICADOR</label>
-                                        <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el nombre del indicador">
+                                        <label class="form-label">13.1 NOMBRE DEL INDICADOR</label>
+                                        <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Ingrese el nombre del indicador">
                                     </div>
                                     
-                                    <!-- 16.2 FÓRMULA DE LA MEDICIÓN -->
                                     <div class="col-12 mb-3">
-                                        <label class="form-label">16.2 FÓRMULA DE LA MEDICIÓN</label>
+                                        <label class="form-label">13.2 FÓRMULA DE LA MEDICIÓN</label>
                                         <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
                                     </div>
                                     
                                     <div class="row">
-                                        <!-- 16.3 FRECUENCIA DE MEDICIÓN -->
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label">16.3 FRECUENCIA DE MEDICIÓN</label>
+                                            <label class="form-label">13.3 FRECUENCIA DE MEDICIÓN</label>
                                             <select class="form-select" name="frecuencia_medicion" id="formulacion_frecuencia_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione frecuencia</option>
                                                 <option value="Mensual">Mensual</option>
@@ -1458,9 +1847,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             </select>
                                         </div>
                                         
-                                        <!-- 16.4 UNIDAD DE MEDIDA -->
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label">16.4 UNIDAD DE MEDIDA</label>
+                                            <label class="form-label">13.4 UNIDAD DE MEDIDA</label>
                                             <select class="form-select" name="unidad_medida" id="formulacion_unidad_medida" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione unidad</option>
                                                 <option value="Unidad">Unidad</option>
@@ -1468,100 +1856,67 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                             </select>
                                         </div>
                                         
-                                        <!-- 16.5 TIPO DE MEDICIÓN -->
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label">16.5 TIPO DE MEDICIÓN</label>
-                                            <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <label class="form-label">13.5 AÑO</label>
+                                            <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()">
                                                 <option value="">Seleccione tipo</option>
-                                                <option value="Cuantitativo">Cuantitativo</option>
-                                                <option value="Cualitativo">Cualitativo</option>
-                                                <option value="Mixto">Mixto</option>
+                                                <option value="Acumulado">Acumulado</option>
+                                                <option value="Nuevo gestionado durante la vigencia">Nuevo gestionado durante la vigencia</option>
+                                                <option value="Promedio">Promedio</option>
+                                                <option value="Último valor reportado">Último valor reportado</option>
+                                                <option value="Límite">Límite</option>
                                             </select>
                                         </div>
                                     </div>
                                     
-                                    <!-- DESCRIPCIÓN DEL INDICADOR -->
                                     <div class="col-12 mb-3">
                                         <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
-                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador, su propósito y qué mide..."></textarea>
+                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
                                     </div>
                                     
-                                    <!-- SECCIÓN DE METAS PROPUESTAS -->
                                     <div class="col-12 mt-4">
                                         <div class="meta-section">
                                             <h5 class="meta-title">METAS PROPUESTAS</h5>
                                             
                                             <div class="row">
-                                                <!-- 17.1 LÍNEA BASE -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">17.1 LÍNEA BASE</label>
-                                                    <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Valor de línea base">
+                                                    <label class="form-label">14.1 LÍNEA BASE</label>
+                                                    <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Valor de línea base">
                                                 </div>
                                                 
-                                                <!-- 17.4 AÑO -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">17.4 AÑO</label>
-                                                    <select class="form-select" name="anio_base_meta" id="formulacion_anio_base_meta" onchange="autoGuardarFormulacion(); validarPestanas()">
-                                                        <option value="">Seleccione año</option>
-                                                        <?php for ($i = date('Y') - 2; $i <= date('Y') + 5; $i++): ?>
-                                                        <option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-                                                        <?php endfor; ?>
-                                                    </select>
+                                                    <label class="form-label">14.4 VALOR AÑO</label>
+                                                    <input type="text" class="form-control" name="anio_base_meta" id="formulacion_anio_base_meta" readonly placeholder="Valor anual" style="background-color: #e8f5e9; font-weight: bold; color: #2e7d32;">
                                                 </div>
                                                 
                                                 <div class="col-12">
                                                     <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
                                                 </div>
                                                 
-                                                <!-- 17.2 SEMESTRE 1 -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">17.2 SEMESTRE 1</label>
-                                                    <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 1">
+                                                    <label class="form-label">14.2 SEMESTRE 1</label>
+                                                    <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 1">
                                                 </div>
                                                 
-                                                <!-- 17.3 SEMESTRE 2 -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">17.3 SEMESTRE 2</label>
-                                                    <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Meta Semestre 2">
+                                                    <label class="form-label">14.3 SEMESTRE 2</label>
+                                                    <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 2">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- SECCIÓN DE TABLA DE RESUMEN CON VALORES DE LA BD -->
-                                    <div class="col-12 mt-4">
-                                        <div class="resumen-section">
-                                            <h5 class="resumen-title">RESUMEN DE INDICADORES Y METAS</h5>
-                                            
-                                            <table class="resumen-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>CATEGORÍA</th>
-                                                        <th>VALOR</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="tablaResumenCuerpo">
-                                                    <!-- Los valores se cargarán dinámicamente con JavaScript -->
-                                                </tbody>
-                                            </table>
-                                            
-                                            <div class="mt-3 text-muted small">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                Los valores mostrados corresponden a los datos ingresados en el formulario.
-                                            </div>
-                                        </div>
-                                    </div>
+
                                 </div>
                             </div>
                             
-                            <!-- PESTAÑA 3: PLANES INSTITUCIONALES DECRETO 612 DE 2018 -->
+                            <!-- PESTAÑA 3: PLANES INSTITUCIONALES -->
                             <div class="tab-pane fade" id="planes" role="tabpanel" aria-labelledby="tab-planes">
                                 <div class="row">
                                     <div class="col-12 mb-4">
                                         <h5 class="indicador-title">PLANES INSTITUCIONALES</h5>
                                     </div>
                                     
-                                    <!-- Selector con buscador (columna izquierda) -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">SELECCIONAR PLAN</label>
                                         <select class="form-select" id="selectPlanInstitucional" style="width: 100%;">
@@ -1577,16 +1932,13 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         </button>
                                     </div>
                                     
-                                    <!-- Contenedor de planes seleccionados (columna derecha) -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">PLANES SELECCIONADOS</label>
                                         <div id="contenedorPlanes" style="max-height: 300px; overflow-y: auto; border: 1px solid #ced4da; border-radius: 8px; padding: 10px; background-color: #f8f9fa;">
-                                            <!-- Los planes seleccionados se cargarán aquí dinámicamente -->
-                                            <p class="text-muted text-center mb-0" id="mensajeVacioPlanes">No hay planes seleccionados</p>
+                                            <p class="text-muted text-center mb-0">No hay planes seleccionados</p>
                                         </div>
                                     </div>
                                     
-                                    <!-- Campo oculto para guardar los planes en la base de datos -->
                                     <input type="hidden" name="planes_institucionales" id="formulacion_planes_institucionales" value="">
                                 </div>
                             </div>
@@ -1601,11 +1953,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA SEGUIMIENTO (con datos de formulación no editables y campos de semestre antes de la descripción) -->
+    <!-- MODAL PARA SEGUIMIENTO -->
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%);">
+                <div class="modal-header" style="background: #34C759;">
                     <h5 class="modal-title" id="tituloSeguimiento" ondblclick="editarTituloModal('seguimiento')">
                         <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan"></span>
                     </h5>
@@ -1615,12 +1967,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     <input type="hidden" name="modulo" value="seguimiento">
                     <input type="hidden" id="seguimiento_id" name="id">
                     
-                    <!-- CONTENIDO CON SCROLL -->
                     <div class="modal-body-scroll">
-                        <!-- DATOS DE FORMULACIÓN (SOLO VISUALES) -->
                         <div class="row mb-4">
                             <div class="col-12">
-                                <div class="alert alert-success" role="alert">
+                                <div class="alert alert-success">
                                     <i class="fas fa-info-circle me-2"></i>
                                     <strong>Datos de Formulación:</strong> Esta información proviene del formulario de formulación y no es editable.
                                 </div>
@@ -1628,146 +1978,47 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-2 mb-3">
-                                <label class="form-label text-muted">AÑO</label>
-                                <div class="bg-light-view" id="seguimiento_anio_view">-</div>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label text-muted">LÍNEA ESTRATÉGICA</label>
-                                <div class="bg-light-view" id="seguimiento_linea_view">-</div>
-                            </div>
-                            <div class="col-md-5 mb-3">
-                                <label class="form-label text-muted">OBJETIVO</label>
-                                <div class="bg-light-view" id="seguimiento_objetivo_view">-</div>
-                            </div>
+                            <div class="col-md-2 mb-3"><label class="form-label text-muted">AÑO</label><div class="bg-light-view" id="seguimiento_anio_view">-</div></div>
+                            <div class="col-md-5 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
+                            <div class="col-md-5 mb-3"><label class="form-label text-muted">OBJETIVO</label><div class="bg-light-view" id="seguimiento_objetivo_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">ESTRATEGIA</label>
-                                <div class="bg-light-view" id="seguimiento_estrategia_view">-</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">MOTOR DE DESARROLLO</label>
-                                <div class="bg-light-view" id="seguimiento_motor_view">-</div>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ESTRATEGIA</label><div class="bg-light-view" id="seguimiento_estrategia_view">-</div></div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">META DE RESULTADO</label>
-                                <div class="bg-light-view" id="seguimiento_meta_resultado_view">-</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">PROYECTO</label>
-                                <div class="bg-light-view" id="seguimiento_proyecto_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">PONDERACIÓN PROYECTOS</label>
-                                <div class="bg-light-view" id="seguimiento_ponderacion_proyectos_view">-</div>
-                            </div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">META DE RESULTADO</label><div class="bg-light-view" id="seguimiento_meta_resultado_view">-</div></div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN PROYECTOS</label><div class="bg-light-view" id="seguimiento_ponderacion_proyectos_view">-</div></div>
                         </div>
                         
                         <div class="row mb-4">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">ACTIVIDAD DEL PROYECTO (205)</label>
-                                <div class="bg-light-view" id="seguimiento_actividad_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">PONDERACIÓN ACTIVIDADES</label>
-                                <div class="bg-light-view" id="seguimiento_ponderacion_actividades_view">-</div>
-                            </div>
-                            <div class="col-md-3 mb-3">
-                                <label class="form-label text-muted">RESPONSABLE</label>
-                                <div class="bg-light-view" id="seguimiento_responsable_view">-</div>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ACTIVIDAD DEL PROYECTO</label><div class="bg-light-view" id="seguimiento_actividad_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN ACTIVIDADES</label><div class="bg-light-view" id="seguimiento_ponderacion_actividades_view">-</div></div>
+                            <div class="col-md-3 mb-3"><label class="form-label text-muted">RESPONSABLE</label><div class="bg-light-view" id="seguimiento_responsable_view">-</div></div>
                         </div>
                         
-                        <!-- SECCIÓN DE TABLA DE RESUMEN EN SEGUIMIENTO -->
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="resumen-section">
-                                    <h5 class="resumen-title">RESUMEN DE INDICADORES Y METAS</h5>
-                                    
-                                    <table class="resumen-table">
-                                        <thead>
-                                            <tr>
-                                                <th>CATEGORÍA</th>
-                                                <th>VALOR</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="tablaResumenSeguimientoCuerpo">
-                                            <!-- Los valores se cargarán dinámicamente con JavaScript -->
-                                        </tbody>
-                                    </table>
-                                    
-                                    <div class="mt-3 text-muted small">
-                                        <i class="fas fa-info-circle me-1"></i>
-                                        Los valores mostrados corresponden a los datos ingresados en el formulario de formulación.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                         
                         <div class="row mb-4">
-                            <div class="col-12">
-                                <hr class="my-4">
-                                <h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6>
-                            </div>
+                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6></div>
                         </div>
                         
-                        <!-- CAMPOS EDITABLES DE SEGUIMIENTO (con semestres antes de la descripción) -->
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">INDICADOR</label>
-                                <input type="text" class="form-control" name="indicador" id="seguimiento_indicador" placeholder="Ej: % de cumplimiento" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">FECHA DE SEGUIMIENTO</label>
-                                <input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()">
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">INDICADOR</label><input type="text" class="form-control" name="indicador" id="seguimiento_indicador" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">FECHA DE SEGUIMIENTO</label><input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()"></div>
                             
-                            <!-- META PROGRAMADA Y EJECUTADA -->
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">META PROGRAMADA</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">$</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">META EJECUTADA</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">$</span>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">% AVANCE</label>
-                                <div class="input-group">
-                                    <input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()">
-                                    <span class="input-group-text">%</span>
-                                </div>
-                            </div>
+                            <div class="col-md-4 mb-3"><label class="form-label">META PROGRAMADA</label><div class="input-group"><input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label">META EJECUTADA</label><div class="input-group"><input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label">% AVANCE</label><div class="input-group"><input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()"><span class="input-group-text">%</span></div></div>
                             
-                            <!-- NUEVOS CAMPOS: SEMESTRE 1 Y SEMESTRE 2 (ANTES DE LA DESCRIPCIÓN) -->
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 1 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" placeholder="Avance Semestre 1" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">SEMESTRE 2 (SEGUIMIENTO)</label>
-                                <input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" placeholder="Avance Semestre 2" oninput="autoGuardarSeguimiento()">
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 1</label><input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 2</label><input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" oninput="autoGuardarSeguimiento()"></div>
                             
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label>
-                                <input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()">
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">OBSERVACIONES</label>
-                                <textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea>
-                            </div>
+                            <div class="col-md-6 mb-3"><label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label><input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-12 mb-3"><label class="form-label">OBSERVACIONES</label><textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
                         </div>
                     </div>
                     
@@ -1779,11 +2030,10 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         </div>
     </div>
 
-    <!-- MODAL PARA VER FORMULARIO -->
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);">
+                <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Ver Formulación - <span id="ver_titulo"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -1798,15 +2048,326 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <script>
         const basePath = '<?php echo $basePath; ?>';
         const formularioId = <?php echo $formulario['id']; ?>;
+        const formularioAnio = <?php echo intval($formulario['anio'] ?? 0); ?>; // Año heredado del formulario padre
+
+        const FILTER_USUARIO_ID = <?php echo (int)($_SESSION['usuario_id'] ?? 0); ?>;
+        const FILTER_CARGOS     = <?php echo json_encode($cargos); ?>;
+        const FILTER_CREADORES  = <?php
+            $todos_creadores_js = [];
+            foreach ($datos_modulos as $_km => $_mod) {
+                foreach (array_merge($_mod['borradores'], $_mod['publicados'], $_mod['cancelados']) as $_it) {
+                    if (!empty($_it['creado_por']) && !empty($_it['creado_por_nombre'])) {
+                        $todos_creadores_js[$_it['creado_por']] = ['id' => $_it['creado_por'], 'nombre' => $_it['creado_por_nombre']];
+                    }
+                }
+            }
+            echo json_encode(array_values($todos_creadores_js));
+        ?>;
+        const FILTER_PREFS = <?php echo json_encode($filter_preferences ?? []); ?>;
         
-        // Variables para auto-guardado
+        // Datos de formulaciones — se refresca vía AJAX para mantener sincronía
+        let formulacionesExistentes = <?php
+            $todas = [];
+            $modulos_check = ['formulacion'];
+            foreach ($modulos_check as $mk) {
+                if (isset($datos_modulos[$mk])) {
+                    foreach (['borradores', 'publicados'] as $estado) {
+                        if (isset($datos_modulos[$mk][$estado])) {
+                            foreach ($datos_modulos[$mk][$estado] as $b) {
+                                if (!empty($b['proyecto']) && isset($b['ponderacion_actividades'])) {
+                                    $todas[] = [
+                                        'id' => intval($b['id']),
+                                        'proyecto' => $b['proyecto'],
+                                        'ponderacion_actividades' => floatval($b['ponderacion_actividades'])
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            echo json_encode($todas);
+        ?>;
+
+
+        // Refresca formulacionesExistentes desde el servidor
+        function refrescarFormulacionesExistentes(callback) {
+            $.ajax({
+                url: basePath + '/modulo144/getPonderaciones?formulario_id=' + formularioId,
+                type: 'GET',
+                dataType: 'json',
+                success: function(res) {
+                    if (res.success) {
+                        formulacionesExistentes = res.formulaciones.map(function(f) {
+                            return { id: parseInt(f.id), proyecto: f.proyecto, ponderacion_actividades: parseFloat(f.ponderacion_actividades) || 0 };
+                        });
+                    }
+                    if (typeof callback === 'function') callback();
+                },
+                error: function() {
+                    if (typeof callback === 'function') callback();
+                }
+            });
+        }
+
+        function guardarEstadoAcordeon() {
+            const abierto = document.querySelector('#accordionModulos .accordion-collapse.show');
+            if (abierto) {
+                sessionStorage.setItem('mod144_acordeon_' + formularioId, abierto.id);
+            } else {
+                sessionStorage.removeItem('mod144_acordeon_' + formularioId);
+            }
+        }
+
+        function restaurarEstadoAcordeon() {
+            const id = sessionStorage.getItem('mod144_acordeon_' + formularioId);
+            if (!id) return;
+            sessionStorage.removeItem('mod144_acordeon_' + formularioId);
+            const panel = document.getElementById(id);
+            if (!panel) return;
+            // Colapsar el que esté abierto por defecto y abrir el guardado
+            document.querySelectorAll('#accordionModulos .accordion-collapse.show').forEach(function(el) {
+                el.classList.remove('show');
+                const btn = document.querySelector('[data-bs-target="#' + el.id + '"]');
+                if (btn) btn.classList.add('collapsed');
+            });
+            panel.classList.add('show');
+            const btn = document.querySelector('[data-bs-target="#' + id + '"]');
+            if (btn) btn.classList.remove('collapsed');
+        }
+
+        $(document).ready(function() {
+            restaurarEstadoAcordeon();
+        });
+
         let timeoutId = null;
         let currentModule = null;
+        let editandoTitulo = false;
+        let planesSeleccionados = [];
         
+        // FUNCIÓN PARA OBTENER EL ÚLTIMO VALOR REPORTADO (Puesto 1: Línea Base, Puesto 2: Semestre 1, Puesto 3: Semestre 2)
+        function obtenerUltimoValorReportado(lineaBase, metaS1, metaS2) {
+            // Prioridad: Semestre 2 (puesto 3) -> Semestre 1 (puesto 2) -> Línea Base (puesto 1)
+            if (metaS2 !== null && metaS2 !== undefined && metaS2 !== '' && !isNaN(metaS2)) {
+                return parseFloat(metaS2);
+            }
+            if (metaS1 !== null && metaS1 !== undefined && metaS1 !== '' && !isNaN(metaS1)) {
+                return parseFloat(metaS1);
+            }
+            if (lineaBase !== null && lineaBase !== undefined && lineaBase !== '' && !isNaN(lineaBase)) {
+                return parseFloat(lineaBase);
+            }
+            return null;
+        }
+        
+        // FUNCIÓN PARA CALCULAR EL VALOR ANUAL SEGÚN EL TIPO DE MEDICIÓN
+        function calcularValorAnual() {
+            const tipoMedicion = $('#formulacion_tipo_medicion').val();
+            const lineaBaseRaw = $('#formulacion_linea_base_meta').val();
+            const metaS1Raw = $('#formulacion_meta_s1').val();
+            const metaS2Raw = $('#formulacion_meta_s2').val();
+            
+            const lineaBase = (lineaBaseRaw && lineaBaseRaw !== '') ? parseFloat(lineaBaseRaw) : null;
+            const metaS1 = (metaS1Raw && metaS1Raw !== '') ? parseFloat(metaS1Raw) : null;
+            const metaS2 = (metaS2Raw && metaS2Raw !== '') ? parseFloat(metaS2Raw) : null;
+            
+            let valorAnual = '';
+            
+            if (tipoMedicion === 'Acumulado') {
+                // Acumulado = Línea Base + Semestre 1 + Semestre 2
+                let suma = 0;
+                if (lineaBase !== null) suma += lineaBase;
+                if (metaS1 !== null) suma += metaS1;
+                if (metaS2 !== null) suma += metaS2;
+                valorAnual = suma.toFixed(2);
+            } 
+            else if (tipoMedicion === 'Nuevo gestionado durante la vigencia') {
+                // Nuevo gestionado durante la vigencia = Semestre 1 + Semestre 2
+                let suma = 0;
+                if (metaS1 !== null) suma += metaS1;
+                if (metaS2 !== null) suma += metaS2;
+                valorAnual = suma.toFixed(2);
+            }
+            else if (tipoMedicion === 'Promedio') {
+                // Promedio = (Semestre 1 + Semestre 2) / 2
+                let suma = 0;
+                let contador = 0;
+                if (metaS1 !== null) { suma += metaS1; contador++; }
+                if (metaS2 !== null) { suma += metaS2; contador++; }
+                valorAnual = contador > 0 ? (suma / contador).toFixed(2) : '0.00';
+            }
+            else if (tipoMedicion === 'Último valor reportado') {
+                // Último valor reportado = prioridad: Semestre 2 -> Semestre 1 -> Línea Base
+                const ultimoValor = obtenerUltimoValorReportado(lineaBase, metaS1, metaS2);
+                valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
+            }
+            else if (tipoMedicion === 'Límite') {
+                // Límite = valor de Semestre 2
+                valorAnual = metaS2 !== null ? metaS2.toFixed(2) : '';
+            }
+            else {
+                valorAnual = '';
+            }
+            
+            $('#formulacion_anio_base_meta').val(valorAnual);
+
+            // Bloquear/desbloquear Línea Base y Semestre 1 según tipo Límite
+            if (tipoMedicion === 'Límite') {
+                $('#formulacion_linea_base_meta')
+                    .prop('readonly', true)
+                    .val('')
+                    .css({ 'background-color': '#e9ecef', 'opacity': '0.6', 'cursor': 'not-allowed' });
+                $('#formulacion_meta_s1')
+                    .prop('readonly', true)
+                    .val('')
+                    .css({ 'background-color': '#e9ecef', 'opacity': '0.6', 'cursor': 'not-allowed' });
+            } else {
+                $('#formulacion_linea_base_meta')
+                    .prop('readonly', false)
+                    .css({ 'background-color': '', 'opacity': '', 'cursor': '' });
+                $('#formulacion_meta_s1')
+                    .prop('readonly', false)
+                    .css({ 'background-color': '', 'opacity': '', 'cursor': '' });
+            }
+        }
+        
+        // ── ACUMULADO DE PONDERACIÓN DE ACTIVIDADES POR PROYECTO ────────────
+        function _ejecutarCalculoAcumulado() {
+            const proyectoSeleccionado = $('#formulacion_proyecto').val();
+            const idActual = $('#formulacion_id').val() ? parseInt($('#formulacion_id').val()) : null;
+            const valorActual = parseFloat($('#formulacion_ponderacion_actividades').val()) || 0;
+            const badge = $('#acumulado_actividades_badge');
+            const msg   = $('#acumulado_actividades_msg');
+            const input = $('#formulacion_ponderacion_actividades');
+
+            if (!proyectoSeleccionado) {
+                badge.text('Acum: — / 100%').css({ color: '#6c757d', background: '#f8f9fa', borderColor: '#dee2e6' });
+                msg.hide();
+                return;
+            }
+
+            // Suma de otros registros con el mismo proyecto (excluye el actual)
+            // Usamos == en lugar de !== para evitar bug string vs integer (PDO retorna strings)
+            let acumuladoOtros = 0;
+            formulacionesExistentes.forEach(function(f) {
+                if (f.proyecto === proyectoSeleccionado && parseInt(f.id) !== idActual) {
+                    acumuladoOtros += parseFloat(f.ponderacion_actividades) || 0;
+                }
+            });
+
+            const disponible = Math.max(0, 100 - acumuladoOtros);
+
+            // Ajustar el atributo max del input al disponible real
+            input.attr('max', disponible.toFixed(2));
+
+            // Si el valor escrito supera lo disponible, lo recortamos al máximo
+            let valorFinal = valorActual;
+            if (valorActual > disponible) {
+                valorFinal = parseFloat(disponible.toFixed(2));
+                input.val(valorFinal);
+            }
+
+            // Actualizar data-ponderacion del item activo en el DOM
+            const borradorId = $('#formulacion_id').val();
+            if (borradorId) {
+                const listItem = document.querySelector(`.lista-item[data-item-id="${borradorId}"]`);
+                if (listItem) {
+                    listItem.setAttribute('data-ponderacion', valorFinal);
+                    const lineaItem = listItem.getAttribute('data-linea-item');
+                    const moduloItem = listItem.getAttribute('data-modulo');
+                    // Repintar todos los badges de esa línea en tiempo real
+                    actualizarBadgesLinea(lineaItem, moduloItem);
+                }
+            }
+
+            const totalConActual = acumuladoOtros + valorFinal;
+
+            // Actualizar badge
+            badge.text('Acum: ' + totalConActual.toFixed(2) + ' / 100%');
+
+            if (totalConActual > 100) {
+                // No debería llegar aquí tras el clamp, pero por seguridad
+                badge.css({ color: '#fff', background: '#E74C3C', borderColor: '#E74C3C' });
+                msg.html('<i class="fas fa-exclamation-triangle me-1"></i>Supera el 100%. Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#E74C3C').show();
+                input.css({ borderColor: '#E74C3C', boxShadow: '0 0 0 0.2rem rgba(231,76,60,0.25)' });
+            } else if (totalConActual === 100) {
+                // Completo justo
+                badge.css({ color: '#fff', background: '#27AE60', borderColor: '#27AE60' });
+                msg.html('<i class="fas fa-check-circle me-1"></i>Completo al 100%')
+                   .css('color', '#27AE60').show();
+                input.css({ borderColor: '#27AE60', boxShadow: '0 0 0 0.2rem rgba(39,174,96,0.25)' });
+            } else if (totalConActual > 80) {
+                // Advertencia: casi lleno
+                badge.css({ color: '#fff', background: '#F39C12', borderColor: '#F39C12' });
+                msg.html('<i class="fas fa-info-circle me-1"></i>Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#F39C12').show();
+                input.css({ borderColor: '#F39C12', boxShadow: '0 0 0 0.2rem rgba(243,156,18,0.25)' });
+            } else {
+                // Normal
+                badge.css({ color: '#2C3E50', background: '#f0f8ff', borderColor: '#3498DB' });
+                msg.html('<i class="fas fa-info-circle me-1"></i>Disponible: <strong>' + disponible.toFixed(2) + '%</strong>')
+                   .css('color', '#3498DB').show();
+                input.css({ borderColor: '#ced4da', boxShadow: '' });
+            }
+        }
+
+        // Wrapper: refresca datos del servidor antes de calcular cuando cambia el proyecto
+        function calcularAcumuladoActividades(forzarRefresh) {
+            if (forzarRefresh) {
+                refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+            } else {
+                _ejecutarCalculoAcumulado();
+            }
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+        // ── CARGA AUTOMÁTICA DE PONDERACIÓN DE PROYECTOS DESDE data_proyectos ──
+        function cargarPonderacionProyecto() {
+            const selectProyecto = document.getElementById('formulacion_proyecto');
+            const proyectoOption = selectProyecto ? selectProyecto.options[selectProyecto.selectedIndex] : null;
+            const proyectoId = proyectoOption ? proyectoOption.getAttribute('data-proyecto-id') : null;
+
+            const selectMotor = document.getElementById('formulacion_motor');
+            const motorOption = selectMotor ? selectMotor.options[selectMotor.selectedIndex] : null;
+            const motorId = motorOption ? motorOption.getAttribute('data-motor-id') : null;
+
+            // El año viene del formulario padre (formularios.anio)
+            const anio = formularioAnio;
+
+            const input = $('#formulacion_ponderacion_proyectos');
+
+            if (!proyectoId || !motorId || !anio) {
+                input.val('');
+                return;
+            }
+
+            $.ajax({
+                url: basePath + '/modulo144/getPonderacionProyecto',
+                type: 'GET',
+                data: { proyecto_id: proyectoId, motor_id: motorId, anio: anio },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success && response.porcentaje !== null) {
+                        input.val(parseFloat(response.porcentaje).toFixed(2));
+                    } else {
+                        input.val('');
+                    }
+                    autoGuardarFormulacion();
+                    validarPestanas();
+                },
+                error: function() {
+                    input.val('');
+                }
+            });
+        }
+        // ────────────────────────────────────────────────────────────────────
+
         <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
         function actualizarContador() {
             const fechaCierre = new Date('<?php echo $fecha_cierre; ?>').getTime();
@@ -1818,7 +2379,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 document.getElementById('hours').innerHTML = '00';
                 document.getElementById('minutes').innerHTML = '00';
                 document.getElementById('seconds').innerHTML = '00';
-                setTimeout(() => location.reload(), 3000);
+                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 3000);
                 return;
             }
             
@@ -1831,11 +2392,67 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         setInterval(actualizarContador, 1000);
         <?php endif; ?>
 
-        // Variable para controlar la edición del título
-        let editandoTitulo = false;
-
-        // Array para almacenar los planes seleccionados
-        let planesSeleccionados = [];
+        function gestionarCheckboxFacultades(checkbox) {
+            const id = $('#formulacion_id').val();
+            const estadoActual = checkbox.checked;
+            
+            Swal.fire({
+                title: estadoActual ? '¿Activar gestión desde facultades?' : '¿Desactivar gestión desde facultades?',
+                html: estadoActual ? 
+                    'Se creará un formulario de SEGUIMIENTO para cada facultad basado en esta formulación.' :
+                    'Se ELIMINARÁN todos los formularios de seguimiento asociados a esta formulación en las facultades. Esta acción no se puede deshacer.',
+                icon: estadoActual ? 'question' : 'warning',
+                showCancelButton: true,
+                confirmButtonColor: estadoActual ? '#27AE60' : '#E74C3C',
+                confirmButtonText: estadoActual ? 'Sí, activar' : 'Sí, desactivar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: estadoActual ? 'Activando...' : 'Desactivando...',
+                        text: 'Por favor espere',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    
+                    const data = {
+                        modulo: 'formulacion',
+                        id: id,
+                        gestionado_facultades: estadoActual ? 1 : 0
+                    };
+                    
+                    $.ajax({
+                        url: basePath + '/modulo144/guardar',
+                        type: 'POST',
+                        data: data,
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire({
+                                    title: estadoActual ? '¡Activado!' : '¡Desactivado!',
+                                    text: estadoActual ? 'Se ha activado la gestión desde facultades.' : 'Se ha desactivado la gestión desde facultades.',
+                                    icon: 'success',
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                }).then(() => {
+                                    guardarEstadoAcordeon();
+                                    location.reload();
+                                });
+                            } else {
+                                checkbox.checked = !estadoActual;
+                                Swal.fire('Error', response.message || 'No se pudo guardar el cambio', 'error');
+                            }
+                        },
+                        error: function() {
+                            checkbox.checked = !estadoActual;
+                            Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
+                        }
+                    });
+                } else {
+                    checkbox.checked = !estadoActual;
+                }
+            });
+        }
 
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
@@ -1860,7 +2477,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -1878,9 +2495,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -1905,18 +2520,16 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Duplicado!', response.message, 'success');
-                        setTimeout(() => location.reload(), 1500);
+                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                     }
                 }
             });
         });
 
-        // Función para abrir el modal de gestión semestral (ACTUALIZADA - SIN TABLA)
         function abrirGestionSemestral(id, nombre) {
             $('#gestion_id').val(id);
             $('#gestionTituloSpan').text(nombre);
             
-            // Cargar datos existentes si los hay
             $.ajax({
                 url: basePath + '/modulo144/getBorrador?modulo=formulacion&id=' + id,
                 type: 'GET',
@@ -1924,8 +2537,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         const b = response.borrador;
-                        
-                        // Cargar campos principales
                         $('#gestion_sem1').val(b.gestion_sem1 || '');
                         $('#gestion_sem2').val(b.gestion_sem2 || '');
                         $('#gestion_vigencia').val(b.vigencia || '');
@@ -1937,7 +2548,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             $('#modalGestionSemestral').modal('show');
         }
 
-        // Manejar el envío del formulario de gestión semestral (ACTUALIZADO - SIN TABLA)
         $('#formGestionSemestral').on('submit', function(e) {
             e.preventDefault();
             
@@ -1968,193 +2578,8 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         });
 
-        // Función para gestionar el cambio del checkbox de facultades
-        function gestionarCheckboxFacultades(checkbox) {
-            const id = $('#formulacion_id').val();
-            const nombreBorrador = $('#tituloFormulacionSpan').text();
-            const facultadId = <?php echo isset($facultad['id']) ? $facultad['id'] : 'null'; ?>;
-            
-            if (checkbox.checked) {
-                // Checkbox activado - mostrar alerta para crear en facultades
-                Swal.fire({
-                    title: '¿Activar gestión desde facultades?',
-                    html: `
-                        <p>Se creará un formulario de <strong>SEGUIMIENTO</strong> para cada facultad basado en esta formulación.</p>
-                        <p class="text-muted small">Los formularios de seguimiento aparecerán en la sección de cada facultad.</p>
-                    `,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#27AE60',
-                    cancelButtonColor: '#E74C3C',
-                    confirmButtonText: 'Sí, activar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Aquí se llamaría al controlador para crear los seguimientos por facultad
-                        // Por ahora, simulamos el éxito y actualizamos la UI
-                        Swal.fire({
-                            title: '¡Activado!',
-                            text: 'Se han creado los formularios de seguimiento en cada facultad.',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        // Actualizar UI sin recargar - mostrar el formulario en las facultades
-                        actualizarUIporCheckbox(id, true);
-                        
-                        // Auto-guardar el cambio
-                        autoGuardarFormulacion();
-                    } else {
-                        // Si cancela, desmarcar el checkbox
-                        checkbox.checked = false;
-                    }
-                });
-            } else {
-                // Checkbox desactivado - mostrar alerta para eliminar de facultades
-                Swal.fire({
-                    title: '¿Desactivar gestión desde facultades?',
-                    html: `
-                        <p>Se <strong>ELIMINARÁN</strong> todos los formularios de seguimiento asociados a esta formulación en las facultades.</p>
-                        <p class="text-danger small">Esta acción no se puede deshacer.</p>
-                    `,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#E74C3C',
-                    cancelButtonColor: '#27AE60',
-                    confirmButtonText: 'Sí, desactivar',
-                    cancelButtonText: 'Cancelar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Aquí se llamaría al controlador para eliminar los seguimientos por facultad
-                        Swal.fire({
-                            title: '¡Desactivado!',
-                            text: 'Se han eliminado los formularios de seguimiento de las facultades.',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
-                        
-                        // Actualizar UI sin recargar - ocultar el formulario de las facultades
-                        actualizarUIporCheckbox(id, false);
-                        
-                        // Auto-guardar el cambio
-                        autoGuardarFormulacion();
-                    } else {
-                        // Si cancela, marcar el checkbox nuevamente
-                        checkbox.checked = true;
-                    }
-                });
-            }
-        }
-
-        // Función para actualizar la UI sin recargar la página
-        function actualizarUIporCheckbox(formulacionId, activado) {
-            // Buscar el elemento del formulario en la sección de facultades
-            const formularioItem = document.getElementById(`formulacion-item-${formulacionId}`);
-            const facultadCard = formularioItem ? formularioItem.closest('.facultad-card') : null;
-            
-            if (activado) {
-                // Si se activa, mostrar el elemento con animación
-                if (formularioItem) {
-                    formularioItem.classList.remove('fade-out');
-                    formularioItem.classList.add('fade-in');
-                    formularioItem.style.display = 'flex';
-                    
-                    // Actualizar contador de la facultad
-                    if (facultadCard) {
-                        const countSpan = facultadCard.querySelector('.badge.bg-primary');
-                        if (countSpan) {
-                            const currentCount = parseInt(countSpan.textContent) || 0;
-                            countSpan.textContent = `${currentCount + 1} formulaciones con check`;
-                        }
-                    }
-                }
-            } else {
-                // Si se desactiva, ocultar el elemento con animación
-                if (formularioItem) {
-                    formularioItem.classList.add('fade-out');
-                    
-                    // Esperar a que termine la animación para ocultar
-                    setTimeout(() => {
-                        formularioItem.style.display = 'none';
-                        formularioItem.classList.remove('fade-out');
-                        
-                        // Actualizar contador de la facultad
-                        if (facultadCard) {
-                            const countSpan = facultadCard.querySelector('.badge.bg-primary');
-                            if (countSpan) {
-                                const currentCount = parseInt(countSpan.textContent) || 0;
-                                countSpan.textContent = `${Math.max(0, currentCount - 1)} formulaciones con check`;
-                            }
-                            
-                            // Verificar si la facultad quedó vacía
-                            const itemsVisibles = facultadCard.querySelectorAll('.facultad-item[style="display: flex;"], .facultad-item:not([style*="display: none"])');
-                            if (itemsVisibles.length === 0) {
-                                const emptyState = facultadCard.querySelector('.empty-state');
-                                if (emptyState) {
-                                    emptyState.style.display = 'block';
-                                }
-                            }
-                        }
-                    }, 300);
-                }
-            }
-        }
-
-        // Función para cargar la tabla de resumen con los valores actuales
-        function cargarTablaResumen() {
-            const campos = [
-                { categoria: 'NOMBRE DEL INDICADOR', valor: $('#formulacion_nombre_indicador').val() || '-' },
-                { categoria: 'FÓRMULA DE LA MEDICIÓN', valor: $('#formulacion_formula_medicion').val() || '-' },
-                { categoria: 'FRECUENCIA DE MEDICIÓN', valor: $('#formulacion_frecuencia_medicion').val() || '-' },
-                { categoria: 'UNIDAD DE MEDIDA', valor: $('#formulacion_unidad_medida').val() || '-' },
-                { categoria: 'DESCRIPCIÓN', valor: $('#formulacion_descripcion_indicador').val() || '-' },
-                { categoria: 'TIPO DE MEDICIÓN', valor: $('#formulacion_tipo_medicion').val() || '-' },
-                { categoria: 'LÍNEA BASE', valor: $('#formulacion_linea_base_meta').val() || '-' },
-                { categoria: 'SEMESTRE 1', valor: $('#formulacion_meta_s1').val() || '-' },
-                { categoria: 'SEMESTRE 2', valor: $('#formulacion_meta_s2').val() || '-' },
-                { categoria: 'AÑO', valor: $('#formulacion_anio_base_meta').val() || '-' },
-                { categoria: 'SEG. FAC', valor: $('#formulacion_gestionado_facultades').is(':checked') ? '✓' : '✗' }
-            ];
-            
-            let html = '';
-            campos.forEach(campo => {
-                html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td></tr>`;
-            });
-            
-            $('#tablaResumenCuerpo').html(html);
-        }
-
-        // Función para cargar la tabla de resumen en seguimiento
-        function cargarTablaResumenSeguimiento(b) {
-            const campos = [
-                { categoria: 'NOMBRE DEL INDICADOR', valor: b.nombre_indicador || '-' },
-                { categoria: 'FÓRMULA DE LA MEDICIÓN', valor: b.formula_medicion || '-' },
-                { categoria: 'FRECUENCIA DE MEDICIÓN', valor: b.frecuencia_medicion || '-' },
-                { categoria: 'UNIDAD DE MEDIDA', valor: b.unidad_medida || '-' },
-                { categoria: 'DESCRIPCIÓN', valor: b.descripcion_indicador || '-' },
-                { categoria: 'TIPO DE MEDICIÓN', valor: b.tipo_medicion || '-' },
-                { categoria: 'LÍNEA BASE', valor: b.linea_base_meta || '-' },
-                { categoria: 'SEMESTRE 1', valor: b.meta_s1 || '-' },
-                { categoria: 'SEMESTRE 2', valor: b.meta_s2 || '-' },
-                { categoria: 'AÑO', valor: b.anio_base_meta || '-' },
-                { categoria: 'SEG. FAC', valor: b.gestionado_facultades == 1 ? '✓' : '✗' }
-            ];
-            
-            let html = '';
-            campos.forEach(campo => {
-                html += `<tr><td><strong>${campo.categoria}</strong></td><td>${campo.valor}</td></tr>`;
-            });
-            
-            $('#tablaResumenSeguimientoCuerpo').html(html);
-        }
-
-        // Función para validar el estado de las pestañas
         function validarPestanas() {
-            // Validar Pestaña 1: FORMULACIÓN
             const camposFormulacion = [
-                $('#formulacion_anio').val(),
                 $('#formulacion_linea').val(),
                 $('#formulacion_estrategia').val(),
                 $('#formulacion_motor').val(),
@@ -2163,14 +2588,12 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 $('#formulacion_ponderacion_proyectos').val(),
                 $('#formulacion_actividad').val(),
                 $('#formulacion_ponderacion_actividades').val(),
-                $('#formulacion_responsable').val(),
+                $('#formulacion_responsable_hidden').val(),
                 $('#formulacion_id_indicador').val()
             ];
             
-            // El checkbox no es obligatorio
             const formulacionCompleta = camposFormulacion.every(valor => valor && valor.trim() !== '');
             
-            // Validar Pestaña 2: INDICADOR DE RESULTADO (incluyendo METAS PROPUESTAS)
             const camposIndicador = [
                 $('#formulacion_nombre_indicador').val(),
                 $('#formulacion_formula_medicion').val(),
@@ -2179,17 +2602,13 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 $('#formulacion_tipo_medicion').val(),
                 $('#formulacion_descripcion_indicador').val(),
                 $('#formulacion_linea_base_meta').val(),
-                $('#formulacion_anio_base_meta').val(),
                 $('#formulacion_meta_s1').val(),
                 $('#formulacion_meta_s2').val()
             ];
             
             const indicadorCompleto = camposIndicador.every(valor => valor && valor.trim() !== '');
-            
-            // Pestaña 3 es opcional
             const planesCompleto = true;
             
-            // Actualizar clases de las pestañas
             actualizarClasePestana('#tab-formulacion', formulacionCompleta);
             actualizarClasePestana('#tab-indicador', indicadorCompleto);
             actualizarClasePestana('#tab-planes', planesCompleto);
@@ -2204,7 +2623,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
-        // Función para cargar estrategias
         function cargarObjetivoYestrategias() {
             const selectLinea = document.getElementById('formulacion_linea');
             const selectedOption = selectLinea.options[selectLinea.selectedIndex];
@@ -2216,11 +2634,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 return;
             }
             
-            // Cargar objetivo
             const objetivo = selectedOption.getAttribute('data-objetivo') || '';
             document.getElementById('formulacion_objetivo').value = objetivo;
             
-            // Cargar estrategias
             const lineaId = selectedOption.getAttribute('data-id');
             
             if (lineaId) {
@@ -2257,7 +2673,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
-        // Función para cargar motores
         function cargarMotoresPorLinea() {
             const selectLinea = document.getElementById('formulacion_linea');
             const selectedOption = selectLinea.options[selectLinea.selectedIndex];
@@ -2307,7 +2722,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
-        // Función para cargar proyectos según el motor seleccionado
         function cargarProyectosPorMotor() {
             const selectLinea = document.getElementById('formulacion_linea');
             const selectMotor = document.getElementById('formulacion_motor');
@@ -2330,10 +2744,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 $.ajax({
                     url: basePath + '/modulo144/getProyectosPorLineaYMotor',
                     type: 'GET',
-                    data: { 
-                        linea_id: lineaId,
-                        motor_id: motorId
-                    },
+                    data: { linea_id: lineaId, motor_id: motorId },
                     dataType: 'json',
                     success: function(response) {
                         const selectProyecto = document.getElementById('formulacion_proyecto');
@@ -2343,6 +2754,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             response.proyectos.forEach(function(proyecto) {
                                 const option = document.createElement('option');
                                 option.value = proyecto.nombre;
+                                option.setAttribute('data-proyecto-id', proyecto.id);
                                 option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
                                 selectProyecto.appendChild(option);
                             });
@@ -2361,7 +2773,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             }
         }
 
-        // Funciones para manejar planes institucionales
         function agregarPlan() {
             const select = document.getElementById('selectPlanInstitucional');
             const planSeleccionado = select.value;
@@ -2371,39 +2782,22 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 return;
             }
             
-            // Verificar si ya fue seleccionado
             if (planesSeleccionados.includes(planSeleccionado)) {
                 Swal.fire('Atención', 'Este plan ya ha sido agregado', 'info');
                 return;
             }
             
-            // Agregar al array
             planesSeleccionados.push(planSeleccionado);
-            
-            // Actualizar la vista
             actualizarContenedorPlanes();
-            
-            // Limpiar el select
             select.value = '';
-            
-            // Actualizar campo oculto y guardar
             actualizarCampoOculto();
-            
-            // Forzar guardado inmediato
             guardarPlanesInmediatamente();
         }
 
         function eliminarPlan(plan) {
-            // Filtrar el array para quitar el plan
             planesSeleccionados = planesSeleccionados.filter(p => p !== plan);
-            
-            // Actualizar la vista
             actualizarContenedorPlanes();
-            
-            // Actualizar campo oculto y guardar
             actualizarCampoOculto();
-            
-            // Forzar guardado inmediato
             guardarPlanesInmediatamente();
         }
 
@@ -2424,7 +2818,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        console.log('Planes guardados correctamente');
                         mostrarAutoSaveIndicator();
                     }
                 }
@@ -2435,56 +2828,33 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             const contenedor = document.getElementById('contenedorPlanes');
             
             if (planesSeleccionados.length === 0) {
-                contenedor.innerHTML = '<p class="text-muted text-center mb-0" id="mensajeVacioPlanes">No hay planes seleccionados</p>';
+                contenedor.innerHTML = '<p class="text-muted text-center mb-0">No hay planes seleccionados</p>';
                 return;
             }
             
             let html = '';
             planesSeleccionados.forEach((plan, index) => {
-                // Asignar colores según el índice
-                let colorClass = '';
-                let colorText = '';
-                
-                if (index % 3 === 0) {
-                    colorClass = 'bg-primary';
-                    colorText = 'Primary';
-                } else if (index % 3 === 1) {
-                    colorClass = 'bg-success';
-                    colorText = 'Primary';
-                } else {
-                    colorClass = 'bg-info';
-                    colorText = 'Primary';
-                }
-                
-                // Escapar comillas para el onclick
+                let colorClass = index % 3 === 0 ? 'bg-primary' : (index % 3 === 1 ? 'bg-success' : 'bg-info');
                 const planEscaped = plan.replace(/'/g, "\\'");
-                
-                html += `
-                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 ${colorClass} text-white rounded" style="opacity: 0.9;">
-                        <span><strong>${colorText} ${index + 1}:</strong> ${plan}</span>
-                        <button type="button" class="btn btn-sm btn-light" onclick="eliminarPlan('${planEscaped}')">
-                            <i class="fas fa-times text-danger"></i>
-                        </button>
-                    </div>
-                `;
+                html += `<div class="d-flex justify-content-between align-items-center mb-2 p-2 ${colorClass} text-white rounded" style="opacity: 0.9;">
+                            <span><strong>${index + 1}:</strong> ${plan}</span>
+                            <button type="button" class="btn btn-sm btn-light" onclick="eliminarPlan('${planEscaped}')">
+                                <i class="fas fa-times text-danger"></i>
+                            </button>
+                        </div>`;
             });
-            
             contenedor.innerHTML = html;
         }
 
         function actualizarCampoOculto() {
-            const valorJSON = JSON.stringify(planesSeleccionados);
-            document.getElementById('formulacion_planes_institucionales').value = valorJSON;
-            console.log('Campo oculto actualizado:', valorJSON);
+            document.getElementById('formulacion_planes_institucionales').value = JSON.stringify(planesSeleccionados);
         }
 
         function cargarPlanesDesdeBD(planesJSON) {
-            console.log('Cargando planes desde BD:', planesJSON);
             if (planesJSON && planesJSON !== '[]' && planesJSON !== '') {
                 try {
                     planesSeleccionados = JSON.parse(planesJSON);
                 } catch (e) {
-                    console.error('Error al parsear planes:', e);
                     planesSeleccionados = [];
                 }
             } else {
@@ -2497,45 +2867,26 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         function editarTituloModal(modulo) {
             if (editandoTitulo) return;
             
-            const modalHeader = modulo === 'formulacion' ? 
-                $('#modalFormulacion .modal-header h5') : 
-                $('#modalSeguimiento .modal-header h5');
+            const modalHeader = modulo === 'formulacion' ? $('#modalFormulacion .modal-header h5') : $('#modalSeguimiento .modal-header h5');
+            const tituloActual = modulo === 'formulacion' ? $('#tituloFormulacionSpan').text() : $('#tituloSeguimientoSpan').text();
             
-            const tituloActual = modulo === 'formulacion' ? 
-                $('#tituloFormulacionSpan').text() : 
-                $('#tituloSeguimientoSpan').text();
-            
-            const inputHtml = `<input type="text" class="modal-title-input" id="editTituloInput" value="${tituloActual}" />`;
-            modalHeader.html(inputHtml);
-            
+            modalHeader.html(`<input type="text" class="modal-title-input" id="editTituloInput" value="${tituloActual}" />`);
             $('#editTituloInput').focus();
             editandoTitulo = true;
             
-            $('#editTituloInput').on('blur', function() {
-                guardarTituloModal(modulo, $(this).val());
-            }).on('keypress', function(e) {
-                if (e.which === 13) {
-                    guardarTituloModal(modulo, $(this).val());
-                }
-            });
+            $('#editTituloInput').on('blur', function() { guardarTituloModal(modulo, $(this).val()); })
+                .on('keypress', function(e) { if (e.which === 13) guardarTituloModal(modulo, $(this).val()); });
         }
 
         function guardarTituloModal(modulo, nuevoTitulo) {
-            if (!nuevoTitulo.trim()) {
-                restaurarTituloModal(modulo);
-                return;
-            }
+            if (!nuevoTitulo.trim()) { restaurarTituloModal(modulo); return; }
 
             const id = modulo === 'formulacion' ? $('#formulacion_id').val() : $('#seguimiento_id').val();
             
             $.ajax({
                 url: basePath + '/modulo144/guardar',
                 type: 'POST',
-                data: {
-                    modulo: modulo,
-                    id: id,
-                    nombre_borrador: nuevoTitulo
-                },
+                data: { modulo: modulo, id: id, nombre_borrador: nuevoTitulo },
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
@@ -2547,24 +2898,15 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#modalSeguimiento .modal-header h5').html(`<i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan">${nuevoTitulo}</span>`);
                         }
                         editandoTitulo = false;
-                        
-                        // Mostrar indicador de guardado
                         mostrarAutoSaveIndicator();
-                    } else {
-                        restaurarTituloModal(modulo);
-                    }
+                    } else { restaurarTituloModal(modulo); }
                 },
-                error: function() {
-                    restaurarTituloModal(modulo);
-                }
+                error: function() { restaurarTituloModal(modulo); }
             });
         }
 
         function restaurarTituloModal(modulo) {
-            const tituloActual = modulo === 'formulacion' ? 
-                $('#tituloFormulacionSpan').text() : 
-                $('#tituloSeguimientoSpan').text();
-            
+            const tituloActual = modulo === 'formulacion' ? $('#tituloFormulacionSpan').text() : $('#tituloSeguimientoSpan').text();
             if (modulo === 'formulacion') {
                 $('#modalFormulacion .modal-header h5').html(`<i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan">${tituloActual}</span>`);
             } else {
@@ -2574,8 +2916,48 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
         }
 
         function cargarDatosFormulacionEnSeguimiento(b) {
-            // Cargar datos de formulación (solo visuales)
-            $('#seguimiento_anio_view').text(b.anio || '-');
+            let valorAnual = '-';
+            const lineaBaseRaw = b.linea_base_meta;
+            const metaS1Raw = b.meta_s1;
+            const metaS2Raw = b.meta_s2;
+            
+            const lineaBase = (lineaBaseRaw && lineaBaseRaw !== '') ? parseFloat(lineaBaseRaw) : null;
+            const metaS1 = (metaS1Raw && metaS1Raw !== '') ? parseFloat(metaS1Raw) : null;
+            const metaS2 = (metaS2Raw && metaS2Raw !== '') ? parseFloat(metaS2Raw) : null;
+            
+            if (b.tipo_medicion === 'Acumulado') {
+                let suma = 0;
+                if (lineaBase !== null) suma += lineaBase;
+                if (metaS1 !== null) suma += metaS1;
+                if (metaS2 !== null) suma += metaS2;
+                valorAnual = suma.toFixed(2);
+            } 
+            else if (b.tipo_medicion === 'Nuevo gestionado durante la vigencia') {
+                let suma = 0;
+                if (metaS1 !== null) suma += metaS1;
+                if (metaS2 !== null) suma += metaS2;
+                valorAnual = suma.toFixed(2);
+            }
+            else if (b.tipo_medicion === 'Promedio') {
+                let suma = 0;
+                let contador = 0;
+                if (metaS1 !== null) { suma += metaS1; contador++; }
+                if (metaS2 !== null) { suma += metaS2; contador++; }
+                valorAnual = contador > 0 ? (suma / contador).toFixed(2) : '0.00';
+            }
+            else if (b.tipo_medicion === 'Último valor reportado') {
+                let ultimoValor = null;
+                if (metaS2 !== null && metaS2 !== undefined && metaS2 !== '' && !isNaN(metaS2)) {
+                    ultimoValor = metaS2;
+                } else if (metaS1 !== null && metaS1 !== undefined && metaS1 !== '' && !isNaN(metaS1)) {
+                    ultimoValor = metaS1;
+                } else if (lineaBase !== null && lineaBase !== undefined && lineaBase !== '' && !isNaN(lineaBase)) {
+                    ultimoValor = lineaBase;
+                }
+                valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
+            }
+            
+            $('#seguimiento_anio_view').text(valorAnual);
             $('#seguimiento_linea_view').text(b.linea_estrategica || '-');
             $('#seguimiento_objetivo_view').text(b.objetivo || '-');
             $('#seguimiento_estrategia_view').text(b.estrategia || '-');
@@ -2588,30 +2970,21 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             $('#seguimiento_responsable_view').text(b.responsable_formulacion || '-');
         }
 
-        function verSeguimiento(modulo, id) {
-            editarBorrador(modulo, id);
-        }
+        function verSeguimiento(modulo, id) { editarBorrador(modulo, id); }
 
         function autoGuardarFormulacion() {
             const id = $('#formulacion_id').val();
             if (!id) return;
             
-            currentModule = 'formulacion';
+            if (timeoutId) clearTimeout(timeoutId);
             
-            // Limpiar timeout anterior
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-            
-            // Programar nuevo guardado
             timeoutId = setTimeout(function() {
-                // Para el checkbox, enviar 1 si está marcado, 0 si no
                 const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
                 
                 const data = {
-                    modulo: 'formulacion',
-                    id: id,
-                    anio: $('#formulacion_anio').val(),
+                    modulo: 'formulacion', id: id,
+                    formulario_id: formularioId,
+                    anio: formularioAnio,
                     linea_estrategica: $('#formulacion_linea').val(),
                     objetivo: $('#formulacion_objetivo').val(),
                     estrategia: $('#formulacion_estrategia').val(),
@@ -2621,29 +2994,21 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
                     actividad_proyecto: $('#formulacion_actividad').val(),
                     ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
-                    responsable_formulacion: $('#formulacion_responsable').val(),
+                    responsable_formulacion: $('#formulacion_responsable_hidden').val(),
                     id_indicador: $('#formulacion_id_indicador').val(),
                     gestionado_facultades: gestionado,
-                    
-                    // Campos de la pestaña INDICADOR DE RESULTADO
                     nombre_indicador: $('#formulacion_nombre_indicador').val(),
                     formula_medicion: $('#formulacion_formula_medicion').val(),
                     frecuencia_medicion: $('#formulacion_frecuencia_medicion').val(),
                     unidad_medida: $('#formulacion_unidad_medida').val(),
                     tipo_medicion: $('#formulacion_tipo_medicion').val(),
                     descripcion_indicador: $('#formulacion_descripcion_indicador').val(),
-                    
-                    // Campos de METAS PROPUESTAS
                     linea_base_meta: $('#formulacion_linea_base_meta').val(),
                     anio_base_meta: $('#formulacion_anio_base_meta').val(),
                     meta_s1: $('#formulacion_meta_s1').val(),
                     meta_s2: $('#formulacion_meta_s2').val(),
-                    
-                    // Campos de la pestaña PLANES INSTITUCIONALES
                     planes_institucionales: $('#formulacion_planes_institucionales').val()
                 };
-                
-                console.log('Enviando datos:', data); // Para depuración
                 
                 $.ajax({
                     url: basePath + '/modulo144/guardar',
@@ -2652,16 +3017,21 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     dataType: 'json',
                     success: function(response) {
                         if (response.success) {
-                            console.log('Guardado exitoso');
                             mostrarAutoSaveIndicator();
                             validarPestanas();
-                            cargarTablaResumen(); // Actualizar tabla después de guardar
-                        } else {
-                            console.error('Error en guardado:', response);
+                            // Refrescar datos locales tras guardar exitoso
+                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                        } else if (response.acumulado !== undefined) {
+                            // Error de ponderación server-side: actualizar badge y bloquear
+                            formulacionesExistentes = formulacionesExistentes; // forzar recalculo
+                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                            Swal.fire({
+                                icon: 'warning',
+                                title: 'Ponderación excedida',
+                                text: response.message,
+                                confirmButtonColor: '#007AFF'
+                            });
                         }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error en la petición:', error);
                     }
                 });
             }, 500);
@@ -2671,18 +3041,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             const id = $('#seguimiento_id').val();
             if (!id) return;
             
-            currentModule = 'seguimiento';
+            if (timeoutId) clearTimeout(timeoutId);
             
-            // Limpiar timeout anterior
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-            
-            // Programar nuevo guardado
             timeoutId = setTimeout(function() {
                 const data = {
-                    modulo: 'seguimiento',
-                    id: id,
+                    modulo: 'seguimiento', id: id,
                     indicador: $('#seguimiento_indicador').val(),
                     fecha_seguimiento: $('#seguimiento_fecha').val(),
                     semestre1_seguimiento: $('#seguimiento_semestre1').val(),
@@ -2700,9 +3063,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                     data: data,
                     dataType: 'json',
                     success: function(response) {
-                        if (response.success) {
-                            mostrarAutoSaveIndicator();
-                        }
+                        if (response.success) mostrarAutoSaveIndicator();
                     }
                 });
             }, 500);
@@ -2714,10 +3075,110 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             indicator.style.animation = 'none';
             indicator.offsetHeight;
             indicator.style.animation = 'fadeInOut 2s ease';
-            
-            setTimeout(function() {
-                indicator.style.display = 'none';
-            }, 2000);
+            setTimeout(function() { indicator.style.display = 'none'; }, 2000);
+        }
+
+        // Recalcula y repinta badges de TODOS los items de una línea (acotado al mismo módulo)
+        function actualizarBadgesLinea(lineaCodigo, moduloCodigo) {
+            if (!lineaCodigo) return;
+
+            // Selector base: items de esta línea; si se conoce el módulo, filtrarlo para evitar doble conteo
+            const selector = moduloCodigo
+                ? `.lista-item[data-linea-item="${lineaCodigo}"][data-modulo="${moduloCodigo}"]`
+                : `.lista-item[data-linea-item="${lineaCodigo}"]`;
+
+            // Sumar ponderaciones de todos los items de esa línea desde el DOM
+            let suma = 0;
+            document.querySelectorAll(selector).forEach(function(item) {
+                suma += parseFloat(item.getAttribute('data-ponderacion') || 0);
+            });
+
+            const completo = suma >= 99.99 && suma <= 100.01;
+            const excedido = suma > 100.01;
+
+            // Actualizar cada badge de esa línea que pertenezca al mismo módulo
+            // Los badges están dentro de .lista-item, así que los buscamos dentro del scope correcto
+            document.querySelectorAll(selector).forEach(function(item) {
+                const badge = item.querySelector(`.lmp-badge[data-linea="${lineaCodigo}"]`);
+                if (!badge) return;
+
+                // Suma visible
+                const sumaEl = badge.querySelector('.lmp-suma');
+                if (sumaEl) sumaEl.textContent = suma.toFixed(1);
+
+                // Clases de color
+                badge.classList.remove('lmp-completo', 'lmp-excedido');
+                if (completo) badge.classList.add('lmp-completo');
+                else if (excedido) badge.classList.add('lmp-excedido');
+
+                // Tooltip
+                const aviso = excedido ? ' ⚠ Excede el 100%' : '';
+                badge.setAttribute('title', `Ponderación línea: ${suma.toFixed(2)} / 100${aviso}`);
+            });
+
+            // Actualizar color del nombre
+            document.querySelectorAll(selector).forEach(function(item) {
+                const titulo = item.querySelector('.lista-item-titulo');
+                if (!titulo) return;
+                titulo.classList.remove('titulo-linea-completa', 'titulo-linea-excedida');
+                if (completo) titulo.classList.add('titulo-linea-completa');
+                else if (excedido) titulo.classList.add('titulo-linea-excedida');
+            });
+        }
+
+        // Actualiza la badge LMP en la lista para el borrador actualmente abierto
+        function actualizarLmpBadgeEnLista() {
+            const borradorId = $('#formulacion_id').val();
+            if (!borradorId) return;
+
+            const lineaSelect  = document.getElementById('formulacion_linea');
+            const motorSelect  = document.getElementById('formulacion_motor');
+            const proyectoSelect = document.getElementById('formulacion_proyecto');
+
+            // Extraer código de línea (texto "L1 - nombre" → "L1")
+            let lineaCodigo = null;
+            if (lineaSelect && lineaSelect.selectedIndex > 0) {
+                const txt = lineaSelect.options[lineaSelect.selectedIndex].textContent.trim();
+                lineaCodigo = txt.split(' - ')[0];
+            }
+
+            // Extraer ID motor → "M{id}"
+            let motorCodigo = null;
+            if (motorSelect && motorSelect.selectedIndex > 0) {
+                const mid = motorSelect.options[motorSelect.selectedIndex].getAttribute('data-motor-id');
+                if (mid) motorCodigo = 'M' + mid;
+            }
+
+            // Extraer código proyecto (texto "P1 - nombre" → "P1")
+            let proyectoCodigo = null;
+            if (proyectoSelect && proyectoSelect.selectedIndex > 0) {
+                const txt = proyectoSelect.options[proyectoSelect.selectedIndex].textContent.trim();
+                proyectoCodigo = txt.split(' - ')[0];
+            }
+
+            const parts = [lineaCodigo, motorCodigo, proyectoCodigo].filter(Boolean);
+            const listItem = document.querySelector(`.lista-item[data-item-id="${borradorId}"]`);
+            if (!listItem) return;
+
+            const badge = listItem.querySelector('.lmp-badge');
+            if (!badge) return;
+
+            if (parts.length > 0) {
+                const sumaEl = badge.querySelector('.lmp-suma');
+                const sumaHtml = sumaEl ? sumaEl.outerHTML : '';
+                badge.className = 'lmp-badge';
+                badge.setAttribute('data-linea', lineaCodigo || '');
+                badge.innerHTML = '<i class="fas fa-sitemap"></i>' + parts.join(' - ') + sumaHtml;
+            } else {
+                badge.className = 'lmp-badge sin-datos';
+                badge.innerHTML = '—';
+            }
+
+            // Actualizar color del título
+            const titulo = listItem.querySelector('.lista-item-titulo');
+            if (titulo && lineaCodigo) {
+                // Mantener clase verde si ya era completa (suma se recalcula en backend)
+            }
         }
 
         function editarBorrador(modulo, id) {
@@ -2728,25 +3189,21 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                 success: function(response) {
                     if (response.success) {
                         const b = response.borrador;
-                        console.log('Borrador cargado:', b); // Para depuración
                         
                         if (modulo === 'formulacion') {
                             $('#formulacion_id').val(b.id);
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
-                            $('#formulacion_anio').val(b.anio);
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
+                            $('#formulacion_tipo_medicion').val(b.tipo_medicion);
                             
-                            // Obtener el ID de la línea seleccionada
                             const selectLinea = document.getElementById('formulacion_linea');
                             const lineaOption = selectLinea.options[selectLinea.selectedIndex];
                             const lineaId = lineaOption ? lineaOption.getAttribute('data-id') : null;
                             
-                            // Función para cargar estrategias
                             function cargarEstrategias(lineaId, valorEstrategia) {
                                 if (lineaId) {
                                     document.getElementById('formulacion_estrategia').innerHTML = '<option value="">Cargando estrategias...</option>';
-                                    
                                     $.ajax({
                                         url: basePath + '/modulo144/getEstrategiasPorLinea',
                                         type: 'GET',
@@ -2755,7 +3212,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         success: function(res) {
                                             const selectEstrategia = document.getElementById('formulacion_estrategia');
                                             selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
-                                            
                                             if (res.success && res.estrategias && res.estrategias.length > 0) {
                                                 res.estrategias.forEach(function(estrategia) {
                                                     const option = document.createElement('option');
@@ -2763,10 +3219,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     option.textContent = estrategia.descripcion;
                                                     selectEstrategia.appendChild(option);
                                                 });
-                                                
-                                                if (valorEstrategia) {
-                                                    $('#formulacion_estrategia').val(valorEstrategia);
-                                                }
+                                                if (valorEstrategia) $('#formulacion_estrategia').val(valorEstrategia);
                                             } else {
                                                 selectEstrategia.innerHTML = '<option value="">No hay estrategias disponibles</option>';
                                             }
@@ -2779,11 +3232,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 }
                             }
                             
-                            // Función para cargar motores
                             function cargarMotores(lineaId, valorMotor) {
                                 if (lineaId) {
                                     document.getElementById('formulacion_motor').innerHTML = '<option value="">Cargando motores...</option>';
-                                    
                                     $.ajax({
                                         url: basePath + '/modulo144/getMotoresPorLinea',
                                         type: 'GET',
@@ -2792,7 +3243,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                         success: function(res) {
                                             const selectMotor = document.getElementById('formulacion_motor');
                                             selectMotor.innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
-                                            
                                             if (res.success && res.motores && res.motores.length > 0) {
                                                 res.motores.forEach(function(motor) {
                                                     const option = document.createElement('option');
@@ -2801,14 +3251,9 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                                     option.textContent = motor.nombre;
                                                     selectMotor.appendChild(option);
                                                 });
-                                                
                                                 if (valorMotor) {
                                                     $('#formulacion_motor').val(valorMotor);
-                                                    
-                                                    // Después de seleccionar el motor, cargar proyectos
-                                                    setTimeout(function() {
-                                                        cargarProyectosPorMotorConValor(b.proyecto);
-                                                    }, 300);
+                                                    setTimeout(function() { cargarProyectosPorMotorConValor(b.proyecto); }, 300);
                                                 }
                                             } else {
                                                 selectMotor.innerHTML = '<option value="">No hay motores disponibles</option>';
@@ -2822,7 +3267,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 }
                             }
                             
-                            // Función para cargar proyectos después de seleccionar motor
                             function cargarProyectosPorMotorConValor(valorProyecto) {
                                 const selectMotor = document.getElementById('formulacion_motor');
                                 const motorOption = selectMotor.options[selectMotor.selectedIndex];
@@ -2830,29 +3274,26 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 
                                 if (lineaId && motorId) {
                                     document.getElementById('formulacion_proyecto').innerHTML = '<option value="">Cargando proyectos...</option>';
-                                    
                                     $.ajax({
                                         url: basePath + '/modulo144/getProyectosPorLineaYMotor',
                                         type: 'GET',
-                                        data: { 
-                                            linea_id: lineaId,
-                                            motor_id: motorId
-                                        },
+                                        data: { linea_id: lineaId, motor_id: motorId },
                                         dataType: 'json',
                                         success: function(res) {
                                             const selectProyecto = document.getElementById('formulacion_proyecto');
                                             selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
-                                            
                                             if (res.success && res.proyectos && res.proyectos.length > 0) {
                                                 res.proyectos.forEach(function(proyecto) {
                                                     const option = document.createElement('option');
                                                     option.value = proyecto.nombre;
+                                                    option.setAttribute('data-proyecto-id', proyecto.id);
                                                     option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
                                                     selectProyecto.appendChild(option);
                                                 });
-                                                
                                                 if (valorProyecto) {
                                                     $('#formulacion_proyecto').val(valorProyecto);
+                                                    setTimeout(cargarPonderacionProyecto, 100);
+                                                    setTimeout(actualizarLmpBadgeEnLista, 150);
                                                 }
                                             } else {
                                                 selectProyecto.innerHTML = '<option value="">No hay proyectos disponibles</option>';
@@ -2863,7 +3304,6 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 }
                             }
                             
-                            // Cargar estrategias, motores y luego proyectos
                             cargarEstrategias(lineaId, b.estrategia);
                             cargarMotores(lineaId, b.motor_desarrollo);
                             
@@ -2871,31 +3311,27 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#formulacion_ponderacion_proyectos').val(b.ponderacion_proyectos);
                             $('#formulacion_actividad').val(b.actividad_proyecto);
                             $('#formulacion_ponderacion_actividades').val(b.ponderacion_actividades);
-                            $('#formulacion_responsable').val(b.responsable_formulacion);
+                            const responsableGuardado = b.responsable_formulacion || '';
+                            $('#formulacion_responsable_hidden').val(responsableGuardado);
+                            const responsablesArray = responsableGuardado
+                                ? responsableGuardado.split(',').map(s => s.trim()).filter(s => s !== '')
+                                : [];
+                            $('#formulacion_responsable').val(responsablesArray).trigger('change.select2');
                             $('#formulacion_id_indicador').val(b.id_indicador);
-                            
-                            // Checkbox: marcar si gestionado_facultades es 1
-                            if (b.gestionado_facultades == 1) {
-                                $('#formulacion_gestionado_facultades').prop('checked', true);
-                            } else {
-                                $('#formulacion_gestionado_facultades').prop('checked', false);
-                            }
-                            
-                            // Campos de la pestaña INDICADOR DE RESULTADO
+                            $('#formulacion_gestionado_facultades').prop('checked', b.gestionado_facultades == 1);
                             $('#formulacion_nombre_indicador').val(b.nombre_indicador);
                             $('#formulacion_formula_medicion').val(b.formula_medicion);
                             $('#formulacion_frecuencia_medicion').val(b.frecuencia_medicion);
                             $('#formulacion_unidad_medida').val(b.unidad_medida);
-                            $('#formulacion_tipo_medicion').val(b.tipo_medicion);
                             $('#formulacion_descripcion_indicador').val(b.descripcion_indicador);
-                            
-                            // Campos de METAS PROPUESTAS
                             $('#formulacion_linea_base_meta').val(b.linea_base_meta);
-                            $('#formulacion_anio_base_meta').val(b.anio_base_meta);
                             $('#formulacion_meta_s1').val(b.meta_s1);
                             $('#formulacion_meta_s2').val(b.meta_s2);
                             
-                            // Cargar planes institucionales
+                            // Calcular valor anual después de cargar valores
+                            calcularValorAnual();
+                            setTimeout(calcularAcumuladoActividades, 400);
+                            
                             if (b.planes_institucionales) {
                                 cargarPlanesDesdeBD(b.planes_institucionales);
                             } else {
@@ -2904,18 +3340,11 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                                 actualizarCampoOculto();
                             }
                             
-                            // Cargar tabla de resumen
-                            cargarTablaResumen();
-                            
                             $('#modalFormulacion').modal('show');
-                            
-                            // Validar pestañas después de cargar
                             setTimeout(validarPestanas, 500);
                         } else {
                             $('#seguimiento_id').val(b.id);
                             $('#tituloSeguimientoSpan').text(b.nombre_borrador);
-                            
-                            // Cargar datos de seguimiento editables (incluyendo los nuevos semestres)
                             $('#seguimiento_indicador').val(b.indicador);
                             $('#seguimiento_fecha').val(b.fecha_seguimiento);
                             $('#seguimiento_semestre1').val(b.semestre1_seguimiento);
@@ -2925,13 +3354,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                             $('#seguimiento_porcentaje').val(b.porcentaje_avance);
                             $('#seguimiento_responsable').val(b.responsable_seguimiento);
                             $('#seguimiento_observaciones').val(b.observaciones);
-                            
-                            // Cargar datos de formulación (solo visuales)
                             cargarDatosFormulacionEnSeguimiento(b);
-                            
-                            // Cargar tabla de resumen en seguimiento
-                            cargarTablaResumenSeguimiento(b);
-                            
                             $('#modalSeguimiento').modal('show');
                         }
                     }
@@ -2982,7 +3405,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                             }
                         }
                     });
@@ -3008,7 +3431,7 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Eliminado!', response.message, 'success');
-                                setTimeout(() => location.reload(), 1500);
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
                             }
                         }
                     });
@@ -3016,21 +3439,341 @@ $fecha_cierre = $formulario['fecha_cierre'] ?? null;
             });
         }
 
-        // Test automático al cargar la página
         $(document).ready(function() {
-            console.log('=== SISTEMA CARGADO CORRECTAMENTE CON ACTUALIZACIÓN EN TIEMPO REAL ===');
-            
-            // Inicializar validación de pestañas cuando se abre el modal
-            $('#modalFormulacion').on('shown.bs.modal', function() {
-                validarPestanas();
-                cargarTablaResumen();
+            console.log('=== SISTEMA CARGADO CORRECTAMENTE ===');
+
+            // ── SELECT2: Responsable múltiple con buscador (máx. 3) ─────────
+            $('#formulacion_responsable').select2({
+                placeholder: 'Seleccione uno o más responsables',
+                allowClear: true,
+                maximumSelectionLength: 3,
+                language: {
+                    noResults: function() { return 'No se encontraron resultados'; },
+                    searching:  function() { return 'Buscando...'; },
+                    maximumSelected: function() {
+                        return '<span class="select2-max-reached">Máximo 3 responsables permitidos</span>';
+                    }
+                },
+                escapeMarkup: function(m) { return m; },
+                dropdownParent: $('#modalFormulacion')
             });
 
-            // Actualizar tabla de resumen cuando cambian los campos
-            $('#formulacion_nombre_indicador, #formulacion_formula_medicion, #formulacion_frecuencia_medicion, #formulacion_unidad_medida, #formulacion_tipo_medicion, #formulacion_descripcion_indicador, #formulacion_linea_base_meta, #formulacion_anio_base_meta, #formulacion_meta_s1, #formulacion_meta_s2, #formulacion_gestionado_facultades').on('input change', function() {
-                cargarTablaResumen();
+            $('#formulacion_responsable').on('change', function() {
+                const seleccionados = $(this).val() || [];
+                $('#formulacion_responsable_hidden').val(seleccionados.join(', '));
+                autoGuardarFormulacion();
+                validarPestanas();
+            });
+            // ────────────────────────────────────────────────────────────────
+
+            $('#modalFormulacion').on('shown.bs.modal', function() {
+                validarPestanas();
+                calcularValorAnual();
+            });
+            $('#formulacion_nombre_indicador, #formulacion_formula_medicion, #formulacion_frecuencia_medicion, #formulacion_unidad_medida, #formulacion_tipo_medicion, #formulacion_descripcion_indicador, #formulacion_linea_base_meta, #formulacion_meta_s1, #formulacion_meta_s2, #formulacion_gestionado_facultades').on('input change', function() {
+                calcularValorAnual();
             });
         });
+
+        /* ===== FILTRO DE LISTA ===== */
+
+        function onFiltroTipoChange(modulo) {
+            const tipo  = document.getElementById('filtroTipo-' + modulo).value;
+            const wrap  = document.getElementById('filtroInputWrap-' + modulo);
+            const input = document.getElementById('filtroTexto-' + modulo);
+            if (tipo === 'dependencia' || tipo === 'persona') {
+                wrap.style.display = 'block';
+                input.placeholder  = tipo === 'persona' ? 'Buscar persona...' : 'Buscar dependencia...';
+                input.value = '';
+            } else {
+                wrap.style.display = 'none';
+            }
+            aplicarFiltro(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        function onFiltroTextoInput(modulo) {
+            aplicarFiltro(modulo);
+            mostrarSugerencias(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        function aplicarFiltro(modulo) {
+            const tipo     = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
+            const texto    = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
+            const linea    = document.getElementById('filtroLinea-' + modulo)?.value || '';
+            const motor    = document.getElementById('filtroMotor-' + modulo)?.value || '';
+            const proyecto = document.getElementById('filtroProyecto-' + modulo)?.value || '';
+            const items    = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
+            let visibles   = 0;
+
+            items.forEach(function(item) {
+                let visible = true;
+                if (tipo === 'mio') {
+                    visible = item.getAttribute('data-creado-por') == FILTER_USUARIO_ID;
+                } else if (tipo === 'dependencia' && texto) {
+                    visible = (item.getAttribute('data-cargo-nombre') || '').toLowerCase().includes(texto);
+                } else if (tipo === 'persona' && texto) {
+                    visible = (item.getAttribute('data-creado-por-nombre') || '').toLowerCase().includes(texto);
+                }
+                if (visible && linea) {
+                    visible = (item.getAttribute('data-linea-filtro') || '') === linea;
+                }
+                if (visible && motor) {
+                    visible = (item.getAttribute('data-motor-filtro') || '') === motor;
+                }
+                if (visible && proyecto) {
+                    visible = (item.getAttribute('data-proyecto-filtro') || '') === proyecto;
+                }
+                item.style.display = visible ? '' : 'none';
+                if (visible) visibles++;
+            });
+
+            const badge     = document.getElementById('filtroResultado-' + modulo);
+            const anyActive = tipo !== 'todos' || linea !== '' || motor !== '' || proyecto !== '';
+            if (badge) {
+                badge.style.display = anyActive ? '' : 'none';
+                badge.textContent   = visibles + ' de ' + items.length;
+            }
+        }
+
+        function poblarSelectsFiltro(modulo) {
+            const items = document.querySelectorAll(`.lista-item[data-modulo="${modulo}"]`);
+            const lineas = new Set();
+            const motoresPorLinea = {};
+            const proyectosPorMotor = {};
+
+            items.forEach(function(item) {
+                const lin = item.getAttribute('data-linea-filtro') || '';
+                const mot = item.getAttribute('data-motor-filtro') || '';
+                const pro = item.getAttribute('data-proyecto-filtro') || '';
+                if (lin) {
+                    lineas.add(lin);
+                    if (!motoresPorLinea[lin]) motoresPorLinea[lin] = new Set();
+                    if (mot) {
+                        motoresPorLinea[lin].add(mot);
+                        const pkey = lin + '||' + mot;
+                        if (!proyectosPorMotor[pkey]) proyectosPorMotor[pkey] = new Set();
+                        if (pro) proyectosPorMotor[pkey].add(pro);
+                    }
+                }
+            });
+
+            const bar = document.getElementById('filtroBar-' + modulo);
+            if (bar) {
+                bar._motoresPorLinea    = motoresPorLinea;
+                bar._proyectosPorMotor  = proyectosPorMotor;
+            }
+
+            const selLinea = document.getElementById('filtroLinea-' + modulo);
+            if (!selLinea) return;
+
+            selLinea.innerHTML = '<option value="">Línea: Todas</option>';
+            [...lineas].sort().forEach(function(lin) {
+                const opt = document.createElement('option');
+                opt.value = lin;
+                opt.textContent = lin;
+                selLinea.appendChild(opt);
+            });
+            selLinea.style.display = lineas.size > 0 ? '' : 'none';
+            restaurarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function actualizarMotores(modulo) {
+            const bar        = document.getElementById('filtroBar-' + modulo);
+            const selLinea   = document.getElementById('filtroLinea-' + modulo);
+            const selMotor   = document.getElementById('filtroMotor-' + modulo);
+            const selProy    = document.getElementById('filtroProyecto-' + modulo);
+            if (!bar || !selLinea || !selMotor || !selProy) return;
+
+            const linea = selLinea.value;
+            const motoresPorLinea = bar._motoresPorLinea || {};
+            const motores = linea && motoresPorLinea[linea]
+                ? [...motoresPorLinea[linea]].sort()
+                : [];
+
+            selMotor.innerHTML = '<option value="">Motor: Todos</option>';
+            motores.forEach(function(mot) {
+                const opt = document.createElement('option');
+                opt.value = mot;
+                opt.textContent = mot;
+                selMotor.appendChild(opt);
+            });
+            selMotor.style.display = (linea && motores.length > 0) ? '' : 'none';
+            selMotor.value = '';
+
+            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+            selProy.style.display = 'none';
+            selProy.value = '';
+        }
+
+        function actualizarProyectos(modulo) {
+            const bar      = document.getElementById('filtroBar-' + modulo);
+            const selLinea = document.getElementById('filtroLinea-' + modulo);
+            const selMotor = document.getElementById('filtroMotor-' + modulo);
+            const selProy  = document.getElementById('filtroProyecto-' + modulo);
+            if (!bar || !selLinea || !selMotor || !selProy) return;
+
+            const linea   = selLinea.value;
+            const motor   = selMotor.value;
+            const proyectosPorMotor = bar._proyectosPorMotor || {};
+            const pkey    = linea + '||' + motor;
+            const proyectos = (linea && motor && proyectosPorMotor[pkey])
+                ? [...proyectosPorMotor[pkey]].sort()
+                : [];
+
+            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+            proyectos.forEach(function(pro) {
+                const opt = document.createElement('option');
+                opt.value = pro;
+                opt.textContent = pro;
+                selProy.appendChild(opt);
+            });
+            selProy.style.display = (linea && motor && proyectos.length > 0) ? '' : 'none';
+            selProy.value = '';
+        }
+
+        function guardarFiltrosLineamiento(modulo) {
+            const linea   = document.getElementById('filtroLinea-'    + modulo)?.value || '';
+            const motor   = document.getElementById('filtroMotor-'    + modulo)?.value || '';
+            const proyecto = document.getElementById('filtroProyecto-' + modulo)?.value || '';
+            sessionStorage.setItem(
+                'mod144_lineas_' + formularioId + '_' + modulo,
+                JSON.stringify({ linea: linea, motor: motor, proyecto: proyecto })
+            );
+        }
+
+        function restaurarFiltrosLineamiento(modulo) {
+            const raw = sessionStorage.getItem('mod144_lineas_' + formularioId + '_' + modulo);
+            if (!raw) return;
+            let saved;
+            try { saved = JSON.parse(raw); } catch(e) { return; }
+
+            const selLinea = document.getElementById('filtroLinea-'    + modulo);
+            const selMotor = document.getElementById('filtroMotor-'    + modulo);
+            const selProy  = document.getElementById('filtroProyecto-' + modulo);
+            if (!selLinea) return;
+
+            if (saved.linea) {
+                selLinea.value = saved.linea;
+                // Rebuild motor options for this linea
+                const bar = document.getElementById('filtroBar-' + modulo);
+                const motoresPorLinea = bar ? (bar._motoresPorLinea || {}) : {};
+                const motores = motoresPorLinea[saved.linea]
+                    ? [...motoresPorLinea[saved.linea]].sort() : [];
+                if (selMotor) {
+                    selMotor.innerHTML = '<option value="">Motor: Todos</option>';
+                    motores.forEach(function(mot) {
+                        const opt = document.createElement('option');
+                        opt.value = mot; opt.textContent = mot;
+                        selMotor.appendChild(opt);
+                    });
+                    selMotor.style.display = motores.length > 0 ? '' : 'none';
+                    if (saved.motor) {
+                        selMotor.value = saved.motor;
+                        // Rebuild proyecto options for this motor
+                        const proyectosPorMotor = bar ? (bar._proyectosPorMotor || {}) : {};
+                        const pkey = saved.linea + '||' + saved.motor;
+                        const proyectos = proyectosPorMotor[pkey]
+                            ? [...proyectosPorMotor[pkey]].sort() : [];
+                        if (selProy) {
+                            selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
+                            proyectos.forEach(function(pro) {
+                                const opt = document.createElement('option');
+                                opt.value = pro; opt.textContent = pro;
+                                selProy.appendChild(opt);
+                            });
+                            selProy.style.display = (proyectos.length > 0) ? '' : 'none';
+                            if (saved.proyecto) selProy.value = saved.proyecto;
+                        }
+                    }
+                }
+            }
+        }
+
+        function onFiltroLineaChange(modulo) {
+            actualizarMotores(modulo);
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function onFiltroMotorChange(modulo) {
+            actualizarProyectos(modulo);
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function onFiltroProyectoChange(modulo) {
+            guardarFiltrosLineamiento(modulo);
+            aplicarFiltro(modulo);
+        }
+
+        function mostrarSugerencias(modulo) {
+            const tipo   = document.getElementById('filtroTipo-' + modulo)?.value;
+            const texto  = (document.getElementById('filtroTexto-' + modulo)?.value || '').trim().toLowerCase();
+            const box    = document.getElementById('filtroSugerencias-' + modulo);
+            if (!box || (tipo !== 'dependencia' && tipo !== 'persona')) return;
+
+            const fuente = tipo === 'dependencia'
+                ? FILTER_CARGOS.map(function(c) { return c.nombre; })
+                : FILTER_CREADORES.map(function(c) { return c.nombre; });
+
+            const filtrados = texto ? fuente.filter(function(n) { return n.toLowerCase().includes(texto); }) : fuente;
+
+            if (!filtrados.length) { box.style.display = 'none'; return; }
+
+            box.innerHTML = filtrados.slice(0, 12).map(function(nombre) {
+                const safe = nombre.replace(/'/g, "\\'");
+                return `<div class="sug-item" onmousedown="seleccionarSugerencia('${modulo}','${safe}')">${nombre}</div>`;
+            }).join('');
+            box.style.display = 'block';
+        }
+
+        function ocultarSugerencias(modulo) {
+            const box = document.getElementById('filtroSugerencias-' + modulo);
+            if (box) box.style.display = 'none';
+        }
+
+        function seleccionarSugerencia(modulo, valor) {
+            const input = document.getElementById('filtroTexto-' + modulo);
+            if (input) input.value = valor;
+            ocultarSugerencias(modulo);
+            aplicarFiltro(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        const _filtroSaveTimeout = {};
+        function guardarFiltroPreferencia(modulo) {
+            clearTimeout(_filtroSaveTimeout[modulo]);
+            _filtroSaveTimeout[modulo] = setTimeout(function() {
+                const tipo  = document.getElementById('filtroTipo-' + modulo)?.value || 'todos';
+                const texto = document.getElementById('filtroTexto-' + modulo)?.value || null;
+                fetch(basePath + '/modulo144/saveFilterPreference', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        formulario_id: formularioId,
+                        modulo:        modulo,
+                        tipo_filtro:   tipo,
+                        valor_filtro:  (tipo === 'dependencia' || tipo === 'persona') ? texto : null
+                    })
+                });
+            }, 800);
+        }
+
+        // Aplicar filtros guardados al cargar
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php foreach ($datos_modulos as $key => $modulo): ?>
+            (function() {
+                poblarSelectsFiltro('<?php echo $key; ?>');
+                const pref = FILTER_PREFS['<?php echo $key; ?>'];
+                if (pref && pref.tipo_filtro && pref.tipo_filtro !== 'todos') {
+                    aplicarFiltro('<?php echo $key; ?>');
+                }
+            })();
+            <?php endforeach; ?>
+        });
+
     </script>
-</body>
-</html>
+<?php require_once __DIR__ . '/../complementos/footer.php'; ?>
