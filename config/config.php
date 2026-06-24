@@ -3,10 +3,11 @@
 
 class Config {
     const DB_HOST = 'localhost';
-    const DB_NAME = 'uniatlantico';
-    const DB_USER = 'root';
-    const DB_PASS = '';
+    const DB_NAME = 'jorginho_app-uniatlantico';
+    const DB_USER = 'jorginho_app-uniatlantico';
+    const DB_PASS = 'jorginho10.';
     const DB_CHARSET = 'utf8';
+    
     
     const SESSION_TIMEOUT = 1800;
     
