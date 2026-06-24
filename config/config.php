@@ -8,6 +8,7 @@ class Config {
     const DB_PASS = 'jorginho10.';
     const DB_CHARSET = 'utf8';
     
+    
     const SESSION_TIMEOUT = 1800;
     
     public static function getBasePath() {
