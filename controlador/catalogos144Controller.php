@@ -225,16 +225,17 @@ class Catalogos144Controller {
         }
 
         $linea_id    = intval($_POST['linea_id'] ?? 0);
+        $codigo      = trim($_POST['codigo'] ?? '');
         $nombre      = trim($_POST['nombre'] ?? '');
         $ponderacion = ($_POST['ponderacion'] ?? '') !== '' ? floatval($_POST['ponderacion']) : null;
         $activo      = isset($_POST['activo']) ? intval($_POST['activo']) : 1;
 
-        if ($linea_id <= 0 || $nombre === '') {
-            echo json_encode(['success' => false, 'message' => 'La linea estrategica y el nombre son obligatorios']);
+        if ($linea_id <= 0 || $codigo === '' || $nombre === '') {
+            echo json_encode(['success' => false, 'message' => 'La linea, el codigo y el nombre son obligatorios']);
             return;
         }
 
-        echo json_encode($this->model->crearMotor($linea_id, $nombre, $ponderacion, $activo));
+        echo json_encode($this->model->crearMotor($linea_id, $codigo, $nombre, $ponderacion, $activo));
     }
 
     public function actualizarMotor() {
@@ -246,16 +247,17 @@ class Catalogos144Controller {
 
         $id          = intval($_POST['id'] ?? 0);
         $linea_id    = intval($_POST['linea_id'] ?? 0);
+        $codigo      = trim($_POST['codigo'] ?? '');
         $nombre      = trim($_POST['nombre'] ?? '');
         $ponderacion = ($_POST['ponderacion'] ?? '') !== '' ? floatval($_POST['ponderacion']) : null;
         $activo      = isset($_POST['activo']) ? intval($_POST['activo']) : 1;
 
-        if ($id <= 0 || $linea_id <= 0 || $nombre === '') {
+        if ($id <= 0 || $linea_id <= 0 || $codigo === '' || $nombre === '') {
             echo json_encode(['success' => false, 'message' => 'Datos invalidos']);
             return;
         }
 
-        echo json_encode($this->model->actualizarMotor($id, $linea_id, $nombre, $ponderacion, $activo));
+        echo json_encode($this->model->actualizarMotor($id, $linea_id, $codigo, $nombre, $ponderacion, $activo));
     }
 
     public function cambiarEstadoMotor() {

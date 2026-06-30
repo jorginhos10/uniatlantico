@@ -317,7 +317,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         Motores
                         <span class="badge-count" id="badge-count-motores">0</span>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <select class="search-input" id="filterLineaMotores" style="width:190px;">
+                            <option value="">Todas las líneas</option>
+                        </select>
                         <input type="text" class="search-input" id="searchMotores" placeholder="Buscar motor...">
                         <button class="btn-nueva" style="background:var(--ios-blue);" onclick="abrirModalCrearMotor()">
                             <i class="fas fa-plus"></i> Nuevo Motor
@@ -330,6 +333,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <tr>
                                 <th>#</th>
                                 <th>Línea</th>
+                                <th>Código</th>
                                 <th>Nombre</th>
                                 <th>Ponderación</th>
                                 <th>Estado</th>
@@ -337,7 +341,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </tr>
                         </thead>
                         <tbody id="tablaMotoresBody">
-                            <tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
+                            <tr class="empty-row"><td colspan="7"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -484,6 +488,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </select>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Código *</label>
+                        <input type="text" class="form-control" name="codigo" id="motor_codigo" required maxlength="20" placeholder="Ej: M1">
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Nombre *</label>
                         <input type="text" class="form-control" name="nombre" id="motor_nombre" required placeholder="Ej: Motor de desarrollo">
                     </div>
@@ -598,7 +606,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
         $('#searchEstrategias').on('input', function() { filtrarEstrategias($(this).val().toLowerCase()); });
-        $('#searchMotores').on('input', function() { filtrarMotores($(this).val().toLowerCase()); });
+        $('#searchMotores').on('input', function() { guardarFiltroMotores(); aplicarFiltrosMotores(); });
+        $('#filterLineaMotores').on('change', function() { guardarFiltroMotores(); aplicarFiltrosMotores(); });
         $('#searchProyectos').on('input', function() { guardarFiltrosProyectos(); aplicarFiltrosProyectos(); });
 
         $('#filterLineaProyectos').on('change', function() {
@@ -755,8 +764,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             filterOpts += `<option value="${l.id}">${escHtml(l.codigo)} - ${escHtml(l.nombre)}</option>`;
         });
         $('#filterLineaProyectos').html(filterOpts);
-        const saved = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
-        if (saved.linea) $('#filterLineaProyectos').val(saved.linea);
+        $('#filterLineaMotores').html(filterOpts);
+
+        const savedProy = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
+        if (savedProy.linea) $('#filterLineaProyectos').val(savedProy.linea);
+
+        const savedMot = JSON.parse(localStorage.getItem('cat144_mot_filter') || '{}');
+        if (savedMot.linea) $('#filterLineaMotores').val(savedMot.linea);
+        if (savedMot.texto) $('#searchMotores').val(savedMot.texto);
     }
 
     // ===================== ESTRATEGIAS =====================
@@ -893,9 +908,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             success: function(res) {
                 if (res.success) {
                     todosMotores = res.motores;
-                    renderTablaMotores(todosMotores);
-                    const saved = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
-                    llenarFiltroMotorProyectos($('#filterLineaProyectos').val(), saved.motor || '');
+                    const savedProy = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
+                    llenarFiltroMotorProyectos($('#filterLineaProyectos').val(), savedProy.motor || '');
+                    aplicarFiltrosMotores();
                 } else { mostrarErrorMotores(); }
             },
             error: function() { mostrarErrorMotores(); }
@@ -903,13 +918,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     function mostrarErrorMotores() {
-        $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los motores</div></td></tr>');
+        $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="7"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los motores</div></td></tr>');
     }
 
     function renderTablaMotores(motores) {
         $('#badge-count-motores').text(motores.length);
         if (motores.length === 0) {
-            $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-cogs"></i></div><div>No hay motores registrados</div></td></tr>');
+            $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="7"><div class="empty-icon"><i class="fas fa-cogs"></i></div><div>No hay motores registrados</div></td></tr>');
             return;
         }
         let html = '';
@@ -922,6 +937,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             html += `<tr>
                 <td><strong style="color:var(--ios-blue);">#${m.id}</strong></td>
                 <td><span class="badge-codigo">${escHtml(m.linea_codigo)}</span> <small class="text-muted">${escHtml(m.linea_nombre)}</small></td>
+                <td><span class="badge-codigo">${escHtml(m.codigo)}</span></td>
                 <td><strong>${escHtml(m.nombre)}</strong></td>
                 <td>${ponderacion}</td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
@@ -935,9 +951,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#tablaMotoresBody').html(html);
     }
 
-    function filtrarMotores(q) {
-        if (!q) { renderTablaMotores(todosMotores); return; }
-        renderTablaMotores(todosMotores.filter(m => (m.nombre || '').toLowerCase().includes(q) || (m.linea_nombre || '').toLowerCase().includes(q)));
+    function guardarFiltroMotores() {
+        localStorage.setItem('cat144_mot_filter', JSON.stringify({
+            linea: $('#filterLineaMotores').val(),
+            texto: $('#searchMotores').val()
+        }));
+    }
+
+    function aplicarFiltrosMotores() {
+        const linea = $('#filterLineaMotores').val();
+        const texto = $('#searchMotores').val().toLowerCase();
+        let resultado = todosMotores;
+        if (linea) resultado = resultado.filter(m => m.linea_id == linea);
+        if (texto) resultado = resultado.filter(m =>
+            (m.nombre || '').toLowerCase().includes(texto) ||
+            (m.codigo || '').toLowerCase().includes(texto) ||
+            (m.linea_nombre || '').toLowerCase().includes(texto)
+        );
+        renderTablaMotores(resultado);
     }
 
     function abrirModalCrearMotor() {
@@ -958,6 +989,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     $('#modalMotorTitulo').text('Editar Motor');
                     $('#motor_id').val(m.id);
                     $('#motor_linea_id').val(m.linea_id);
+                    $('#motor_codigo').val(m.codigo);
                     $('#motor_nombre').val(m.nombre);
                     $('#motor_ponderacion').val(m.ponderacion);
                     $('#motor_activo').prop('checked', m.activo == 1);
@@ -975,6 +1007,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const data = {
             id: id,
             linea_id: $('#motor_linea_id').val(),
+            codigo: $('#motor_codigo').val(),
             nombre: $('#motor_nombre').val(),
             ponderacion: $('#motor_ponderacion').val(),
             activo: $('#motor_activo').is(':checked') ? 1 : 0
@@ -1065,7 +1098,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const lista = lineaId ? todosMotores.filter(m => m.linea_id == lineaId) : todosMotores;
         let opts = '<option value="">Todos los motores</option>';
         lista.forEach(function(m) {
-            opts += `<option value="${m.id}">${escHtml(m.nombre)}</option>`;
+            opts += `<option value="${m.id}">${escHtml(m.codigo)} - ${escHtml(m.nombre)}</option>`;
         });
         $('#filterMotorProyectos').html(opts);
         if (motorSeleccionado) $('#filterMotorProyectos').val(motorSeleccionado);
@@ -1098,7 +1131,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const motoresDeLinea = todosMotores.filter(m => m.linea_id == lineaId);
         let options = '<option value="">Seleccione un motor...</option>';
         motoresDeLinea.forEach(function(m) {
-            options += `<option value="${m.id}">${escHtml(m.nombre)}</option>`;
+            options += `<option value="${m.id}">${escHtml(m.codigo)} - ${escHtml(m.nombre)}</option>`;
         });
         $('#proyecto_motor_id').html(options);
         if (motorSeleccionado) $('#proyecto_motor_id').val(motorSeleccionado);

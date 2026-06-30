@@ -203,11 +203,11 @@ class Catalogos144Model {
     public function getAllMotores() {
         try {
             $stmt = $this->db->query(
-                "SELECT m.id, m.linea_id, m.nombre, m.ponderacion, m.activo,
+                "SELECT m.id, m.linea_id, m.codigo, m.nombre, m.ponderacion, m.activo,
                         l.codigo AS linea_codigo, l.nombre AS linea_nombre
                  FROM motores m
                  INNER JOIN lineas_estrategicas l ON m.linea_id = l.id
-                 ORDER BY l.codigo ASC, m.nombre ASC"
+                 ORDER BY l.codigo ASC, m.codigo ASC"
             );
             return $stmt->fetchAll();
         } catch (PDOException $e) {
@@ -227,17 +227,18 @@ class Catalogos144Model {
         }
     }
 
-    public function crearMotor($linea_id, $nombre, $ponderacion, $activo = 1) {
+    public function crearMotor($linea_id, $codigo, $nombre, $ponderacion, $activo = 1) {
         try {
             $stmt = $this->db->prepare(
-                "INSERT INTO motores (linea_id, nombre, ponderacion, activo)
-                 VALUES (:linea_id, :nombre, :ponderacion, :activo)"
+                "INSERT INTO motores (linea_id, codigo, nombre, ponderacion, activo)
+                 VALUES (:linea_id, :codigo, :nombre, :ponderacion, :activo)"
             );
             $stmt->execute([
-                ':linea_id' => $linea_id,
-                ':nombre' => $nombre,
-                ':ponderacion' => $ponderacion,
-                ':activo' => $activo,
+                ':linea_id'   => $linea_id,
+                ':codigo'     => $codigo,
+                ':nombre'     => $nombre,
+                ':ponderacion'=> $ponderacion,
+                ':activo'     => $activo,
             ]);
             return ['success' => true, 'message' => 'Motor creado exitosamente', 'id' => $this->db->lastInsertId()];
         } catch (PDOException $e) {
@@ -246,19 +247,20 @@ class Catalogos144Model {
         }
     }
 
-    public function actualizarMotor($id, $linea_id, $nombre, $ponderacion, $activo) {
+    public function actualizarMotor($id, $linea_id, $codigo, $nombre, $ponderacion, $activo) {
         try {
             $stmt = $this->db->prepare(
                 "UPDATE motores
-                 SET linea_id = :linea_id, nombre = :nombre, ponderacion = :ponderacion, activo = :activo
+                 SET linea_id = :linea_id, codigo = :codigo, nombre = :nombre, ponderacion = :ponderacion, activo = :activo
                  WHERE id = :id"
             );
             $stmt->execute([
-                ':id' => $id,
-                ':linea_id' => $linea_id,
-                ':nombre' => $nombre,
-                ':ponderacion' => $ponderacion,
-                ':activo' => $activo,
+                ':id'         => $id,
+                ':linea_id'   => $linea_id,
+                ':codigo'     => $codigo,
+                ':nombre'     => $nombre,
+                ':ponderacion'=> $ponderacion,
+                ':activo'     => $activo,
             ]);
             return ['success' => true, 'message' => 'Motor actualizado exitosamente'];
         } catch (PDOException $e) {
@@ -397,7 +399,7 @@ class Catalogos144Model {
 
     public function getMotoresPorLinea($linea_id) {
         try {
-            $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre ASC");
+            $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY codigo ASC");
             $stmt->execute([':linea_id' => $linea_id]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
