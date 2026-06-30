@@ -263,12 +263,13 @@ class Modulo144Model {
         }
     }
 
-    public function getPonderacionProyecto($proyecto_id, $motor_id, $anio) {
+    public function getPonderacionProyecto($proyecto_id, $anio) {
         try {
-            $stmt = $this->db->prepare("SELECT porcentaje FROM data_proyectos WHERE proyecto_id = :proyecto_id AND motor_id = :motor_id AND anio = :anio LIMIT 1");
+            // La llave real del dato guardado es proyecto_id + anio (ver config144Model::guardarDataProyecto).
+            // No se filtra por motor_id porque no forma parte de esa llave y puede no coincidir.
+            $stmt = $this->db->prepare("SELECT porcentaje FROM data_proyectos WHERE proyecto_id = :proyecto_id AND anio = :anio LIMIT 1");
             $stmt->execute([
                 ':proyecto_id' => $proyecto_id,
-                ':motor_id'    => $motor_id,
                 ':anio'        => $anio
             ]);
             $row = $stmt->fetch();

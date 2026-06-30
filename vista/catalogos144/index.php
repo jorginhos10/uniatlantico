@@ -353,7 +353,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         Proyectos
                         <span class="badge-count" id="badge-count-proyectos">0</span>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <select class="search-input" id="filterLineaProyectos" style="width:170px;">
+                            <option value="">Todas las líneas</option>
+                        </select>
+                        <select class="search-input" id="filterMotorProyectos" style="width:190px;">
+                            <option value="">Todos los motores</option>
+                        </select>
                         <input type="text" class="search-input" id="searchProyectos" placeholder="Buscar proyecto...">
                         <button class="btn-nueva" style="background:var(--ios-blue);" onclick="abrirModalCrearProyecto()">
                             <i class="fas fa-plus"></i> Nuevo Proyecto
@@ -593,7 +599,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
         $('#searchEstrategias').on('input', function() { filtrarEstrategias($(this).val().toLowerCase()); });
         $('#searchMotores').on('input', function() { filtrarMotores($(this).val().toLowerCase()); });
-        $('#searchProyectos').on('input', function() { filtrarProyectos($(this).val().toLowerCase()); });
+        $('#searchProyectos').on('input', function() { guardarFiltrosProyectos(); aplicarFiltrosProyectos(); });
+
+        $('#filterLineaProyectos').on('change', function() {
+            llenarFiltroMotorProyectos($(this).val(), '');
+            guardarFiltrosProyectos();
+            aplicarFiltrosProyectos();
+        });
+        $('#filterMotorProyectos').on('change', function() {
+            guardarFiltrosProyectos();
+            aplicarFiltrosProyectos();
+        });
     });
 
     function escHtml(str) {
@@ -733,6 +749,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#motor_linea_id').html(options);
         $('#proyecto_linea_id').html(options);
         $('#estrategia_linea_id').html(options);
+
+        let filterOpts = '<option value="">Todas las líneas</option>';
+        todasLineas.forEach(function(l) {
+            filterOpts += `<option value="${l.id}">${escHtml(l.codigo)} - ${escHtml(l.nombre)}</option>`;
+        });
+        $('#filterLineaProyectos').html(filterOpts);
+        const saved = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
+        if (saved.linea) $('#filterLineaProyectos').val(saved.linea);
     }
 
     // ===================== ESTRATEGIAS =====================
@@ -870,6 +894,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (res.success) {
                     todosMotores = res.motores;
                     renderTablaMotores(todosMotores);
+                    const saved = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
+                    llenarFiltroMotorProyectos($('#filterLineaProyectos').val(), saved.motor || '');
                 } else { mostrarErrorMotores(); }
             },
             error: function() { mostrarErrorMotores(); }
@@ -993,7 +1019,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             success: function(res) {
                 if (res.success) {
                     todosProyectos = res.proyectos;
-                    renderTablaProyectos(todosProyectos);
+                    const saved = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
+                    if (saved.texto) $('#searchProyectos').val(saved.texto);
+                    aplicarFiltrosProyectos();
                 } else { mostrarErrorProyectos(); }
             },
             error: function() { mostrarErrorProyectos(); }
@@ -1033,13 +1061,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#tablaProyectosBody').html(html);
     }
 
-    function filtrarProyectos(q) {
-        if (!q) { renderTablaProyectos(todosProyectos); return; }
-        renderTablaProyectos(todosProyectos.filter(p =>
-            (p.nombre || '').toLowerCase().includes(q) ||
-            (p.codigo || '').toLowerCase().includes(q) ||
-            (p.motor_nombre || '').toLowerCase().includes(q)
-        ));
+    function llenarFiltroMotorProyectos(lineaId, motorSeleccionado) {
+        const lista = lineaId ? todosMotores.filter(m => m.linea_id == lineaId) : todosMotores;
+        let opts = '<option value="">Todos los motores</option>';
+        lista.forEach(function(m) {
+            opts += `<option value="${m.id}">${escHtml(m.nombre)}</option>`;
+        });
+        $('#filterMotorProyectos').html(opts);
+        if (motorSeleccionado) $('#filterMotorProyectos').val(motorSeleccionado);
+    }
+
+    function guardarFiltrosProyectos() {
+        localStorage.setItem('cat144_proy_filter', JSON.stringify({
+            linea: $('#filterLineaProyectos').val(),
+            motor: $('#filterMotorProyectos').val(),
+            texto: $('#searchProyectos').val()
+        }));
+    }
+
+    function aplicarFiltrosProyectos() {
+        const linea = $('#filterLineaProyectos').val();
+        const motor = $('#filterMotorProyectos').val();
+        const texto = $('#searchProyectos').val().toLowerCase();
+        let resultado = todosProyectos;
+        if (linea)  resultado = resultado.filter(p => p.linea_id == linea);
+        if (motor)  resultado = resultado.filter(p => p.motor_id == motor);
+        if (texto)  resultado = resultado.filter(p =>
+            (p.nombre || '').toLowerCase().includes(texto) ||
+            (p.codigo || '').toLowerCase().includes(texto) ||
+            (p.motor_nombre || '').toLowerCase().includes(texto)
+        );
+        renderTablaProyectos(resultado);
     }
 
     function llenarSelectMotoresPorLinea(lineaId, motorSeleccionado) {

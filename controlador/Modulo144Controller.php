@@ -129,15 +129,14 @@ class Modulo144Controller {
         header('Content-Type: application/json');
 
         $proyecto_id = isset($_GET['proyecto_id']) ? intval($_GET['proyecto_id']) : 0;
-        $motor_id    = isset($_GET['motor_id'])    ? intval($_GET['motor_id'])    : 0;
         $anio        = isset($_GET['anio'])         ? intval($_GET['anio'])        : 0;
 
-        if ($proyecto_id <= 0 || $motor_id <= 0 || $anio <= 0) {
+        if ($proyecto_id <= 0 || $anio <= 0) {
             echo json_encode(['success' => false, 'porcentaje' => null, 'message' => 'Parámetros inválidos']);
             return;
         }
 
-        $porcentaje = $this->model->getPonderacionProyecto($proyecto_id, $motor_id, $anio);
+        $porcentaje = $this->model->getPonderacionProyecto($proyecto_id, $anio);
 
         echo json_encode([
             'success'    => true,
