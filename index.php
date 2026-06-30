@@ -705,11 +705,13 @@ switch ($action) {
 
     case 'almacenamiento':
         require_once 'config/security.php';
+        require_once 'controlador/almacenamientoController.php';
+        $almController = new AlmacenamientoController();
         $actionParam = $urlParts[1] ?? 'index';
         switch ($actionParam) {
-            default:
-                require_once 'vista/almacenamiento/index.php';
-                break;
+            case 'backup':      $almController->backup();       break;
+            case 'sincronizar': $almController->sincronizar();  break;
+            default:            $almController->index();        break;
         }
         break;
 
