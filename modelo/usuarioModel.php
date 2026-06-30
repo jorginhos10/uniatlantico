@@ -111,13 +111,13 @@ class UsuarioModel {
     }
 
     public function crearUsuario($datos) {
-        $sql = "INSERT INTO usuarios (username, password, nombre, email, rol, avatar, activo, cargo_id)
-                VALUES (:username, :password, :nombre, :email, :rol, :avatar, :activo, :cargo_id)";
-        
+        $sql = "INSERT INTO usuarios (username, password, nombre, email, rol, avatar, activo, cargo_id, registro_publico)
+                VALUES (:username, :password, :nombre, :email, :rol, :avatar, :activo, :cargo_id, :registro_publico)";
+
         try {
             $stmt = $this->db->prepare($sql);
             $hashedPassword = password_hash($datos['password'], PASSWORD_DEFAULT);
-            
+
             $stmt->bindParam(':username', $datos['username']);
             $stmt->bindParam(':password', $hashedPassword);
             $stmt->bindParam(':nombre', $datos['nombre']);
@@ -127,6 +127,8 @@ class UsuarioModel {
             $stmt->bindParam(':activo', $datos['activo'], PDO::PARAM_INT);
             $cargoId = !empty($datos['cargo_id']) ? (int)$datos['cargo_id'] : null;
             $stmt->bindParam(':cargo_id', $cargoId, PDO::PARAM_INT);
+            $registroPublico = !empty($datos['registro_publico']) ? 1 : 0;
+            $stmt->bindParam(':registro_publico', $registroPublico, PDO::PARAM_INT);
 
             return $stmt->execute();
         } catch (PDOException $e) {
@@ -135,9 +137,33 @@ class UsuarioModel {
         }
     }
 
+    public function aceptarRegistro($id) {
+        $sql = "UPDATE usuarios SET activo = 1 WHERE id = :id AND registro_publico = 1";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error aceptando registro: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function rechazarRegistro($id) {
+        $sql = "DELETE FROM usuarios WHERE id = :id AND registro_publico = 1 AND activo = 0";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error rechazando registro: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function obtenerTodosUsuarios() {
         $sql = "SELECT u.id, u.username, u.nombre, u.email, u.rol, u.avatar, u.activo,
-                       u.cargo_id, u.fecha_creacion, u.ultimo_login,
+                       u.cargo_id, u.fecha_creacion, u.ultimo_login, u.registro_publico,
                        c.nombre AS cargo_nombre
                 FROM usuarios u
                 LEFT JOIN cargos c ON u.cargo_id = c.id

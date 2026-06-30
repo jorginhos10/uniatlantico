@@ -168,6 +168,14 @@ switch ($action) {
             case 'registroPublico':
                 $usuarioController->registroPublico();
                 break;
+            case 'aceptarRegistro':
+                $id = $urlParts[2] ?? 0;
+                $usuarioController->aceptarRegistro($id);
+                break;
+            case 'rechazarRegistro':
+                $id = $urlParts[2] ?? 0;
+                $usuarioController->rechazarRegistro($id);
+                break;
             default:
                 $usuarioController->index();
                 break;

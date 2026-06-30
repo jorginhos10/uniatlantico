@@ -205,6 +205,8 @@ require_once __DIR__ . '/../complementos/header.php';
                         $canDelete = !$isCurrentUser && !$isSuperAdmin;
                         $canEditStatus = !$isCurrentUser && !$isSuperAdmin;
                         
+                        $esPendienteRegistro = !empty($usuario['registro_publico']) && !$usuario['activo'];
+
                         $ultimoLoginFormatted = 'Nunca';
                         $ultimoLoginClass = 'never';
                         $ultimoLoginSortValue = '9999-12-31 23:59:59'; // Valor para ordenamiento
@@ -281,9 +283,14 @@ require_once __DIR__ . '/../complementos/header.php';
                             </span>
                         </td>
                         <td>
+                            <?php if ($esPendienteRegistro): ?>
+                                <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,149,0,.12);color:#b36b00;font-size:0.78rem;font-weight:700;padding:5px 12px;border-radius:20px;">
+                                    <i class="fas fa-clock"></i> Pendiente
+                                </span>
+                            <?php else: ?>
                             <div style="display: flex; align-items: center; gap: 10px;">
                                 <label class="switch-table">
-                                    <input type="checkbox" 
+                                    <input type="checkbox"
                                            class="status-switch"
                                            data-user-id="<?php echo $usuario['id']; ?>"
                                            data-user-name="<?php echo htmlspecialchars($usuario['nombre']); ?>"
@@ -292,6 +299,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                     <span class="slider-table"></span>
                                 </label>
                             </div>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <span class="login-time <?php echo $ultimoLoginClass; ?>" data-sort="<?php echo $ultimoLoginSortValue; ?>">
@@ -300,6 +308,24 @@ require_once __DIR__ . '/../complementos/header.php';
                             </span>
                         </td>
                         <td>
+                            <?php if ($esPendienteRegistro): ?>
+                            <div class="acciones-container">
+                                <button class="btn-accion btn-aceptar-registro"
+                                        data-user-id="<?php echo $usuario['id']; ?>"
+                                        data-user-name="<?php echo htmlspecialchars($usuario['nombre']); ?>"
+                                        title="Aceptar solicitud"
+                                        style="background:rgba(52,199,89,.12);color:#1f8a3d;">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn-accion btn-rechazar-registro"
+                                        data-user-id="<?php echo $usuario['id']; ?>"
+                                        data-user-name="<?php echo htmlspecialchars($usuario['nombre']); ?>"
+                                        title="Rechazar solicitud"
+                                        style="background:rgba(255,59,48,.12);color:#c0271c;">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <?php else: ?>
                             <div class="acciones-container">
                                 <!-- Botón Editar -->
                                 <button class="btn-accion btn-editar"
@@ -308,12 +334,12 @@ require_once __DIR__ . '/../complementos/header.php';
                                         <?php if ($isSuperAdmin): ?>disabled style="opacity: 0.5; cursor: not-allowed;"<?php endif; ?>>
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                
+
                                 <!-- Botón Eliminar -->
-                                <form method="POST" action="<?php echo $basePath; ?>/usuarios/eliminar" 
+                                <form method="POST" action="<?php echo $basePath; ?>/usuarios/eliminar"
                                       class="form-eliminar">
                                     <input type="hidden" name="id" value="<?php echo $usuario['id']; ?>">
-                                    <button type="submit" 
+                                    <button type="submit"
                                             class="btn-accion btn-eliminar btn-eliminar-form"
                                             data-user-id="<?php echo $usuario['id']; ?>"
                                             data-usuario-nombre="<?php echo htmlspecialchars($usuario['nombre']); ?>"
@@ -323,7 +349,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
-                                
+
                                 <!-- Botón Restablecer Contraseña -->
                                 <button class="btn-accion btn-reset-password"
                                         data-user-id="<?php echo $usuario['id']; ?>"
@@ -332,7 +358,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                         <?php if ($isSuperAdmin || $isCurrentUser): ?>disabled style="opacity: 0.5; cursor: not-allowed;"<?php endif; ?>>
                                     <i class="fas fa-key"></i>
                                 </button>
-                                
+
                                 <!-- Botón Permisos -->
                                 <button class="btn-accion btn-permisos"
                                         data-user-id="<?php echo $usuario['id']; ?>"
@@ -343,6 +369,7 @@ require_once __DIR__ . '/../complementos/header.php';
                                     <i class="fas fa-user-lock"></i>
                                 </button>
                             </div>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -533,6 +560,66 @@ document.addEventListener('DOMContentLoaded', function() {
             console.warn('3. Que la ruta a permisos.js sea correcta');
         }
     }, 2000);
+});
+</script>
+
+<script>
+// Aceptar / Rechazar solicitudes de registro público
+document.addEventListener('click', function(e) {
+    const btnAceptar = e.target.closest('.btn-aceptar-registro');
+    const btnRechazar = e.target.closest('.btn-rechazar-registro');
+
+    if (btnAceptar) {
+        const id = btnAceptar.dataset.userId;
+        const nombre = btnAceptar.dataset.userName;
+        Swal.fire({
+            icon: 'question',
+            title: '¿Aceptar solicitud?',
+            html: `Se activará la cuenta de <strong>${nombre}</strong> y podrá ingresar al sistema.`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, aceptar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#34C759'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch('<?php echo $basePath; ?>/usuarios/aceptarRegistro/' + id, { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Swal.fire('Aceptado', res.message, 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', res.message || 'No se pudo aceptar', 'error');
+                    }
+                })
+                .catch(() => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
+        });
+    }
+
+    if (btnRechazar) {
+        const id = btnRechazar.dataset.userId;
+        const nombre = btnRechazar.dataset.userName;
+        Swal.fire({
+            icon: 'warning',
+            title: '¿Rechazar solicitud?',
+            html: `Se eliminará la solicitud de <strong>${nombre}</strong>. Esta acción no se puede deshacer.`,
+            showCancelButton: true,
+            confirmButtonText: 'Sí, rechazar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#FF3B30'
+        }).then(result => {
+            if (!result.isConfirmed) return;
+            fetch('<?php echo $basePath; ?>/usuarios/rechazarRegistro/' + id, { method: 'POST' })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.success) {
+                        Swal.fire('Rechazado', res.message, 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', res.message || 'No se pudo rechazar', 'error');
+                    }
+                })
+                .catch(() => Swal.fire('Error', 'No se pudo conectar con el servidor', 'error'));
+        });
+    }
 });
 </script>
 

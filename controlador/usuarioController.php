@@ -18,6 +18,8 @@ class UsuarioController {
     }
 
     public function paginaRegistro() {
+        $roles  = array_values(array_filter($this->usuarioModel->obtenerRoles(), fn($r) => $r !== 'admin'));
+        $cargos = $this->usuarioModel->obtenerCargos();
         require_once 'vista/registro/index.php';
     }
 
@@ -32,15 +34,28 @@ class UsuarioController {
         $input = json_decode(file_get_contents('php://input'), true);
         if ($input) $_POST = $input;
 
+        // Validar rol contra la lista real de roles (sin admin) para evitar que alguien se autoasigne admin
+        $rolesPermitidos = array_values(array_filter($this->usuarioModel->obtenerRoles(), fn($r) => $r !== 'admin'));
+        $rolEnviado = trim($_POST['rol'] ?? '');
+        $rol = in_array($rolEnviado, $rolesPermitidos, true) ? $rolEnviado : ($rolesPermitidos[0] ?? 'pasante');
+
+        // Validar dependencia (cargo) contra cargos activos reales
+        $cargoEnviado = !empty($_POST['cargo_id']) ? (int)$_POST['cargo_id'] : null;
+        if ($cargoEnviado !== null) {
+            $cargosValidos = array_column($this->usuarioModel->obtenerCargos(), 'id');
+            if (!in_array($cargoEnviado, $cargosValidos, true)) $cargoEnviado = null;
+        }
+
         $datos = [
-            'username' => trim($_POST['username'] ?? ''),
-            'password' => $_POST['password'] ?? '',
-            'nombre'   => trim($_POST['nombre'] ?? ''),
-            'email'    => trim($_POST['email'] ?? ''),
-            'rol'      => 'pasante',
-            'avatar'   => 'default.png',
-            'activo'   => 0,
-            'cargo_id' => null,
+            'username'         => trim($_POST['username'] ?? ''),
+            'password'         => $_POST['password'] ?? '',
+            'nombre'           => trim($_POST['nombre'] ?? ''),
+            'email'            => trim($_POST['email'] ?? ''),
+            'rol'              => $rol,
+            'avatar'           => 'default.png',
+            'activo'           => 0,
+            'cargo_id'         => $cargoEnviado,
+            'registro_publico' => 1,
         ];
 
         $errores = [];
@@ -75,6 +90,36 @@ class UsuarioController {
             echo json_encode(['success' => true, 'message' => 'Cuenta creada exitosamente']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Error al crear la cuenta']);
+        }
+        exit;
+    }
+
+    public function aceptarRegistro($id) {
+        header('Content-Type: application/json');
+        $id = (int)$id;
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            exit;
+        }
+        if ($this->usuarioModel->aceptarRegistro($id)) {
+            echo json_encode(['success' => true, 'message' => 'Usuario aceptado correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo aceptar el usuario']);
+        }
+        exit;
+    }
+
+    public function rechazarRegistro($id) {
+        header('Content-Type: application/json');
+        $id = (int)$id;
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            exit;
+        }
+        if ($this->usuarioModel->rechazarRegistro($id)) {
+            echo json_encode(['success' => true, 'message' => 'Solicitud rechazada y eliminada']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'No se pudo rechazar el usuario']);
         }
         exit;
     }
