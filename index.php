@@ -380,6 +380,9 @@ switch ($action) {
             case 'getPonderaciones':
                 $modulo144Controller->getPonderaciones();
                 break;
+            case 'getPonderacionProyecto':
+                $modulo144Controller->getPonderacionProyecto();
+                break;
             case 'contarRegistros':
                 $modulo144Controller->contarRegistros();
                 break;

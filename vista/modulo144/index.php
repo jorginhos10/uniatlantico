@@ -2333,16 +2333,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const proyectoOption = selectProyecto ? selectProyecto.options[selectProyecto.selectedIndex] : null;
             const proyectoId = proyectoOption ? proyectoOption.getAttribute('data-proyecto-id') : null;
 
-            const selectMotor = document.getElementById('formulacion_motor');
-            const motorOption = selectMotor ? selectMotor.options[selectMotor.selectedIndex] : null;
-            const motorId = motorOption ? motorOption.getAttribute('data-motor-id') : null;
-
             // El año viene del formulario padre (formularios.anio)
             const anio = formularioAnio;
 
             const input = $('#formulacion_ponderacion_proyectos');
 
-            if (!proyectoId || !motorId || !anio) {
+            if (!proyectoId || !anio) {
                 input.val('');
                 return;
             }
@@ -2350,7 +2346,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $.ajax({
                 url: basePath + '/modulo144/getPonderacionProyecto',
                 type: 'GET',
-                data: { proyecto_id: proyectoId, motor_id: motorId, anio: anio },
+                data: { proyecto_id: proyectoId, anio: anio },
                 dataType: 'json',
                 success: function(response) {
                     if (response.success && response.porcentaje !== null) {
