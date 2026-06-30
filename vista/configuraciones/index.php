@@ -65,7 +65,7 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
     
     <!-- Fila 2 -->
-    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/roles">
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/dependencias">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #fbbc05;">
         <i class="fas fa-user-tie"></i>
@@ -75,6 +75,7 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
     </a>
     
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/almacenamiento">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #8e44ad;">
         <i class="fas fa-database"></i>
@@ -82,6 +83,7 @@ require_once __DIR__ . '/../complementos/header.php';
       <h3>Almacenamiento</h3>
       <p>Gestiona espacio, copias de seguridad y sincronización</p>
     </div>
+    </a>
     
     
     <!-- Fila 3 -->

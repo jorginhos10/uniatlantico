@@ -282,7 +282,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         Estrategias
                         <span class="badge-count" id="badge-count-estrategias">0</span>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <select class="search-input" id="filterLineaEstrategias" style="width:190px;">
+                            <option value="">Todas las líneas</option>
+                        </select>
                         <input type="text" class="search-input" id="searchEstrategias" placeholder="Buscar estrategia...">
                         <button class="btn-nueva" style="background:var(--ios-blue);" onclick="abrirModalCrearEstrategia()">
                             <i class="fas fa-plus"></i> Nueva Estrategia
@@ -600,7 +603,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         cargarProyectos();
 
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
-        $('#searchEstrategias').on('input', function() { filtrarEstrategias($(this).val().toLowerCase()); });
+        $('#searchEstrategias').on('input', function() { guardarFiltroEstrategias(); aplicarFiltrosEstrategias(); });
+        $('#filterLineaEstrategias').on('change', function() { guardarFiltroEstrategias(); aplicarFiltrosEstrategias(); });
         $('#searchMotores').on('input', function() { guardarFiltroMotores(); aplicarFiltrosMotores(); });
         $('#filterLineaMotores').on('change', function() { guardarFiltroMotores(); aplicarFiltrosMotores(); });
         $('#searchProyectos').on('input', function() { guardarFiltrosProyectos(); aplicarFiltrosProyectos(); });
@@ -760,6 +764,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
         $('#filterLineaProyectos').html(filterOpts);
         $('#filterLineaMotores').html(filterOpts);
+        $('#filterLineaEstrategias').html(filterOpts);
 
         const savedProy = JSON.parse(localStorage.getItem('cat144_proy_filter') || '{}');
         if (savedProy.linea) $('#filterLineaProyectos').val(savedProy.linea);
@@ -767,6 +772,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const savedMot = JSON.parse(localStorage.getItem('cat144_mot_filter') || '{}');
         if (savedMot.linea) $('#filterLineaMotores').val(savedMot.linea);
         if (savedMot.texto) $('#searchMotores').val(savedMot.texto);
+
+        const savedEst = JSON.parse(localStorage.getItem('cat144_est_filter') || '{}');
+        if (savedEst.linea) $('#filterLineaEstrategias').val(savedEst.linea);
+        if (savedEst.texto) $('#searchEstrategias').val(savedEst.texto);
     }
 
     // ===================== ESTRATEGIAS =====================
@@ -778,7 +787,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             success: function(res) {
                 if (res.success) {
                     todasEstrategias = res.estrategias;
-                    renderTablaEstrategias(todasEstrategias);
+                    aplicarFiltrosEstrategias();
                 } else { mostrarErrorEstrategias(); }
             },
             error: function() { mostrarErrorEstrategias(); }
@@ -817,13 +826,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#tablaEstrategiasBody').html(html);
     }
 
-    function filtrarEstrategias(q) {
-        if (!q) { renderTablaEstrategias(todasEstrategias); return; }
-        renderTablaEstrategias(todasEstrategias.filter(e =>
-            (e.descripcion || '').toLowerCase().includes(q) ||
-            (e.linea_nombre || '').toLowerCase().includes(q) ||
-            (e.linea_codigo || '').toLowerCase().includes(q)
-        ));
+    function guardarFiltroEstrategias() {
+        localStorage.setItem('cat144_est_filter', JSON.stringify({
+            linea: $('#filterLineaEstrategias').val(),
+            texto: $('#searchEstrategias').val()
+        }));
+    }
+
+    function aplicarFiltrosEstrategias() {
+        const linea = $('#filterLineaEstrategias').val();
+        const texto = $('#searchEstrategias').val().toLowerCase();
+        let resultado = todasEstrategias;
+        if (linea) resultado = resultado.filter(e => e.linea_id == linea);
+        if (texto) resultado = resultado.filter(e =>
+            (e.descripcion || '').toLowerCase().includes(texto) ||
+            (e.linea_nombre || '').toLowerCase().includes(texto) ||
+            (e.linea_codigo || '').toLowerCase().includes(texto)
+        );
+        renderTablaEstrategias(resultado);
     }
 
     function abrirModalCrearEstrategia() {

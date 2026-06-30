@@ -703,6 +703,16 @@ switch ($action) {
         }
         break;
 
+    case 'almacenamiento':
+        require_once 'config/security.php';
+        $actionParam = $urlParts[1] ?? 'index';
+        switch ($actionParam) {
+            default:
+                require_once 'vista/almacenamiento/index.php';
+                break;
+        }
+        break;
+
     case 'publica':
         require_once 'vista/publica/index.php';
         break;
