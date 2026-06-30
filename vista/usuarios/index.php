@@ -55,6 +55,44 @@ require_once __DIR__ . '/../complementos/header.php';
         </button>
     </div>
 
+    <!-- Link de registro público -->
+    <div style="background:#fff;border:1.5px solid #e8f4fd;border-radius:14px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;box-shadow:0 1px 6px rgba(0,122,255,.07);">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:38px;height:38px;background:rgba(0,122,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#007AFF;flex-shrink:0;">
+                <i class="fas fa-link"></i>
+            </div>
+            <div>
+                <div style="font-size:13px;font-weight:700;color:#1C1C1E;margin-bottom:2px;">Link de registro público</div>
+                <div style="font-size:12px;color:#8E8E93;">Comparte este enlace para que usuarios externos creen su cuenta</div>
+            </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <code id="linkRegistro" style="background:#F2F2F7;border:1px solid #E5E5EA;border-radius:8px;padding:7px 12px;font-size:13px;color:#007AFF;word-break:break-all;">
+                <?php echo (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $basePath; ?>/registro
+            </code>
+            <button onclick="copiarLinkRegistro()" style="background:#007AFF;color:white;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;" id="btnCopiarLink">
+                <i class="fas fa-copy"></i> Copiar
+            </button>
+            <a href="<?php echo $basePath; ?>/registro" target="_blank" style="background:#34C759;color:white;border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px;text-decoration:none;">
+                <i class="fas fa-external-link-alt"></i> Ver página
+            </a>
+        </div>
+    </div>
+    <script>
+    function copiarLinkRegistro() {
+        const link = document.getElementById('linkRegistro').textContent.trim();
+        navigator.clipboard.writeText(link).then(function() {
+            const btn = document.getElementById('btnCopiarLink');
+            btn.innerHTML = '<i class="fas fa-check"></i> Copiado';
+            btn.style.background = '#34C759';
+            setTimeout(function() {
+                btn.innerHTML = '<i class="fas fa-copy"></i> Copiar';
+                btn.style.background = '#007AFF';
+            }, 2000);
+        });
+    }
+    </script>
+
     <?php if (isset($_SESSION['error'])): ?>
         <div class="alert alert-error">
             <i class="fas fa-exclamation-circle"></i>

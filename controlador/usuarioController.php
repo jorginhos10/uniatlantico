@@ -17,6 +17,68 @@ class UsuarioController {
         require_once 'vista/usuarios/index.php';
     }
 
+    public function paginaRegistro() {
+        require_once 'vista/registro/index.php';
+    }
+
+    public function registroPublico() {
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            exit;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if ($input) $_POST = $input;
+
+        $datos = [
+            'username' => trim($_POST['username'] ?? ''),
+            'password' => $_POST['password'] ?? '',
+            'nombre'   => trim($_POST['nombre'] ?? ''),
+            'email'    => trim($_POST['email'] ?? ''),
+            'rol'      => 'pasante',
+            'avatar'   => 'default.png',
+            'activo'   => 0,
+            'cargo_id' => null,
+        ];
+
+        $errores = [];
+        if (empty($datos['username'])) $errores['username'] = ['El nombre de usuario es obligatorio'];
+        if (empty($datos['password'])) {
+            $errores['password'] = ['La contraseña es obligatoria'];
+        } elseif (strlen($datos['password']) < 6) {
+            $errores['password'] = ['La contraseña debe tener al menos 6 caracteres'];
+        }
+        if (empty($datos['nombre'])) $errores['nombre'] = ['El nombre completo es obligatorio'];
+        if (empty($datos['email'])) {
+            $errores['email'] = ['El correo es obligatorio'];
+        } elseif (!filter_var($datos['email'], FILTER_VALIDATE_EMAIL)) {
+            $errores['email'] = ['Correo inválido'];
+        }
+        if (isset($_POST['password_confirmation']) && $datos['password'] !== $_POST['password_confirmation']) {
+            $errores['password_confirmation'] = ['Las contraseñas no coinciden'];
+        }
+        if (!empty($datos['username']) && $this->usuarioModel->existeUsername($datos['username'])) {
+            $errores['username'] = ['El nombre de usuario ya está registrado'];
+        }
+        if (!empty($datos['email']) && $this->usuarioModel->existeEmail($datos['email'])) {
+            $errores['email'] = ['El correo ya está registrado'];
+        }
+
+        if (!empty($errores)) {
+            echo json_encode(['success' => false, 'message' => 'Errores de validación', 'errors' => $errores]);
+            exit;
+        }
+
+        if ($this->usuarioModel->crearUsuario($datos)) {
+            echo json_encode(['success' => true, 'message' => 'Cuenta creada exitosamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al crear la cuenta']);
+        }
+        exit;
+    }
+
     public function crear() {
         // Siempre devolver JSON para AJAX
         header('Content-Type: application/json');

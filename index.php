@@ -165,10 +165,19 @@ switch ($action) {
             case 'get-realtime-stats':
                 $usuarioController->getRealTimeStats();
                 break;
+            case 'registroPublico':
+                $usuarioController->registroPublico();
+                break;
             default:
                 $usuarioController->index();
                 break;
         }
+        break;
+
+    case 'registro':
+        require_once 'controlador/usuarioController.php';
+        $usuarioController = new UsuarioController();
+        $usuarioController->paginaRegistro();
         break;
         
     

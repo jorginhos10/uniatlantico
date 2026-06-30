@@ -212,7 +212,7 @@ require_once __DIR__ . '/../complementos/header.php';
                     <p>Haz clic o arrastra aquí tu archivo <strong>.javb</strong></p>
                     <div class="file-name" id="nombreArchivo" style="display:none;"></div>
                 </div>
-                <input type="file" id="archivoJavb" accept=".javb" style="display:none;">
+                <input type="file" id="archivoJavb" style="display:none;">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -230,49 +230,71 @@ require_once __DIR__ . '/../complementos/header.php';
 <script>
 const basePath = '<?php echo $basePath; ?>';
 
+function esJavb(nombre) {
+    return nombre.toLowerCase().endsWith('.javb');
+}
+
+function mostrarArchivo(file) {
+    document.getElementById('nombreArchivo').textContent = file.name;
+    document.getElementById('nombreArchivo').style.display = 'block';
+    document.getElementById('btnRestaurar').disabled = false;
+}
+
 function abrirModalSincronizar() {
     document.getElementById('archivoJavb').value = '';
     document.getElementById('nombreArchivo').style.display = 'none';
     document.getElementById('btnRestaurar').disabled = true;
-    new bootstrap.Modal(document.getElementById('modalSincronizar')).show();
+    var modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalSincronizar'));
+    modal.show();
 }
 
-// Selección de archivo
+// Click en la drop-zone abre el selector de archivos
+document.getElementById('dropZone').addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('archivoJavb').click();
+});
+
+// Selección de archivo via input
 document.getElementById('archivoJavb').addEventListener('change', function() {
     const file = this.files[0];
     if (!file) return;
-    if (!file.name.endsWith('.javb')) {
+    if (!esJavb(file.name)) {
         Swal.fire('Archivo inválido', 'Solo se aceptan archivos con extensión .javb', 'error');
         this.value = '';
         return;
     }
-    document.getElementById('nombreArchivo').textContent = file.name;
-    document.getElementById('nombreArchivo').style.display = 'block';
-    document.getElementById('btnRestaurar').disabled = false;
+    mostrarArchivo(file);
 });
 
 // Drag & Drop
 const dz = document.getElementById('dropZone');
-dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', ()  => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => {
+dz.addEventListener('dragover',  function(e) { e.preventDefault(); e.stopPropagation(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', function(e) { e.stopPropagation(); dz.classList.remove('drag-over'); });
+dz.addEventListener('drop', function(e) {
     e.preventDefault();
+    e.stopPropagation();
     dz.classList.remove('drag-over');
     const file = e.dataTransfer.files[0];
-    if (!file || !file.name.endsWith('.javb')) {
+    if (!file) return;
+    if (!esJavb(file.name)) {
         Swal.fire('Archivo inválido', 'Solo se aceptan archivos con extensión .javb', 'error');
         return;
     }
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    document.getElementById('archivoJavb').files = dt.files;
-    document.getElementById('nombreArchivo').textContent = file.name;
-    document.getElementById('nombreArchivo').style.display = 'block';
-    document.getElementById('btnRestaurar').disabled = false;
+    try {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('archivoJavb').files = dt.files;
+        _droppedFile = null;
+    } catch(ex) {
+        _droppedFile = file; // guardar referencia directa como fallback
+    }
+    mostrarArchivo(file);
 });
 
+let _droppedFile = null; // fallback cuando DataTransfer no está disponible
+
 function confirmarRestauraur() {
-    const file = document.getElementById('archivoJavb').files[0];
+    const file = document.getElementById('archivoJavb').files[0] || _droppedFile;
     if (!file) return;
 
     Swal.fire({
