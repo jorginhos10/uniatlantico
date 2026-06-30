@@ -494,10 +494,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <label class="form-label">Nombre *</label>
                         <input type="text" class="form-control" name="nombre" id="motor_nombre" required placeholder="Ej: Motor de desarrollo">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ponderación (%)</label>
-                        <input type="number" class="form-control" name="ponderacion" id="motor_ponderacion" step="0.01" min="0" max="100" placeholder="0.00">
-                    </div>
                     <div class="mb-1">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="activo" id="motor_activo" value="1" checked>
@@ -988,7 +984,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     $('#motor_linea_id').val(m.linea_id);
                     $('#motor_codigo').val(m.codigo);
                     $('#motor_nombre').val(m.nombre);
-                    $('#motor_ponderacion').val(m.ponderacion);
                     $('#motor_activo').prop('checked', m.activo == 1);
                     $('#modalMotor').modal('show');
                 } else { Swal.fire('Error', res.message, 'error'); }
@@ -1006,7 +1001,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             linea_id: $('#motor_linea_id').val(),
             codigo: $('#motor_codigo').val(),
             nombre: $('#motor_nombre').val(),
-            ponderacion: $('#motor_ponderacion').val(),
             activo: $('#motor_activo').is(':checked') ? 1 : 0
         };
         $('#btnGuardarMotor').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
