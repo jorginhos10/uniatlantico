@@ -6,7 +6,8 @@ $paginaActual = 'almacenamiento';
 $baseUrl      = Config::getBaseUrl();
 $basePath     = Config::getBasePath();
 
-$cssExtra = '<link rel="stylesheet" href="' . $baseUrl . '/assets/css/configuraciones.css">';
+$cssExtra = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">';
+$cssExtra .= '<link rel="stylesheet" href="' . $baseUrl . '/assets/css/configuraciones.css">';
 require_once __DIR__ . '/../complementos/header.php';
 ?>
 
