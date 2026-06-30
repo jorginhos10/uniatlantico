@@ -701,7 +701,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <td>
                                 <button class="btn btn-sm btn-info btn-action" onclick="abrirDistribucionPorAnio(${ano.anio})" title="Distribución de Porcentajes"><i class="fas fa-percent"></i></button>
                                 <button class="btn btn-sm btn-warning btn-action" onclick="editarAno(${ano.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                                ${ano.activo == 1 ? 
+                                <button class="btn btn-sm btn-secondary btn-action" onclick="duplicarAno(${ano.id}, ${ano.anio})" title="Duplicar año"><i class="fas fa-copy"></i></button>
+                                ${ano.activo == 1 ?
                                     `<button class="btn btn-sm btn-danger btn-action" onclick="cambiarEstado(${ano.id}, 0)" title="Desactivar"><i class="fas fa-ban"></i></button>` : 
                                     `<button class="btn btn-sm btn-success btn-action" onclick="cambiarEstado(${ano.id}, 1)" title="Activar"><i class="fas fa-check-circle"></i></button>`
                                 }
@@ -894,6 +895,48 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         }
                     });
                 }
+            });
+        }
+
+        function duplicarAno(id, anioOrigen) {
+            Swal.fire({
+                title: 'Duplicar año',
+                html: `Copia el año <strong>${anioOrigen}</strong> con toda su distribución de porcentajes.<br>
+                       <br><label style="font-size:13px;font-weight:600;">Nuevo año destino:</label>`,
+                input: 'number',
+                inputValue: anioOrigen + 1,
+                inputAttributes: { min: 2000, max: 2100, step: 1, placeholder: 'Ej: ' + (anioOrigen + 1) },
+                showCancelButton: true,
+                confirmButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-copy me-1"></i> Duplicar',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (anio) => {
+                    anio = parseInt(anio);
+                    if (!anio || anio < 2000 || anio > 2100) {
+                        Swal.showValidationMessage('Ingresa un año válido entre 2000 y 2100');
+                        return false;
+                    }
+                    return anio;
+                }
+            }).then(result => {
+                if (!result.isConfirmed) return;
+                $.ajax({
+                    url: basePath + '/config144/duplicar',
+                    type: 'POST',
+                    data: { id: id, anio: result.value },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire({ icon: 'success', title: '¡Duplicado!', text: res.message, confirmButtonColor: '#28a745' });
+                            cargarAnos();
+                        } else {
+                            Swal.fire('Error', res.message, 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'No se pudo conectar con el servidor', 'error');
+                    }
+                });
             });
         }
 

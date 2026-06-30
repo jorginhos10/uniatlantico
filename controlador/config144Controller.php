@@ -107,6 +107,25 @@ class config144Controller {
         echo json_encode($resultado);
     }
 
+    public function duplicar() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $id   = isset($_POST['id'])   ? intval($_POST['id'])   : 0;
+        $anio = isset($_POST['anio']) ? intval($_POST['anio']) : 0;
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            return;
+        }
+        if ($anio < 2000 || $anio > 2100) {
+            echo json_encode(['success' => false, 'message' => 'El año debe estar entre 2000 y 2100']);
+            return;
+        }
+        echo json_encode($this->model->duplicarAno($id, $anio));
+    }
+
     public function cambiarEstado() {
         header('Content-Type: application/json');
         

@@ -620,11 +620,46 @@ class config144Model {
             
             $this->db->commit();
             return ['success' => true, 'message' => "Distribución copiada desde el año $anioOrigen"];
-            
+
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log("Error copiarDistribucion: " . $e->getMessage());
             return ['success' => false, 'message' => 'Error al copiar distribución: ' . $e->getMessage()];
+        }
+    }
+
+    public function duplicarAno($idOrigen, $anioDestino) {
+        try {
+            $stmt = $this->db->prepare("SELECT * FROM `ano-for-de-144` WHERE id = :id");
+            $stmt->execute([':id' => $idOrigen]);
+            $origen = $stmt->fetch();
+            if (!$origen) return ['success' => false, 'message' => 'Año origen no encontrado'];
+
+            // Verificar que el año destino no exista ya
+            $stmt = $this->db->prepare("SELECT id FROM `ano-for-de-144` WHERE anio = :anio");
+            $stmt->execute([':anio' => $anioDestino]);
+            if ($stmt->fetch()) return ['success' => false, 'message' => "Ya existe un registro para el año $anioDestino"];
+
+            $stmt = $this->db->query("SELECT MAX(orden) as max_orden FROM `ano-for-de-144`");
+            $res  = $stmt->fetch();
+            $nuevoOrden = ($res['max_orden'] ?? 0) + 1;
+
+            $stmt = $this->db->prepare("
+                INSERT INTO `ano-for-de-144` (anio, activo, orden, created_at)
+                VALUES (:anio, :activo, :orden, NOW())
+            ");
+            $stmt->execute([':anio' => $anioDestino, ':activo' => $origen['activo'], ':orden' => $nuevoOrden]);
+
+            $copia = $this->copiarDistribucion($origen['anio'], $anioDestino);
+
+            return [
+                'success' => true,
+                'message' => "Año duplicado como $anioDestino" . ($copia['success'] ? " con distribución copiada de {$origen['anio']}" : " (sin distribución)"),
+                'id'      => $this->db->lastInsertId(),
+            ];
+        } catch (PDOException $e) {
+            error_log("Error duplicarAno: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al duplicar: ' . $e->getMessage()];
         }
     }
 }

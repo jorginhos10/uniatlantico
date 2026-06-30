@@ -424,6 +424,9 @@ switch ($action) {
             case 'cambiarEstado':
                 $config144Controller->cambiarEstado();
                 break;
+            case 'duplicar':
+                $config144Controller->duplicar();
+                break;
             case 'eliminar':
                 $config144Controller->eliminar();
                 break;
