@@ -240,7 +240,7 @@ class Modulo144Model {
 
     public function getMotoresPorLinea($linea_id) {
         try {
-            $stmt = $this->db->prepare("SELECT id, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY nombre");
+            $stmt = $this->db->prepare("SELECT id, codigo, nombre FROM motores WHERE linea_id = :linea_id AND activo = 1 ORDER BY codigo ASC");
             $stmt->execute([':linea_id' => $linea_id]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {

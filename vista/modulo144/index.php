@@ -2704,7 +2704,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 const option = document.createElement('option');
                                 option.value = motor.nombre;
                                 option.setAttribute('data-motor-id', motor.id);
-                                option.textContent = motor.nombre;
+                                option.textContent = (motor.codigo ? motor.codigo + ' - ' : '') + motor.nombre;
                                 selectMotor.appendChild(option);
                             });
                         } else {
@@ -3248,7 +3248,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     const option = document.createElement('option');
                                                     option.value = motor.nombre;
                                                     option.setAttribute('data-motor-id', motor.id);
-                                                    option.textContent = motor.nombre;
+                                                    option.textContent = (motor.codigo ? motor.codigo + ' - ' : '') + motor.nombre;
                                                     selectMotor.appendChild(option);
                                                 });
                                                 if (valorMotor) {
