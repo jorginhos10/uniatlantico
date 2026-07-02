@@ -1018,10 +1018,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </div>
                                     </div>
                                     <?php
-                                    // Pre-calcular suma de ponderacion_actividades por linea_codigo
+                                    // Pre-calcular suma de ponderacion_actividades por L-M-P
                                     $pond_por_linea_b = [];
                                     foreach ($modulo['borradores'] as $_b) {
-                                        $lk = $_b['linea_codigo'] ?? '__';
+                                        $lk = ($_b['linea_codigo'] ?? '__') . '|' . ($_b['motor_id_num'] ?? '__') . '|' . ($_b['proyecto_codigo'] ?? '__');
                                         $pond_por_linea_b[$lk] = ($pond_por_linea_b[$lk] ?? 0) + (float)($_b['ponderacion_actividades'] ?? 0);
                                     }
                                     ?>
@@ -1030,7 +1030,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $m   = !empty($borrador['motor_id_num'])    ? 'M'.$borrador['motor_id_num']: null;
                                         $p   = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
-                                        $suma_linea = $l ? ($pond_por_linea_b[$l] ?? 0) : 0;
+                                        $lmp_key_b = ($l ?? '__') . '|' . ($borrador['motor_id_num'] ?? '__') . '|' . ($borrador['proyecto_codigo'] ?? '__');
+                                        $suma_linea = $pond_por_linea_b[$lmp_key_b] ?? 0;
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
@@ -1136,7 +1137,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <?php
                                     $pond_por_linea_p = [];
                                     foreach ($modulo['publicados'] as $_p) {
-                                        $lk = $_p['linea_codigo'] ?? '__';
+                                        $lk = ($_p['linea_codigo'] ?? '__') . '|' . ($_p['motor_id_num'] ?? '__') . '|' . ($_p['proyecto_codigo'] ?? '__');
                                         $pond_por_linea_p[$lk] = ($pond_por_linea_p[$lk] ?? 0) + (float)($_p['ponderacion_actividades'] ?? 0);
                                     }
                                     ?>
@@ -1145,7 +1146,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $m   = !empty($publicado['motor_id_num'])    ? 'M'.$publicado['motor_id_num']: null;
                                         $p   = !empty($publicado['proyecto_codigo']) ? $publicado['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
-                                        $suma_linea = $l ? ($pond_por_linea_p[$l] ?? 0) : 0;
+                                        $lmp_key_p = ($l ?? '__') . '|' . ($publicado['motor_id_num'] ?? '__') . '|' . ($publicado['proyecto_codigo'] ?? '__');
+                                        $suma_linea = $pond_por_linea_p[$lmp_key_p] ?? 0;
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
@@ -1236,7 +1238,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <?php
                                     $pond_por_linea_c = [];
                                     foreach ($modulo['cancelados'] as $_c) {
-                                        $lk = $_c['linea_codigo'] ?? '__';
+                                        $lk = ($_c['linea_codigo'] ?? '__') . '|' . ($_c['motor_id_num'] ?? '__') . '|' . ($_c['proyecto_codigo'] ?? '__');
                                         $pond_por_linea_c[$lk] = ($pond_por_linea_c[$lk] ?? 0) + (float)($_c['ponderacion_actividades'] ?? 0);
                                     }
                                     ?>
@@ -1245,7 +1247,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $m   = !empty($cancelado['motor_id_num'])    ? 'M'.$cancelado['motor_id_num']: null;
                                         $p   = !empty($cancelado['proyecto_codigo']) ? $cancelado['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
-                                        $suma_linea = $l ? ($pond_por_linea_c[$l] ?? 0) : 0;
+                                        $lmp_key_c = ($l ?? '__') . '|' . ($cancelado['motor_id_num'] ?? '__') . '|' . ($cancelado['proyecto_codigo'] ?? '__');
+                                        $suma_linea = $pond_por_linea_c[$lmp_key_c] ?? 0;
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
