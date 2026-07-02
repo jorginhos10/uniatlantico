@@ -406,5 +406,50 @@ class Catalogos144Model {
             return [];
         }
     }
+
+    // ============= PLANES INSTITUCIONALES =============
+
+    public function getAllPlanesInstitucionales() {
+        try {
+            $stmt = $this->db->query("SELECT id, nombre, activo FROM planes_institucionales ORDER BY nombre ASC");
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAllPlanesInstitucionales: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function crearPlan($nombre, $activo = 1) {
+        try {
+            $stmt = $this->db->prepare("INSERT INTO planes_institucionales (nombre, activo) VALUES (:nombre, :activo)");
+            $stmt->execute([':nombre' => $nombre, ':activo' => $activo]);
+            return ['success' => true, 'message' => 'Plan creado exitosamente', 'id' => $this->db->lastInsertId()];
+        } catch (PDOException $e) {
+            error_log("Error crearPlan: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al crear el plan'];
+        }
+    }
+
+    public function actualizarPlan($id, $nombre, $activo) {
+        try {
+            $stmt = $this->db->prepare("UPDATE planes_institucionales SET nombre = :nombre, activo = :activo WHERE id = :id");
+            $stmt->execute([':nombre' => $nombre, ':activo' => $activo, ':id' => $id]);
+            return ['success' => true, 'message' => 'Plan actualizado exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error actualizarPlan: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al actualizar el plan'];
+        }
+    }
+
+    public function eliminarPlan($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM planes_institucionales WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            return ['success' => true, 'message' => 'Plan eliminado exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error eliminarPlan: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al eliminar el plan'];
+        }
+    }
 }
 ?>

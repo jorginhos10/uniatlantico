@@ -699,22 +699,34 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <td><span class="badge-estado ${estadoClass}"><i class="fas fa-${estadoIcono} me-1"></i>${estadoTexto}</span></td>
                             <td><i class="far fa-calendar-alt me-1 text-muted"></i>${new Date(ano.created_at).toLocaleString('es-CO')}</td>
                             <td>
-                                <button class="btn btn-sm btn-info btn-action" onclick="abrirDistribucionPorAnio(${ano.anio})" title="Distribución de Porcentajes"><i class="fas fa-percent"></i></button>
-                                <button class="btn btn-sm btn-warning btn-action" onclick="editarAno(${ano.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-sm btn-secondary btn-action" onclick="duplicarAno(${ano.id}, ${ano.anio})" title="Duplicar año"><i class="fas fa-copy"></i></button>
+                                <button class="btn btn-sm btn-info btn-action" onclick="abrirDistribucionPorAnio(${ano.anio})" data-bs-toggle="tooltip" data-bs-placement="top" title="Distribución de Porcentajes"><i class="fas fa-percent"></i></button>
+                                <button class="btn btn-sm btn-warning btn-action" onclick="editarAno(${ano.id})" data-bs-toggle="tooltip" data-bs-placement="top" title="Editar"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-sm btn-secondary btn-action" onclick="duplicarAno(${ano.id}, ${ano.anio})" data-bs-toggle="tooltip" data-bs-placement="top" title="Duplicar año"><i class="fas fa-copy"></i></button>
                                 ${ano.activo == 1 ?
-                                    `<button class="btn btn-sm btn-danger btn-action" onclick="cambiarEstado(${ano.id}, 0)" title="Desactivar"><i class="fas fa-ban"></i></button>` : 
-                                    `<button class="btn btn-sm btn-success btn-action" onclick="cambiarEstado(${ano.id}, 1)" title="Activar"><i class="fas fa-check-circle"></i></button>`
+                                    `<button class="btn btn-sm btn-danger btn-action" onclick="cambiarEstado(${ano.id}, 0)" data-bs-toggle="tooltip" data-bs-placement="top" title="Desactivar"><i class="fas fa-ban"></i></button>` :
+                                    `<button class="btn btn-sm btn-success btn-action" onclick="cambiarEstado(${ano.id}, 1)" data-bs-toggle="tooltip" data-bs-placement="top" title="Activar"><i class="fas fa-check-circle"></i></button>`
                                 }
-                                <button class="btn btn-sm btn-info btn-action" onclick="verAno(${ano.id})" title="Ver detalles"><i class="fas fa-eye"></i></button>
-                                <button class="btn btn-sm btn-danger btn-action" onclick="eliminarAno(${ano.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                                <button class="btn btn-sm btn-info btn-action" onclick="verAno(${ano.id})" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver detalles"><i class="fas fa-eye"></i></button>
+                                <button class="btn btn-sm btn-danger btn-action" onclick="eliminarAno(${ano.id})" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar"><i class="fas fa-trash"></i></button>
                             </td>
                         </tr>
                     `;
                 });
             }
+            // Destruir tooltips anteriores antes de reemplazar el HTML
+            document.querySelectorAll('#tablaAnosBody [data-bs-toggle="tooltip"]').forEach(el => {
+                const tip = bootstrap.Tooltip.getInstance(el);
+                if (tip) tip.dispose();
+            });
+
             $('#tablaAnosBody').html(html);
             $('#total-registros').text(anos.length);
+
+            // Inicializar tooltips de los nuevos botones
+            document.querySelectorAll('#tablaAnosBody [data-bs-toggle="tooltip"]').forEach(el => {
+                new bootstrap.Tooltip(el, { trigger: 'hover' });
+            });
+
             setTimeout(inicializarSortable, 100);
         }
 
