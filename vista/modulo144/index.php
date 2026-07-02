@@ -1804,7 +1804,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                                     <div class="col-12 mb-3">
                                         <label class="form-label">11. ID INDICADOR</label>
-                                        <input type="text" class="form-control" name="id_indicador" id="formulacion_id_indicador" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ingrese el ID del indicador">
+                                        <select class="form-select" name="id_indicador" id="formulacion_id_indicador" onchange="autoGuardarFormulacion(); validarPestanas()">
+                                            <option value="">Seleccione...</option>
+                                            <option value="PDI">PDI</option>
+                                            <option value="PA">PA</option>
+                                        </select>
                                     </div>
 
                                     <div class="col-12 mb-3">
