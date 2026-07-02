@@ -187,6 +187,12 @@ switch ($action) {
         $usuarioController = new UsuarioController();
         $usuarioController->paginaRegistro();
         break;
+
+    case 'registroPublico':
+        require_once 'controlador/usuarioController.php';
+        $usuarioController = new UsuarioController();
+        $usuarioController->registroPublico();
+        break;
         
     
     case 'permisos':

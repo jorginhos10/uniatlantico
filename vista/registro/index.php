@@ -311,7 +311,7 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
 
-    fetch(basePath + '/usuarios/registroPublico', {
+    fetch(basePath + '/registroPublico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, email, username, rol, cargo_id, password, password_confirmation: confirm })
