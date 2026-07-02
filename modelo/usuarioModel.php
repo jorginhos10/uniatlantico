@@ -161,6 +161,23 @@ class UsuarioModel {
         }
     }
 
+    public function obtenerPendientesRegistro() {
+        $sql = "SELECT u.id, u.username, u.nombre, u.email, u.fecha_creacion,
+                       c.nombre AS cargo_nombre
+                FROM usuarios u
+                LEFT JOIN cargos c ON c.id = u.cargo_id
+                WHERE u.registro_publico = 1 AND u.activo = 0
+                ORDER BY u.fecha_creacion DESC";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obtenerPendientesRegistro: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function obtenerTodosUsuarios() {
         $sql = "SELECT u.id, u.username, u.nombre, u.email, u.rol, u.avatar, u.activo,
                        u.cargo_id, u.fecha_creacion, u.ultimo_login, u.registro_publico,

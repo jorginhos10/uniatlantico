@@ -165,6 +165,9 @@ switch ($action) {
             case 'get-realtime-stats':
                 $usuarioController->getRealTimeStats();
                 break;
+            case 'getPendientesRegistro':
+                $usuarioController->getPendientesRegistro();
+                break;
             case 'registroPublico':
                 $usuarioController->registroPublico();
                 break;

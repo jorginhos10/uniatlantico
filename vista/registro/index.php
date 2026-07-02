@@ -306,8 +306,8 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
         if (res.success) {
             Swal.fire({
                 icon: 'success',
-                title: '¡Cuenta creada!',
-                html: 'Tu cuenta está <strong>pendiente de aprobación</strong>.<br>Un administrador la activará pronto.',
+                title: '¡Solicitud enviada!',
+                html: 'Tu solicitud de creación de perfil ha sido <strong>enviada exitosamente</strong>.<br><br>Un administrador revisará tu solicitud y activará tu cuenta pronto.',
                 confirmButtonColor: '#007AFF',
                 confirmButtonText: 'Entendido'
             }).then(() => { window.location.href = basePath + '/login'; });

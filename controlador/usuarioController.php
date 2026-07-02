@@ -469,6 +469,17 @@ class UsuarioController {
      * Método NUEVO: Obtener estadísticas EN TIEMPO REAL de usuarios activos
      * Para actualización en vivo del contador
      */
+    public function getPendientesRegistro() {
+        header('Content-Type: application/json');
+        if (!isset($_SESSION['usuario_rol']) || $_SESSION['usuario_rol'] !== 'admin') {
+            echo json_encode(['success' => false, 'pendientes' => []]);
+            exit;
+        }
+        $pendientes = $this->usuarioModel->obtenerPendientesRegistro();
+        echo json_encode(['success' => true, 'pendientes' => $pendientes]);
+        exit;
+    }
+
     public function getRealTimeStats() {
         header('Content-Type: application/json');
         
