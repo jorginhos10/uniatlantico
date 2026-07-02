@@ -967,6 +967,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Solo mío</option>
                                 <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
                                 <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
+                                <option value="nombre"      <?php echo $pref_key['tipo_filtro']==='nombre'      ? 'selected':''; ?>>Por nombre</option>
                             </select>
                             <select class="filtro-tipo-select" id="filtroLinea-<?php echo $key; ?>"
                                     onchange="onFiltroLineaChange('<?php echo $key; ?>')" style="display:none;">
@@ -981,11 +982,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="">Proyecto: Todos</option>
                             </select>
                             <div class="filtro-input-wrap" id="filtroInputWrap-<?php echo $key; ?>"
-                                 style="display:<?php echo in_array($pref_key['tipo_filtro'],['dependencia','persona']) ? 'block':'none'; ?>">
+                                 style="display:<?php echo in_array($pref_key['tipo_filtro'],['dependencia','persona','nombre']) ? 'block':'none'; ?>">
                                 <input type="text" class="filtro-texto-input"
                                        id="filtroTexto-<?php echo $key; ?>"
                                        autocomplete="off"
-                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : 'Buscar dependencia...'; ?>"
+                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : ($pref_key['tipo_filtro']==='nombre' ? 'Buscar por nombre...' : 'Buscar dependencia...'); ?>"
                                        value="<?php echo htmlspecialchars($pref_key['valor_filtro'] ?? ''); ?>"
                                        oninput="onFiltroTextoInput('<?php echo $key; ?>')"
                                        onfocus="mostrarSugerencias('<?php echo $key; ?>')"
@@ -1033,7 +1034,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1148,7 +1149,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1248,7 +1249,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($cancelado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -3477,10 +3478,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const tipo  = document.getElementById('filtroTipo-' + modulo).value;
             const wrap  = document.getElementById('filtroInputWrap-' + modulo);
             const input = document.getElementById('filtroTexto-' + modulo);
-            if (tipo === 'dependencia' || tipo === 'persona') {
+            if (tipo === 'dependencia' || tipo === 'persona' || tipo === 'nombre') {
                 wrap.style.display = 'block';
-                input.placeholder  = tipo === 'persona' ? 'Buscar persona...' : 'Buscar dependencia...';
+                input.placeholder  = tipo === 'persona' ? 'Buscar persona...'
+                                   : tipo === 'nombre'  ? 'Buscar por nombre...'
+                                   : 'Buscar dependencia...';
                 input.value = '';
+                input.focus();
             } else {
                 wrap.style.display = 'none';
             }
@@ -3511,6 +3515,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     visible = (item.getAttribute('data-cargo-nombre') || '').toLowerCase().includes(texto);
                 } else if (tipo === 'persona' && texto) {
                     visible = (item.getAttribute('data-creado-por-nombre') || '').toLowerCase().includes(texto);
+                } else if (tipo === 'nombre' && texto) {
+                    visible = (item.getAttribute('data-nombre-borrador') || '').toLowerCase().includes(texto);
                 }
                 if (visible && linea) {
                     visible = (item.getAttribute('data-linea-filtro') || '') === linea;
