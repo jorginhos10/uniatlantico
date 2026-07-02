@@ -1035,7 +1035,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1151,7 +1151,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1252,7 +1252,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($cancelado['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($cancelado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($cancelado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -2286,10 +2286,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const listItem = document.querySelector(`.lista-item[data-item-id="${borradorId}"]`);
                 if (listItem) {
                     listItem.setAttribute('data-ponderacion', valorFinal);
-                    const lineaItem = listItem.getAttribute('data-linea-item');
-                    const moduloItem = listItem.getAttribute('data-modulo');
-                    // Repintar todos los badges de esa línea en tiempo real
-                    actualizarBadgesLinea(lineaItem, moduloItem);
+                    const lineaItem   = listItem.getAttribute('data-linea-item');
+                    const motorItem   = listItem.getAttribute('data-motor-item');
+                    const proyectoItem = listItem.getAttribute('data-proyecto-item');
+                    const moduloItem  = listItem.getAttribute('data-modulo');
+                    // Repintar badges solo del mismo L-M-P en tiempo real
+                    actualizarBadgesLinea(lineaItem, motorItem, proyectoItem, moduloItem);
                 }
             }
 
@@ -3083,13 +3085,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // Recalcula y repinta badges de TODOS los items de una línea (acotado al mismo módulo)
-        function actualizarBadgesLinea(lineaCodigo, moduloCodigo) {
+        function actualizarBadgesLinea(lineaCodigo, motorCodigo, proyectoCodigo, moduloCodigo) {
             if (!lineaCodigo) return;
 
-            // Selector base: items de esta línea; si se conoce el módulo, filtrarlo para evitar doble conteo
+            // Filtrar por L+M+P para no acumular entre proyectos distintos
+            let attrFiltro = `[data-linea-item="${lineaCodigo}"]`;
+            if (motorCodigo)    attrFiltro += `[data-motor-item="${motorCodigo}"]`;
+            if (proyectoCodigo) attrFiltro += `[data-proyecto-item="${proyectoCodigo}"]`;
             const selector = moduloCodigo
-                ? `.lista-item[data-linea-item="${lineaCodigo}"][data-modulo="${moduloCodigo}"]`
-                : `.lista-item[data-linea-item="${lineaCodigo}"]`;
+                ? `.lista-item${attrFiltro}[data-modulo="${moduloCodigo}"]`
+                : `.lista-item${attrFiltro}`;
 
             // Sumar ponderaciones de todos los items de esa línea desde el DOM
             let suma = 0;

@@ -34,10 +34,9 @@ class UsuarioController {
         $input = json_decode(file_get_contents('php://input'), true);
         if ($input) $_POST = $input;
 
-        // Validar rol contra la lista real de roles (sin admin) para evitar que alguien se autoasigne admin
+        // Rol fijo para registros públicos: el primer rol disponible que no sea admin
         $rolesPermitidos = array_values(array_filter($this->usuarioModel->obtenerRoles(), fn($r) => $r !== 'admin'));
-        $rolEnviado = trim($_POST['rol'] ?? '');
-        $rol = in_array($rolEnviado, $rolesPermitidos, true) ? $rolEnviado : ($rolesPermitidos[0] ?? 'pasante');
+        $rol = $rolesPermitidos[0] ?? 'pasante';
 
         // Validar dependencia (cargo) contra cargos activos reales
         $cargoEnviado = !empty($_POST['cargo_id']) ? (int)$_POST['cargo_id'] : null;

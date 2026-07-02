@@ -196,19 +196,6 @@ $baseUrl  = Config::getBaseUrl();
                 <div class="field-error" id="err-username"></div>
             </div>
 
-            <div class="form-group">
-                <label class="form-label">Rol *</label>
-                <div class="input-icon-wrap">
-                    <i class="fas fa-user-tag"></i>
-                    <select class="form-control" id="rol" name="rol" style="padding-left:40px;appearance:none;">
-                        <option value="">Selecciona un rol...</option>
-                        <?php foreach (($roles ?? []) as $r): ?>
-                            <option value="<?php echo htmlspecialchars($r); ?>"><?php echo htmlspecialchars(ucfirst($r)); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="field-error" id="err-rol"></div>
-            </div>
 
             <div class="form-group">
                 <label class="form-label">Dependencia</label>
@@ -292,7 +279,6 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
     const nombre   = document.getElementById('nombre').value.trim();
     const email    = document.getElementById('email').value.trim();
     const username = document.getElementById('username').value.trim();
-    const rol      = document.getElementById('rol').value;
     const cargo_id = document.getElementById('cargo_id').value;
     const password = document.getElementById('password').value;
     const confirm  = document.getElementById('password_confirmation').value;
@@ -301,7 +287,6 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
     if (!nombre)   { setError('nombre', 'El nombre es obligatorio'); ok = false; }
     if (!email)    { setError('email',  'El correo es obligatorio');  ok = false; }
     if (!username) { setError('username','El usuario es obligatorio'); ok = false; }
-    if (!rol)      { setError('rol','Selecciona un rol'); ok = false; }
     if (!password) { setError('password','La contraseña es obligatoria'); ok = false; }
     else if (password.length < 6) { setError('password','Mínimo 6 caracteres'); ok = false; }
     if (password !== confirm) { setError('password_confirmation','Las contraseñas no coinciden'); ok = false; }
@@ -314,7 +299,7 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
     fetch(basePath + '/registroPublico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, email, username, rol, cargo_id, password, password_confirmation: confirm })
+        body: JSON.stringify({ nombre, email, username, cargo_id, password, password_confirmation: confirm })
     })
     .then(r => r.json())
     .then(res => {
