@@ -233,6 +233,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <i class="fas fa-project-diagram me-1"></i> Proyectos
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-planes-btn" data-bs-toggle="tab" data-bs-target="#tab-planes" type="button">
+                <i class="fas fa-file-alt me-1"></i> Planes Institucionales
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -393,6 +398,68 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </div>
         </div>
 
+        <!-- ===================== TAB PLANES INSTITUCIONALES ===================== -->
+        <div class="tab-pane fade" id="tab-planes" role="tabpanel">
+            <div class="table-card">
+                <div class="table-card-header">
+                    <div class="table-card-title">
+                        <i class="fas fa-file-alt me-2" style="color:var(--ios-blue);"></i>
+                        Planes Institucionales
+                    </div>
+                    <div class="table-card-actions">
+                        <input type="text" class="search-input" id="searchPlanes" placeholder="Buscar plan...">
+                        <button class="btn-add" onclick="abrirModalPlan()">
+                            <i class="fas fa-plus me-1"></i> Agregar Plan
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px">ID</th>
+                            <th>Nombre</th>
+                            <th style="width:100px">Estado</th>
+                            <th style="width:120px">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaplanesBody">
+                        <tr class="empty-row"><td colspan="4"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal Plan Institucional -->
+<div class="modal fade" id="modalPlan" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalPlanTitulo">Nuevo Plan Institucional</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formPlan">
+                <input type="hidden" id="plan_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del plan *</label>
+                        <textarea class="form-control" name="nombre" id="plan_nombre" rows="3" required placeholder="Ej: Plan de Desarrollo Institucional 2024-2028"></textarea>
+                    </div>
+                    <div class="mb-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="activo" id="plan_activo" value="1" checked>
+                            <label class="form-check-label" for="plan_activo"><strong>Activo</strong> — aparece disponible en los formularios</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardarPlan"><i class="fas fa-save me-1"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -601,6 +668,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         cargarEstrategias();
         cargarMotores();
         cargarProyectos();
+        cargarPlanes();
 
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
         $('#searchEstrategias').on('input', function() { guardarFiltroEstrategias(); aplicarFiltrosEstrategias(); });
@@ -1234,6 +1302,87 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#modalEliminar').modal('show');
     }
 
+    // ===================== PLANES INSTITUCIONALES =====================
+
+    let todosPlanes = [];
+
+    function cargarPlanes() {
+        $.ajax({
+            url: basePath + '/catalogos144/listarPlanes',
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) { todosPlanes = res.planes; renderTablaPlanes(todosPlanes); }
+                else { $('#tablaplanesBody').html('<tr class="empty-row"><td colspan="4"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar</div></td></tr>'); }
+            },
+            error: function() { $('#tablaplanesBody').html('<tr class="empty-row"><td colspan="4">Error al cargar</td></tr>'); }
+        });
+    }
+
+    $('#searchPlanes').on('input', function() {
+        const q = $(this).val().toLowerCase();
+        renderTablaPlanes(q ? todosPlanes.filter(p => p.nombre.toLowerCase().includes(q)) : todosPlanes);
+    });
+
+    function renderTablaPlanes(planes) {
+        if (!planes.length) {
+            $('#tablaplanesBody').html('<tr class="empty-row"><td colspan="4"><div class="empty-icon"><i class="fas fa-file-alt"></i></div><div>No hay planes registrados</div></td></tr>');
+            return;
+        }
+        let html = '';
+        planes.forEach(p => {
+            const badge = p.activo == 1
+                ? '<span class="badge-estado activo"><i class="fas fa-check-circle me-1"></i>Activo</span>'
+                : '<span class="badge-estado inactivo"><i class="fas fa-times-circle me-1"></i>Inactivo</span>';
+            html += `<tr>
+                <td><strong>#${p.id}</strong></td>
+                <td>${escHtml(p.nombre)}</td>
+                <td>${badge}</td>
+                <td>
+                    <button class="btn-action-sm btn-edit" onclick="editarPlan(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action-sm btn-delete" onclick="pedirEliminar(${p.id}, '${escHtml(p.nombre).replace(/'/g,"\\'")}', 'plan')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        $('#tablaplanesBody').html(html);
+    }
+
+    function abrirModalPlan(plan) {
+        $('#plan_id').val('');
+        $('#plan_nombre').val('');
+        $('#plan_activo').prop('checked', true);
+        $('#modalPlanTitulo').text('Nuevo Plan Institucional');
+        if (plan) {
+            $('#plan_id').val(plan.id);
+            $('#plan_nombre').val(plan.nombre);
+            $('#plan_activo').prop('checked', plan.activo == 1);
+            $('#modalPlanTitulo').text('Editar Plan Institucional');
+        }
+        $('#modalPlan').modal('show');
+    }
+
+    function editarPlan(id) {
+        const plan = todosPlanes.find(p => p.id == id);
+        if (plan) abrirModalPlan(plan);
+    }
+
+    $('#formPlan').on('submit', function(e) {
+        e.preventDefault();
+        const id  = $('#plan_id').val();
+        const url = id ? basePath + '/catalogos144/actualizarPlan' : basePath + '/catalogos144/crearPlan';
+        $.ajax({
+            url: url, type: 'POST', dataType: 'json',
+            data: { id: id, nombre: $('#plan_nombre').val(), activo: $('#plan_activo').is(':checked') ? 1 : 0 },
+            success: function(res) {
+                if (res.success) {
+                    $('#modalPlan').modal('hide');
+                    Swal.fire({ icon: 'success', title: '¡Listo!', text: res.message, timer: 1600, showConfirmButton: false });
+                    cargarPlanes();
+                } else { Swal.fire('Error', res.message, 'error'); }
+            },
+            error: function() { Swal.fire('Error', 'Error al guardar el plan', 'error'); }
+        });
+    });
+
     function confirmarEliminar() {
         const id   = $('#id_eliminar').val();
         const tipo = $('#tipo_eliminar').val();
@@ -1241,7 +1390,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             linea:      { url: '/catalogos144/eliminarLinea',      reload: cargarLineas },
             estrategia: { url: '/catalogos144/eliminarEstrategia', reload: cargarEstrategias },
             motor:      { url: '/catalogos144/eliminarMotor',      reload: cargarMotores },
-            proyecto:   { url: '/catalogos144/eliminarProyecto',   reload: cargarProyectos }
+            proyecto:   { url: '/catalogos144/eliminarProyecto',   reload: cargarProyectos },
+            plan:       { url: '/catalogos144/eliminarPlan',       reload: cargarPlanes }
         };
         const cfg = endpoints[tipo];
         if (!cfg) return;

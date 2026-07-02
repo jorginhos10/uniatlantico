@@ -399,5 +399,39 @@ class Catalogos144Controller {
         }
         echo json_encode(['success' => true, 'motores' => $this->model->getMotoresPorLinea($linea_id)]);
     }
+
+    // ============= PLANES INSTITUCIONALES =============
+
+    public function listarPlanes() {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'planes' => $this->model->getAllPlanesInstitucionales()]);
+    }
+
+    public function crearPlan() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $nombre = trim($_POST['nombre'] ?? '');
+        $activo = intval($_POST['activo'] ?? 1);
+        if ($nombre === '') { echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']); return; }
+        echo json_encode($this->model->crearPlan($nombre, $activo));
+    }
+
+    public function actualizarPlan() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $id     = intval($_POST['id'] ?? 0);
+        $nombre = trim($_POST['nombre'] ?? '');
+        $activo = intval($_POST['activo'] ?? 1);
+        if ($id <= 0 || $nombre === '') { echo json_encode(['success' => false, 'message' => 'Datos inválidos']); return; }
+        echo json_encode($this->model->actualizarPlan($id, $nombre, $activo));
+    }
+
+    public function eliminarPlan() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) { echo json_encode(['success' => false, 'message' => 'ID inválido']); return; }
+        echo json_encode($this->model->eliminarPlan($id));
+    }
 }
 ?>

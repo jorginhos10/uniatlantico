@@ -602,6 +602,20 @@ switch ($action) {
                 $catalogos144Controller->motoresPorLinea();
                 break;
 
+            // Planes Institucionales
+            case 'listarPlanes':
+                $catalogos144Controller->listarPlanes();
+                break;
+            case 'crearPlan':
+                $catalogos144Controller->crearPlan();
+                break;
+            case 'actualizarPlan':
+                $catalogos144Controller->actualizarPlan();
+                break;
+            case 'eliminarPlan':
+                $catalogos144Controller->eliminarPlan();
+                break;
+
             case 'index':
             default:
                 $catalogos144Controller->index();
