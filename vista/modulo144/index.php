@@ -388,6 +388,13 @@ ob_start();
             50%       { border-color: rgba(255,59,48,0.9); }
         }
 
+        /* Ítem sin ponderación propia dentro de la línea → número en naranja */
+        .lmp-badge .lmp-suma.sin-aporte {
+            background: rgba(255, 149, 0, 0.18);
+            color: #ff9500;
+            opacity: 1;
+        }
+
         .lmp-suma {
             font-size: 0.68rem;
             font-weight: 600;
@@ -1054,7 +1061,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                       data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
                                                       title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
                                                     <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
-                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                    <small class="lmp-suma<?php echo ((float)($borrador['ponderacion_actividades'] ?? 0)) <= 0 ? ' sin-aporte' : ''; ?>"><?php echo number_format($suma_linea,1); ?></small>
                                                 </span>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
@@ -1170,7 +1177,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                       data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
                                                       title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
                                                     <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
-                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                    <small class="lmp-suma<?php echo ((float)($publicado['ponderacion_actividades'] ?? 0)) <= 0 ? ' sin-aporte' : ''; ?>"><?php echo number_format($suma_linea,1); ?></small>
                                                 </span>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
@@ -1268,7 +1275,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                       data-linea="<?php echo htmlspecialchars($l ?? ''); ?>"
                                                       title="Ponderación línea: <?php echo number_format($suma_linea,2); ?> / 100<?php echo $linea_excedida ? ' ⚠ Excede el 100%' : ''; ?>">
                                                     <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
-                                                    <small class="lmp-suma"><?php echo number_format($suma_linea,1); ?></small>
+                                                    <small class="lmp-suma<?php echo ((float)($cancelado['ponderacion_actividades'] ?? 0)) <= 0 ? ' sin-aporte' : ''; ?>"><?php echo number_format($suma_linea,1); ?></small>
                                                 </span>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
@@ -3113,7 +3120,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                 // Suma visible
                 const sumaEl = badge.querySelector('.lmp-suma');
-                if (sumaEl) sumaEl.textContent = suma.toFixed(1);
+                if (sumaEl) {
+                    sumaEl.textContent = suma.toFixed(1);
+                    const propio = parseFloat(item.getAttribute('data-ponderacion') || 0);
+                    sumaEl.classList.toggle('sin-aporte', propio <= 0);
+                }
 
                 // Clases de color
                 badge.classList.remove('lmp-completo', 'lmp-excedido');
