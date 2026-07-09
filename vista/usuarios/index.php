@@ -623,6 +623,131 @@ document.addEventListener('click', function(e) {
 });
 </script>
 
+<!-- Toast de nueva solicitud de registro -->
+<div id="toastNuevoRegistro" style="
+    display:none;position:fixed;top:24px;right:24px;z-index:9999;
+    background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.18);
+    padding:18px 22px;min-width:320px;max-width:380px;
+    border-left:5px solid #FF9500;font-family:inherit;">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+        <div style="background:rgba(255,149,0,.12);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <i class="fas fa-user-clock" style="color:#FF9500;font-size:1.1rem;"></i>
+        </div>
+        <div style="flex:1;">
+            <div style="font-weight:700;font-size:.95rem;color:#1d1d1f;margin-bottom:4px;">Nueva solicitud de registro</div>
+            <div id="toastNuevoRegistroMsg" style="font-size:.85rem;color:#6e6e73;line-height:1.4;"></div>
+        </div>
+        <button onclick="document.getElementById('toastNuevoRegistro').style.display='none'"
+                style="background:none;border:none;cursor:pointer;color:#b0b0b5;font-size:1.1rem;padding:0;line-height:1;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<style>
+@keyframes slideInRight {
+    from { transform: translateX(120%); opacity: 0; }
+    to   { transform: translateX(0);    opacity: 1; }
+}
+</style>
+
+<script>
+(function() {
+    const pendientesIniciales = new Set(
+        Array.from(document.querySelectorAll('tr[data-user-id]'))
+             .filter(tr => tr.querySelector('.btn-aceptar-registro'))
+             .map(tr => parseInt(tr.getAttribute('data-user-id')))
+    );
+
+    const basePath = '<?php echo $basePath; ?>';
+
+    function mostrarToast(usuarios) {
+        const msg   = document.getElementById('toastNuevoRegistroMsg');
+        const toast = document.getElementById('toastNuevoRegistro');
+        if (usuarios.length === 1) {
+            const u = usuarios[0];
+            msg.innerHTML = `<strong>${u.nombre}</strong> (${u.username}) solicitó acceso al sistema.`;
+        } else {
+            msg.innerHTML = `<strong>${usuarios.length} nuevas solicitudes</strong> de acceso al sistema.`;
+        }
+        toast.style.display = 'block';
+        toast.style.animation = 'none';
+        toast.offsetHeight;
+        toast.style.animation = 'slideInRight .35s ease';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 10000);
+    }
+
+    function insertarFilaPendiente(u) {
+        const tbody = document.querySelector('table tbody');
+        if (!tbody) return;
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-user-id', u.id);
+        tr.setAttribute('data-username', (u.username || '').toLowerCase());
+        tr.setAttribute('data-nombre',   (u.nombre   || '').toLowerCase());
+        tr.setAttribute('data-email',    (u.email    || '').toLowerCase());
+        tr.setAttribute('data-rol', '');
+        tr.setAttribute('data-estado', 'inactivo');
+        tr.setAttribute('data-ultimo-login', '9999-12-31 23:59:59');
+        tr.innerHTML = `
+            <td>
+                <div class="usuario-avatar">
+                    <img src="${basePath}/assets/media/users/default.png" class="avatar-img" alt="${u.username}">
+                    <div class="usuario-info">
+                        <span class="usuario-username">${u.username}</span>
+                        <span class="usuario-email">${u.email}</span>
+                    </div>
+                </div>
+            </td>
+            <td><strong>${u.nombre}</strong></td>
+            <td><span style="color:#b0b0b5;font-size:.82rem;font-style:italic;">${u.cargo_nombre || 'Sin asignar'}</span></td>
+            <td><span class="badge">—</span></td>
+            <td>
+                <span style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,149,0,.12);color:#b36b00;font-size:.78rem;font-weight:700;padding:5px 12px;border-radius:20px;">
+                    <i class="fas fa-clock"></i> Pendiente
+                </span>
+            </td>
+            <td><span class="login-time never"><i class="fas fa-times-circle"></i> Nunca</span></td>
+            <td>
+                <div class="acciones-container">
+                    <button class="btn-accion btn-aceptar-registro"
+                            data-user-id="${u.id}" data-user-name="${u.nombre}"
+                            title="Aceptar solicitud"
+                            style="background:rgba(52,199,89,.12);color:#1f8a3d;">
+                        <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn-accion btn-rechazar-registro"
+                            data-user-id="${u.id}" data-user-name="${u.nombre}"
+                            title="Rechazar solicitud"
+                            style="background:rgba(255,59,48,.12);color:#c0271c;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </td>`;
+        tbody.insertBefore(tr, tbody.firstChild);
+    }
+
+    function pollPendientes() {
+        fetch(basePath + '/usuarios/getPendientesRegistro')
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) return;
+                const nuevos = res.pendientes.filter(u => !pendientesIniciales.has(parseInt(u.id)));
+                if (nuevos.length > 0) {
+                    nuevos.forEach(u => {
+                        pendientesIniciales.add(parseInt(u.id));
+                        insertarFilaPendiente(u);
+                    });
+                    mostrarToast(nuevos);
+                }
+            })
+            .catch(() => {});
+    }
+
+    setInterval(pollPendientes, 15000);
+})();
+</script>
+
 <style>
 /* Estilos para ordenamiento */
 .sortable {

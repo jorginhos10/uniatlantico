@@ -1035,7 +1035,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1151,7 +1151,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -3556,19 +3556,30 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const lineas = new Set();
             const motoresPorLinea = {};
             const proyectosPorMotor = {};
+            const lineaCodigos = {};
+            const motorCodigos = {};
+            const proyectoCodigos = {};
 
             items.forEach(function(item) {
                 const lin = item.getAttribute('data-linea-filtro') || '';
                 const mot = item.getAttribute('data-motor-filtro') || '';
                 const pro = item.getAttribute('data-proyecto-filtro') || '';
+                const linCod = item.getAttribute('data-linea-codigo') || '';
+                const motCod = item.getAttribute('data-motor-codigo') || '';
+                const proCod = item.getAttribute('data-proyecto-codigo') || '';
                 if (lin) {
                     lineas.add(lin);
+                    if (linCod) lineaCodigos[lin] = linCod;
                     if (!motoresPorLinea[lin]) motoresPorLinea[lin] = new Set();
                     if (mot) {
                         motoresPorLinea[lin].add(mot);
+                        if (motCod) motorCodigos[mot] = motCod;
                         const pkey = lin + '||' + mot;
                         if (!proyectosPorMotor[pkey]) proyectosPorMotor[pkey] = new Set();
-                        if (pro) proyectosPorMotor[pkey].add(pro);
+                        if (pro) {
+                            proyectosPorMotor[pkey].add(pro);
+                            if (proCod) proyectoCodigos[pro] = proCod;
+                        }
                     }
                 }
             });
@@ -3577,6 +3588,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (bar) {
                 bar._motoresPorLinea    = motoresPorLinea;
                 bar._proyectosPorMotor  = proyectosPorMotor;
+                bar._lineaCodigos       = lineaCodigos;
+                bar._motorCodigos       = motorCodigos;
+                bar._proyectoCodigos    = proyectoCodigos;
             }
 
             const selLinea = document.getElementById('filtroLinea-' + modulo);
@@ -3586,7 +3600,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             [...lineas].sort().forEach(function(lin) {
                 const opt = document.createElement('option');
                 opt.value = lin;
-                opt.textContent = lin;
+                const cod = lineaCodigos[lin];
+                opt.textContent = cod ? (cod + ' - ' + lin) : lin;
                 selLinea.appendChild(opt);
             });
             selLinea.style.display = lineas.size > 0 ? '' : 'none';
@@ -3603,6 +3618,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
             const linea = selLinea.value;
             const motoresPorLinea = bar._motoresPorLinea || {};
+            const motorCodigos = bar._motorCodigos || {};
             const motores = linea && motoresPorLinea[linea]
                 ? [...motoresPorLinea[linea]].sort()
                 : [];
@@ -3611,7 +3627,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             motores.forEach(function(mot) {
                 const opt = document.createElement('option');
                 opt.value = mot;
-                opt.textContent = mot;
+                const cod = motorCodigos[mot];
+                opt.textContent = cod ? (cod + ' - ' + mot) : mot;
                 selMotor.appendChild(opt);
             });
             selMotor.style.display = (linea && motores.length > 0) ? '' : 'none';
@@ -3632,6 +3649,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const linea   = selLinea.value;
             const motor   = selMotor.value;
             const proyectosPorMotor = bar._proyectosPorMotor || {};
+            const proyectoCodigos = bar._proyectoCodigos || {};
             const pkey    = linea + '||' + motor;
             const proyectos = (linea && motor && proyectosPorMotor[pkey])
                 ? [...proyectosPorMotor[pkey]].sort()
@@ -3641,7 +3659,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             proyectos.forEach(function(pro) {
                 const opt = document.createElement('option');
                 opt.value = pro;
-                opt.textContent = pro;
+                const cod = proyectoCodigos[pro];
+                opt.textContent = cod ? (cod + ' - ' + pro) : pro;
                 selProy.appendChild(opt);
             });
             selProy.style.display = (linea && motor && proyectos.length > 0) ? '' : 'none';
@@ -3674,13 +3693,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 // Rebuild motor options for this linea
                 const bar = document.getElementById('filtroBar-' + modulo);
                 const motoresPorLinea = bar ? (bar._motoresPorLinea || {}) : {};
+                const motorCodigos = bar ? (bar._motorCodigos || {}) : {};
+                const proyectoCodigos = bar ? (bar._proyectoCodigos || {}) : {};
                 const motores = motoresPorLinea[saved.linea]
                     ? [...motoresPorLinea[saved.linea]].sort() : [];
                 if (selMotor) {
                     selMotor.innerHTML = '<option value="">Motor: Todos</option>';
                     motores.forEach(function(mot) {
                         const opt = document.createElement('option');
-                        opt.value = mot; opt.textContent = mot;
+                        opt.value = mot;
+                        const cod = motorCodigos[mot];
+                        opt.textContent = cod ? (cod + ' - ' + mot) : mot;
                         selMotor.appendChild(opt);
                     });
                     selMotor.style.display = motores.length > 0 ? '' : 'none';
@@ -3695,7 +3718,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             selProy.innerHTML = '<option value="">Proyecto: Todos</option>';
                             proyectos.forEach(function(pro) {
                                 const opt = document.createElement('option');
-                                opt.value = pro; opt.textContent = pro;
+                                opt.value = pro;
+                                const cod = proyectoCodigos[pro];
+                                opt.textContent = cod ? (cod + ' - ' + pro) : pro;
                                 selProy.appendChild(opt);
                             });
                             selProy.style.display = (proyectos.length > 0) ? '' : 'none';
