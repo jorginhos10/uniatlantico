@@ -392,7 +392,8 @@ class Modulo144Model {
             $stmt = $this->db->prepare(
                 "SELECT id, proyecto, ponderacion_actividades
                  FROM formulacion_144
-                 WHERE formulario_id = :fid"
+                 WHERE formulario_id = :fid
+                   AND estado_formulacion != 1"
             );
             $stmt->execute([':fid' => $formulario_id]);
             return $stmt->fetchAll();
@@ -410,7 +411,8 @@ class Modulo144Model {
                  FROM formulacion_144
                  WHERE formulario_id = :fid
                    AND proyecto = :proyecto
-                   AND id != :excluir"
+                   AND id != :excluir
+                   AND estado_formulacion != 1"
             );
             $stmt->execute([':fid' => $formulario_id, ':proyecto' => $proyecto, ':excluir' => $excluir_id]);
             $row = $stmt->fetch();
