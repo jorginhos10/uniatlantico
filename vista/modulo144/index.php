@@ -1818,6 +1818,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <option value="">Seleccione...</option>
                                             <option value="PDI">PDI</option>
                                             <option value="PA">PA</option>
+                                            <option value="PR">PR</option>
                                         </select>
                                     </div>
 
