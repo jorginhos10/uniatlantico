@@ -358,6 +358,7 @@ class Modulo144Model {
             $stmt = $this->db->prepare("SELECT f.*,
                                         le.codigo  AS linea_codigo,
                                         m.id       AS motor_id_num,
+                                        m.codigo   AS motor_codigo,
                                         p.codigo   AS proyecto_codigo,
                                         u.nombre   AS creado_por_nombre,
                                         u.cargo_id AS creado_por_cargo_id,

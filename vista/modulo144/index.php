@@ -1034,7 +1034,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ?>
                                     <?php foreach ($modulo['borradores'] as $borrador):
                                         $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
-                                        $m   = !empty($borrador['motor_id_num'])    ? 'M'.$borrador['motor_id_num']: null;
+                                        $m   = !empty($borrador['motor_codigo'])    ? $borrador['motor_codigo']    : null;
                                         $p   = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
                                         $lmp_key_b = ($l ?? '__') . '|' . ($borrador['motor_id_num'] ?? '__') . '|' . ($borrador['proyecto_codigo'] ?? '__');
@@ -1150,7 +1150,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ?>
                                     <?php foreach ($modulo['publicados'] as $publicado):
                                         $l   = !empty($publicado['linea_codigo'])    ? $publicado['linea_codigo']    : null;
-                                        $m   = !empty($publicado['motor_id_num'])    ? 'M'.$publicado['motor_id_num']: null;
+                                        $m   = !empty($publicado['motor_codigo'])    ? $publicado['motor_codigo']    : null;
                                         $p   = !empty($publicado['proyecto_codigo']) ? $publicado['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
                                         $lmp_key_p = ($l ?? '__') . '|' . ($publicado['motor_id_num'] ?? '__') . '|' . ($publicado['proyecto_codigo'] ?? '__');
@@ -1251,7 +1251,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ?>
                                     <?php foreach ($modulo['cancelados'] as $cancelado):
                                         $l   = !empty($cancelado['linea_codigo'])    ? $cancelado['linea_codigo']    : null;
-                                        $m   = !empty($cancelado['motor_id_num'])    ? 'M'.$cancelado['motor_id_num']: null;
+                                        $m   = !empty($cancelado['motor_codigo'])    ? $cancelado['motor_codigo']    : null;
                                         $p   = !empty($cancelado['proyecto_codigo']) ? $cancelado['proyecto_codigo'] : null;
                                         $lmp = array_filter([$l, $m, $p]);
                                         $lmp_key_c = ($l ?? '__') . '|' . ($cancelado['motor_id_num'] ?? '__') . '|' . ($cancelado['proyecto_codigo'] ?? '__');
@@ -3162,11 +3162,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 lineaCodigo = txt.split(' - ')[0];
             }
 
-            // Extraer ID motor → "M{id}"
+            // Extraer código de motor (texto "M1 - nombre" → "M1")
             let motorCodigo = null;
             if (motorSelect && motorSelect.selectedIndex > 0) {
-                const mid = motorSelect.options[motorSelect.selectedIndex].getAttribute('data-motor-id');
-                if (mid) motorCodigo = 'M' + mid;
+                const txt = motorSelect.options[motorSelect.selectedIndex].textContent.trim();
+                motorCodigo = txt.split(' - ')[0];
             }
 
             // Extraer código proyecto (texto "P1 - nombre" → "P1")

@@ -339,7 +339,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <table class="cat-table">
                         <thead>
                             <tr>
-                                <th>#</th>
                                 <th>Línea</th>
                                 <th>Código</th>
                                 <th>Nombre</th>
@@ -348,7 +347,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </tr>
                         </thead>
                         <tbody id="tablaMotoresBody">
-                            <tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
+                            <tr class="empty-row"><td colspan="5"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1001,13 +1000,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     function mostrarErrorMotores() {
-        $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los motores</div></td></tr>');
+        $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="5"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los motores</div></td></tr>');
     }
 
     function renderTablaMotores(motores) {
         $('#badge-count-motores').text(motores.length);
         if (motores.length === 0) {
-            $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-cogs"></i></div><div>No hay motores registrados</div></td></tr>');
+            $('#tablaMotoresBody').html('<tr class="empty-row"><td colspan="5"><div class="empty-icon"><i class="fas fa-cogs"></i></div><div>No hay motores registrados</div></td></tr>');
             return;
         }
         let html = '';
@@ -1017,7 +1016,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const toggleClass = m.activo == 1 ? 'btn-toggle-on' : 'btn-toggle-off';
             const toggleIcon  = m.activo == 1 ? 'fa-ban' : 'fa-check-circle';
             html += `<tr>
-                <td><strong style="color:var(--ios-blue);">#${m.id}</strong></td>
                 <td><span class="badge-codigo">${escHtml(m.linea_codigo)}</span> <small class="text-muted">${escHtml(m.linea_nombre)}</small></td>
                 <td><span class="badge-codigo">${escHtml(m.codigo)}</span></td>
                 <td><strong>${escHtml(m.nombre)}</strong></td>
