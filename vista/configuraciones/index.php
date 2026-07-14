@@ -74,6 +74,16 @@ require_once __DIR__ . '/../complementos/header.php';
       <p>Gestiona la creación, edición y eliminación de dependencias</p>
     </div>
     </a>
+
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/facultades">
+    <div class="mosaic-item">
+      <div class="item-icon" style="background-color: #9C27B0;">
+        <i class="fas fa-university"></i>
+      </div>
+      <h3>Facultades</h3>
+      <p>Crea y administra las facultades usadas en formulación y seguimiento</p>
+    </div>
+    </a>
     
     <a style="text-decoration:none;" href="<?php echo $basePath; ?>/almacenamiento">
     <div class="mosaic-item">

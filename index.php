@@ -659,6 +659,42 @@ switch ($action) {
         break;
 
     // ====================================================
+    // SECCIÓN PARA FACULTADES (CRUD)
+    // ====================================================
+    case 'facultades':
+        require_once 'config/security.php';
+        require_once 'controlador/facultadesController.php';
+        $facultadesController = new FacultadesController();
+
+        $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
+
+        switch ($actionParam) {
+            case 'listar':
+                $facultadesController->listar();
+                break;
+            case 'crear':
+                $facultadesController->crear();
+                break;
+            case 'get':
+                $facultadesController->get();
+                break;
+            case 'actualizar':
+                $facultadesController->actualizar();
+                break;
+            case 'eliminar':
+                $facultadesController->eliminar();
+                break;
+            case 'cambiarEstado':
+                $facultadesController->cambiarEstado();
+                break;
+            case 'index':
+            default:
+                $facultadesController->index();
+                break;
+        }
+        break;
+
+    // ====================================================
     // SECCIÓN PARA DEPENDENCIAS (CRUD)
     // ====================================================
     case 'dependencias':
