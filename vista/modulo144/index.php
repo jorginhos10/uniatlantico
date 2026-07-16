@@ -1558,6 +1558,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         }
                                                         
                                                         $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
+                                                        $l = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
+                                                        $m = !empty($borrador['motor_codigo'])    ? $borrador['motor_codigo']    : null;
+                                                        $p = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
+                                                        $lmp = array_filter([$l, $m, $p]);
                                                         ?>
                                                         <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>" data-facultad-id="<?php echo $facultadId; ?>">
                                                             <div class="facultad-item-info">
@@ -1571,6 +1575,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                                         | <i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?>
                                                                     <?php endif; ?>
                                                                 </small>
+                                                                <div class="mt-2 d-flex align-items-center flex-wrap gap-3">
+                                                                    <?php if (!empty($lmp)): ?>
+                                                                    <span class="lmp-badge">
+                                                                        <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
+                                                                        <small class="lmp-suma"><?php echo number_format((float)($borrador['ponderacion_actividades'] ?? 0),1); ?></small>
+                                                                    </span>
+                                                                    <?php endif; ?>
+                                                                    <?php if (!empty($borrador['creado_por_nombre'])): ?>
+                                                                    <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($borrador['creado_por_nombre']); ?></span>
+                                                                    <?php endif; ?>
+                                                                </div>
                                                                 <div class="mt-1">
                                                                     <span class="badge <?php echo $estadoClass; ?>"><?php echo $estadoText; ?></span>
                                                                 </div>
