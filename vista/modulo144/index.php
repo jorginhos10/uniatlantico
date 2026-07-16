@@ -2244,6 +2244,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const formularioId = <?php echo $formulario['id']; ?>;
         const formularioAnio = <?php echo intval($formulario['anio'] ?? 0); ?>; // Año heredado del formulario padre
 
+        const TODAS_FACULTADES = <?php
+            echo json_encode(array_map(function($f) {
+                return ['id' => (int)$f['id'], 'nombre' => $f['nombre'], 'codigo' => $f['codigo'] ?? ''];
+            }, array_values(array_filter($facultades ?? [], function($f) { return $f['estado'] == 1; }))));
+        ?>;
+
         const FACULTAD_ITEMS = <?php
             $facultades_lookup = [];
             foreach (($facultades ?? []) as $f) { $facultades_lookup[$f['id']] = $f; }
@@ -2722,20 +2728,27 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
             let navHtml = '<ul class="nav nav-tabs mb-3" role="tablist">';
             navHtml += '<li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#facTabResumen" type="button" role="tab">Resumen</button></li>';
-            grupo.forEach(function(it) {
-                navHtml += '<li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#facTab' + it.facultad_id + '" type="button" role="tab">' + evalHtmlEscape(it.facultad_codigo || it.facultad_nombre) + '</button></li>';
+            TODAS_FACULTADES.forEach(function(fac) {
+                navHtml += '<li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#facTab' + fac.id + '" type="button" role="tab">' + evalHtmlEscape(fac.codigo || fac.nombre) + '</button></li>';
             });
             navHtml += '</ul>';
 
             let contentHtml = '<div class="tab-content">';
             contentHtml += '<div class="tab-pane fade show active" id="facTabResumen" role="tabpanel">'
                 + '<p class="text-muted mb-0">' + evalHtmlEscape(item.nombre_borrador) + '</p>'
-                + '<p class="text-muted small">' + grupo.length + ' facultad(es) gestionando este indicador.</p>'
+                + '<p class="text-muted small">' + grupo.length + ' de ' + TODAS_FACULTADES.length + ' facultad(es) gestionando este indicador.</p>'
                 + '</div>';
-            grupo.forEach(function(it) {
-                contentHtml += '<div class="tab-pane fade" id="facTab' + it.facultad_id + '" role="tabpanel">'
-                    + '<p class="text-muted">' + evalHtmlEscape(it.facultad_nombre) + '</p>'
-                    + '</div>';
+            TODAS_FACULTADES.forEach(function(fac) {
+                const it = grupo.find(function(g) { return g.facultad_id === fac.id; });
+                contentHtml += '<div class="tab-pane fade" id="facTab' + fac.id + '" role="tabpanel">';
+                if (it) {
+                    contentHtml += '<p class="text-muted mb-0">' + evalHtmlEscape(fac.nombre) + '</p>'
+                        + '<p class="text-muted small">' + evalHtmlEscape(it.nombre_borrador) + '</p>';
+                } else {
+                    contentHtml += '<p class="text-muted mb-0">' + evalHtmlEscape(fac.nombre) + '</p>'
+                        + '<p class="text-muted small fst-italic">Sin datos de esta facultad para este indicador.</p>';
+                }
+                contentHtml += '</div>';
             });
             contentHtml += '</div>';
 
