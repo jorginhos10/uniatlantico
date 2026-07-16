@@ -2165,7 +2165,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
 
                         <!-- Campos ocultos requeridos por el JS existente (autoguardado, etc.) -->
-                        <span id="seguimiento_anio_view" class="d-none"></span>
                         <span id="seguimiento_objetivo_view" class="d-none"></span>
                         <span id="seguimiento_estrategia_view" class="d-none"></span>
                         <span id="seguimiento_meta_resultado_view" class="d-none"></span>
@@ -2184,6 +2183,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h5>
                             <div class="row">
+                                <div class="col-md-3 mb-3 mb-md-0">
+                                    <label class="form-label text-muted">14.4 VALOR AÑO</label>
+                                    <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
+                                    <label class="form-label text-muted mt-2 mb-0" style="font-size:0.75rem;">PORCENTAJE DE CUMPLIMIENTO</label>
+                                </div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                             </div>
