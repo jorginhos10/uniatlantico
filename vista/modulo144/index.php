@@ -1984,58 +1984,27 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <input type="hidden" id="seguimiento_id" name="id">
                     
                     <div class="modal-body-scroll">
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="alert alert-success">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Datos de Formulación:</strong> Esta información proviene del formulario de formulación y no es editable.
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-2 mb-3"><label class="form-label text-muted">AÑO</label><div class="bg-light-view" id="seguimiento_anio_view">-</div></div>
-                            <div class="col-md-5 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
-                            <div class="col-md-5 mb-3"><label class="form-label text-muted">OBJETIVO</label><div class="bg-light-view" id="seguimiento_objetivo_view">-</div></div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ESTRATEGIA</label><div class="bg-light-view" id="seguimiento_estrategia_view">-</div></div>
-                            <div class="col-md-6 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-3 mb-3"><label class="form-label text-muted">META DE RESULTADO</label><div class="bg-light-view" id="seguimiento_meta_resultado_view">-</div></div>
-                            <div class="col-md-6 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
-                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN PROYECTOS</label><div class="bg-light-view" id="seguimiento_ponderacion_proyectos_view">-</div></div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6 mb-3"><label class="form-label text-muted">ACTIVIDAD DEL PROYECTO</label><div class="bg-light-view" id="seguimiento_actividad_view">-</div></div>
-                            <div class="col-md-3 mb-3"><label class="form-label text-muted">PONDERACIÓN ACTIVIDADES</label><div class="bg-light-view" id="seguimiento_ponderacion_actividades_view">-</div></div>
-                            <div class="col-md-3 mb-3"><label class="form-label text-muted">RESPONSABLE</label><div class="bg-light-view" id="seguimiento_responsable_view">-</div></div>
-                        </div>
-                        
-
-                        
-                        <div class="row mb-4">
-                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>DATOS DE SEGUIMIENTO</h6></div>
-                        </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3"><label class="form-label">INDICADOR</label><input type="text" class="form-control" name="indicador" id="seguimiento_indicador" oninput="autoGuardarSeguimiento()"></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">FECHA DE SEGUIMIENTO</label><input type="date" class="form-control" name="fecha_seguimiento" id="seguimiento_fecha" onchange="autoGuardarSeguimiento()"></div>
-                            
-                            <div class="col-md-4 mb-3"><label class="form-label">META PROGRAMADA</label><div class="input-group"><input type="number" class="form-control" name="meta_programada" id="seguimiento_meta_programada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label">META EJECUTADA</label><div class="input-group"><input type="number" class="form-control" name="meta_ejecutada" id="seguimiento_meta_ejecutada" step="0.01" oninput="autoGuardarSeguimiento()"><span class="input-group-text">$</span></div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label">% AVANCE</label><div class="input-group"><input type="number" class="form-control" name="porcentaje_avance" id="seguimiento_porcentaje" step="0.01" min="0" max="100" oninput="autoGuardarSeguimiento()"><span class="input-group-text">%</span></div></div>
-                            
-                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 1</label><input type="text" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" oninput="autoGuardarSeguimiento()"></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">SEMESTRE 2</label><input type="text" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" oninput="autoGuardarSeguimiento()"></div>
-                            
-                            <div class="col-md-6 mb-3"><label class="form-label">RESPONSABLE DEL SEGUIMIENTO</label><input type="text" class="form-control" name="responsable_seguimiento" id="seguimiento_responsable" oninput="autoGuardarSeguimiento()"></div>
-                            <div class="col-12 mb-3"><label class="form-label">OBSERVACIONES</label><textarea class="form-control" name="observaciones" id="seguimiento_observaciones" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
-                        </div>
+                        <!-- Campos ocultos requeridos por el JS existente (autoguardado, etc.) -->
+                        <span id="seguimiento_anio_view" class="d-none"></span>
+                        <span id="seguimiento_linea_view" class="d-none"></span>
+                        <span id="seguimiento_objetivo_view" class="d-none"></span>
+                        <span id="seguimiento_estrategia_view" class="d-none"></span>
+                        <span id="seguimiento_motor_view" class="d-none"></span>
+                        <span id="seguimiento_meta_resultado_view" class="d-none"></span>
+                        <span id="seguimiento_proyecto_view" class="d-none"></span>
+                        <span id="seguimiento_ponderacion_proyectos_view" class="d-none"></span>
+                        <span id="seguimiento_actividad_view" class="d-none"></span>
+                        <span id="seguimiento_ponderacion_actividades_view" class="d-none"></span>
+                        <span id="seguimiento_responsable_view" class="d-none"></span>
+                        <input type="hidden" id="seguimiento_indicador" name="indicador">
+                        <input type="hidden" id="seguimiento_fecha" name="fecha_seguimiento">
+                        <input type="hidden" id="seguimiento_meta_programada" name="meta_programada">
+                        <input type="hidden" id="seguimiento_meta_ejecutada" name="meta_ejecutada">
+                        <input type="hidden" id="seguimiento_porcentaje" name="porcentaje_avance">
+                        <input type="hidden" id="seguimiento_semestre1" name="semestre1_seguimiento">
+                        <input type="hidden" id="seguimiento_semestre2" name="semestre2_seguimiento">
+                        <input type="hidden" id="seguimiento_responsable" name="responsable_seguimiento">
+                        <input type="hidden" id="seguimiento_observaciones" name="observaciones">
                     </div>
                     
                     <div class="modal-footer">
