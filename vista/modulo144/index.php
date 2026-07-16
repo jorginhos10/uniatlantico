@@ -2013,10 +2013,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <input type="hidden" id="seguimiento_meta_programada" name="meta_programada">
                         <input type="hidden" id="seguimiento_meta_ejecutada" name="meta_ejecutada">
                         <input type="hidden" id="seguimiento_porcentaje" name="porcentaje_avance">
-                        <input type="hidden" id="seguimiento_semestre1" name="semestre1_seguimiento">
-                        <input type="hidden" id="seguimiento_semestre2" name="semestre2_seguimiento">
                         <input type="hidden" id="seguimiento_responsable" name="responsable_seguimiento">
                         <input type="hidden" id="seguimiento_observaciones" name="observaciones">
+
+                        <div class="row mb-4">
+                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h6></div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><textarea class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="col-md-6 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><textarea class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                        </div>
                     </div>
                     
                     <div class="modal-footer">
