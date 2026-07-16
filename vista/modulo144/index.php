@@ -632,6 +632,51 @@ ob_start();
             padding-top: 6px;
         }
 
+        /* ═══ PESTAÑAS PRINCIPALES (antes acordeones) ═══ */
+        .modulo-tabs-top {
+            border-bottom: 2px solid #e9ecef;
+            flex-wrap: wrap;
+        }
+
+        .modulo-tabs-top .nav-link {
+            border: none;
+            border-bottom: 3px solid transparent;
+            padding: 12px 18px;
+            font-weight: 700;
+            font-size: 0.92rem;
+            color: #6e6e73;
+        }
+
+        .modulo-tabs-top .nav-link:hover {
+            border-bottom-color: rgba(0,122,255,.4);
+            background-color: rgba(0,122,255,.05);
+        }
+
+        .modulo-tabs-top .nav-link.active {
+            color: var(--color-primary) !important;
+            border-bottom-color: var(--color-primary);
+            background-color: transparent;
+        }
+
+        .modulo-panel-header {
+            display: flex;
+            align-items: center;
+            padding: 18px 22px;
+            border-radius: 14px;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .modulo-panel-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .modulo-panel-header small {
+            font-size: 0.82rem;
+            opacity: 0.9;
+        }
+
         .indicador-section {
             background-color: #f8f9fa;
             padding: 15px;
@@ -940,11 +985,6 @@ ob_start();
             opacity: .82;
         }
 
-        /* Reduce top margin between accordion groups */
-        #accordionFacultades,
-        [id^="accordionEval"] {
-            margin-top: 10px !important;
-        }
 
         /* Container padding reduction */
         .container-fluid {
@@ -1474,36 +1514,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
                     </div>
                 </div>
-            </div>
             <?php $primer_modulo = false; ?>
             <?php endforeach; ?>
-        </div>
 
-        <!-- Acordeón 2: Formulación y Seguimiento por Facultades -->
-        <div class="accordion mt-4" id="accordionFacultades">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingFacultades">
-                    <button class="accordion-button collapsed" 
-                            type="button" 
-                            data-bs-toggle="collapse" 
-                            data-bs-target="#collapseFacultades" 
-                            style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%); color: white !important;">
-                        <i class="fas fa-university me-3 fa-2x"></i>
-                        <div>
-                            <span style="font-size: 1.3rem;">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span>
-                            <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Solo formulaciones con gestión desde facultades activada</small>
-                        </div>
-                        <span class="badge bg-light text-dark ms-3">
-                            <i class="fas fa-building me-1"></i><?php echo count($facultades ?? []); ?> facultades
-                        </span>
-                    </button>
-                </h2>
-                <div id="collapseFacultades" 
-                     class="accordion-collapse collapse" 
-                     data-bs-parent="#accordionFacultades">
-                    <div class="accordion-body p-4">
-                        
+            <!-- FORMULACIÓN Y SEGUIMIENTO POR FACULTADES -->
+            <div class="tab-pane fade" id="panelFacultades" role="tabpanel">
+                <div class="modulo-panel-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
+                    <i class="fas fa-university fa-2x me-3"></i>
+                    <div>
+                        <span class="modulo-panel-title">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span><br>
+                        <small>Solo formulaciones con gestión desde facultades activada</small>
+                    </div>
+                </div>
+                <div class="p-4">
+
                         <?php if (isset($facultades) && count($facultades) > 0): ?>
                             
                             <?php foreach ($facultades as $index => $facultad): ?>
@@ -1667,30 +1691,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Acordeón 3: Evaluación Líneas -->
-        <div class="accordion mt-4" id="accordionEvaluacion">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingEvaluacion">
-                    <button class="accordion-button collapsed"
-                            type="button"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#collapseEvaluacion"
-                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white !important;">
-                        <i class="fas fa-chart-pie me-3 fa-2x"></i>
-                        <div>
-                            <span style="font-size: 1.3rem;">EVALUACIÓN LÍNEAS</span>
-                            <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Evaluación de líneas estratégicas por proyecto</small>
-                        </div>
-                    </button>
-                </h2>
-                <div id="collapseEvaluacion"
-                     class="accordion-collapse collapse"
-                     data-bs-parent="#accordionEvaluacion">
-                    <div class="accordion-body p-4">
+            <!-- EVALUACIÓN LÍNEAS -->
+            <div class="tab-pane fade" id="panelEvaluacion" role="tabpanel">
+                <div class="modulo-panel-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <i class="fas fa-chart-pie fa-2x me-3"></i>
+                    <div>
+                        <span class="modulo-panel-title">EVALUACIÓN LÍNEAS</span><br>
+                        <small>Evaluación de líneas estratégicas por proyecto</small>
+                    </div>
+                </div>
+                <div class="p-4">
                         <?php if (!empty($lineas_estrategicas)): ?>
                         <div class="row g-3">
                             <?php foreach ($lineas_estrategicas as $li => $linea):
@@ -1749,8 +1760,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <?php endif; ?>
                     </div>
                 </div>
-            </div>
         </div>
+        <!-- /Pestañas principales -->
 
         <?php endif; ?>
     </div>
@@ -2352,7 +2363,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function guardarEstadoAcordeon() {
-            const abierto = document.querySelector('#accordionModulos .accordion-collapse.show');
+            const abierto = document.querySelector('#moduloTabsTopContent .tab-pane.active');
             if (abierto) {
                 sessionStorage.setItem('mod144_acordeon_' + formularioId, abierto.id);
             } else {
@@ -2364,17 +2375,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const id = sessionStorage.getItem('mod144_acordeon_' + formularioId);
             if (!id) return;
             sessionStorage.removeItem('mod144_acordeon_' + formularioId);
-            const panel = document.getElementById(id);
-            if (!panel) return;
-            // Colapsar el que esté abierto por defecto y abrir el guardado
-            document.querySelectorAll('#accordionModulos .accordion-collapse.show').forEach(function(el) {
-                el.classList.remove('show');
-                const btn = document.querySelector('[data-bs-target="#' + el.id + '"]');
-                if (btn) btn.classList.add('collapsed');
-            });
-            panel.classList.add('show');
             const btn = document.querySelector('[data-bs-target="#' + id + '"]');
-            if (btn) btn.classList.remove('collapsed');
+            if (!btn) return;
+            new bootstrap.Tab(btn).show();
         }
 
         $(document).ready(function() {
