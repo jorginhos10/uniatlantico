@@ -1322,26 +1322,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <?php else: ?>
-                                                    <button class="btn btn-sm btn-info" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    <?php endif; ?>
-                                                    <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
                                                         <i class="fas fa-check"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
                                                         <i class="fas fa-times"></i>
                                                     </button>
-                                                    <?php else: ?>
-                                                    <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                    <?php endif; ?>
                                                     <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
                                                         <i class="fas fa-copy"></i>
                                                     </button>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -1666,25 +1663,29 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     if (($row['linea_codigo'] ?? null) !== $linea['codigo']) continue;
                                     $motorNombre = trim($row['motor_desarrollo'] ?? '');
                                     if ($motorNombre !== '') {
-                                        $motores_linea[$motorNombre] = true;
+                                        $motores_linea[$motorNombre] = $row['motor_codigo'] ?? '';
                                     }
                                     $pnombre = trim($row['proyecto'] ?? '');
                                     if ($pnombre === '') continue;
                                     $tiene_seg = !empty($row['fecha_seguimiento']) || !empty($row['porcentaje_avance']) || !empty($row['indicador']);
                                     $proyectos_linea[$pnombre] = ($proyectos_linea[$pnombre] ?? false) || $tiene_seg;
                                 }
-                                $motores_json = array_values(array_keys($motores_linea));
+                                $motores_json = [];
+                                foreach ($motores_linea as $mNombre => $mCodigo) {
+                                    $motores_json[] = ['codigo' => $mCodigo, 'nombre' => $mNombre];
+                                }
                                 $totalProyectos = count($proyectos_linea);
                                 $proyectosConSeg = count(array_filter($proyectos_linea));
                                 $colorIdx  = $li % 10;
                                 $colorBase = $eval_colores[$colorIdx];
                                 $colorDark = eval_darken($colorBase, 0.28);
+                                $lineaLabel = trim(($linea['codigo'] ?? '') . ' - ' . $linea['nombre'], ' -');
                             ?>
                             <div class="col-6 col-md-4 col-lg-3">
                                 <div class="eval-linea-card"
                                      style="background: linear-gradient(135deg, <?php echo $colorBase; ?> 0%, <?php echo $colorDark; ?> 100%);"
                                      data-idx="0"
-                                     data-linea="<?php echo htmlspecialchars($linea['nombre']); ?>"
+                                     data-linea="<?php echo htmlspecialchars($lineaLabel); ?>"
                                      data-motores='<?php echo htmlspecialchars(json_encode($motores_json), ENT_QUOTES); ?>'
                                      data-seg-count="<?php echo $proyectosConSeg; ?>"
                                      data-seg-total="<?php echo $totalProyectos; ?>">
@@ -2729,7 +2730,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             } else if (idx === 1) {
                 const motores = evalLineaMotores(card);
                 const listHtml = motores.length
-                    ? '<ul class="eval-linea-motores-list">' + motores.map(function(m) { return '<li>' + evalHtmlEscape(m) + '</li>'; }).join('') + '</ul>'
+                    ? '<ul class="eval-linea-motores-list">' + motores.map(function(m) {
+                        const label = (m.codigo ? m.codigo + ' - ' : '') + m.nombre;
+                        return '<li>' + evalHtmlEscape(label) + '</li>';
+                    }).join('') + '</ul>'
                     : '<div class="eval-linea-empty">Sin motores registrados</div>';
                 contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div>' + listHtml;
             } else {
