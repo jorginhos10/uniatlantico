@@ -1068,35 +1068,44 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
         <?php else: ?>
 
-        <!-- Acordeón 1: Módulos existentes -->
-        <div class="accordion" id="accordionModulos">
-            <?php $primer_modulo = false; ?>
+        <!-- Pestañas principales -->
+        <ul class="nav nav-tabs modulo-tabs-top mb-4" id="moduloTabsTop" role="tablist">
+            <?php $primer_modulo_tab = true; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading<?php echo $key; ?>">
-                    <button class="accordion-button <?php echo $primer_modulo ? '' : 'collapsed'; ?>" 
-                            type="button" 
-                            data-bs-toggle="collapse" 
-                            data-bs-target="#collapse<?php echo $key; ?>" 
-                            style="background: <?php echo $modulo['config']['color_header']; ?>; color: white !important;">
-                        <i class="fas <?php echo $modulo['config']['icono']; ?> me-3 fa-2x"></i>
-                        <div>
-                            <span style="font-size: 1.3rem;"><?php echo $modulo['config']['nombre']; ?></span>
-                            <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;"><?php echo $modulo['config']['descripcion']; ?></small>
-                        </div>
-                        <span class="badge bg-light text-dark ms-3">
-                            B: <?php echo count($modulo['borradores']); ?> | 
-                            P: <?php echo count($modulo['publicados']); ?> | 
-                            C: <?php echo count($modulo['cancelados']); ?>
-                        </span>
-                    </button>
-                </h2>
-                <div id="collapse<?php echo $key; ?>" 
-                     class="accordion-collapse collapse <?php echo $primer_modulo ? 'show' : ''; ?>" 
-                     data-bs-parent="#accordionModulos">
-                    <div class="accordion-body p-4">
-                        
+            <li class="nav-item" role="presentation">
+                <button class="nav-link <?php echo $primer_modulo_tab ? 'active' : ''; ?>" data-bs-toggle="tab" data-bs-target="#panelModulo-<?php echo $key; ?>" type="button" role="tab">
+                    <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i><?php echo $modulo['config']['nombre']; ?>
+                    <span class="badge bg-secondary ms-2">B:<?php echo count($modulo['borradores']); ?> P:<?php echo count($modulo['publicados']); ?> C:<?php echo count($modulo['cancelados']); ?></span>
+                </button>
+            </li>
+            <?php $primer_modulo_tab = false; ?>
+            <?php endforeach; ?>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelFacultades" type="button" role="tab">
+                    <i class="fas fa-university me-2"></i>FORMULACIÓN Y SEGUIMIENTO POR FACULTADES
+                    <span class="badge bg-secondary ms-2"><?php echo count($facultades ?? []); ?> facultades</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelEvaluacion" type="button" role="tab">
+                    <i class="fas fa-chart-pie me-2"></i>EVALUACIÓN LÍNEAS
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="moduloTabsTopContent">
+            <?php $primer_modulo = true; ?>
+            <?php foreach ($datos_modulos as $key => $modulo): ?>
+            <div class="tab-pane fade <?php echo $primer_modulo ? 'show active' : ''; ?>" id="panelModulo-<?php echo $key; ?>" role="tabpanel">
+                <div class="modulo-panel-header" style="background: <?php echo $modulo['config']['color_header']; ?>;">
+                    <i class="fas <?php echo $modulo['config']['icono']; ?> fa-2x me-3"></i>
+                    <div>
+                        <span class="modulo-panel-title"><?php echo $modulo['config']['nombre']; ?></span><br>
+                        <small><?php echo $modulo['config']['descripcion']; ?></small>
+                    </div>
+                </div>
+                <div class="p-4">
+
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h4 class="mb-0" style="color: <?php echo $modulo['config']['color']; ?>;">
                                 <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i>
