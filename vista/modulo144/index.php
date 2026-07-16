@@ -841,8 +841,8 @@ ob_start();
         .eval-linea-card {
             position: relative;
             border-radius: 16px;
-            padding: 22px 46px;
-            min-height: 150px;
+            padding: 40px 22px 22px;
+            min-height: 320px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -852,6 +852,32 @@ ob_start();
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             box-shadow: 0 4px 16px rgba(0,0,0,.12);
             overflow: hidden;
+        }
+
+        .eval-linea-motores-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            font-size: 0.82rem;
+            max-height: 170px;
+            overflow-y: auto;
+            text-align: left;
+        }
+
+        .eval-linea-motores-list li {
+            padding: 5px 4px;
+            border-bottom: 1px solid rgba(255,255,255,.15);
+        }
+
+        .eval-linea-motores-list li:last-child {
+            border-bottom: none;
+        }
+
+        .eval-linea-ratio {
+            font-size: 2.4rem;
+            font-weight: 800;
+            line-height: 1.1;
         }
 
         .eval-linea-badge {
@@ -1631,31 +1657,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="row g-3">
                             <?php foreach ($lineas_estrategicas as $li => $linea):
                                 $proyectos_linea = [];
+                                $motores_linea = [];
                                 $filas_linea = array_merge(
                                     $datos_modulos['formulacion']['borradores'] ?? [],
                                     $datos_modulos['formulacion']['publicados'] ?? []
                                 );
                                 foreach ($filas_linea as $row) {
                                     if (($row['linea_codigo'] ?? null) !== $linea['codigo']) continue;
+                                    $motorNombre = trim($row['motor_desarrollo'] ?? '');
+                                    if ($motorNombre !== '') {
+                                        $motores_linea[$motorNombre] = true;
+                                    }
                                     $pnombre = trim($row['proyecto'] ?? '');
                                     if ($pnombre === '') continue;
                                     $tiene_seg = !empty($row['fecha_seguimiento']) || !empty($row['porcentaje_avance']) || !empty($row['indicador']);
                                     $proyectos_linea[$pnombre] = ($proyectos_linea[$pnombre] ?? false) || $tiene_seg;
                                 }
-                                $proyectos_json = [];
-                                foreach ($proyectos_linea as $pnombre => $tieneSeg) {
-                                    $proyectos_json[] = ['nombre' => $pnombre, 'seguimiento' => $tieneSeg];
-                                }
+                                $motores_json = array_values(array_keys($motores_linea));
+                                $totalProyectos = count($proyectos_linea);
+                                $proyectosConSeg = count(array_filter($proyectos_linea));
                                 $colorIdx  = $li % 10;
                                 $colorBase = $eval_colores[$colorIdx];
                                 $colorDark = eval_darken($colorBase, 0.28);
                             ?>
-                            <div class="col-md-4">
+                            <div class="col-6 col-md-4 col-lg-3">
                                 <div class="eval-linea-card"
                                      style="background: linear-gradient(135deg, <?php echo $colorBase; ?> 0%, <?php echo $colorDark; ?> 100%);"
                                      data-idx="0"
                                      data-linea="<?php echo htmlspecialchars($linea['nombre']); ?>"
-                                     data-proyectos='<?php echo htmlspecialchars(json_encode($proyectos_json), ENT_QUOTES); ?>'>
+                                     data-motores='<?php echo htmlspecialchars(json_encode($motores_json), ENT_QUOTES); ?>'
+                                     data-seg-count="<?php echo $proyectosConSeg; ?>"
+                                     data-seg-total="<?php echo $totalProyectos; ?>">
                                     <button type="button" class="eval-nav eval-nav-left" onclick="evalLineaNav(this,-1)" aria-label="Anterior">
                                         <i class="fas fa-chevron-left"></i>
                                     </button>
@@ -2673,8 +2705,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
-        function evalLineaProyectos(card) {
-            try { return JSON.parse(card.getAttribute('data-proyectos') || '[]'); }
+        const EVAL_LINEA_TOTAL_SLIDES = 3; // 0: línea, 1: motores, 2: proyectos con seguimiento
+
+        function evalLineaMotores(card) {
+            try { return JSON.parse(card.getAttribute('data-motores') || '[]'); }
             catch (e) { return []; }
         }
 
@@ -2688,36 +2722,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             dotsWrap.innerHTML = html;
         }
 
-        function evalLineaRenderSlide(card, idx, proyectos) {
+        function evalLineaRenderSlide(card, idx) {
             const contenido = card.querySelector('.eval-linea-content');
             if (idx === 0) {
                 contenido.innerHTML = '<div class="eval-linea-slide-label">Línea</div><div class="eval-linea-nombre">' + evalHtmlEscape(card.getAttribute('data-linea')) + '</div>';
+            } else if (idx === 1) {
+                const motores = evalLineaMotores(card);
+                const listHtml = motores.length
+                    ? '<ul class="eval-linea-motores-list">' + motores.map(function(m) { return '<li>' + evalHtmlEscape(m) + '</li>'; }).join('') + '</ul>'
+                    : '<div class="eval-linea-empty">Sin motores registrados</div>';
+                contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div>' + listHtml;
             } else {
-                const p = proyectos[idx - 1];
-                if (p) {
-                    const clase = p.seguimiento ? '' : ' sin-seguimiento';
-                    contenido.innerHTML = '<div class="eval-linea-slide-label">Proyecto</div><div class="eval-linea-nombre' + clase + '">' + evalHtmlEscape(p.nombre) + '</div>';
-                } else {
-                    contenido.innerHTML = '<div class="eval-linea-slide-label">Proyecto</div><div class="eval-linea-empty">Sin proyectos registrados</div>';
-                }
+                const count = card.getAttribute('data-seg-count') || '0';
+                const total = card.getAttribute('data-seg-total') || '0';
+                contenido.innerHTML = '<div class="eval-linea-slide-label">Proyectos con seguimiento</div><div class="eval-linea-ratio">' + count + '/' + total + '</div>';
             }
-            evalLineaRenderDots(card, idx, 1 + proyectos.length);
+            evalLineaRenderDots(card, idx, EVAL_LINEA_TOTAL_SLIDES);
         }
 
         function evalLineaNav(btn, dir) {
             const card = btn.closest('.eval-linea-card');
-            const proyectos = evalLineaProyectos(card);
-            const total = 1 + proyectos.length;
             let idx = parseInt(card.getAttribute('data-idx') || '0', 10);
-            idx = (idx + dir + total) % total;
+            idx = (idx + dir + EVAL_LINEA_TOTAL_SLIDES) % EVAL_LINEA_TOTAL_SLIDES;
             card.setAttribute('data-idx', idx);
-            evalLineaRenderSlide(card, idx, proyectos);
+            evalLineaRenderSlide(card, idx);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.eval-linea-card').forEach(function(card) {
-                const proyectos = evalLineaProyectos(card);
-                evalLineaRenderDots(card, 0, 1 + proyectos.length);
+                evalLineaRenderDots(card, 0, EVAL_LINEA_TOTAL_SLIDES);
             });
         });
 
