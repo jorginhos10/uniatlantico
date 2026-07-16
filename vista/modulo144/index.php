@@ -699,6 +699,28 @@ ob_start();
             align-items: flex-end;
         }
 
+        .cumplimiento-ring-wrap {
+            position: relative;
+            width: 84px;
+            height: 84px;
+            margin: 0 auto;
+        }
+
+        .cumplimiento-ring-wrap svg circle {
+            transition: stroke-dashoffset .4s ease, stroke .4s ease;
+        }
+
+        .cumplimiento-ring-value {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.05rem;
+            color: #1d1d1f;
+        }
+
         .meta-section {
             background-color: #f0f8ff;
             padding: 20px;
@@ -2221,10 +2243,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <div class="row">
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
-                                <div class="col-md-3 mb-3 mb-md-0 ms-md-auto">
+                                <div class="col-md-2 mb-3 mb-md-0 ms-md-auto">
                                     <label class="form-label text-muted">14.4 VALOR AÑO</label>
                                     <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
-                                    <label class="form-label text-muted mt-2 mb-0" style="font-size:0.75rem;">PORCENTAJE DE CUMPLIMIENTO</label>
+                                </div>
+                                <div class="col-md-2 mb-3 mb-md-0 text-center">
+                                    <label class="form-label text-muted d-block" style="font-size:0.75rem;">PORCENTAJE DE CUMPLIMIENTO</label>
+                                    <div class="cumplimiento-ring-wrap">
+                                        <svg width="84" height="84" viewBox="0 0 90 90">
+                                            <circle cx="45" cy="45" r="38" fill="none" stroke="#e9ecef" stroke-width="8"></circle>
+                                            <circle cx="45" cy="45" r="38" fill="none" stroke="#FF3B30" stroke-width="8"
+                                                    stroke-linecap="round" stroke-dasharray="238.76" stroke-dashoffset="232.76"
+                                                    transform="rotate(-90 45 45)" id="seguimiento_cumplimiento_arc"></circle>
+                                        </svg>
+                                        <div class="cumplimiento-ring-value" id="seguimiento_cumplimiento_text">0%</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3370,6 +3403,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             editandoTitulo = false;
         }
 
+        const CUMPLIMIENTO_RING_CIRCUNFERENCIA = 238.76;
+        const CUMPLIMIENTO_RING_MIN_VISIBLE = 6; // longitud mínima del arco (px) para que se vea la "puntita" en 0%
+
+        function actualizarAnilloCumplimiento(porcentaje) {
+            const p = Math.max(0, Math.min(100, parseFloat(porcentaje) || 0));
+            let longitud = (p / 100) * CUMPLIMIENTO_RING_CIRCUNFERENCIA;
+            if (longitud < CUMPLIMIENTO_RING_MIN_VISIBLE) longitud = CUMPLIMIENTO_RING_MIN_VISIBLE;
+            const offset = CUMPLIMIENTO_RING_CIRCUNFERENCIA - longitud;
+
+            const arc = document.getElementById('seguimiento_cumplimiento_arc');
+            const text = document.getElementById('seguimiento_cumplimiento_text');
+            if (arc) {
+                arc.style.strokeDashoffset = offset;
+                arc.style.stroke = p <= 0 ? '#FF3B30' : (p >= 100 ? '#34C759' : '#FF9500');
+            }
+            if (text) text.textContent = Math.round(p) + '%';
+        }
+
         function cargarDatosFormulacionEnSeguimiento(b) {
             let valorAnual = '-';
             const lineaBaseRaw = b.linea_base_meta;
@@ -3830,6 +3881,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_limites').val(b.limites);
                             $('#seguimiento_observacion_estado').val(b.observacion_estado);
                             $('#seguimiento_acciones_fortalecimiento').val(b.acciones_fortalecimiento);
+                            actualizarAnilloCumplimiento(0);
                             cargarDatosFormulacionEnSeguimiento(b);
                             $('#modalSeguimiento').modal('show');
                         }
