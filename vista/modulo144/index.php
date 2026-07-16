@@ -2003,12 +2003,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     
                                     <div class="col-12 mb-3">
                                         <label class="form-label">13.1 NOMBRE DEL INDICADOR</label>
-                                        <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Ingrese el nombre del indicador">
+                                        <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="sincronizarNombreBorrador(); autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Ingrese el nombre del indicador">
                                     </div>
                                     
                                     <div class="col-12 mb-3">
                                         <label class="form-label">13.2 FÓRMULA DE LA MEDICIÓN</label>
-                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="sincronizarNombreBorrador(); autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
+                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
                                     </div>
                                     
                                     <div class="row">
@@ -2158,6 +2158,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <div class="col-md-4 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
                             <div class="col-md-4 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
                             <div class="col-md-4 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view">-</div></div>
                         </div>
 
                         <!-- Campos ocultos requeridos por el JS existente (autoguardado, etc.) -->
@@ -2629,8 +2633,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         let nombreBorradorProvisional = 'Nuevo Borrador';
 
         function sincronizarNombreBorrador() {
-            const formula = $('#formulacion_formula_medicion').val();
-            const nombre = (formula && formula.trim() !== '') ? formula.trim() : nombreBorradorProvisional;
+            const nombreIndicador = $('#formulacion_nombre_indicador').val();
+            const nombre = (nombreIndicador && nombreIndicador.trim() !== '') ? nombreIndicador.trim() : nombreBorradorProvisional;
             $('#tituloFormulacionSpan').text(nombre);
         }
 
@@ -3200,6 +3204,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#seguimiento_motor_view').text(b.motor_desarrollo ? (b.motor_codigo ? b.motor_codigo + ' - ' : '') + b.motor_desarrollo : '-');
             $('#seguimiento_meta_resultado_view').text(b.meta_resultado || '-');
             $('#seguimiento_proyecto_view').text(b.proyecto ? (b.proyecto_codigo ? b.proyecto_codigo + ' - ' : '') + b.proyecto : '-');
+            $('#seguimiento_formula_medicion_view').text(b.formula_medicion || '-');
             $('#seguimiento_ponderacion_proyectos_view').text(b.ponderacion_proyectos ? b.ponderacion_proyectos + '%' : '-');
             $('#seguimiento_actividad_view').text(b.actividad_proyecto || '-');
             $('#seguimiento_ponderacion_actividades_view').text(b.ponderacion_actividades ? b.ponderacion_actividades + '%' : '-');
@@ -3217,8 +3222,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             timeoutId = setTimeout(function() {
                 const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
                 
-                const formulaActual = $('#formulacion_formula_medicion').val();
-                const nombreBorradorActual = (formulaActual && formulaActual.trim() !== '') ? formulaActual.trim() : nombreBorradorProvisional;
+                const nombreIndicadorActual = $('#formulacion_nombre_indicador').val();
+                const nombreBorradorActual = (nombreIndicadorActual && nombreIndicadorActual.trim() !== '') ? nombreIndicadorActual.trim() : nombreBorradorProvisional;
 
                 const data = {
                     modulo: 'formulacion', id: id,
@@ -3444,7 +3449,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (modulo === 'formulacion') {
                             $('#formulacion_id').val(b.id);
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
-                            nombreBorradorProvisional = (b.formula_medicion && b.formula_medicion.trim() !== '') ? 'Nuevo Borrador' : (b.nombre_borrador || 'Nuevo Borrador');
+                            nombreBorradorProvisional = (b.nombre_indicador && b.nombre_indicador.trim() !== '') ? 'Nuevo Borrador' : (b.nombre_borrador || 'Nuevo Borrador');
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
                             $('#formulacion_tipo_medicion').val(b.tipo_medicion);
