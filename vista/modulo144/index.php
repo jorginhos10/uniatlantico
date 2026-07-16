@@ -1984,14 +1984,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <input type="hidden" id="seguimiento_id" name="id">
                     
                     <div class="modal-body-scroll">
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="alert alert-success">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Información Previa:</strong> Esta información proviene del formulario de formulación y no es editable.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
+                            <div class="col-md-4 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
+                        </div>
+
                         <!-- Campos ocultos requeridos por el JS existente (autoguardado, etc.) -->
                         <span id="seguimiento_anio_view" class="d-none"></span>
-                        <span id="seguimiento_linea_view" class="d-none"></span>
                         <span id="seguimiento_objetivo_view" class="d-none"></span>
                         <span id="seguimiento_estrategia_view" class="d-none"></span>
-                        <span id="seguimiento_motor_view" class="d-none"></span>
                         <span id="seguimiento_meta_resultado_view" class="d-none"></span>
-                        <span id="seguimiento_proyecto_view" class="d-none"></span>
                         <span id="seguimiento_ponderacion_proyectos_view" class="d-none"></span>
                         <span id="seguimiento_actividad_view" class="d-none"></span>
                         <span id="seguimiento_ponderacion_actividades_view" class="d-none"></span>
