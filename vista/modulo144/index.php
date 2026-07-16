@@ -1528,16 +1528,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
                 <div class="p-4">
 
-                        <?php if (isset($facultades) && count($facultades) > 0): ?>
-                            
+                        <?php if (false && isset($facultades) && count($facultades) > 0): ?>
+
                             <?php foreach ($facultades as $index => $facultad): ?>
-                                <?php 
-                                if ($facultad['estado'] != 1) continue; 
+                                <?php
+                                if ($facultad['estado'] != 1) continue;
                                 $colorIndex = $index % 10;
                                 $facultadId = $facultad['id'];
-                                
+
                                 $formulaciones_con_check = [];
-                                
+
                                 if (isset($datos_modulos['formulacion']['borradores'])) {
                                     foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
                                         if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
@@ -1545,7 +1545,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         }
                                     }
                                 }
-                                
+
                                 if (isset($datos_modulos['formulacion']['publicados'])) {
                                     foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
                                         if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
@@ -1553,7 +1553,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         }
                                     }
                                 }
-                                
+
                                 usort($formulaciones_con_check, function($a, $b) {
                                     return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
                                 });
@@ -1675,18 +1675,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <?php endforeach; ?>
 
                         <?php else: ?>
-                            <div class="desarrollo-section">
-                                <div class="desarrollo-icon">
-                                    <i class="fas fa-database"></i>
-                                </div>
-                                <div class="desarrollo-title">NO HAY FACULTADES REGISTRADAS</div>
-                                <div class="desarrollo-subtitle">
-                                    No se encontraron facultades en la base de datos
-                                </div>
-                                <div class="desarrollo-badge">
-                                    <i class="fas fa-info-circle me-2"></i>Contacte al administrador
-                                </div>
-                            </div>
                         <?php endif; ?>
 
                     </div>
