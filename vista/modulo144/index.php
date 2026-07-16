@@ -2721,6 +2721,57 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         });
 
+        function gestionVigenciaOptions(valorActual) {
+            let html = '<option value="">Seleccione vigencia</option>';
+            const anioActual = new Date().getFullYear();
+            for (let i = anioActual; i <= anioActual + 5; i++) {
+                html += '<option value="' + i + '"' + (String(valorActual) === String(i) ? ' selected' : '') + '>' + i + '</option>';
+            }
+            return html;
+        }
+
+        function gestionFacultadFormHtml(itemId) {
+            return ''
+                + '<div class="row mb-3">'
+                + '  <div class="col-12"><label class="form-label fw-bold text-primary">FORMULACIÓN</label></div>'
+                + '  <div class="col-md-4 mb-2"><label class="form-label small">SEM. 1</label><input type="text" class="form-control form-control-sm" id="gsem_' + itemId + '_sem1" oninput="autoGuardarGestionFacultad(' + itemId + ')"></div>'
+                + '  <div class="col-md-4 mb-2"><label class="form-label small">SEM. 2</label><input type="text" class="form-control form-control-sm" id="gsem_' + itemId + '_sem2" oninput="autoGuardarGestionFacultad(' + itemId + ')"></div>'
+                + '  <div class="col-md-4 mb-2"><label class="form-label small">VIGENCIA</label><select class="form-select form-select-sm" id="gsem_' + itemId + '_vigencia" onchange="autoGuardarGestionFacultad(' + itemId + ')">' + gestionVigenciaOptions('') + '</select></div>'
+                + '</div>'
+                + '<div class="card border-warning">'
+                + '  <div class="card-header bg-warning text-white py-2"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</div>'
+                + '  <div class="card-body">'
+                + '    <div class="row">'
+                + '      <div class="col-md-3 mb-2"><label class="form-label small">SEM. 1</label><input type="text" class="form-control form-control-sm" id="gsem_' + itemId + '_segsem1" oninput="autoGuardarGestionFacultad(' + itemId + ')"></div>'
+                + '      <div class="col-md-3 mb-2"><label class="form-label small">SEM. 2</label><input type="text" class="form-control form-control-sm" id="gsem_' + itemId + '_segsem2" oninput="autoGuardarGestionFacultad(' + itemId + ')"></div>'
+                + '      <div class="col-md-6 mb-2"><label class="form-label small">DESCRIPCIÓN DE LA GESTIÓN</label><textarea class="form-control form-control-sm" rows="1" id="gsem_' + itemId + '_desc" oninput="autoGuardarGestionFacultad(' + itemId + ')"></textarea></div>'
+                + '    </div>'
+                + '  </div>'
+                + '</div>';
+        }
+
+        let _gestionFacultadTimeout = {};
+        function autoGuardarGestionFacultad(itemId) {
+            clearTimeout(_gestionFacultadTimeout[itemId]);
+            _gestionFacultadTimeout[itemId] = setTimeout(function() {
+                $.ajax({
+                    url: basePath + '/modulo144/guardarGestionSemestral',
+                    type: 'POST',
+                    data: {
+                        id: itemId,
+                        gestion_sem1: $('#gsem_' + itemId + '_sem1').val(),
+                        gestion_sem2: $('#gsem_' + itemId + '_sem2').val(),
+                        vigencia: $('#gsem_' + itemId + '_vigencia').val(),
+                        tabla_fila1_sem1: $('#gsem_' + itemId + '_segsem1').val(),
+                        tabla_fila1_sem2: $('#gsem_' + itemId + '_segsem2').val(),
+                        descripcion_gestion: $('#gsem_' + itemId + '_desc').val()
+                    },
+                    dataType: 'json',
+                    success: function(res) { if (res.success) mostrarAutoSaveIndicator(); }
+                });
+            }, 600);
+        }
+
         function abrirEditarFacultadItem(id) {
             const item = FACULTAD_ITEMS.find(function(it) { return it.id === id; });
             if (!item) return;
@@ -2738,15 +2789,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 + '<p class="text-muted mb-0">' + evalHtmlEscape(item.nombre_borrador) + '</p>'
                 + '<p class="text-muted small">' + grupo.length + ' de ' + TODAS_FACULTADES.length + ' facultad(es) gestionando este indicador.</p>'
                 + '</div>';
+            const idsConDatos = [];
             TODAS_FACULTADES.forEach(function(fac) {
                 const it = grupo.find(function(g) { return g.facultad_id === fac.id; });
-                contentHtml += '<div class="tab-pane fade" id="facTab' + fac.id + '" role="tabpanel">';
+                contentHtml += '<div class="tab-pane fade" id="facTab' + fac.id + '" role="tabpanel">'
+                    + '<h6 class="text-muted mb-3">' + evalHtmlEscape(fac.nombre) + '</h6>';
                 if (it) {
-                    contentHtml += '<p class="text-muted mb-0">' + evalHtmlEscape(fac.nombre) + '</p>'
-                        + '<p class="text-muted small">' + evalHtmlEscape(it.nombre_borrador) + '</p>';
+                    contentHtml += gestionFacultadFormHtml(it.id);
+                    idsConDatos.push(it.id);
                 } else {
-                    contentHtml += '<p class="text-muted mb-0">' + evalHtmlEscape(fac.nombre) + '</p>'
-                        + '<p class="text-muted small fst-italic">Sin datos de esta facultad para este indicador.</p>';
+                    contentHtml += '<p class="text-muted small fst-italic">Sin datos de esta facultad para este indicador.</p>';
                 }
                 contentHtml += '</div>';
             });
@@ -2755,6 +2807,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#facultadItem_id').val(id);
             $('#modalEditarFacultadItem .modal-body').html(navHtml + contentHtml);
             $('#modalEditarFacultadItem').modal('show');
+
+            idsConDatos.forEach(function(itemId) {
+                $.ajax({
+                    url: basePath + '/modulo144/getBorrador?modulo=formulacion&id=' + itemId,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        if (!response.success) return;
+                        const b = response.borrador;
+                        $('#gsem_' + itemId + '_sem1').val(b.gestion_sem1 || '');
+                        $('#gsem_' + itemId + '_sem2').val(b.gestion_sem2 || '');
+                        $('#gsem_' + itemId + '_vigencia').html(gestionVigenciaOptions(b.vigencia || ''));
+                        $('#gsem_' + itemId + '_segsem1').val(b.tabla_fila1_sem1 || '');
+                        $('#gsem_' + itemId + '_segsem2').val(b.tabla_fila1_sem2 || '');
+                        $('#gsem_' + itemId + '_desc').val(b.descripcion_gestion || '');
+                    }
+                });
+            });
         }
 
         function abrirModalNuevoBorrador(modulo) {
