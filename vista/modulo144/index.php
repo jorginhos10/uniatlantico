@@ -905,6 +905,22 @@ ob_start();
             margin-right: 3px;
         }
 
+        .seguimiento-indicador {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            background-color: #007AFF;
+            color: white;
+            margin-left: 8px;
+        }
+
+        .seguimiento-indicador i {
+            font-size: 0.6rem;
+            margin-right: 3px;
+        }
+
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
         .accordion-button > div > span:first-child {
@@ -1171,6 +1187,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php if ($borrador['gestionado_facultades'] == 1): ?>
                                                     <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
                                                     <?php endif; ?>
+                                                    <?php if (!empty($borrador['fecha_seguimiento']) || !empty($borrador['porcentaje_avance']) || !empty($borrador['indicador'])): ?>
+                                                    <span class="seguimiento-indicador"><i class="fas fa-check-circle"></i> Seguimiento</span>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($borrador['anio'])): ?>
                                                 <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?></div>
@@ -1286,6 +1305,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php echo htmlspecialchars($publicado['nombre_borrador']); ?>
                                                     <?php if ($publicado['gestionado_facultades'] == 1): ?>
                                                     <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($publicado['fecha_seguimiento']) || !empty($publicado['porcentaje_avance']) || !empty($publicado['indicador'])): ?>
+                                                    <span class="seguimiento-indicador"><i class="fas fa-check-circle"></i> Seguimiento</span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($publicado['anio'])): ?>
@@ -2183,13 +2205,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h5>
                             <div class="row">
-                                <div class="col-md-3 mb-3 mb-md-0">
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
+                                <div class="col-md-3 mb-3 mb-md-0 ms-md-auto">
                                     <label class="form-label text-muted">14.4 VALOR AÑO</label>
                                     <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
                                     <label class="form-label text-muted mt-2 mb-0" style="font-size:0.75rem;">PORCENTAJE DE CUMPLIMIENTO</label>
                                 </div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                             </div>
                         </div>
 
