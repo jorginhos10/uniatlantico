@@ -2960,12 +2960,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
             
             $('#seguimiento_anio_view').text(valorAnual);
-            $('#seguimiento_linea_view').text(b.linea_estrategica || '-');
+            $('#seguimiento_linea_view').text(b.linea_estrategica ? (b.linea_codigo ? b.linea_codigo + ' - ' : '') + b.linea_estrategica : '-');
             $('#seguimiento_objetivo_view').text(b.objetivo || '-');
             $('#seguimiento_estrategia_view').text(b.estrategia || '-');
-            $('#seguimiento_motor_view').text(b.motor_desarrollo || '-');
+            $('#seguimiento_motor_view').text(b.motor_desarrollo ? (b.motor_codigo ? b.motor_codigo + ' - ' : '') + b.motor_desarrollo : '-');
             $('#seguimiento_meta_resultado_view').text(b.meta_resultado || '-');
-            $('#seguimiento_proyecto_view').text(b.proyecto || '-');
+            $('#seguimiento_proyecto_view').text(b.proyecto ? (b.proyecto_codigo ? b.proyecto_codigo + ' - ' : '') + b.proyecto : '-');
             $('#seguimiento_ponderacion_proyectos_view').text(b.ponderacion_proyectos ? b.ponderacion_proyectos + '%' : '-');
             $('#seguimiento_actividad_view').text(b.actividad_proyecto || '-');
             $('#seguimiento_ponderacion_actividades_view').text(b.ponderacion_actividades ? b.ponderacion_actividades + '%' : '-');

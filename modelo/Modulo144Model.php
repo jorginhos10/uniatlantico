@@ -498,7 +498,15 @@ class Modulo144Model {
     public function getById($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
-            $stmt = $this->db->prepare("SELECT * FROM {$tabla} WHERE id = :id");
+            $stmt = $this->db->prepare("SELECT f.*,
+                                        le.codigo  AS linea_codigo,
+                                        m.codigo   AS motor_codigo,
+                                        p.codigo   AS proyecto_codigo
+                                        FROM {$tabla} f
+                                        LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                                        LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                                        LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                                        WHERE f.id = :id");
             $stmt->execute([':id' => $id]);
             return $stmt->fetch();
         } catch (PDOException $e) {
