@@ -855,23 +855,36 @@ ob_start();
         }
 
         .eval-linea-motores-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
             width: 100%;
             font-size: 0.82rem;
             max-height: 170px;
-            overflow-y: auto;
+            overflow: hidden;
+            position: relative;
             text-align: left;
+            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
         }
 
-        .eval-linea-motores-list li {
+        .eval-linea-motores-track {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .eval-linea-motores-track.eval-marquee {
+            animation: eval-motores-scroll linear infinite;
+        }
+
+        @keyframes eval-motores-scroll {
+            from { transform: translateY(0); }
+            to   { transform: translateY(-50%); }
+        }
+
+        .eval-linea-motores-track li {
             padding: 5px 4px;
             border-bottom: 1px solid rgba(255,255,255,.15);
-        }
-
-        .eval-linea-motores-list li:last-child {
-            border-bottom: none;
         }
 
         .eval-linea-ratio {
@@ -2713,6 +2726,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             catch (e) { return []; }
         }
 
+        const EVAL_MARQUEE_SPEED_PX_POR_SEG = 28;
+
+        function evalLineaSetupMarquee(container, itemsHtml) {
+            const track = container.querySelector('.eval-linea-motores-track');
+            if (!track) return;
+            requestAnimationFrame(function() {
+                const contentHeight = track.scrollHeight;
+                const containerHeight = container.clientHeight;
+                if (contentHeight <= containerHeight) return; // Cabe completo, no hace falta scroll
+                track.innerHTML += itemsHtml; // Duplica el contenido para el loop continuo
+                const duration = (contentHeight / EVAL_MARQUEE_SPEED_PX_POR_SEG).toFixed(1);
+                track.style.animationDuration = duration + 's';
+                track.classList.add('eval-marquee');
+            });
+        }
+
         function evalLineaRenderDots(card, idx, total) {
             const dotsWrap = card.querySelector('.eval-linea-dots');
             if (!dotsWrap) return;
@@ -2729,13 +2758,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 contenido.innerHTML = '<div class="eval-linea-slide-label">Línea</div><div class="eval-linea-nombre">' + evalHtmlEscape(card.getAttribute('data-linea')) + '</div>';
             } else if (idx === 1) {
                 const motores = evalLineaMotores(card);
-                const listHtml = motores.length
-                    ? '<ul class="eval-linea-motores-list">' + motores.map(function(m) {
+                if (motores.length) {
+                    const itemsHtml = motores.map(function(m) {
                         const label = (m.codigo ? m.codigo + ' - ' : '') + m.nombre;
                         return '<li>' + evalHtmlEscape(label) + '</li>';
-                    }).join('') + '</ul>'
-                    : '<div class="eval-linea-empty">Sin motores registrados</div>';
-                contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div>' + listHtml;
+                    }).join('');
+                    contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div>'
+                        + '<div class="eval-linea-motores-list"><ul class="eval-linea-motores-track">' + itemsHtml + '</ul></div>';
+                    evalLineaSetupMarquee(contenido.querySelector('.eval-linea-motores-list'), itemsHtml);
+                } else {
+                    contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div><div class="eval-linea-empty">Sin motores registrados</div>';
+                }
             } else {
                 const count = card.getAttribute('data-seg-count') || '0';
                 const total = card.getAttribute('data-seg-total') || '0';
