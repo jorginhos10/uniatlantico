@@ -13,6 +13,15 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
 $titulo       = 'SISTEMA 144 — ' . htmlspecialchars($formulario['titulo'] ?? '');
 $paginaActual = 'modulo144';
 
+$eval_colores = ['#9C27B0', '#FF9500', '#007AFF', '#34C759', '#FF3B30', '#673AB7', '#FF6230', '#32ADE6', '#3F51B5', '#FF2D55'];
+function eval_darken($hex, $percent) {
+    $hex = ltrim($hex, '#');
+    $r = max(0, min(255, hexdec(substr($hex, 0, 2)) * (1 - $percent)));
+    $g = max(0, min(255, hexdec(substr($hex, 2, 2)) * (1 - $percent)));
+    $b = max(0, min(255, hexdec(substr($hex, 4, 2)) * (1 - $percent)));
+    return sprintf('#%02x%02x%02x', $r, $g, $b);
+}
+
 ob_start();
 ?>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -630,6 +639,13 @@ ob_start();
             border-bottom: 2px solid var(--color-primary-light);
         }
 
+        /* Alinea el inicio de inputs/textareas aunque el label ocupe 1 o 2 líneas */
+        .field-group .form-label {
+            min-height: 34px;
+            display: flex;
+            align-items: flex-end;
+        }
+
         .meta-section {
             background-color: #f0f8ff;
             padding: 20px;
@@ -766,6 +782,111 @@ ob_start();
         .facultad-item-actions {
             display: flex;
             gap: 5px;
+        }
+
+        /* ═══ EVALUACIÓN LÍNEAS — TARJETAS CON SLIDER ═══ */
+        .eval-linea-card {
+            position: relative;
+            border-radius: 16px;
+            padding: 22px 46px;
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 16px rgba(0,0,0,.12);
+            overflow: hidden;
+        }
+
+        .eval-linea-badge {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: rgba(255,255,255,.22);
+            letter-spacing: .4px;
+        }
+
+        .eval-nav {
+            position: absolute;
+            top: 10px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,.18);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background .2s ease;
+            font-size: 0.8rem;
+            z-index: 2;
+        }
+
+        .eval-nav:hover {
+            background: rgba(255,255,255,.35);
+        }
+
+        .eval-nav-left  { left: 10px; }
+        .eval-nav-right { right: 10px; }
+
+        .eval-linea-content {
+            margin-top: 16px;
+            width: 100%;
+        }
+
+        .eval-linea-nombre {
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
+            transition: color .2s ease;
+        }
+
+        .eval-linea-nombre.sin-seguimiento {
+            color: #FF6B6B;
+        }
+
+        .eval-linea-slide-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            opacity: .75;
+            margin-bottom: 4px;
+        }
+
+        .eval-linea-dots {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
+            margin-top: 14px;
+        }
+
+        .eval-linea-dots .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.35);
+        }
+
+        .eval-linea-dots .dot.active {
+            background: white;
+        }
+
+        .eval-linea-empty {
+            font-size: 0.78rem;
+            opacity: .7;
+            font-style: italic;
         }
 
         .gestionado-indicador {
@@ -1499,40 +1620,79 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <div class="accordion mt-4" id="accordionEvaluacion">
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingEvaluacion">
-                    <button class="accordion-button collapsed" 
-                            type="button" 
-                            data-bs-toggle="collapse" 
-                            data-bs-target="#collapseEvaluacion" 
+                    <button class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#collapseEvaluacion"
                             style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white !important;">
                         <i class="fas fa-chart-pie me-3 fa-2x"></i>
                         <div>
                             <span style="font-size: 1.3rem;">EVALUACIÓN LÍNEAS</span>
                             <br>
-                            <small style="font-size: 0.85rem; opacity: 0.9;">Evaluación de líneas estratégicas - Módulo en desarrollo</small>
+                            <small style="font-size: 0.85rem; opacity: 0.9;">Evaluación de líneas estratégicas por proyecto</small>
                         </div>
                     </button>
                 </h2>
-                <div id="collapseEvaluacion" 
-                     class="accordion-collapse collapse" 
+                <div id="collapseEvaluacion"
+                     class="accordion-collapse collapse"
                      data-bs-parent="#accordionEvaluacion">
                     <div class="accordion-body p-4">
+                        <?php if (!empty($lineas_estrategicas)): ?>
+                        <div class="row g-3">
+                            <?php foreach ($lineas_estrategicas as $li => $linea):
+                                $proyectos_linea = [];
+                                $filas_linea = array_merge(
+                                    $datos_modulos['formulacion']['borradores'] ?? [],
+                                    $datos_modulos['formulacion']['publicados'] ?? []
+                                );
+                                foreach ($filas_linea as $row) {
+                                    if (($row['linea_codigo'] ?? null) !== $linea['codigo']) continue;
+                                    $pnombre = trim($row['proyecto'] ?? '');
+                                    if ($pnombre === '') continue;
+                                    $tiene_seg = !empty($row['fecha_seguimiento']) || !empty($row['porcentaje_avance']) || !empty($row['indicador']);
+                                    $proyectos_linea[$pnombre] = ($proyectos_linea[$pnombre] ?? false) || $tiene_seg;
+                                }
+                                $proyectos_json = [];
+                                foreach ($proyectos_linea as $pnombre => $tieneSeg) {
+                                    $proyectos_json[] = ['nombre' => $pnombre, 'seguimiento' => $tieneSeg];
+                                }
+                                $colorIdx  = $li % 10;
+                                $colorBase = $eval_colores[$colorIdx];
+                                $colorDark = eval_darken($colorBase, 0.28);
+                            ?>
+                            <div class="col-md-4">
+                                <div class="eval-linea-card"
+                                     style="background: linear-gradient(135deg, <?php echo $colorBase; ?> 0%, <?php echo $colorDark; ?> 100%);"
+                                     data-idx="0"
+                                     data-linea="<?php echo htmlspecialchars($linea['nombre']); ?>"
+                                     data-proyectos='<?php echo htmlspecialchars(json_encode($proyectos_json), ENT_QUOTES); ?>'>
+                                    <button type="button" class="eval-nav eval-nav-left" onclick="evalLineaNav(this,-1)" aria-label="Anterior">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button type="button" class="eval-nav eval-nav-right" onclick="evalLineaNav(this,1)" aria-label="Siguiente">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                    <div class="eval-linea-badge"><?php echo htmlspecialchars($linea['codigo']); ?></div>
+                                    <div class="eval-linea-content">
+                                        <div class="eval-linea-slide-label">Línea</div>
+                                        <div class="eval-linea-nombre"><?php echo htmlspecialchars($linea['nombre']); ?></div>
+                                    </div>
+                                    <div class="eval-linea-dots"></div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php else: ?>
                         <div class="desarrollo-section">
                             <div class="desarrollo-icon">
                                 <i class="fas fa-chart-pie"></i>
                             </div>
-                            <div class="desarrollo-title">EVALUACIÓN LÍNEAS</div>
+                            <div class="desarrollo-title">SIN LÍNEAS ESTRATÉGICAS</div>
                             <div class="desarrollo-subtitle">
-                                Módulo en desarrollo - Próximamente disponible
-                            </div>
-                            <div class="desarrollo-badge">
-                                <i class="fas fa-clock me-2"></i>Reservado para desarrollo
-                            </div>
-                            <div class="mt-4">
-                                <p class="mb-0" style="opacity: 0.8; font-size: 0.9rem;">
-                                    Este módulo permitirá la evaluación detallada de líneas estratégicas y su impacto en los diferentes proyectos institucionales.
-                                </p>
+                                No hay líneas estratégicas registradas en el catálogo
                             </div>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -1558,8 +1718,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <input type="hidden" name="formulario_id" value="<?php echo $formulario['id']; ?>">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Nombre del Borrador *</label>
+                            <label class="form-label">Nombre del Borrador (provisional)</label>
                             <input type="text" class="form-control" name="nombre_borrador" id="nuevo_nombre" required placeholder="Ej: Versión 1.0">
+                            <small class="text-muted">Se reemplazará automáticamente por el contenido de "13.2 Fórmula de la Medición" al diligenciarlo.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -1847,7 +2008,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     
                                     <div class="col-12 mb-3">
                                         <label class="form-label">13.2 FÓRMULA DE LA MEDICIÓN</label>
-                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
+                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="sincronizarNombreBorrador(); autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
                                     </div>
                                     
                                     <div class="row">
@@ -2016,24 +2177,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <input type="hidden" id="seguimiento_responsable" name="responsable_seguimiento">
                         <input type="hidden" id="seguimiento_observaciones" name="observaciones">
 
-                        <div class="row mb-4">
-                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h6></div>
+                        <div class="indicador-section field-group">
+                            <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
+                            </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
-                            <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h6></div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-3 mb-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                            <div class="col-md-3 mb-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                            <div class="col-md-3 mb-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                            <div class="col-md-3 mb-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                        <div class="indicador-section field-group">
+                            <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
+                            <div class="row">
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-md-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            </div>
                         </div>
                     </div>
                     
@@ -2466,6 +2625,70 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 }
             });
         }
+
+        let nombreBorradorProvisional = 'Nuevo Borrador';
+
+        function sincronizarNombreBorrador() {
+            const formula = $('#formulacion_formula_medicion').val();
+            const nombre = (formula && formula.trim() !== '') ? formula.trim() : nombreBorradorProvisional;
+            $('#tituloFormulacionSpan').text(nombre);
+        }
+
+        // ═══ EVALUACIÓN LÍNEAS — SLIDER DE TARJETAS ═══
+        function evalHtmlEscape(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/[&<>"']/g, function(c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function evalLineaProyectos(card) {
+            try { return JSON.parse(card.getAttribute('data-proyectos') || '[]'); }
+            catch (e) { return []; }
+        }
+
+        function evalLineaRenderDots(card, idx, total) {
+            const dotsWrap = card.querySelector('.eval-linea-dots');
+            if (!dotsWrap) return;
+            let html = '';
+            for (let i = 0; i < total; i++) {
+                html += '<span class="dot' + (i === idx ? ' active' : '') + '"></span>';
+            }
+            dotsWrap.innerHTML = html;
+        }
+
+        function evalLineaRenderSlide(card, idx, proyectos) {
+            const contenido = card.querySelector('.eval-linea-content');
+            if (idx === 0) {
+                contenido.innerHTML = '<div class="eval-linea-slide-label">Línea</div><div class="eval-linea-nombre">' + evalHtmlEscape(card.getAttribute('data-linea')) + '</div>';
+            } else {
+                const p = proyectos[idx - 1];
+                if (p) {
+                    const clase = p.seguimiento ? '' : ' sin-seguimiento';
+                    contenido.innerHTML = '<div class="eval-linea-slide-label">Proyecto</div><div class="eval-linea-nombre' + clase + '">' + evalHtmlEscape(p.nombre) + '</div>';
+                } else {
+                    contenido.innerHTML = '<div class="eval-linea-slide-label">Proyecto</div><div class="eval-linea-empty">Sin proyectos registrados</div>';
+                }
+            }
+            evalLineaRenderDots(card, idx, 1 + proyectos.length);
+        }
+
+        function evalLineaNav(btn, dir) {
+            const card = btn.closest('.eval-linea-card');
+            const proyectos = evalLineaProyectos(card);
+            const total = 1 + proyectos.length;
+            let idx = parseInt(card.getAttribute('data-idx') || '0', 10);
+            idx = (idx + dir + total) % total;
+            card.setAttribute('data-idx', idx);
+            evalLineaRenderSlide(card, idx, proyectos);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.eval-linea-card').forEach(function(card) {
+                const proyectos = evalLineaProyectos(card);
+                evalLineaRenderDots(card, 0, 1 + proyectos.length);
+            });
+        });
 
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
@@ -2994,8 +3217,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             timeoutId = setTimeout(function() {
                 const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
                 
+                const formulaActual = $('#formulacion_formula_medicion').val();
+                const nombreBorradorActual = (formulaActual && formulaActual.trim() !== '') ? formulaActual.trim() : nombreBorradorProvisional;
+
                 const data = {
                     modulo: 'formulacion', id: id,
+                    nombre_borrador: nombreBorradorActual,
                     formulario_id: formularioId,
                     anio: formularioAnio,
                     linea_estrategica: $('#formulacion_linea').val(),
@@ -3217,6 +3444,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (modulo === 'formulacion') {
                             $('#formulacion_id').val(b.id);
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
+                            nombreBorradorProvisional = (b.formula_medicion && b.formula_medicion.trim() !== '') ? 'Nuevo Borrador' : (b.nombre_borrador || 'Nuevo Borrador');
                             $('#formulacion_linea').val(b.linea_estrategica);
                             $('#formulacion_objetivo').val(b.objetivo);
                             $('#formulacion_tipo_medicion').val(b.tipo_medicion);
