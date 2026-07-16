@@ -312,6 +312,13 @@ CREATE TABLE IF NOT EXISTS `formulacion_144` (
   `fecha_seguimiento` date DEFAULT NULL,
   `observaciones` text DEFAULT NULL,
   `responsable_seguimiento` varchar(255) DEFAULT NULL,
+  `semestre1_seguimiento` decimal(10,2) DEFAULT NULL,
+  `semestre2_seguimiento` decimal(10,2) DEFAULT NULL,
+  -- Estado de proyectos (seguimiento)
+  `logros` text DEFAULT NULL,
+  `limites` text DEFAULT NULL,
+  `observacion_estado` text DEFAULT NULL,
+  `acciones_fortalecimiento` text DEFAULT NULL,
   -- Gestion semestral
   `gestion_sem1` text DEFAULT NULL,
   `gestion_sem2` text DEFAULT NULL,

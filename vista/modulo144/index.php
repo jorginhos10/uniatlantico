@@ -2024,6 +2024,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                             <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                         </div>
+
+                        <div class="row mb-4">
+                            <div class="col-12"><hr><h6 class="text-success"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h6></div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="col-md-3 mb-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="col-md-3 mb-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="col-md-3 mb-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                        </div>
                     </div>
                     
                     <div class="modal-footer">
@@ -3056,7 +3067,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
                     porcentaje_avance: $('#seguimiento_porcentaje').val(),
                     responsable_seguimiento: $('#seguimiento_responsable').val(),
-                    observaciones: $('#seguimiento_observaciones').val()
+                    observaciones: $('#seguimiento_observaciones').val(),
+                    logros: $('#seguimiento_logros').val(),
+                    limites: $('#seguimiento_limites').val(),
+                    observacion_estado: $('#seguimiento_observacion_estado').val(),
+                    acciones_fortalecimiento: $('#seguimiento_acciones_fortalecimiento').val()
                 };
                 
                 $.ajax({
@@ -3363,6 +3378,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_porcentaje').val(b.porcentaje_avance);
                             $('#seguimiento_responsable').val(b.responsable_seguimiento);
                             $('#seguimiento_observaciones').val(b.observaciones);
+                            $('#seguimiento_logros').val(b.logros);
+                            $('#seguimiento_limites').val(b.limites);
+                            $('#seguimiento_observacion_estado').val(b.observacion_estado);
+                            $('#seguimiento_acciones_fortalecimiento').val(b.acciones_fortalecimiento);
                             cargarDatosFormulacionEnSeguimiento(b);
                             $('#modalSeguimiento').modal('show');
                         }

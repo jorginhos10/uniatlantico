@@ -72,8 +72,10 @@ class Modulo144Model {
             'descripcion' => 'Seguimiento y monitoreo de avances',
             'campo_estado' => 'estado_seguimiento',
             'fecha_publicacion' => 'fecha_publicacion_seguimiento',
-            'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance', 
-                                   'fecha_seguimiento', 'observaciones', 'responsable_seguimiento'],
+            'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
+                                   'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
+                                   'semestre1_seguimiento', 'semestre2_seguimiento',
+                                   'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'],
             'campos_vista' => [
                 'INDICADOR' => 'indicador',
                 'META PROGRAMADA' => 'meta_programada',
@@ -81,7 +83,13 @@ class Modulo144Model {
                 '% AVANCE' => 'porcentaje_avance',
                 'FECHA SEGUIMIENTO' => 'fecha_seguimiento',
                 'OBSERVACIONES' => 'observaciones',
-                'RESPONSABLE' => 'responsable_seguimiento'
+                'RESPONSABLE' => 'responsable_seguimiento',
+                'SEGUIMIENTO SEMESTRE 1' => 'semestre1_seguimiento',
+                'SEGUIMIENTO SEMESTRE 2' => 'semestre2_seguimiento',
+                'LOGROS' => 'logros',
+                'LÍMITES' => 'limites',
+                'OBSERVACIÓN' => 'observacion_estado',
+                'ACCIONES DE FORTALECIMIENTO' => 'acciones_fortalecimiento'
             ]
         ]
     ];
