@@ -1596,29 +1596,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </div>
                                     </div>
                                     <div class="facultad-item-actions">
-                                        <button class="btn btn-sm btn-warning" onclick="editarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Editar">
+                                        <button class="btn btn-sm btn-warning" onclick="abrirEditarFacultadItem(<?php echo $borrador['id']; ?>)" title="Editar">
                                             <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm" style="background-color: #FF9800; color: white;" onclick="abrirGestionSemestral(<?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Gestión Semestral">
-                                            <i class="fas fa-calendar-alt"></i>
-                                        </button>
-                                        <?php if ($borrador['estado_formulacion'] == 0): ?>
-                                            <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('formulacion', <?php echo $borrador['id']; ?>, 2)" title="Publicar">
-                                                <i class="fas fa-check"></i>
-                                            </button>
-                                        <?php endif; ?>
-                                        <?php if ($borrador['estado_formulacion'] == 2): ?>
-                                            <button class="btn btn-sm btn-info" onclick="verBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Ver">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        <?php endif; ?>
-                                        <?php if ($borrador['estado_formulacion'] == 1): ?>
-                                            <button class="btn btn-sm btn-danger" onclick="eliminarBorrador('formulacion', <?php echo $borrador['id']; ?>)" title="Eliminar">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        <?php endif; ?>
-                                        <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('formulacion', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')" title="Duplicar">
-                                            <i class="fas fa-copy"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -2238,6 +2217,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
     </div>
 
+    <!-- MODAL: Editar ítem gestionado desde facultades (vacío por ahora) -->
+    <div class="modal fade" id="modalEditarFacultadItem" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #9C27B0;">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <input type="hidden" id="facultadItem_id">
+                <div class="modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -2700,6 +2696,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 evalLineaRenderDots(card, 0, 1 + proyectos.length);
             });
         });
+
+        function abrirEditarFacultadItem(id) {
+            $('#facultadItem_id').val(id);
+            $('#modalEditarFacultadItem').modal('show');
+        }
 
         function abrirModalNuevoBorrador(modulo) {
             $('#nuevo_modulo').val(modulo);
