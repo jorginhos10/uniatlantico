@@ -1528,7 +1528,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
                 <div class="p-4">
 
-                        <?php if (false && isset($facultades) && count($facultades) > 0): ?>
+                        <?php if (isset($facultades) && count($facultades) > 0): ?>
 
                             <?php foreach ($facultades as $index => $facultad): ?>
                                 <?php
