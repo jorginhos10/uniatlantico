@@ -624,6 +624,14 @@ ob_start();
             color: var(--color-tab-complete);
         }
 
+        .lista-tabs {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: #fff;
+            padding-top: 6px;
+        }
+
         .indicador-section {
             background-color: #f8f9fa;
             padding: 15px;
