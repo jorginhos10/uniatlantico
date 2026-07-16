@@ -2775,6 +2775,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }, 600);
         }
 
+        function irATabFacultad(facultadId) {
+            const btn = document.querySelector('#modalEditarFacultadItem [data-bs-target="#facTab' + facultadId + '"]');
+            if (btn) new bootstrap.Tab(btn).show();
+        }
+
         function abrirEditarFacultadItem(id) {
             const item = FACULTAD_ITEMS.find(function(it) { return it.id === id; });
             if (!item) return;
@@ -2787,10 +2792,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
             navHtml += '</ul>';
 
+            let resumenListaHtml = '<div class="list-group">';
+            TODAS_FACULTADES.forEach(function(fac) {
+                resumenListaHtml += '<button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="irATabFacultad(' + fac.id + ')">'
+                    + '<span><span class="badge bg-secondary me-2">' + evalHtmlEscape(fac.codigo || '') + '</span>' + evalHtmlEscape(fac.nombre) + '</span>'
+                    + '<i class="fas fa-chevron-right text-muted"></i>'
+                    + '</button>';
+            });
+            resumenListaHtml += '</div>';
+
             let contentHtml = '<div class="tab-content">';
             contentHtml += '<div class="tab-pane fade show active" id="facTabResumen" role="tabpanel">'
                 + '<p class="text-muted mb-0">' + evalHtmlEscape(item.nombre_borrador) + '</p>'
-                + '<p class="text-muted small">Cada facultad gestiona su propio seguimiento de este indicador en su pestaña.</p>'
+                + '<p class="text-muted small mb-3">Cada facultad gestiona su propio seguimiento de este indicador. Hacé clic en una para ir a su pestaña.</p>'
+                + resumenListaHtml
                 + '</div>';
             TODAS_FACULTADES.forEach(function(fac) {
                 contentHtml += '<div class="tab-pane fade" id="facTab' + fac.id + '" role="tabpanel">'
