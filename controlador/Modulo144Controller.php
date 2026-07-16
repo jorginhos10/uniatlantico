@@ -491,6 +491,52 @@ class Modulo144Controller {
         }
     }
 
+    public function getGestionFacultad144() {
+        header('Content-Type: application/json');
+        $formulacion_id = intval($_GET['formulacion_id'] ?? 0);
+        $facultad_id = intval($_GET['facultad_id'] ?? 0);
+
+        if ($formulacion_id <= 0 || $facultad_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $gestion = $this->model->getGestionFacultad($formulacion_id, $facultad_id);
+        echo json_encode(['success' => true, 'gestion' => $gestion ?: null]);
+    }
+
+    public function guardarGestionFacultad144() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+
+        $formulacion_id = intval($_POST['formulacion_id'] ?? 0);
+        $facultad_id = intval($_POST['facultad_id'] ?? 0);
+
+        if ($formulacion_id <= 0 || $facultad_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $data = [
+            'sem1' => $_POST['sem1'] ?? '',
+            'sem2' => $_POST['sem2'] ?? '',
+            'vigencia' => $_POST['vigencia'] ?? '',
+            'seguimiento_sem1' => $_POST['seguimiento_sem1'] ?? '',
+            'seguimiento_sem2' => $_POST['seguimiento_sem2'] ?? '',
+            'descripcion_gestion' => $_POST['descripcion_gestion'] ?? ''
+        ];
+
+        $resultado = $this->model->guardarGestionFacultad($formulacion_id, $facultad_id, $data);
+
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? 'Gestión de facultad guardada' : 'Error al guardar'
+        ]);
+    }
+
     public function cambiarEstado() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

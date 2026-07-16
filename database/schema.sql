@@ -347,6 +347,27 @@ CREATE TABLE IF NOT EXISTS `formulacion_144` (
   CONSTRAINT `formulacion_144_ibfk_3` FOREIGN KEY (`creado_por`) REFERENCES `usuarios` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Gestión semestral por facultad: cada facultad tiene su propia fila de seguimiento
+-- para un mismo indicador "gestionado desde facultades" en formulacion_144.
+CREATE TABLE IF NOT EXISTS `gestion_facultad_144` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `formulacion_id` int(11) NOT NULL,
+  `facultad_id` int(11) NOT NULL,
+  `sem1` varchar(255) DEFAULT NULL,
+  `sem2` varchar(255) DEFAULT NULL,
+  `vigencia` varchar(50) DEFAULT NULL,
+  `seguimiento_sem1` varchar(255) DEFAULT NULL,
+  `seguimiento_sem2` varchar(255) DEFAULT NULL,
+  `descripcion_gestion` text DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `formulacion_facultad` (`formulacion_id`,`facultad_id`),
+  KEY `facultad_id` (`facultad_id`),
+  CONSTRAINT `gestion_facultad_144_ibfk_1` FOREIGN KEY (`formulacion_id`) REFERENCES `formulacion_144` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `gestion_facultad_144_ibfk_2` FOREIGN KEY (`facultad_id`) REFERENCES `facultades` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Tabla legacy: solo referenciada por el modelo/controlador antiguo Formulacion144Model/Controller.
 -- Probablemente codigo heredado de una version previa al merge en formulacion_144; verificar si sigue en uso.
 CREATE TABLE IF NOT EXISTS `seguimiento_144` (

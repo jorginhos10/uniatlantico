@@ -395,6 +395,12 @@ switch ($action) {
             case 'contarRegistros':
                 $modulo144Controller->contarRegistros();
                 break;
+            case 'getGestionFacultad144':
+                $modulo144Controller->getGestionFacultad144();
+                break;
+            case 'guardarGestionFacultad144':
+                $modulo144Controller->guardarGestionFacultad144();
+                break;
             case 'index':
             default:
                 $modulo144Controller->index();

@@ -749,6 +749,46 @@ class Modulo144Model {
         }
     }
 
+    public function getGestionFacultad($formulacion_id, $facultad_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM gestion_facultad_144 WHERE formulacion_id = :fid AND facultad_id = :facid LIMIT 1"
+            );
+            $stmt->execute([':fid' => $formulacion_id, ':facid' => $facultad_id]);
+            return $stmt->fetch();
+        } catch (PDOException $e) {
+            error_log("Error getGestionFacultad: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function guardarGestionFacultad($formulacion_id, $facultad_id, $data) {
+        try {
+            $campos = ['sem1', 'sem2', 'vigencia', 'seguimiento_sem1', 'seguimiento_sem2', 'descripcion_gestion'];
+            $params = [':fid' => $formulacion_id, ':facid' => $facultad_id];
+            foreach ($campos as $campo) {
+                $params[":{$campo}"] = $data[$campo] ?? null;
+            }
+
+            $sql = "INSERT INTO gestion_facultad_144 (formulacion_id, facultad_id, sem1, sem2, vigencia, seguimiento_sem1, seguimiento_sem2, descripcion_gestion)
+                    VALUES (:fid, :facid, :sem1, :sem2, :vigencia, :seguimiento_sem1, :seguimiento_sem2, :descripcion_gestion)
+                    ON DUPLICATE KEY UPDATE
+                        sem1 = VALUES(sem1),
+                        sem2 = VALUES(sem2),
+                        vigencia = VALUES(vigencia),
+                        seguimiento_sem1 = VALUES(seguimiento_sem1),
+                        seguimiento_sem2 = VALUES(seguimiento_sem2),
+                        descripcion_gestion = VALUES(descripcion_gestion),
+                        fecha_actualizacion = NOW()";
+
+            $stmt = $this->db->prepare($sql);
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log("Error guardarGestionFacultad: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function getFilterPreference($usuario_id, $formulario_id, $modulo) {
         try {
             $stmt = $this->db->prepare(
