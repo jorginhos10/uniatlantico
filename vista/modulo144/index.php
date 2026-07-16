@@ -2021,8 +2021,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
 
                         <div class="row">
-                            <div class="col-md-6 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><textarea class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                            <div class="col-md-6 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><textarea class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
+                            <div class="col-md-3 mb-3"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                         </div>
                     </div>
                     
