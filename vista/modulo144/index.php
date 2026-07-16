@@ -2244,6 +2244,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const formularioId = <?php echo $formulario['id']; ?>;
         const formularioAnio = <?php echo intval($formulario['anio'] ?? 0); ?>; // Año heredado del formulario padre
 
+        const FACULTAD_ITEMS = <?php
+            $facultades_lookup = [];
+            foreach (($facultades ?? []) as $f) { $facultades_lookup[$f['id']] = $f; }
+            $facultad_items_js = [];
+            foreach (($formulaciones_con_check ?? []) as $it) {
+                $facInfo = $facultades_lookup[$it['facultad_id'] ?? 0] ?? null;
+                $facultad_items_js[] = [
+                    'id'                 => (int)$it['id'],
+                    'facultad_id'        => (int)($it['facultad_id'] ?? 0),
+                    'facultad_nombre'    => $facInfo['nombre'] ?? 'Sin facultad',
+                    'facultad_codigo'    => $facInfo['codigo'] ?? '',
+                    'nombre_borrador'    => $it['nombre_borrador'] ?? '',
+                    'estado_formulacion' => (int)$it['estado_formulacion'],
+                ];
+            }
+            echo json_encode($facultad_items_js);
+        ?>;
+
         const FILTER_USUARIO_ID = <?php echo (int)($_SESSION['usuario_id'] ?? 0); ?>;
         const FILTER_CARGOS     = <?php echo json_encode($cargos); ?>;
         const FILTER_CREADORES  = <?php
@@ -2698,7 +2716,31 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
 
         function abrirEditarFacultadItem(id) {
+            const item = FACULTAD_ITEMS.find(function(it) { return it.id === id; });
+            if (!item) return;
+            const grupo = FACULTAD_ITEMS.filter(function(it) { return it.nombre_borrador === item.nombre_borrador; });
+
+            let navHtml = '<ul class="nav nav-tabs mb-3" role="tablist">';
+            navHtml += '<li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#facTabResumen" type="button" role="tab">Resumen</button></li>';
+            grupo.forEach(function(it) {
+                navHtml += '<li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#facTab' + it.facultad_id + '" type="button" role="tab">' + evalHtmlEscape(it.facultad_codigo || it.facultad_nombre) + '</button></li>';
+            });
+            navHtml += '</ul>';
+
+            let contentHtml = '<div class="tab-content">';
+            contentHtml += '<div class="tab-pane fade show active" id="facTabResumen" role="tabpanel">'
+                + '<p class="text-muted mb-0">' + evalHtmlEscape(item.nombre_borrador) + '</p>'
+                + '<p class="text-muted small">' + grupo.length + ' facultad(es) gestionando este indicador.</p>'
+                + '</div>';
+            grupo.forEach(function(it) {
+                contentHtml += '<div class="tab-pane fade" id="facTab' + it.facultad_id + '" role="tabpanel">'
+                    + '<p class="text-muted">' + evalHtmlEscape(it.facultad_nombre) + '</p>'
+                    + '</div>';
+            });
+            contentHtml += '</div>';
+
             $('#facultadItem_id').val(id);
+            $('#modalEditarFacultadItem .modal-body').html(navHtml + contentHtml);
             $('#modalEditarFacultadItem').modal('show');
         }
 
