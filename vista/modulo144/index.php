@@ -2244,7 +2244,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="autoGuardarSeguimiento()"></div>
                                 <div class="col-md-2 mb-3 mb-md-0 ms-md-auto">
-                                    <label class="form-label text-muted">14.4 VALOR AÑO</label>
+                                    <label class="form-label text-muted">AÑO</label>
                                     <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
                                 </div>
                                 <div class="col-md-2 mb-3 mb-md-0 text-center">
