@@ -1112,6 +1112,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
                                 <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
                                 <option value="nombre"      <?php echo $pref_key['tipo_filtro']==='nombre'      ? 'selected':''; ?>>Por nombre</option>
+                                <option value="con_seguimiento" <?php echo $pref_key['tipo_filtro']==='con_seguimiento' ? 'selected':''; ?>>Con seguimiento</option>
+                                <option value="sin_seguimiento" <?php echo $pref_key['tipo_filtro']==='sin_seguimiento' ? 'selected':''; ?>>Sin seguimiento</option>
                             </select>
                             <select class="filtro-tipo-select" id="filtroLinea-<?php echo $key; ?>"
                                     onchange="onFiltroLineaChange('<?php echo $key; ?>')" style="display:none;">
@@ -1140,16 +1142,27 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <span class="filtro-resultado-badge" id="filtroResultado-<?php echo $key; ?>" style="display:none;"></span>
                         </div>
 
+                        <ul class="nav nav-tabs lista-tabs mb-4" id="listaTabs-<?php echo $key; ?>" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabBorradores-<?php echo $key; ?>" type="button" role="tab">
+                                    <i class="fas fa-pen-fancy me-1"></i>Borradores <span class="badge bg-secondary ms-1"><?php echo count($modulo['borradores']); ?></span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPublicados-<?php echo $key; ?>" type="button" role="tab">
+                                    <i class="fas fa-check-circle me-1"></i>Publicados <span class="badge bg-success ms-1"><?php echo count($modulo['publicados']); ?></span>
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCancelados-<?php echo $key; ?>" type="button" role="tab">
+                                    <i class="fas fa-times-circle me-1"></i>Cancelados <span class="badge bg-danger ms-1"><?php echo count($modulo['cancelados']); ?></span>
+                                </button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content">
                         <!-- BORRADORES -->
-                        <div class="mb-5">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-secondary bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="fas fa-pen-fancy" style="color: #7F8C8D;"></i>
-                                </div>
-                                <h5 class="mb-0">Borradores</h5>
-                                <span class="badge bg-secondary ms-2"><?php echo count($modulo['borradores']); ?></span>
-                            </div>
-                            
+                        <div class="tab-pane fade show active" id="tabBorradores-<?php echo $key; ?>" role="tabpanel">
                             <?php if (count($modulo['borradores']) > 0): ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
@@ -1178,8 +1191,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $suma_linea = $pond_por_linea_b[$lmp_key_b] ?? 0;
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
+                                        $tiene_seg_b = !empty($borrador['fecha_seguimiento']) || !empty($borrador['porcentaje_avance']) || !empty($borrador['indicador']);
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1261,15 +1275,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
 
                         <!-- PUBLICADOS -->
-                        <div class="mb-5">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-success bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="fas fa-check-circle" style="color: #27AE60;"></i>
-                                </div>
-                                <h5 class="mb-0">Publicados</h5>
-                                <span class="badge bg-success ms-2"><?php echo count($modulo['publicados']); ?></span>
-                            </div>
-                            
+                        <div class="tab-pane fade" id="tabPublicados-<?php echo $key; ?>" role="tabpanel">
                             <?php if (count($modulo['publicados']) > 0): ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
@@ -1297,8 +1303,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $suma_linea = $pond_por_linea_p[$lmp_key_p] ?? 0;
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
+                                        $tiene_seg_p = !empty($publicado['fecha_seguimiento']) || !empty($publicado['porcentaje_avance']) || !empty($publicado['indicador']);
                                     ?>
-                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>">
+                                    <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_p ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
@@ -1365,15 +1372,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
 
                         <!-- CANCELADOS -->
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="bg-danger bg-opacity-10 p-2 rounded-circle me-2">
-                                    <i class="fas fa-times-circle" style="color: #E74C3C;"></i>
-                                </div>
-                                <h5 class="mb-0">Cancelados</h5>
-                                <span class="badge bg-danger ms-2"><?php echo count($modulo['cancelados']); ?></span>
-                            </div>
-                            
+                        <div class="tab-pane fade" id="tabCancelados-<?php echo $key; ?>" role="tabpanel">
                             <?php if (count($modulo['cancelados']) > 0): ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
@@ -1454,6 +1453,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <p class="text-muted small">Los borradores cancelados aparecerán aquí</p>
                                 </div>
                             <?php endif; ?>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -3807,6 +3807,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     visible = (item.getAttribute('data-creado-por-nombre') || '').toLowerCase().includes(texto);
                 } else if (tipo === 'nombre' && texto) {
                     visible = (item.getAttribute('data-nombre-borrador') || '').toLowerCase().includes(texto);
+                } else if (tipo === 'con_seguimiento') {
+                    visible = item.getAttribute('data-tiene-seguimiento') === '1';
+                } else if (tipo === 'sin_seguimiento') {
+                    visible = item.getAttribute('data-tiene-seguimiento') === '0';
                 }
                 if (visible && linea) {
                     visible = (item.getAttribute('data-linea-filtro') || '') === linea;
