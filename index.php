@@ -758,6 +758,16 @@ switch ($action) {
     // ====================================================
 
     // ====================================================
+    // SECCIÓN PARA ORGANIGRAMA
+    // ====================================================
+    case 'organigrama':
+        require_once 'config/security.php';
+        require_once 'controlador/organigramaController.php';
+        $organigramaController = new OrganigramaController();
+        $organigramaController->index();
+        break;
+
+    // ====================================================
     // SECCIÓN PARA MENSAJES
     // ====================================================
     case 'mensajes':
