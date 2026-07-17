@@ -1385,9 +1385,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
                                                     <?php if ($solEstado === 1): ?>
                                                         <?php if ($esAdminFormulario): ?>
                                                         <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Aprobar y publicar">
@@ -1400,10 +1397,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
                                                         <?php endif; ?>
                                                     <?php else: ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación">
                                                         <i class="fas fa-paper-plane"></i>
                                                     </button>
-                                                    <?php endif; ?>
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Cancelar">
                                                         <i class="fas fa-ban"></i>
@@ -1411,6 +1410,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
                                                         <i class="fas fa-copy"></i>
                                                     </button>
+                                                    <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
