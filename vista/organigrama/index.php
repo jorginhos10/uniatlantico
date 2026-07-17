@@ -144,6 +144,27 @@ ob_start();
         height: 34px;
         background: var(--ios-sep);
     }
+
+    /* ═══ RAMA CON VARIOS HIJOS EN EL MISMO NIVEL ═══ */
+    .org-branch-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 50px;
+        flex-wrap: wrap;
+    }
+
+    .org-branch-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .org-branch-connector {
+        width: 2px;
+        height: 20px;
+        background: var(--ios-sep);
+    }
 </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
@@ -174,36 +195,51 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         return [];
     }
 
-    $usuariosSubAdmin = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Sub administrador');
-    $usuariosAdmin    = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Administrador');
+    function org_renderChips($usuarios) {
+        if (empty($usuarios)) {
+            echo '<span class="org-node-empty">Sin usuarios asignados</span>';
+            return;
+        }
+        foreach ($usuarios as $u) {
+            echo '<span class="org-node-chip"><i class="fas fa-user"></i>' . htmlspecialchars($u['nombre']) . '</span>';
+        }
+    }
+
+    $usuariosAdmin         = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Administrador');
+    $usuariosSubAdmin      = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Sub administrador');
+    $usuariosGestorSubAdmin = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de sub-admin');
+    $usuariosRespLinea     = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Responsable de línea');
     ?>
 
     <div class="org-chart">
         <div class="org-node">
             <div class="org-node-title">Administrador</div>
-            <div class="org-node-users">
-                <?php if (!empty($usuariosAdmin)): ?>
-                    <?php foreach ($usuariosAdmin as $u): ?>
-                    <span class="org-node-chip"><i class="fas fa-user"></i><?php echo htmlspecialchars($u['nombre']); ?></span>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <span class="org-node-empty">Sin usuarios asignados</span>
-                <?php endif; ?>
-            </div>
+            <div class="org-node-users"><?php org_renderChips($usuariosAdmin); ?></div>
         </div>
 
         <div class="org-connector"></div>
 
         <div class="org-node">
             <div class="org-node-title">Sub Administrador</div>
-            <div class="org-node-users">
-                <?php if (!empty($usuariosSubAdmin)): ?>
-                    <?php foreach ($usuariosSubAdmin as $u): ?>
-                    <span class="org-node-chip"><i class="fas fa-user"></i><?php echo htmlspecialchars($u['nombre']); ?></span>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <span class="org-node-empty">Sin usuarios asignados</span>
-                <?php endif; ?>
+            <div class="org-node-users"><?php org_renderChips($usuariosSubAdmin); ?></div>
+        </div>
+
+        <div class="org-connector"></div>
+
+        <div class="org-branch-row">
+            <div class="org-branch-item">
+                <div class="org-branch-connector"></div>
+                <div class="org-node">
+                    <div class="org-node-title">Gestor de Metas de Sub-Administrador</div>
+                    <div class="org-node-users"><?php org_renderChips($usuariosGestorSubAdmin); ?></div>
+                </div>
+            </div>
+            <div class="org-branch-item">
+                <div class="org-branch-connector"></div>
+                <div class="org-node">
+                    <div class="org-node-title">Responsable de Línea</div>
+                    <div class="org-node-users"><?php org_renderChips($usuariosRespLinea); ?></div>
+                </div>
             </div>
         </div>
     </div>
