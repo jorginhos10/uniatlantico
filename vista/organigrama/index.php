@@ -180,10 +180,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     <div class="org-chart">
         <div class="org-node">
-            <div class="org-node-title">Sub Administrador</div>
+            <div class="org-node-title">Administrador</div>
             <div class="org-node-users">
-                <?php if (!empty($usuariosSubAdmin)): ?>
-                    <?php foreach ($usuariosSubAdmin as $u): ?>
+                <?php if (!empty($usuariosAdmin)): ?>
+                    <?php foreach ($usuariosAdmin as $u): ?>
                     <span class="org-node-chip"><i class="fas fa-user"></i><?php echo htmlspecialchars($u['nombre']); ?></span>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -195,10 +195,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <div class="org-connector"></div>
 
         <div class="org-node">
-            <div class="org-node-title">Administrador</div>
+            <div class="org-node-title">Sub Administrador</div>
             <div class="org-node-users">
-                <?php if (!empty($usuariosAdmin)): ?>
-                    <?php foreach ($usuariosAdmin as $u): ?>
+                <?php if (!empty($usuariosSubAdmin)): ?>
+                    <?php foreach ($usuariosSubAdmin as $u): ?>
                     <span class="org-node-chip"><i class="fas fa-user"></i><?php echo htmlspecialchars($u['nombre']); ?></span>
                     <?php endforeach; ?>
                 <?php else: ?>
