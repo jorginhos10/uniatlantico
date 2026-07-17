@@ -1056,6 +1056,18 @@ ob_start();
         .estado-letra-s { color: #E0A800; }
         .estado-letra-r { color: #FF3B30; }
 
+        .semaforo-dot {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: help;
+        }
+        .semaforo-gris  { background: #C7C7CC; }
+        .semaforo-rojo  { background: #FF3B30; }
+        .semaforo-amarillo { background: #FFCC00; }
+        .semaforo-verde { background: #34C759; }
+
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
         .accordion-button > div > span:first-child {
@@ -1310,7 +1322,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Creado por</div>
                                             <div class="col-md-1">Estado</div>
-                                            <div class="col-md-2">Fecha de creación</div>
+                                            <div class="col-md-2">Semáforo</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
                                     </div>
@@ -1353,9 +1365,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <span class="seguimiento-indicador"><i class="fas fa-check-circle"></i> Seguimiento</span>
                                                     <?php endif; ?>
                                                 </div>
-                                                <?php if (!empty($borrador['anio'])): ?>
-                                                <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?></div>
-                                                <?php endif; ?>
+                                                <div class="lista-item-sub">
+                                                    <?php if (!empty($borrador['anio'])): ?>
+                                                    <i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($borrador['fecha_creacion'])): ?>
+                                                    <span class="ms-2"><i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?></span>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php if (!empty($lmp)): ?>
@@ -1380,9 +1397,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?>"><?php echo $solInfo['letra']; ?></span>
                                             </div>
                                             <div class="col-md-2">
-                                                <div class="lista-item-fecha">
-                                                    <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
-                                                </div>
+                                                <span class="semaforo-dot semaforo-gris" title="Semáforo"></span>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">

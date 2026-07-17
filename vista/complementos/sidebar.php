@@ -95,6 +95,14 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </a>
             </li>
 
+            <!-- Informática (disponible para todos los usuarios logueados) -->
+            <li class="navItem <?php echo ($paginaActual ?? '') === 'informatica' ? 'active' : ''; ?>">
+                <a href="<?php echo $basePath; ?>/informatica" class="navLink" data-tooltip="Informática">
+                    <i class="fas fa-desktop"></i>
+                    <span>Informática</span>
+                </a>
+            </li>
+
             <!-- Configuración - Permiso ID: 5 (configurar_sistema) -->
             <?php if (tienePermisoPorId(PERMISO_CONFIG_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
                 <li class="navItem <?php echo ($paginaActual ?? '') === 'configuraciones' ? 'active' : ''; ?>">
