@@ -205,10 +205,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
     }
 
-    $usuariosAdmin         = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Administrador');
-    $usuariosSubAdmin      = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Sub administrador');
-    $usuariosGestorSubAdmin = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de sub-admin');
-    $usuariosRespLinea     = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Responsable de línea');
+    $usuariosAdmin           = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Administrador');
+    $usuariosSubAdmin        = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Sub administrador');
+    $usuariosGestorSubAdmin  = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de sub-admin');
+    $usuariosRespLinea       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Responsable de línea');
+    $usuariosLiderMeta       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Lider de meta');
+    $usuariosGestorLiderMeta = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas');
     ?>
 
     <div class="org-chart">
@@ -239,6 +241,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="org-node">
                     <div class="org-node-title">Responsable de Línea</div>
                     <div class="org-node-users"><?php org_renderChips($usuariosRespLinea); ?></div>
+                </div>
+
+                <div class="org-connector"></div>
+
+                <div class="org-branch-row">
+                    <div class="org-branch-item">
+                        <div class="org-branch-connector"></div>
+                        <div class="org-node">
+                            <div class="org-node-title">Líder de Meta</div>
+                            <div class="org-node-users"><?php org_renderChips($usuariosLiderMeta); ?></div>
+                        </div>
+                    </div>
+                    <div class="org-branch-item">
+                        <div class="org-branch-connector"></div>
+                        <div class="org-node">
+                            <div class="org-node-title">Gestor de Metas</div>
+                            <div class="org-node-users"><?php org_renderChips($usuariosGestorLiderMeta); ?></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
