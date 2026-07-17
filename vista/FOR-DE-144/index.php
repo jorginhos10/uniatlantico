@@ -92,27 +92,25 @@ ob_start();
         white-space: nowrap;
     }
 
-    /* ── Card grid ── */
+    /* ── List ── */
     .card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
-    /* ── Add card ── */
+    /* ── Add row ── */
     .formulario-add {
         background: var(--ios-blue);
         border-radius: var(--r-lg);
-        padding: 32px 20px;
+        padding: 16px 22px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        justify-content: center;
-        text-align: center;
+        gap: 16px;
         cursor: pointer;
         border: none;
         color: white;
-        min-height: 180px;
         box-shadow: 0 4px 16px rgba(0,122,255,.32);
         transition: transform .2s, box-shadow .2s;
     }
@@ -124,12 +122,12 @@ ob_start();
         color: white;
     }
 
-    .add-icon { font-size: 40px; margin-bottom: 10px; }
+    .add-icon { font-size: 26px; flex-shrink: 0; }
 
     .formulario-add h3 {
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 600;
-        margin: 0 0 4px;
+        margin: 0;
         color: white;
     }
 
@@ -140,57 +138,76 @@ ob_start();
         color: white;
     }
 
-    /* ── Formulario card ── */
+    /* ── Formulario row ── */
     .formulario-card {
         background: var(--ios-surface);
         border-radius: var(--r-lg);
-        padding: 18px 20px;
+        padding: 14px 20px;
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        align-items: center;
+        gap: 18px;
         box-shadow: 0 1px 4px rgba(0,0,0,.07), 0 0 0 .5px var(--ios-sep);
-        border-top: 3px solid var(--ios-sep);
-        transition: transform .2s, box-shadow .2s;
+        border-left: 4px solid var(--ios-sep);
+        transition: transform .15s, box-shadow .15s;
     }
 
     .formulario-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,.1), 0 0 0 .5px var(--ios-sep);
+        transform: translateX(2px);
+        box-shadow: 0 4px 14px rgba(0,0,0,.1), 0 0 0 .5px var(--ios-sep);
     }
 
-    .formulario-card.disponible   { border-top-color: var(--ios-green); }
-    .formulario-card.proximamente { border-top-color: var(--ios-orange); }
-    .formulario-card.no-disponible{ border-top-color: var(--ios-red); opacity: .85; }
+    .formulario-card.disponible    { border-left-color: var(--ios-green); }
+    .formulario-card.proximamente  { border-left-color: var(--ios-orange); }
+    .formulario-card.no-disponible { border-left-color: var(--ios-red); opacity: .85; }
+
+    /* ── Row main (title + description) ── */
+    .formulario-main {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
 
     /* ── Card title ── */
     .formulario-titulo {
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         color: var(--ios-label);
-        border-bottom: .5px solid var(--ios-sep);
-        padding-bottom: 10px;
-        margin-bottom: 8px;
-        padding-right: 72px;
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 2px;
+        padding-right: 0;
         line-height: 1.35;
-    }
-
-    /* ── Card description ── */
-    .formulario-descripcion {
-        font-size: 14px;
-        color: var(--ios-label2);
-        line-height: 1.5;
-        flex-grow: 1;
-        margin-bottom: 10px;
+        white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
+    /* ── Card description ── */
+    .formulario-descripcion {
+        font-size: 13px;
+        color: var(--ios-label2);
+        line-height: 1.4;
+        flex-grow: 0;
+        margin-bottom: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── Row meta (estado + fechas) ── */
+    .formulario-meta {
+        flex: 0 0 auto;
+        min-width: 220px;
+        max-width: 260px;
+    }
+
     /* ── Time info ── */
     .tiempo-info {
-        background: var(--ios-fill2);
-        border-radius: var(--r-sm);
-        padding: 10px 12px;
-        margin: 6px 0;
-        font-size: 13px;
+        background: none;
+        border-radius: 0;
+        padding: 0;
+        margin: 0;
+        font-size: 12px;
     }
 
     /* ── Status pill ── */
@@ -210,14 +227,14 @@ ob_start();
     .badge-proximamente  { background: rgba(255,149,0,.15);  color: #8B5E00; }
 
     /* ── Date row ── */
-    .fecha-rango { display: flex; flex-direction: column; gap: 5px; margin-top: 5px; }
+    .fecha-rango { display: flex; flex-direction: column; gap: 2px; margin-top: 3px; }
 
     .fecha-item {
         display: flex;
         align-items: center;
         gap: 6px;
         color: var(--ios-label2);
-        font-size: 13px;
+        font-size: 12px;
     }
 
     .fecha-item i { width: 15px; color: var(--ios-blue); font-size: 11px; }
@@ -226,14 +243,15 @@ ob_start();
     .formulario-fecha {
         font-size: 12px;
         color: var(--ios-label3);
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: .5px solid var(--ios-sep);
+        margin: 3px 0 0;
+        padding-top: 0;
+        border-top: none;
     }
 
     /* ── Action buttons ── */
     .btn-actions {
-        margin-top: 10px;
+        margin-top: 0;
+        flex: 0 0 auto;
         display: flex;
         gap: 7px;
         justify-content: flex-end;
@@ -415,8 +433,14 @@ ob_start();
         .f144-wrap      { padding: 0 12px 40px; }
         .f144-header    { flex-wrap: wrap; gap: 12px; }
         .f144-header-date { margin-left: 0; }
-        .card-grid      { grid-template-columns: 1fr; gap: 10px; }
         .formulario-titulo { padding-right: 0; }
+        .formulario-card, .formulario-add {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .formulario-main, .formulario-meta { max-width: 100%; width: 100%; }
+        .formulario-titulo, .formulario-descripcion { white-space: normal; }
+        .btn-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
     }
 </style>
 <?php $cssExtra = ob_get_clean();
@@ -438,15 +462,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
     </div>
 
-    <!-- Card grid -->
+    <!-- List -->
     <div id="formulariosContainer" class="card-grid">
 
         <!-- Add new -->
         <?php if ($perms_f144['crear']): ?>
         <div class="formulario-add" data-bs-toggle="modal" data-bs-target="#modalAgregar">
             <i class="fas fa-plus-circle add-icon"></i>
-            <h3>Nuevo Formulario</h3>
-            <p>Toca para crear un nuevo formulario</p>
+            <div>
+                <h3>Nuevo Formulario</h3>
+                <p>Toca para crear un nuevo formulario</p>
+            </div>
         </div>
         <?php endif; ?>
 
@@ -487,53 +513,57 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         <div class="formulario-card <?php echo $cardClass; ?>" id="formulario-<?php echo $formulario['id']; ?>">
 
-            <div class="formulario-titulo">
-                <?php echo htmlspecialchars($formulario['titulo']); ?>
-                <?php if ($formulario['estado'] != 1): ?>
-                    <span class="badge bg-secondary float-end">Inactivo</span>
-                <?php endif; ?>
+            <div class="formulario-main">
+                <div class="formulario-titulo">
+                    <?php echo htmlspecialchars($formulario['titulo']); ?>
+                    <?php if ($formulario['estado'] != 1): ?>
+                        <span class="badge bg-secondary">Inactivo</span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="formulario-descripcion">
+                    <?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?>
+                </div>
             </div>
 
-            <div class="formulario-descripcion">
-                <?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?>
-            </div>
+            <div class="formulario-meta">
+                <div class="tiempo-info">
+                    <?php if ($formulario['estado'] != 1): ?>
+                        <span class="badge-estado badge-no-disponible"><i class="fas fa-times-circle"></i> Inactivo</span>
+                        <div class="fecha-item"><i class="fas fa-ban"></i> No disponible</div>
 
-            <div class="tiempo-info">
-                <?php if ($formulario['estado'] != 1): ?>
-                    <span class="badge-estado badge-no-disponible"><i class="fas fa-times-circle"></i> Inactivo</span>
-                    <div class="fecha-item"><i class="fas fa-ban"></i> No disponible</div>
+                    <?php elseif ($formulario['tipo_tiempo'] == 'libre'): ?>
+                        <span class="badge-estado badge-disponible"><i class="fas fa-infinity"></i> Tiempo libre</span>
+                        <div class="fecha-item"><i class="fas fa-check-circle" style="color:var(--ios-green);"></i> Siempre disponible</div>
 
-                <?php elseif ($formulario['tipo_tiempo'] == 'libre'): ?>
-                    <span class="badge-estado badge-disponible"><i class="fas fa-infinity"></i> Tiempo libre</span>
-                    <div class="fecha-item"><i class="fas fa-check-circle" style="color:var(--ios-green);"></i> Siempre disponible</div>
-
-                <?php else: ?>
-                    <?php if ($estadoTiempo == 'disponible'): ?>
-                        <span class="badge-estado badge-disponible"><i class="fas fa-clock"></i> Disponible ahora</span>
-                    <?php elseif ($estadoTiempo == 'proximamente'): ?>
-                        <span class="badge-estado badge-proximamente"><i class="fas fa-hourglass-half"></i> Próximamente</span>
                     <?php else: ?>
-                        <span class="badge-estado badge-no-disponible"><i class="fas fa-ban"></i> Finalizado</span>
+                        <?php if ($estadoTiempo == 'disponible'): ?>
+                            <span class="badge-estado badge-disponible"><i class="fas fa-clock"></i> Disponible ahora</span>
+                        <?php elseif ($estadoTiempo == 'proximamente'): ?>
+                            <span class="badge-estado badge-proximamente"><i class="fas fa-hourglass-half"></i> Próximamente</span>
+                        <?php else: ?>
+                            <span class="badge-estado badge-no-disponible"><i class="fas fa-ban"></i> Finalizado</span>
+                        <?php endif; ?>
+
+                        <div class="fecha-rango">
+                            <div class="fecha-item"><i class="fas fa-play-circle"></i> Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></div>
+                            <div class="fecha-item"><i class="fas fa-stop-circle"></i> Fin: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_fin'])); ?></div>
+                        </div>
+
+                        <?php if ($mensajeEstado): ?>
+                            <small style="color:var(--ios-label2);display:block;margin-top:5px;">
+                                <i class="fas fa-info-circle"></i> <?php echo $mensajeEstado; ?>
+                            </small>
+                        <?php endif; ?>
                     <?php endif; ?>
+                </div>
 
-                    <div class="fecha-rango">
-                        <div class="fecha-item"><i class="fas fa-play-circle"></i> Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></div>
-                        <div class="fecha-item"><i class="fas fa-stop-circle"></i> Fin: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_fin'])); ?></div>
-                    </div>
-
-                    <?php if ($mensajeEstado): ?>
-                        <small style="color:var(--ios-label2);display:block;margin-top:5px;">
-                            <i class="fas fa-info-circle"></i> <?php echo $mensajeEstado; ?>
-                        </small>
+                <div class="formulario-fecha">
+                    <i class="far fa-clock me-1"></i><?php echo $fechaFormateada; ?>
+                    <?php if (!empty($formulario['anio'])): ?>
+                        &nbsp;·&nbsp;<i class="fas fa-calendar-check me-1"></i><?php echo htmlspecialchars($formulario['anio']); ?>
                     <?php endif; ?>
-                <?php endif; ?>
-            </div>
-
-            <div class="formulario-fecha">
-                <i class="far fa-clock me-1"></i><?php echo $fechaFormateada; ?>
-                <?php if (!empty($formulario['anio'])): ?>
-                    &nbsp;·&nbsp;<i class="fas fa-calendar-check me-1"></i><?php echo htmlspecialchars($formulario['anio']); ?>
-                <?php endif; ?>
+                </div>
             </div>
 
             <div class="btn-actions">
