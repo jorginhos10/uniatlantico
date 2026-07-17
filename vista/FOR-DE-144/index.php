@@ -567,19 +567,19 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </div>
 
             <div class="btn-actions">
+                <?php if ($perms_f144['ver']): ?>
+                <button class="btn btn-sm btn-success"
+                        onclick="window.location.href='<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>'"
+                        <?php echo !$disponible ? 'disabled' : ''; ?>>
+                    <i class="fas fa-hammer me-1"></i>Construir
+                </button>
+                <?php endif; ?>
                 <?php if ($perms_f144['informe']): ?>
                 <a class="btn btn-sm btn-info"
                    href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=informePage&id=<?php echo $formulario['id']; ?>"
                    target="_blank">
                     <i class="fas fa-chart-bar me-1"></i>Informe
                 </a>
-                <?php endif; ?>
-                <?php if ($perms_f144['ver']): ?>
-                <button class="btn btn-sm btn-success"
-                        onclick="window.location.href='<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>'"
-                        <?php echo !$disponible ? 'disabled' : ''; ?>>
-                    <i class="fas fa-eye me-1"></i>Ver
-                </button>
                 <?php endif; ?>
                 <?php if ($perms_f144['editar']): ?>
                 <button class="btn btn-sm btn-warning" onclick="editarFormulario(<?php echo $formulario['id']; ?>)">
