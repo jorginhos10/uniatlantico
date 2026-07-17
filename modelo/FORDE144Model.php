@@ -144,6 +144,45 @@ class FORDE144Model {
         }
     }
 
+    public function getAdministradores($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT fa.id, u.id AS usuario_id, u.nombre, u.email, u.rol
+                 FROM formulario_administradores fa
+                 INNER JOIN usuarios u ON fa.usuario_id = u.id
+                 WHERE fa.formulario_id = :fid
+                 ORDER BY u.nombre"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAdministradores: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function agregarAdministrador($formulario_id, $usuario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT IGNORE INTO formulario_administradores (formulario_id, usuario_id) VALUES (:fid, :uid)"
+            );
+            return $stmt->execute([':fid' => $formulario_id, ':uid' => $usuario_id]);
+        } catch (PDOException $e) {
+            error_log("Error agregarAdministrador: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function eliminarAdministrador($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM formulario_administradores WHERE id = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error eliminarAdministrador: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function delete($id) {
         try {
             $stmt = $this->db->prepare("UPDATE " . $this->table . " SET estado = 0 WHERE id = :id");

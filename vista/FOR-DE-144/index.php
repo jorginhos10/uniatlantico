@@ -709,79 +709,114 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="formEditarFormulario">
-                <input type="hidden" id="formularioIdEditar" name="id">
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="tituloEditar" class="form-label">Título</label>
-                        <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
-                    </div>
 
-                    <div class="mb-3">
-                        <label for="descripcionEditar" class="form-label">Descripción</label>
-                        <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="3"></textarea>
-                    </div>
+            <ul class="nav nav-tabs px-3 pt-2" id="editarFormularioTabs" role="tablist" style="border-bottom:.5px solid var(--ios-sep);">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabEditarGeneral" type="button" role="tab">General</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabEditarAvanzado" type="button" role="tab">Avanzado</button>
+                </li>
+            </ul>
 
-                    <div class="mb-3">
-                        <label for="anioEditar" class="form-label">Año de Vigencia</label>
-                        <select class="form-control" id="anioEditar" name="anio" required>
-                            <option value="">— Seleccione un año —</option>
-                            <?php if (!empty($anios)): ?>
-                                <?php foreach ($anios as $a): ?>
-                                    <option value="<?php echo htmlspecialchars($a['anio']); ?>">
-                                        <?php echo htmlspecialchars($a['anio']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <option value="" disabled>No hay años disponibles</option>
-                            <?php endif; ?>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Configuración de Tiempo</label>
-                        <div class="tiempo-opciones">
-                            <div>
-                                <input type="radio" name="tipo_tiempo" id="tipo_libre_editar" value="libre">
-                                <label for="tipo_libre_editar">
-                                    <strong><i class="fas fa-infinity me-1" style="color:var(--ios-green);"></i> Tiempo Libre</strong>
-                                </label>
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tabEditarGeneral" role="tabpanel">
+                    <form id="formEditarFormulario">
+                        <input type="hidden" id="formularioIdEditar" name="id">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="tituloEditar" class="form-label">Título</label>
+                                <input type="text" class="form-control" id="tituloEditar" name="titulo" required>
                             </div>
-                            <div>
-                                <input type="radio" name="tipo_tiempo" id="tipo_rango_editar" value="rango">
-                                <label for="tipo_rango_editar">
-                                    <strong><i class="fas fa-calendar-alt me-1" style="color:var(--ios-blue);"></i> Rango de Tiempo</strong>
-                                </label>
+
+                            <div class="mb-3">
+                                <label for="descripcionEditar" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="descripcionEditar" name="descripcion" rows="3"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="anioEditar" class="form-label">Año de Vigencia</label>
+                                <select class="form-control" id="anioEditar" name="anio" required>
+                                    <option value="">— Seleccione un año —</option>
+                                    <?php if (!empty($anios)): ?>
+                                        <?php foreach ($anios as $a): ?>
+                                            <option value="<?php echo htmlspecialchars($a['anio']); ?>">
+                                                <?php echo htmlspecialchars($a['anio']); ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <option value="" disabled>No hay años disponibles</option>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Configuración de Tiempo</label>
+                                <div class="tiempo-opciones">
+                                    <div>
+                                        <input type="radio" name="tipo_tiempo" id="tipo_libre_editar" value="libre">
+                                        <label for="tipo_libre_editar">
+                                            <strong><i class="fas fa-infinity me-1" style="color:var(--ios-green);"></i> Tiempo Libre</strong>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <input type="radio" name="tipo_tiempo" id="tipo_rango_editar" value="rango">
+                                        <label for="tipo_rango_editar">
+                                            <strong><i class="fas fa-calendar-alt me-1" style="color:var(--ios-blue);"></i> Rango de Tiempo</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="rangoFechasContainerEditar" style="display:none;" class="rango-fechas">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="fecha_inicio_editar" class="form-label">Fecha de Inicio</label>
+                                        <input type="datetime-local" class="form-control" id="fecha_inicio_editar" name="fecha_inicio">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="fecha_fin_editar" class="form-label">Fecha de Fin</label>
+                                        <input type="datetime-local" class="form-control" id="fecha_fin_editar" name="fecha_fin">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="estadoEditar" class="form-label">Estado</label>
+                                <select class="form-control" id="estadoEditar" name="estado">
+                                    <option value="1">Activo</option>
+                                    <option value="0">Inactivo</option>
+                                </select>
                             </div>
                         </div>
-                    </div>
-
-                    <div id="rangoFechasContainerEditar" style="display:none;" class="rango-fechas">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="fecha_inicio_editar" class="form-label">Fecha de Inicio</label>
-                                <input type="datetime-local" class="form-control" id="fecha_inicio_editar" name="fecha_inicio">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="fecha_fin_editar" class="form-label">Fecha de Fin</label>
-                                <input type="datetime-local" class="form-control" id="fecha_fin_editar" name="fecha_fin">
-                            </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Actualizar</button>
                         </div>
-                    </div>
+                    </form>
+                </div>
 
-                    <div class="mb-3">
-                        <label for="estadoEditar" class="form-label">Estado</label>
-                        <select class="form-control" id="estadoEditar" name="estado">
-                            <option value="1">Activo</option>
-                            <option value="0">Inactivo</option>
-                        </select>
+                <div class="tab-pane fade" id="tabEditarAvanzado" role="tabpanel">
+                    <div class="modal-body">
+                        <label class="form-label">Administradores</label>
+                        <p style="font-size:13px;color:var(--ios-label2);margin-top:-4px;">
+                            Los usuarios agregados aquí tendrán acceso de administrador sobre este formulario.
+                        </p>
+
+                        <div class="filtro-input-wrap" style="position:relative;">
+                            <input type="text" class="form-control" id="buscarAdminInput" autocomplete="off"
+                                   placeholder="Buscar usuario por nombre o correo...">
+                            <div id="buscarAdminSugerencias"
+                                 style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--ios-sep);border-radius:var(--r-sm);box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:20;max-height:220px;overflow-y:auto;"></div>
+                        </div>
+
+                        <div id="listaAdministradores" style="margin-top:16px;display:flex;flex-direction:column;gap:8px;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Actualizar</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
@@ -1191,6 +1226,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         $('#fecha_fin_editar').val(f.fecha_fin     ? f.fecha_fin.replace(' ', 'T')     : '');
                     }
 
+                    cargarAdministradores(f.id);
                     $('#modalEditar').modal('show');
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: r.message || 'Error al cargar el formulario' });
@@ -1198,6 +1234,127 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             },
             error: function () {
                 Swal.close();
+                Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
+            }
+        });
+    }
+
+    /* ══════════════ ADMINISTRADORES (pestaña Avanzado) ══════════════ */
+
+    function escAdmin(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function cargarAdministradores(formularioId) {
+        $('#listaAdministradores').html('<p style="font-size:13px;color:var(--ios-label3);">Cargando...</p>');
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=getAdministradores&formulario_id=' + formularioId,
+            type: 'GET',
+            dataType: 'json',
+            success: function (r) {
+                renderAdministradores(r.success ? (r.administradores || []) : []);
+            },
+            error: function () {
+                $('#listaAdministradores').html('<p style="font-size:13px;color:var(--ios-red);">No se pudo cargar la lista.</p>');
+            }
+        });
+    }
+
+    function renderAdministradores(lista) {
+        const cont = $('#listaAdministradores');
+        if (!lista.length) {
+            cont.html('<p style="font-size:13px;color:var(--ios-label3);">Sin administradores adicionales todavía.</p>');
+            return;
+        }
+        let html = '';
+        lista.forEach(function (a) {
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--ios-fill2);border-radius:var(--r-sm);padding:9px 12px;">'
+                + '<div><div style="font-size:14px;font-weight:600;color:var(--ios-label);">' + escAdmin(a.nombre) + '</div>'
+                + '<div style="font-size:12px;color:var(--ios-label2);">' + escAdmin(a.email) + '</div></div>'
+                + '<button type="button" class="btn btn-sm btn-danger" onclick="quitarAdministrador(' + a.id + ', ' + $('#formularioIdEditar').val() + ')">'
+                + '<i class="fas fa-trash"></i></button>'
+                + '</div>';
+        });
+        cont.html(html);
+    }
+
+    let _buscarAdminTimeout = null;
+    $(document).on('input', '#buscarAdminInput', function () {
+        const termino = $(this).val().trim();
+        clearTimeout(_buscarAdminTimeout);
+        if (termino.length < 2) {
+            $('#buscarAdminSugerencias').hide().empty();
+            return;
+        }
+        _buscarAdminTimeout = setTimeout(function () {
+            $.ajax({
+                url: basePath + '/FOR-DE-144?action=buscarUsuarios&q=' + encodeURIComponent(termino),
+                type: 'GET',
+                dataType: 'json',
+                success: function (r) {
+                    const sug = $('#buscarAdminSugerencias');
+                    const usuarios = (r.success ? r.usuarios : []) || [];
+                    if (!usuarios.length) {
+                        sug.html('<div style="padding:10px 14px;font-size:13px;color:var(--ios-label3);">Sin resultados</div>').show();
+                        return;
+                    }
+                    let html = '';
+                    usuarios.forEach(function (u) {
+                        html += '<div class="sug-admin-item" data-id="' + u.id + '" data-nombre="' + escAdmin(u.nombre) + '"'
+                            + ' style="padding:9px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--ios-sep);">'
+                            + '<strong>' + escAdmin(u.nombre) + '</strong><br><span style="color:var(--ios-label2);">' + escAdmin(u.email) + '</span>'
+                            + '</div>';
+                    });
+                    sug.html(html).show();
+                },
+                error: function () { $('#buscarAdminSugerencias').hide().empty(); }
+            });
+        }, 300);
+    });
+
+    $(document).on('click', '.sug-admin-item', function () {
+        const usuarioId = $(this).data('id');
+        const formularioId = $('#formularioIdEditar').val();
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=agregarAdministrador',
+            type: 'POST',
+            data: { formulario_id: formularioId, usuario_id: usuarioId },
+            dataType: 'json',
+            success: function (r) {
+                if (r.success) {
+                    $('#buscarAdminInput').val('');
+                    $('#buscarAdminSugerencias').hide().empty();
+                    cargarAdministradores(formularioId);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: r.message || 'No se pudo agregar' });
+                }
+            },
+            error: function () {
+                Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
+            }
+        });
+    });
+
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#buscarAdminInput, #buscarAdminSugerencias').length) {
+            $('#buscarAdminSugerencias').hide();
+        }
+    });
+
+    function quitarAdministrador(id, formularioId) {
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=eliminarAdministrador',
+            type: 'POST',
+            data: { id: id },
+            dataType: 'json',
+            success: function (r) {
+                if (r.success) {
+                    cargarAdministradores(formularioId);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: r.message || 'No se pudo quitar' });
+                }
+            },
+            error: function () {
                 Swal.fire({ icon: 'error', title: 'Error de conexión', text: 'No se pudo conectar con el servidor' });
             }
         });

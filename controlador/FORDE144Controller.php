@@ -245,7 +245,7 @@ class FORDE144Controller {
             ];
             
             $resultado = $this->model->update($id, $data);
-            
+
             if ($resultado) {
                 echo json_encode(['success' => true, 'message' => 'Formulario actualizado exitosamente']);
             } else {
@@ -254,6 +254,95 @@ class FORDE144Controller {
         } else {
             echo json_encode(['success' => false, 'message' => 'Método no permitido']);
         }
+    }
+
+    /**
+     * Lista los administradores adicionales de un formulario (pestaña Avanzado)
+     */
+    public function getAdministradores() {
+        header('Content-Type: application/json');
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para ver esta información']);
+            return;
+        }
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            return;
+        }
+        $administradores = $this->model->getAdministradores($formulario_id);
+        echo json_encode(['success' => true, 'administradores' => $administradores]);
+    }
+
+    /**
+     * Agrega un usuario como administrador adicional de un formulario
+     */
+    public function agregarAdministrador() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para agregar administradores']);
+            return;
+        }
+        $formulario_id = intval($_POST['formulario_id'] ?? 0);
+        $usuario_id = intval($_POST['usuario_id'] ?? 0);
+        if ($formulario_id <= 0 || $usuario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        $resultado = $this->model->agregarAdministrador($formulario_id, $usuario_id);
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? 'Administrador agregado' : 'Error al agregar administrador'
+        ]);
+    }
+
+    /**
+     * Quita un administrador adicional de un formulario
+     */
+    public function eliminarAdministrador() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para quitar administradores']);
+            return;
+        }
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            return;
+        }
+        $resultado = $this->model->eliminarAdministrador($id);
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? 'Administrador eliminado' : 'Error al eliminar administrador'
+        ]);
+    }
+
+    /**
+     * Busca usuarios por nombre/email/username para agregarlos como administradores
+     */
+    public function buscarUsuarios() {
+        header('Content-Type: application/json');
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        $termino = trim($_GET['q'] ?? '');
+        if ($termino === '') {
+            echo json_encode(['success' => true, 'usuarios' => []]);
+            return;
+        }
+        require_once 'modelo/usuarioModel.php';
+        $usuarioModel = new UsuarioModel();
+        $usuarios = $usuarioModel->buscarUsuarios($termino);
+        echo json_encode(['success' => true, 'usuarios' => $usuarios]);
     }
 }
 ?>

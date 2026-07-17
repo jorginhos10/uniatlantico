@@ -284,7 +284,23 @@ switch ($action) {
             case 'verificarDisponibilidad':
                 $forde144Controller->verificarDisponibilidad();
                 break;
-                
+
+            case 'getAdministradores':
+                $forde144Controller->getAdministradores();
+                break;
+
+            case 'agregarAdministrador':
+                $forde144Controller->agregarAdministrador();
+                break;
+
+            case 'eliminarAdministrador':
+                $forde144Controller->eliminarAdministrador();
+                break;
+
+            case 'buscarUsuarios':
+                $forde144Controller->buscarUsuarios();
+                break;
+
             case 'index':
             default:
                 $forde144Controller->index();
