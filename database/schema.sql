@@ -346,6 +346,7 @@ CREATE TABLE IF NOT EXISTS `formulacion_144` (
   -- Estado / auditoria
   `estado_formulacion` tinyint(1) NOT NULL DEFAULT 0,
   `estado_seguimiento` tinyint(1) NOT NULL DEFAULT 0,
+  `solicitud_estado` tinyint(1) NOT NULL DEFAULT 0, -- 0=Construcción, 1=Solicitado, 2=Rechazado (solo aplica mientras sigue en Borradores)
   `fecha_publicacion_formulacion` datetime DEFAULT NULL,
   `fecha_publicacion_seguimiento` datetime DEFAULT NULL,
   `creado_por` int(11) DEFAULT NULL,

@@ -452,6 +452,20 @@ class Modulo144Model {
         return $this->getByEstado($modulo, $formulario_id, 1);
     }
 
+    public function esAdministradorFormulario($usuario_id, $formulario_id) {
+        if ((int)$usuario_id === 1) return true;
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM formulario_administradores WHERE formulario_id = :fid AND usuario_id = :uid LIMIT 1"
+            );
+            $stmt->execute([':fid' => $formulario_id, ':uid' => $usuario_id]);
+            return (bool)$stmt->fetchColumn();
+        } catch (PDOException $e) {
+            error_log("Error esAdministradorFormulario: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function crearBorrador($modulo, $formulario_id, $nombre_borrador, $creado_por = 1, $facultad_id = null) {
         try {
             if ($modulo !== 'formulacion') {
@@ -586,6 +600,17 @@ class Modulo144Model {
             }
         } catch (PDOException $e) {
             error_log("Error cambiarEstado [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado) {
+        try {
+            $tabla = $this->modulos[$modulo]['tabla'];
+            $stmt = $this->db->prepare("UPDATE {$tabla} SET solicitud_estado = :se, fecha_actualizacion = NOW() WHERE id = :id");
+            return $stmt->execute([':se' => $solicitud_estado, ':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error actualizarSolicitudEstado [{$modulo}]: " . $e->getMessage());
             return false;
         }
     }

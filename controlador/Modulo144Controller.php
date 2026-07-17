@@ -53,6 +53,8 @@ class Modulo144Controller {
             }
         }
 
+        $esAdminFormulario = $uid ? $this->model->esAdministradorFormulario($uid, $id) : false;
+
         $vistaPath = 'vista/modulo144/index.php';
         if (!file_exists($vistaPath)) {
             die("Error crítico: No se encuentra la vista en: " . $vistaPath);
@@ -556,6 +558,32 @@ class Modulo144Controller {
                 'message' => $resultado ? $mensajes[$estado] : 'Error al cambiar estado'
             ]);
         }
+    }
+
+    /**
+     * Cambia el estado de solicitud de un borrador (0=Construcción, 1=Solicitado, 2=Rechazado)
+     */
+    public function cambiarSolicitudEstado() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $modulo = $_POST['modulo'] ?? '';
+        $id = intval($_POST['id'] ?? 0);
+        $solicitud_estado = intval($_POST['solicitud_estado'] ?? 0);
+
+        if (empty($modulo) || $id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Faltan datos']);
+            return;
+        }
+
+        $resultado = $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado);
+        $mensajes = [0 => 'Solicitud reiniciada', 1 => 'Solicitud de aprobación enviada', 2 => 'Solicitud rechazada'];
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? ($mensajes[$solicitud_estado] ?? 'Actualizado') : 'Error al actualizar'
+        ]);
     }
 
     public function eliminar() {

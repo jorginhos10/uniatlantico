@@ -378,6 +378,9 @@ switch ($action) {
             case 'cambiarEstado':
                 $modulo144Controller->cambiarEstado();
                 break;
+            case 'cambiarSolicitudEstado':
+                $modulo144Controller->cambiarSolicitudEstado();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;

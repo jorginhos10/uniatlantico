@@ -1037,6 +1037,25 @@ ob_start();
             margin-right: 3px;
         }
 
+        /* ═══ ESTADO DE SOLICITUD (badge cuadrado con letra) ═══ */
+        .estado-letra-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: #F2F2F7;
+            border: 1px solid rgba(0,0,0,.08);
+            font-weight: 800;
+            font-size: 14px;
+            cursor: help;
+        }
+
+        .estado-letra-c { color: #8E8E93; }
+        .estado-letra-s { color: #E0A800; }
+        .estado-letra-r { color: #FF3B30; }
+
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
         .accordion-button > div > span:first-child {
@@ -1287,9 +1306,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-4">Nombre</div>
+                                            <div class="col-md-3">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-1">Estado</div>
                                             <div class="col-md-2">Fecha de creación</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
@@ -1301,6 +1321,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $lk = ($_b['linea_codigo'] ?? '__') . '|' . ($_b['motor_id_num'] ?? '__') . '|' . ($_b['proyecto_codigo'] ?? '__');
                                         $pond_por_linea_b[$lk] = ($pond_por_linea_b[$lk] ?? 0) + (float)($_b['ponderacion_actividades'] ?? 0);
                                     }
+                                    $solEstadoInfo = [
+                                        0 => ['letra' => 'C', 'clase' => 'estado-letra-c', 'titulo' => 'Construcción'],
+                                        1 => ['letra' => 'S', 'clase' => 'estado-letra-s', 'titulo' => 'Solicitado'],
+                                        2 => ['letra' => 'R', 'clase' => 'estado-letra-r', 'titulo' => 'Rechazado'],
+                                    ];
                                     ?>
                                     <?php foreach ($modulo['borradores'] as $borrador):
                                         $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
@@ -1312,10 +1337,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_completa = ($suma_linea >= 99.99 && $suma_linea <= 100.01);
                                         $linea_excedida = $suma_linea > 100.01;
                                         $tiene_seg_b = !empty($borrador['fecha_seguimiento']) || !empty($borrador['porcentaje_avance']) || !empty($borrador['indicador']);
+                                        $solEstado = (int)($borrador['solicitud_estado'] ?? 0);
+                                        $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
                                                     <?php echo htmlspecialchars($borrador['nombre_borrador']); ?>
                                                     <?php if ($borrador['gestionado_facultades'] == 1): ?>
@@ -1348,6 +1375,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <span class="lista-item-autor sin-datos">—</span>
                                                 <?php endif; ?>
                                             </div>
+                                            <div class="col-md-1">
+                                                <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?>"><?php echo $solInfo['letra']; ?></span>
+                                            </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-fecha">
                                                     <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])); ?>
@@ -1355,25 +1385,31 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
-                                                        <i class="fas fa-check"></i>
+                                                    <?php if ($solEstado === 1): ?>
+                                                        <?php if ($esAdminFormulario): ?>
+                                                        <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Aprobar y publicar">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Rechazar">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                        <?php else: ?>
+                                                        <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
+                                                        <?php endif; ?>
+                                                    <?php else: ?>
+                                                    <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación">
+                                                        <i class="fas fa-paper-plane"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)">
-                                                        <i class="fas fa-times"></i>
+                                                    <?php endif; ?>
+                                                    <?php if ($key === 'formulacion'): ?>
+                                                    <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Cancelar">
+                                                        <i class="fas fa-ban"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
                                                         <i class="fas fa-copy"></i>
-                                                    </button>
-                                                    <?php else: ?>
-                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)">
-                                                        <i class="fas fa-check"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                 </div>
@@ -3921,12 +3957,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function cambiarEstadoBorrador(modulo, id, estado) {
+            const esAprobar = estado === 2;
             Swal.fire({
-                title: estado === 2 ? '¿Publicar formulación?' : '¿Cancelar formulación?',
-                text: estado === 2 ? 'Esta formulación pasará a estado PUBLICADO' : 'Esta formulación pasará a estado CANCELADO',
+                title: esAprobar ? '¿Aprobar y publicar?' : '¿Cancelar formulación?',
+                text: esAprobar ? 'Esta formulación pasará a estado PUBLICADO' : 'Esta formulación pasará a estado CANCELADO',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: estado === 2 ? '#27AE60' : '#E74C3C',
+                confirmButtonColor: esAprobar ? '#27AE60' : '#E74C3C',
                 confirmButtonText: 'Sí, continuar'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -3939,6 +3976,39 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
                                 setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function cambiarSolicitudEstado(modulo, id, solicitudEstado) {
+            const textos = {
+                1: { title: '¿Solicitar aprobación?', text: 'Un administrador podrá aprobarla o rechazarla.', color: '#FF9500', boton: 'Sí, solicitar' },
+                2: { title: '¿Rechazar solicitud?', text: 'El creador podrá corregirla y volver a solicitar.', color: '#E74C3C', boton: 'Sí, rechazar' }
+            };
+            const info = textos[solicitudEstado];
+            Swal.fire({
+                title: info.title,
+                text: info.text,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: info.color,
+                confirmButtonText: info.boton
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/modulo144/cambiarSolicitudEstado',
+                        type: 'POST',
+                        data: { modulo: modulo, id: id, solicitud_estado: solicitudEstado },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Listo!', response.message, 'success');
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                            } else {
+                                Swal.fire('Error', response.message || 'No se pudo actualizar', 'error');
                             }
                         }
                     });
