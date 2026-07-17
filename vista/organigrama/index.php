@@ -210,7 +210,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     $usuariosGestorSubAdmin  = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de sub-admin');
     $usuariosRespLinea       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Responsable de línea');
     $usuariosLiderMeta       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Lider de meta');
-    $usuariosGestorLiderMeta = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas');
+    $usuariosGestorRespLinea = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de responsable de línea');
     ?>
 
     <div class="org-chart">
@@ -256,8 +256,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <div class="org-branch-item">
                         <div class="org-branch-connector"></div>
                         <div class="org-node">
-                            <div class="org-node-title">Gestor de Metas</div>
-                            <div class="org-node-users"><?php org_renderChips($usuariosGestorLiderMeta); ?></div>
+                            <div class="org-node-title">Gestor de Metas de Responsable de Línea</div>
+                            <div class="org-node-users"><?php org_renderChips($usuariosGestorRespLinea); ?></div>
                         </div>
                     </div>
                 </div>
