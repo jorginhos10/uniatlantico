@@ -897,6 +897,8 @@ ob_start();
 
         .eval-linea-motores-track.eval-marquee {
             animation: eval-motores-scroll linear infinite;
+            will-change: transform;
+            transform: translateZ(0);
         }
 
         @keyframes eval-motores-scroll {
