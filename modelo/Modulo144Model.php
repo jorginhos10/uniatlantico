@@ -15,6 +15,7 @@ class Modulo144Model {
             'color_header' => 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',
             'descripcion' => 'Planificación y formulación estratégica',
             'campo_estado' => 'estado_formulacion',
+            'campo_solicitud' => 'solicitud_estado_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
             'campos_editables' => [
                 'anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
@@ -71,6 +72,7 @@ class Modulo144Model {
             'color_header' => 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
             'descripcion' => 'Seguimiento y monitoreo de avances',
             'campo_estado' => 'estado_seguimiento',
+            'campo_solicitud' => 'solicitud_estado_seguimiento',
             'fecha_publicacion' => 'fecha_publicacion_seguimiento',
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
@@ -607,7 +609,8 @@ class Modulo144Model {
     public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
-            $stmt = $this->db->prepare("UPDATE {$tabla} SET solicitud_estado = :se, fecha_actualizacion = NOW() WHERE id = :id");
+            $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
+            $stmt = $this->db->prepare("UPDATE {$tabla} SET {$campo_solicitud} = :se, fecha_actualizacion = NOW() WHERE id = :id");
             return $stmt->execute([':se' => $solicitud_estado, ':id' => $id]);
         } catch (PDOException $e) {
             error_log("Error actualizarSolicitudEstado [{$modulo}]: " . $e->getMessage());
