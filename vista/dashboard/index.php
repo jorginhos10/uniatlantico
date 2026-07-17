@@ -92,19 +92,21 @@ if ($pdo) {
         $stats['dependencias'] = (int)$pdo->query("SELECT COUNT(*) FROM cargos WHERE activo = 1")->fetchColumn();
     } catch (PDOException $e) { error_log("Dash dependencias: " . $e->getMessage()); }
 
-    // 7. Actividad reciente: mis últimos 6 registros
+    // 7. Actividad reciente: mis últimos 10 registros
     try {
         $s = $pdo->prepare(
             "SELECT f.nombre_borrador AS nombre,
-                    CASE f.estado WHEN 0 THEN 'borrador' ELSE 'publicado' END AS estado,
+                    CASE f.estado_formulacion WHEN 2 THEN 'publicado' WHEN 1 THEN 'cancelado' ELSE 'borrador' END AS estado,
                     f.fecha_creacion,
                     'formulacion' AS modulo,
-                    u.nombre AS creado_por_nombre
+                    u.nombre AS creado_por_nombre,
+                    frm.titulo AS formulario_titulo
              FROM formulacion_144 f
              LEFT JOIN usuarios u ON u.id = f.creado_por
+             LEFT JOIN formularios frm ON frm.id = f.formulario_id
              WHERE f.creado_por = :uid
              ORDER BY f.fecha_creacion DESC
-             LIMIT 6"
+             LIMIT 10"
         );
         $s->execute([':uid' => $uid]);
         $actividad = $s->fetchAll();
@@ -431,8 +433,8 @@ ob_start();
 }
 .db-act-body { flex: 1; min-width: 0; }
 .db-act-name {
-    font-size: 13.5px; font-weight: 600; color: var(--d-text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-size: 13.5px; font-weight: 500; color: var(--d-text);
+    line-height: 1.4;
 }
 .db-act-meta { font-size: 12px; color: var(--d-sub); margin-top: 2px; }
 .db-act-badge {
@@ -440,6 +442,7 @@ ob_start();
 }
 .badge-borrador  { background: #fff3e0; color: #e65100; }
 .badge-publicado { background: #e8f5e9; color: #2e7d32; }
+.badge-cancelado { background: #ffebee; color: #c62828; }
 
 .db-act-empty {
     display: flex; flex-direction: column; align-items: center;
@@ -561,7 +564,7 @@ function relTime(string $raw): string {
 }
 
 $iconoModulo = ['formulacion' => 'fas fa-clipboard-list', 'plan' => 'fas fa-project-diagram'];
-$dotColor    = ['borrador' => '#FF9500', 'publicado' => '#34C759'];
+$dotColor    = ['borrador' => '#FF9500', 'publicado' => '#34C759', 'cancelado' => '#8E8E93'];
 
 $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
 ?>
@@ -744,11 +747,14 @@ $maxRol = !empty($userStats) ? max(array_column($userStats, 'total')) : 1;
                     <li class="db-act-item">
                         <div class="db-act-dot" style="background:<?php echo $dot; ?>"></div>
                         <div class="db-act-body">
-                            <div class="db-act-name"><?php echo htmlspecialchars($a['nombre'] ?? '—'); ?></div>
+                            <div class="db-act-name">
+                                En <strong><?php echo htmlspecialchars($a['formulario_titulo'] ?? 'el formulario'); ?></strong>
+                                se agregó el borrador <strong>"<?php echo htmlspecialchars($a['nombre'] ?? '—'); ?>"</strong>
+                            </div>
                             <div class="db-act-meta">
-                                <?php echo htmlspecialchars(ucfirst($modulo)); ?>
-                                · Por <?php echo htmlspecialchars($a['creado_por_nombre'] ?? 'Sistema'); ?>
-                                · <?php echo relTime($a['fecha_creacion']); ?>
+                                Por <?php echo htmlspecialchars($a['creado_por_nombre'] ?? 'Sistema'); ?>
+                                · <?php echo date('d/m/Y H:i', strtotime($a['fecha_creacion'])); ?>
+                                (<?php echo relTime($a['fecha_creacion']); ?>)
                             </div>
                         </div>
                         <span class="db-act-badge badge-<?php echo $estado; ?>">
