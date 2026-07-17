@@ -211,6 +211,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     $usuariosRespLinea       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Responsable de línea');
     $usuariosLiderMeta       = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Lider de meta');
     $usuariosGestorRespLinea = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas de responsable de línea');
+    $usuariosGestorMetas     = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de metas');
+    $usuariosGestorFacultad  = org_buscarUsuariosPorRol($usuariosPorRol ?? [], 'Gestor de facultad');
     ?>
 
     <div class="org-chart">
@@ -251,6 +253,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="org-node">
                             <div class="org-node-title">Líder de Meta</div>
                             <div class="org-node-users"><?php org_renderChips($usuariosLiderMeta); ?></div>
+                        </div>
+
+                        <div class="org-connector"></div>
+
+                        <div class="org-branch-row">
+                            <div class="org-branch-item">
+                                <div class="org-branch-connector"></div>
+                                <div class="org-node">
+                                    <div class="org-node-title">Gestor de Metas</div>
+                                    <div class="org-node-users"><?php org_renderChips($usuariosGestorMetas); ?></div>
+                                </div>
+                            </div>
+                            <div class="org-branch-item">
+                                <div class="org-branch-connector"></div>
+                                <div class="org-node">
+                                    <div class="org-node-title">Gestor de Facultad</div>
+                                    <div class="org-node-users"><?php org_renderChips($usuariosGestorFacultad); ?></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="org-branch-item">
