@@ -95,11 +95,11 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </a>
             </li>
 
-            <!-- Informática (disponible para todos los usuarios logueados) -->
-            <li class="navItem <?php echo ($paginaActual ?? '') === 'informatica' ? 'active' : ''; ?>">
-                <a href="<?php echo $basePath; ?>/informatica" class="navLink" data-tooltip="Informática">
-                    <i class="fas fa-desktop"></i>
-                    <span>Informática</span>
+            <!-- Organigrama (disponible para todos los usuarios logueados) -->
+            <li class="navItem <?php echo ($paginaActual ?? '') === 'organigrama' ? 'active' : ''; ?>">
+                <a href="<?php echo $basePath; ?>/organigrama" class="navLink" data-tooltip="Organigrama">
+                    <i class="fas fa-sitemap"></i>
+                    <span>Organigrama</span>
                 </a>
             </li>
 
