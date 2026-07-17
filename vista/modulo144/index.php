@@ -2773,7 +2773,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 track.innerHTML += itemsHtml; // Duplica el contenido para el loop continuo
                 const duration = (contentHeight / EVAL_MARQUEE_SPEED_PX_POR_SEG).toFixed(1);
                 track.style.animationDuration = duration + 's';
-                track.classList.add('eval-marquee');
+                void track.offsetHeight; // Fuerza reflow para que el navegador registre el estado inicial
+                requestAnimationFrame(function() {
+                    track.classList.add('eval-marquee');
+                });
             });
         }
 
