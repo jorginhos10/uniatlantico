@@ -288,13 +288,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="org-branch-row">
                             <div class="org-branch-item">
                                 <div class="org-node">
-                                    <div class="org-node-title">Gestor de Metas</div>
+                                    <div class="org-node-title">Gestor de Metas de Facultad</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorMetas); ?></div>
                                 </div>
                             </div>
                             <div class="org-branch-item">
                                 <div class="org-node">
-                                    <div class="org-node-title">Gestor de Facultad</div>
+                                    <div class="org-node-title">Gestor de Proyectos</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorFacultad); ?></div>
                                 </div>
                             </div>
