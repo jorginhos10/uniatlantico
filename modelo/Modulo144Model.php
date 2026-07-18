@@ -17,6 +17,7 @@ class Modulo144Model {
             'campo_estado' => 'estado_formulacion',
             'campo_solicitud' => 'solicitud_estado_formulacion',
             'campo_semaforo' => 'semaforo_etapa_formulacion',
+            'campo_semaforo_rechazo' => 'semaforo_rechazo_etapa_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
             'campos_editables' => [
                 'anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
@@ -75,6 +76,7 @@ class Modulo144Model {
             'campo_estado' => 'estado_seguimiento',
             'campo_solicitud' => 'solicitud_estado_seguimiento',
             'campo_semaforo' => 'semaforo_etapa_seguimiento',
+            'campo_semaforo_rechazo' => 'semaforo_rechazo_etapa_seguimiento',
             'fecha_publicacion' => 'fecha_publicacion_seguimiento',
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
@@ -374,6 +376,7 @@ class Modulo144Model {
                                         p.codigo   AS proyecto_codigo,
                                         u.nombre   AS creado_por_nombre,
                                         u.cargo_id AS creado_por_cargo_id,
+                                        u.rol      AS creado_por_rol,
                                         c.nombre   AS creado_por_cargo_nombre
                                         FROM {$tabla} f
                                         LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
@@ -612,7 +615,15 @@ class Modulo144Model {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
             $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
-            $stmt = $this->db->prepare("UPDATE {$tabla} SET {$campo_solicitud} = :se, fecha_actualizacion = NOW() WHERE id = :id");
+            $campo_rechazo = $this->modulos[$modulo]['campo_semaforo_rechazo'];
+            // Al reenviar (solicitud_estado = 1) se limpia la marca roja de rechazo pendiente
+            if ($solicitud_estado == 1) {
+                $stmt = $this->db->prepare(
+                    "UPDATE {$tabla} SET {$campo_solicitud} = :se, {$campo_rechazo} = 0, fecha_actualizacion = NOW() WHERE id = :id"
+                );
+            } else {
+                $stmt = $this->db->prepare("UPDATE {$tabla} SET {$campo_solicitud} = :se, fecha_actualizacion = NOW() WHERE id = :id");
+            }
             return $stmt->execute([':se' => $solicitud_estado, ':id' => $id]);
         } catch (PDOException $e) {
             error_log("Error actualizarSolicitudEstado [{$modulo}]: " . $e->getMessage());
@@ -636,16 +647,17 @@ class Modulo144Model {
         }
     }
 
-    public function rechazarSemaforo($modulo, $id, $etapaActual) {
+    public function rechazarSemaforo($modulo, $id, $etapaActual, $etapaQueRechaza) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
             $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
             $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
+            $campo_rechazo = $this->modulos[$modulo]['campo_semaforo_rechazo'];
             $stmt = $this->db->prepare(
-                "UPDATE {$tabla} SET {$campo_semaforo} = 0, {$campo_solicitud} = 2, fecha_actualizacion = NOW()
+                "UPDATE {$tabla} SET {$campo_semaforo} = 0, {$campo_solicitud} = 2, {$campo_rechazo} = :rechazo, fecha_actualizacion = NOW()
                  WHERE id = :id AND {$campo_semaforo} = :actual"
             );
-            $stmt->execute([':id' => $id, ':actual' => $etapaActual]);
+            $stmt->execute([':id' => $id, ':actual' => $etapaActual, ':rechazo' => $etapaQueRechaza]);
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("Error rechazarSemaforo [{$modulo}]: " . $e->getMessage());

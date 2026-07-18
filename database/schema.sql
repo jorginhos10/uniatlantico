@@ -355,6 +355,9 @@ CREATE TABLE IF NOT EXISTS `formulacion_144` (
   -- 3=+Responsable de línea, 4=+Sub administrador. Independiente por módulo.
   `semaforo_etapa_formulacion` tinyint(1) NOT NULL DEFAULT 0,
   `semaforo_etapa_seguimiento` tinyint(1) NOT NULL DEFAULT 0,
+  -- Etapa (1-4) que rechazó por última vez; 0 = sin rechazo pendiente. Se limpia al reenviar.
+  `semaforo_rechazo_etapa_formulacion` tinyint(1) NOT NULL DEFAULT 0,
+  `semaforo_rechazo_etapa_seguimiento` tinyint(1) NOT NULL DEFAULT 0,
   `fecha_publicacion_formulacion` datetime DEFAULT NULL,
   `fecha_publicacion_seguimiento` datetime DEFAULT NULL,
   `creado_por` int(11) DEFAULT NULL,

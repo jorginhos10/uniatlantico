@@ -667,7 +667,7 @@ class Modulo144Controller {
             return;
         }
 
-        $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual);
+        $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual, $etapaSiguiente);
         echo json_encode([
             'success' => $resultado,
             'message' => $resultado ? 'Rechazado: vuelve al creador para su corrección' : 'No se pudo actualizar (puede que ya haya avanzado)'

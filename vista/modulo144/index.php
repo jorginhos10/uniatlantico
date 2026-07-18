@@ -1099,14 +1099,13 @@ ob_start();
             max-width: 140px;
         }
 
-        .semaforo-circle.semaforo-rechazar {
-            background: #FF3B30;
-            cursor: pointer;
-            font-size: 10px;
+        .semaforo-circle.no-aplica {
+            background: #FFCC00;
+            color: #6b4e00;
         }
 
-        .semaforo-circle.semaforo-rechazar:hover {
-            filter: brightness(1.1);
+        .semaforo-circle.rechazado {
+            background: #FF3B30;
         }
 
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
@@ -1385,6 +1384,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         3 => ['letra' => 'R', 'rol' => 'responsable de linea',   'titulo' => 'Responsable de Línea'],
                                         4 => ['letra' => 'S', 'rol' => 'sub administrador',      'titulo' => 'Sub Administrador'],
                                     ];
+                                    $semaforoRolNivel = [
+                                        'gestor de metas' => 1,
+                                        'lider de metas' => 2,
+                                        'responsable de linea' => 3,
+                                        'sub administrador' => 4,
+                                    ];
                                     if (!function_exists('m144_normalizarRol')) {
                                         function m144_normalizarRol($s) {
                                             $s = mb_strtolower(trim((string)$s), 'UTF-8');
@@ -1394,6 +1399,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
                                     $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
                                     $campoSemaforo    = $modulo['config']['campo_semaforo'];
+                                    $campoSemaforoRechazo = $modulo['config']['campo_semaforo_rechazo'];
                                     $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
                                     $viewerCargoId    = (int)($_SESSION['usuario_cargo_id'] ?? 0);
                                     // Administrador / Sub Administrador / Súper Admin ven todo el recorrido, en cualquier dependencia
@@ -1413,6 +1419,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $solEstado = (int)($borrador[$campoSolicitud] ?? 0);
                                         $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
                                         $etapaActual = (int)($borrador[$campoSemaforo] ?? 0);
+                                        $rechazoEtapa = (int)($borrador[$campoSemaforoRechazo] ?? 0);
+                                        $creadorRolNorm = m144_normalizarRol($borrador['creado_por_rol'] ?? '');
+                                        $creadorNivel = $semaforoRolNivel[$creadorRolNorm] ?? 0;
 
                                         // ── Visibilidad en cascada por dependencia ──
                                         $creadorId = (int)($borrador['creado_por'] ?? 0);
@@ -1478,24 +1487,28 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php
                                                     $puedeRechazarEtapa = false;
                                                     foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
+                                                        $noAplica = $etapaNum <= $creadorNivel;
+                                                        $rechazadaAqui = $etapaNum === $rechazoEtapa;
                                                         $activo = $etapaNum <= $etapaActual;
                                                         $esSiguiente = $etapaNum === $etapaActual + 1;
-                                                        $puedeAprobar = $esSiguiente && ($esSuperAdminSem || m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado);
+                                                        $puedeAprobar = !$noAplica && $esSiguiente && ($esSuperAdminSem || m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado);
                                                         if ($puedeAprobar) $puedeRechazarEtapa = true;
-                                                        $clases = 'semaforo-circle' . ($activo ? ' activo' : '') . ($puedeAprobar ? ' clickable' : '');
+                                                        $clases = 'semaforo-circle';
+                                                        if ($rechazadaAqui) $clases .= ' rechazado';
+                                                        elseif ($noAplica) $clases .= ' no-aplica';
+                                                        elseif ($activo) $clases .= ' activo';
+                                                        if ($puedeAprobar) $clases .= ' clickable';
+                                                        $tituloCirculo = $etapaInfo['titulo'];
+                                                        if ($rechazadaAqui) $tituloCirculo .= ' — Rechazó';
+                                                        elseif ($noAplica) $tituloCirculo .= ' — No aplica (creado por un rol superior)';
+                                                        elseif ($activo) $tituloCirculo .= ' — Aprobado';
                                                     ?>
                                                     <span class="<?php echo $clases; ?>"
-                                                          title="<?php echo htmlspecialchars($etapaInfo['titulo']); ?><?php echo $activo ? ' — Aprobado' : ''; ?>"
+                                                          title="<?php echo htmlspecialchars($tituloCirculo); ?>"
                                                           <?php if ($puedeAprobar): ?>
                                                           onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
-                                                    <?php if ($puedeRechazarEtapa): ?>
-                                                    <span class="semaforo-circle semaforo-rechazar" title="Rechazar y devolver al creador"
-                                                          onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)">
-                                                        <i class="fas fa-times"></i>
-                                                    </span>
-                                                    <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($borrador['creado_por_cargo_nombre'])): ?>
                                                 <div class="semaforo-dependencia"><?php echo htmlspecialchars($borrador['creado_por_cargo_nombre']); ?></div>
@@ -1507,6 +1520,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-info" onclick="verBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
+                                                    <?php if ($puedeRechazarEtapa): ?>
+                                                    <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <?php elseif ($solEstado === 1): ?>
                                                         <?php if ($esAdminFormulario): ?>
                                                         <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Aprobar y publicar">
@@ -1525,6 +1543,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación">
                                                         <i class="fas fa-paper-plane"></i>
                                                     </button>
+                                                    <?php if ($puedeRechazarEtapa && !$esCreadorFila): ?>
+                                                    <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Cancelar">
                                                         <i class="fas fa-ban"></i>
