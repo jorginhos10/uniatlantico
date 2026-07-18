@@ -1418,10 +1418,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $campoSolicitud = $modulo['config']['campo_solicitud'];
                                         $solEstado = (int)($borrador[$campoSolicitud] ?? 0);
                                         $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
-                                        $etapaActual = (int)($borrador[$campoSemaforo] ?? 0);
                                         $rechazoEtapa = (int)($borrador[$campoSemaforoRechazo] ?? 0);
                                         $creadorRolNorm = m144_normalizarRol($borrador['creado_por_rol'] ?? '');
                                         $creadorNivel = $semaforoRolNivel[$creadorRolNorm] ?? 0;
+                                        // Si ya fue solicitado, la etapa "visible" nunca puede ser menor al nivel del creador
+                                        // (autocorrige registros cuyo avance quedó desincronizado en la base de datos)
+                                        $etapaActual = (int)($borrador[$campoSemaforo] ?? 0);
+                                        if ($solEstado === 1 && $etapaActual < $creadorNivel) {
+                                            $etapaActual = $creadorNivel;
+                                        }
 
                                         // ── Visibilidad en cascada por dependencia ──
                                         $creadorId = (int)($borrador['creado_por'] ?? 0);

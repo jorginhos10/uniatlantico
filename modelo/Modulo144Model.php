@@ -645,11 +645,14 @@ class Modulo144Model {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
             $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
+            // Tolerante: avanza si la etapa guardada es MENOR a la nueva (no exige que coincida
+            // exacto con lo que mostraba la pantalla, así se autocorrige cualquier desfase previo).
+            // Si alguien más ya avanzó más allá mientras tanto, no se pisa ese progreso.
             $stmt = $this->db->prepare(
                 "UPDATE {$tabla} SET {$campo_semaforo} = :nueva, fecha_actualizacion = NOW()
-                 WHERE id = :id AND {$campo_semaforo} = :actual"
+                 WHERE id = :id AND {$campo_semaforo} < :nueva2"
             );
-            $stmt->execute([':nueva' => $etapaNueva, ':id' => $id, ':actual' => $etapaActual]);
+            $stmt->execute([':nueva' => $etapaNueva, ':id' => $id, ':nueva2' => $etapaNueva]);
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("Error avanzarSemaforo [{$modulo}]: " . $e->getMessage());
@@ -663,11 +666,13 @@ class Modulo144Model {
             $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
             $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
             $campo_rechazo = $this->modulos[$modulo]['campo_semaforo_rechazo'];
+            // Tolerante: rechaza mientras la etapa guardada no haya llegado/pasado ya la etapa
+            // que está rechazando (evita pisar una aprobación real que ya avanzó más).
             $stmt = $this->db->prepare(
                 "UPDATE {$tabla} SET {$campo_semaforo} = 0, {$campo_solicitud} = 2, {$campo_rechazo} = :rechazo, fecha_actualizacion = NOW()
-                 WHERE id = :id AND {$campo_semaforo} = :actual"
+                 WHERE id = :id AND {$campo_semaforo} < :rechazo2"
             );
-            $stmt->execute([':id' => $id, ':actual' => $etapaActual, ':rechazo' => $etapaQueRechaza]);
+            $stmt->execute([':id' => $id, ':rechazo' => $etapaQueRechaza, ':rechazo2' => $etapaQueRechaza]);
             return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log("Error rechazarSemaforo [{$modulo}]: " . $e->getMessage());
