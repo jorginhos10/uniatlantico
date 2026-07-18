@@ -578,7 +578,15 @@ class Modulo144Controller {
             return;
         }
 
-        $resultado = $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado);
+        // Al solicitar aprobación (1), el nivel del creador "pasa" automáticamente su propia
+        // etapa del semáforo (para que la cascada de visibilidad la vea el siguiente rol).
+        $nivelCreador = null;
+        if ($solicitud_estado === 1) {
+            $rolActual = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+            $nivelCreador = $this->semaforoRolNivel[$rolActual] ?? 0;
+        }
+
+        $resultado = $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador);
         $mensajes = [0 => 'Solicitud reiniciada', 1 => 'Solicitud de aprobación enviada', 2 => 'Solicitud rechazada'];
         echo json_encode([
             'success' => $resultado,
@@ -589,9 +597,16 @@ class Modulo144Controller {
     // Orden de aprobación secuencial del semáforo. La clave es la etapa (1-4).
     private $semaforoRoles = [
         1 => 'gestor de metas',
-        2 => 'lider de metas',
+        2 => 'lider de meta',
         3 => 'responsable de linea',
         4 => 'sub administrador',
+    ];
+
+    private $semaforoRolNivel = [
+        'gestor de metas' => 1,
+        'lider de meta' => 2,
+        'responsable de linea' => 3,
+        'sub administrador' => 4,
     ];
 
     private function normalizarRol($s) {

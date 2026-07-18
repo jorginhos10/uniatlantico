@@ -1380,13 +1380,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ];
                                     $semaforoEtapas = [
                                         1 => ['letra' => 'G', 'rol' => 'gestor de metas',       'titulo' => 'Gestor de Metas'],
-                                        2 => ['letra' => 'L', 'rol' => 'lider de metas',         'titulo' => 'Líder de Metas'],
+                                        2 => ['letra' => 'L', 'rol' => 'lider de meta',          'titulo' => 'Líder de Metas'],
                                         3 => ['letra' => 'R', 'rol' => 'responsable de linea',   'titulo' => 'Responsable de Línea'],
                                         4 => ['letra' => 'S', 'rol' => 'sub administrador',      'titulo' => 'Sub Administrador'],
                                     ];
                                     $semaforoRolNivel = [
                                         'gestor de metas' => 1,
-                                        'lider de metas' => 2,
+                                        'lider de meta' => 2,
                                         'responsable de linea' => 3,
                                         'sub administrador' => 4,
                                     ];
@@ -1431,7 +1431,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                                         $puedeVerFila = $puedeVerTodoElSemaforo || $esCreadorFila;
                                         if (!$puedeVerFila && $mismaDependenciaFila) {
-                                            if ($miRolNormalizado === 'lider de metas' && $etapaActual >= 1) $puedeVerFila = true;
+                                            if ($miRolNormalizado === 'lider de meta' && $etapaActual >= 1) $puedeVerFila = true;
                                             elseif ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) $puedeVerFila = true;
                                         }
                                         if (!$puedeVerFila) continue; // Ni siquiera se renderiza la fila

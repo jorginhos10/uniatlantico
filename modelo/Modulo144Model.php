@@ -611,13 +611,23 @@ class Modulo144Model {
         }
     }
 
-    public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado) {
+    public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador = null) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
             $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
             $campo_rechazo = $this->modulos[$modulo]['campo_semaforo_rechazo'];
+            $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
             // Al reenviar (solicitud_estado = 1) se limpia la marca roja de rechazo pendiente
+            // y el semáforo avanza al menos al nivel del creador, para que el siguiente rol lo vea.
             if ($solicitud_estado == 1) {
+                if ($nivelCreador !== null && $nivelCreador > 0) {
+                    $stmt = $this->db->prepare(
+                        "UPDATE {$tabla} SET {$campo_solicitud} = :se, {$campo_rechazo} = 0,
+                                {$campo_semaforo} = GREATEST({$campo_semaforo}, :nivel), fecha_actualizacion = NOW()
+                         WHERE id = :id"
+                    );
+                    return $stmt->execute([':se' => $solicitud_estado, ':id' => $id, ':nivel' => $nivelCreador]);
+                }
                 $stmt = $this->db->prepare(
                     "UPDATE {$tabla} SET {$campo_solicitud} = :se, {$campo_rechazo} = 0, fecha_actualizacion = NOW() WHERE id = :id"
                 );
