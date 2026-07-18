@@ -1522,10 +1522,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
                                                     <?php if ($esRevisorFila): ?>
-                                                    <button class="btn btn-sm btn-info" onclick="verBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
+                                                    <button class="btn btn-sm btn-info" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     <?php if ($puedeRechazarEtapa): ?>
+                                                    <button class="btn btn-sm btn-success" onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Aprobar">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
                                                     <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
                                                         <i class="fas fa-times"></i>
                                                     </button>
@@ -4054,6 +4057,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 actualizarCampoOculto();
                             }
                             
+                            $('#modalFormulacion input, #modalFormulacion select, #modalFormulacion textarea').prop('disabled', false);
                             $('#modalFormulacion').modal('show');
                             setTimeout(validarPestanas, 500);
                         } else {
@@ -4074,6 +4078,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_acciones_fortalecimiento').val(b.acciones_fortalecimiento);
                             actualizarAnilloCumplimiento(0);
                             cargarDatosFormulacionEnSeguimiento(b);
+                            $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#modalSeguimiento').modal('show');
                         }
                     }
@@ -4104,6 +4109,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     }
                 }
             });
+        }
+
+        function verBorradorSoloLectura(modulo, id) {
+            editarBorrador(modulo, id);
+            const modalSel = modulo === 'formulacion' ? '#modalFormulacion' : '#modalSeguimiento';
+            setTimeout(function() {
+                $(modalSel + ' input, ' + modalSel + ' select, ' + modalSel + ' textarea').prop('disabled', true);
+            }, 900);
         }
 
         function cambiarEstadoBorrador(modulo, id, estado) {
