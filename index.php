@@ -381,6 +381,9 @@ switch ($action) {
             case 'cambiarSolicitudEstado':
                 $modulo144Controller->cambiarSolicitudEstado();
                 break;
+            case 'avanzarSemaforo':
+                $modulo144Controller->avanzarSemaforo();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;

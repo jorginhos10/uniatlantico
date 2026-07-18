@@ -1056,17 +1056,38 @@ ob_start();
         .estado-letra-s { color: #E0A800; }
         .estado-letra-r { color: #FF3B30; }
 
-        .semaforo-dot {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            cursor: help;
+        .semaforo-row {
+            display: flex;
+            gap: 4px;
+            align-items: center;
         }
-        .semaforo-gris  { background: #C7C7CC; }
-        .semaforo-rojo  { background: #FF3B30; }
-        .semaforo-amarillo { background: #FFCC00; }
-        .semaforo-verde { background: #34C759; }
+
+        .semaforo-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 800;
+            color: white;
+            background: #C7C7CC;
+            cursor: default;
+        }
+
+        .semaforo-circle.activo {
+            background: #34C759;
+        }
+
+        .semaforo-circle.clickable {
+            cursor: pointer;
+            box-shadow: 0 0 0 2px rgba(0,122,255,.45);
+        }
+
+        .semaforo-circle.clickable:hover {
+            filter: brightness(1.08);
+        }
 
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
@@ -1338,6 +1359,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         1 => ['letra' => 'S', 'clase' => 'estado-letra-s', 'titulo' => 'Solicitado'],
                                         2 => ['letra' => 'R', 'clase' => 'estado-letra-r', 'titulo' => 'Rechazado'],
                                     ];
+                                    $semaforoEtapas = [
+                                        1 => ['letra' => 'G', 'rol' => 'gestor de metas',       'titulo' => 'Gestor de Metas'],
+                                        2 => ['letra' => 'L', 'rol' => 'lider de metas',         'titulo' => 'Líder de Metas'],
+                                        3 => ['letra' => 'R', 'rol' => 'responsable de linea',   'titulo' => 'Responsable de Línea'],
+                                        4 => ['letra' => 'S', 'rol' => 'sub administrador',      'titulo' => 'Sub Administrador'],
+                                    ];
+                                    if (!function_exists('m144_normalizarRol')) {
+                                        function m144_normalizarRol($s) {
+                                            $s = mb_strtolower(trim((string)$s), 'UTF-8');
+                                            return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
+                                        }
+                                    }
+                                    $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
+                                    $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+                                    $campoSemaforo    = $modulo['config']['campo_semaforo'];
                                     ?>
                                     <?php foreach ($modulo['borradores'] as $borrador):
                                         $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
@@ -1352,6 +1388,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $campoSolicitud = $modulo['config']['campo_solicitud'];
                                         $solEstado = (int)($borrador[$campoSolicitud] ?? 0);
                                         $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
+                                        $etapaActual = (int)($borrador[$campoSemaforo] ?? 0);
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
@@ -1397,7 +1434,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?>"><?php echo $solInfo['letra']; ?></span>
                                             </div>
                                             <div class="col-md-2">
-                                                <span class="semaforo-dot semaforo-gris" title="Semáforo"></span>
+                                                <div class="semaforo-row">
+                                                    <?php foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
+                                                        $activo = $etapaNum <= $etapaActual;
+                                                        $esSiguiente = $etapaNum === $etapaActual + 1;
+                                                        $puedeAprobar = $esSiguiente && ($esSuperAdminSem || m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado);
+                                                        $clases = 'semaforo-circle' . ($activo ? ' activo' : '') . ($puedeAprobar ? ' clickable' : '');
+                                                    ?>
+                                                    <span class="<?php echo $clases; ?>"
+                                                          title="<?php echo htmlspecialchars($etapaInfo['titulo']); ?><?php echo $activo ? ' — Aprobado' : ''; ?>"
+                                                          <?php if ($puedeAprobar): ?>
+                                                          onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"
+                                                          <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
@@ -4026,6 +4076,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo actualizar', 'error');
                             }
+                        }
+                    });
+                }
+            });
+        }
+
+        function avanzarSemaforo(modulo, id, etapaActual) {
+            Swal.fire({
+                title: '¿Aprobar esta etapa?',
+                text: 'Tu aprobación quedará registrada en el semáforo.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#34C759',
+                confirmButtonText: 'Sí, aprobar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/modulo144/avanzarSemaforo',
+                        type: 'POST',
+                        data: { modulo: modulo, id: id, etapa_actual: etapaActual },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Aprobado!', response.message, 'success');
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                            } else {
+                                Swal.fire('Error', response.message || 'No se pudo aprobar', 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'Error de conexión con el servidor', 'error');
                         }
                     });
                 }

@@ -586,6 +586,52 @@ class Modulo144Controller {
         ]);
     }
 
+    // Orden de aprobación secuencial del semáforo. La clave es la etapa (1-4).
+    private $semaforoRoles = [
+        1 => 'gestor de metas',
+        2 => 'lider de metas',
+        3 => 'responsable de linea',
+        4 => 'sub administrador',
+    ];
+
+    private function normalizarRol($s) {
+        $s = mb_strtolower(trim((string)$s), 'UTF-8');
+        return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
+    }
+
+    public function avanzarSemaforo() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+
+        $modulo = $_POST['modulo'] ?? '';
+        $id = intval($_POST['id'] ?? 0);
+        $etapaActual = intval($_POST['etapa_actual'] ?? 0);
+
+        if (empty($modulo) || $id <= 0 || $etapaActual < 0 || $etapaActual > 3) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $etapaNueva = $etapaActual + 1;
+        $rolEsperado = $this->semaforoRoles[$etapaNueva] ?? null;
+        $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+
+        if (!$esSuperAdmin && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
+            echo json_encode(['success' => false, 'message' => 'Tu rol no puede aprobar esta etapa']);
+            return;
+        }
+
+        $resultado = $this->model->avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual);
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? 'Etapa aprobada' : 'No se pudo actualizar (puede que ya haya avanzado)'
+        ]);
+    }
+
     public function eliminar() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {

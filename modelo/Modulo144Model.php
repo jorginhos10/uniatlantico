@@ -16,6 +16,7 @@ class Modulo144Model {
             'descripcion' => 'Planificación y formulación estratégica',
             'campo_estado' => 'estado_formulacion',
             'campo_solicitud' => 'solicitud_estado_formulacion',
+            'campo_semaforo' => 'semaforo_etapa_formulacion',
             'fecha_publicacion' => 'fecha_publicacion_formulacion',
             'campos_editables' => [
                 'anio', 'linea_estrategica', 'objetivo', 'estrategia', 'motor_desarrollo', 
@@ -73,6 +74,7 @@ class Modulo144Model {
             'descripcion' => 'Seguimiento y monitoreo de avances',
             'campo_estado' => 'estado_seguimiento',
             'campo_solicitud' => 'solicitud_estado_seguimiento',
+            'campo_semaforo' => 'semaforo_etapa_seguimiento',
             'fecha_publicacion' => 'fecha_publicacion_seguimiento',
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
@@ -614,6 +616,22 @@ class Modulo144Model {
             return $stmt->execute([':se' => $solicitud_estado, ':id' => $id]);
         } catch (PDOException $e) {
             error_log("Error actualizarSolicitudEstado [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual) {
+        try {
+            $tabla = $this->modulos[$modulo]['tabla'];
+            $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
+            $stmt = $this->db->prepare(
+                "UPDATE {$tabla} SET {$campo_semaforo} = :nueva, fecha_actualizacion = NOW()
+                 WHERE id = :id AND {$campo_semaforo} = :actual"
+            );
+            $stmt->execute([':nueva' => $etapaNueva, ':id' => $id, ':actual' => $etapaActual]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Error avanzarSemaforo [{$modulo}]: " . $e->getMessage());
             return false;
         }
     }

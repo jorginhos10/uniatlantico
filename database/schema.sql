@@ -351,6 +351,10 @@ CREATE TABLE IF NOT EXISTS `formulacion_144` (
   -- 0=Construcción, 1=Solicitado, 2=Rechazado (solo aplica mientras sigue en Borradores). Independiente por módulo.
   `solicitud_estado_formulacion` tinyint(1) NOT NULL DEFAULT 0,
   `solicitud_estado_seguimiento` tinyint(1) NOT NULL DEFAULT 0,
+  -- Semáforo de aprobación secuencial: 0=nadie, 1=Gestor de metas, 2=+Líder de metas,
+  -- 3=+Responsable de línea, 4=+Sub administrador. Independiente por módulo.
+  `semaforo_etapa_formulacion` tinyint(1) NOT NULL DEFAULT 0,
+  `semaforo_etapa_seguimiento` tinyint(1) NOT NULL DEFAULT 0,
   `fecha_publicacion_formulacion` datetime DEFAULT NULL,
   `fecha_publicacion_seguimiento` datetime DEFAULT NULL,
   `creado_por` int(11) DEFAULT NULL,
