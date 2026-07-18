@@ -369,6 +369,9 @@ class Modulo144Model {
             $tabla = $modulo_config['tabla'];
             $campo_estado = $modulo_config['campo_estado'];
 
+            // La formulación debe estar publicada antes de poder hacerle seguimiento
+            $filtroFormulacionPublicada = $modulo === 'seguimiento' ? " AND f.estado_formulacion = 2" : "";
+
             $stmt = $this->db->prepare("SELECT f.*,
                                         le.codigo  AS linea_codigo,
                                         m.id       AS motor_id_num,
@@ -384,7 +387,7 @@ class Modulo144Model {
                                         LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
                                         LEFT JOIN usuarios u ON f.creado_por = u.id
                                         LEFT JOIN cargos c ON u.cargo_id = c.id
-                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
+                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado{$filtroFormulacionPublicada}
                                         ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
             $stmt->execute([
                 ':formulario_id' => $formulario_id,
@@ -677,6 +680,43 @@ class Modulo144Model {
         } catch (PDOException $e) {
             error_log("Error rechazarSemaforo [{$modulo}]: " . $e->getMessage());
             return false;
+        }
+    }
+
+    public function registrarHistorialSemaforo($modulo, $formulacionId, $etapa, $accion, $usuarioId, $usuarioNombre, $rol = null, $motivo = null) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO semaforo_historial_144 (modulo, formulacion_id, etapa, accion, usuario_id, usuario_nombre, rol, motivo)
+                 VALUES (:modulo, :formulacion_id, :etapa, :accion, :usuario_id, :usuario_nombre, :rol, :motivo)"
+            );
+            return $stmt->execute([
+                ':modulo' => $modulo,
+                ':formulacion_id' => $formulacionId,
+                ':etapa' => $etapa,
+                ':accion' => $accion,
+                ':usuario_id' => $usuarioId,
+                ':usuario_nombre' => $usuarioNombre,
+                ':rol' => $rol,
+                ':motivo' => $motivo
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error registrarHistorialSemaforo: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getHistorialSemaforo($modulo, $formulacionId) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM semaforo_historial_144
+                 WHERE modulo = :modulo AND formulacion_id = :formulacion_id
+                 ORDER BY fecha_creacion ASC, id ASC"
+            );
+            $stmt->execute([':modulo' => $modulo, ':formulacion_id' => $formulacionId]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getHistorialSemaforo: " . $e->getMessage());
+            return [];
         }
     }
 

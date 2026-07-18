@@ -393,6 +393,21 @@ CREATE TABLE IF NOT EXISTS `gestion_facultad_144` (
   CONSTRAINT `gestion_facultad_144_ibfk_2` FOREIGN KEY (`facultad_id`) REFERENCES `facultades` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `semaforo_historial_144` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `modulo` varchar(20) NOT NULL,
+  `formulacion_id` int(11) NOT NULL,
+  `etapa` tinyint(1) NOT NULL,
+  `accion` enum('aprobado','rechazado') NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `usuario_nombre` varchar(150) NOT NULL,
+  `rol` varchar(100) DEFAULT NULL,
+  `motivo` text DEFAULT NULL,
+  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_modulo_formulacion` (`modulo`, `formulacion_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Tabla legacy: solo referenciada por el modelo/controlador antiguo Formulacion144Model/Controller.
 -- Probablemente codigo heredado de una version previa al merge en formulacion_144; verificar si sigue en uso.
 CREATE TABLE IF NOT EXISTS `seguimiento_144` (

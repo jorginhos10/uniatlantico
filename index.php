@@ -387,6 +387,9 @@ switch ($action) {
             case 'rechazarSemaforo':
                 $modulo144Controller->rechazarSemaforo();
                 break;
+            case 'getHistorialSemaforo':
+                $modulo144Controller->getHistorialSemaforo();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;

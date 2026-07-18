@@ -1440,9 +1440,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             elseif ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) $puedeVerFila = true;
                                         }
                                         if (!$puedeVerFila) continue; // Ni siquiera se renderiza la fila
-
-                                        // Revisor = puede ver por la cascada de aprobación, pero no es el creador ni un admin con acceso total
-                                        $esRevisorFila = !$esCreadorFila && !$puedeVerTodoElSemaforo;
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
@@ -1485,7 +1482,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php endif; ?>
                                             </div>
                                             <div class="col-md-1">
-                                                <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?>"><?php echo $solInfo['letra']; ?></span>
+                                                <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" style="cursor:pointer;" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><?php echo $solInfo['letra']; ?></span>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="semaforo-row">
@@ -1496,7 +1493,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $rechazadaAqui = $etapaNum === $rechazoEtapa;
                                                         $activo = $etapaNum <= $etapaActual;
                                                         $esSiguiente = $etapaNum === $etapaActual + 1;
-                                                        $puedeAprobar = !$noAplica && $esSiguiente && ($esSuperAdminSem || m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado);
+                                                        $puedeAprobar = !$noAplica && $esSiguiente && (
+                                                            m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado
+                                                            || (($esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true)) && $etapaNum === 4)
+                                                        );
                                                         if ($puedeAprobar) $puedeRechazarEtapa = true;
                                                         $clases = 'semaforo-circle';
                                                         if ($rechazadaAqui) $clases .= ' rechazado';
@@ -1521,29 +1521,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <?php if ($esRevisorFila): ?>
+                                                    <?php if (!$esCreadorFila): ?>
                                                     <button class="btn btn-sm btn-info" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    <?php if ($puedeRechazarEtapa): ?>
-                                                    <button class="btn btn-sm btn-success" onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Aprobar">
-                                                        <i class="fas fa-check"></i>
+                                                    <?php if ($puedeRechazarEtapa):
+                                                        $esEtapaFinalAdmin = ($etapaActual + 1) === 4;
+                                                    ?>
+                                                    <button class="btn btn-sm btn-success" onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="<?php echo $esEtapaFinalAdmin ? 'Publicar' : 'Aprobar'; ?>">
+                                                        <i class="fas fa-<?php echo $esEtapaFinalAdmin ? 'globe' : 'check'; ?>"></i>
                                                     </button>
                                                     <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                     <?php elseif ($solEstado === 1): ?>
-                                                        <?php if ($esAdminFormulario): ?>
-                                                        <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Aprobar y publicar">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                        <button class="btn btn-sm btn-danger" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Rechazar">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                        <?php else: ?>
-                                                        <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
-                                                        <?php endif; ?>
+                                                    <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
                                                     <?php else: ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
                                                         <i class="fas fa-edit"></i>
@@ -1551,11 +1544,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación">
                                                         <i class="fas fa-paper-plane"></i>
                                                     </button>
-                                                    <?php if ($puedeRechazarEtapa && !$esCreadorFila): ?>
-                                                    <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                    <?php endif; ?>
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Cancelar">
                                                         <i class="fas fa-ban"></i>
@@ -4244,6 +4232,55 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             Swal.fire('Error', 'Error de conexión con el servidor', 'error');
                         }
                     });
+                }
+            });
+        }
+
+        function verHistorialEstado(modulo, id) {
+            $.ajax({
+                url: basePath + '/modulo144/getHistorialSemaforo',
+                type: 'GET',
+                data: { modulo: modulo, id: id },
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.success) {
+                        Swal.fire('Error', response.message || 'No se pudo cargar el historial', 'error');
+                        return;
+                    }
+                    const historial = response.historial || [];
+                    let html = '';
+                    if (historial.length === 0) {
+                        html = '<p class="text-muted mb-0">Todavía no hay aprobaciones ni rechazos registrados.</p>';
+                    } else {
+                        html += '<div style="text-align:left;">';
+                        historial.forEach(function(h) {
+                            const esAprobado = h.accion === 'aprobado';
+                            const icono = esAprobado
+                                ? '<i class="fas fa-check-circle" style="color:#34C759;"></i>'
+                                : '<i class="fas fa-times-circle" style="color:#FF3B30;"></i>';
+                            const accionTexto = esAprobado ? 'Aprobó' : 'Rechazó';
+                            const fecha = h.fecha_creacion ? new Date(h.fecha_creacion.replace(' ', 'T')).toLocaleString('es-CO') : '';
+                            html += '<div style="padding:8px 0;border-bottom:1px solid #eee;">'
+                                 + '<div>' + icono + ' <strong>' + accionTexto + '</strong> — ' + $('<div>').text(h.usuario_nombre).html()
+                                 + (h.rol ? ' <span class="text-muted">(' + $('<div>').text(h.rol).html() + ')</span>' : '')
+                                 + '</div>'
+                                 + '<div class="text-muted small">' + fecha + '</div>';
+                            if (!esAprobado && h.motivo) {
+                                html += '<div class="small" style="margin-top:4px;"><strong>Motivo:</strong> ' + $('<div>').text(h.motivo).html() + '</div>';
+                            }
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+                    Swal.fire({
+                        title: 'Historial de aprobación',
+                        html: html,
+                        width: 550,
+                        confirmButtonText: 'Cerrar'
+                    });
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error de conexión con el servidor', 'error');
                 }
             });
         }

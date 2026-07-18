@@ -634,13 +634,24 @@ class Modulo144Controller {
         $rolEsperado = $this->semaforoRoles[$etapaNueva] ?? null;
         $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
         $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        // Administrador / Sub Administrador solo pueden actuar sobre la etapa final (4)
+        $esAdminEtapaFinal = $etapaNueva === 4 && in_array($rolUsuario, ['administrador', 'sub administrador'], true);
 
-        if (!$esSuperAdmin && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
+        if (!$esSuperAdmin && !$esAdminEtapaFinal && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
             echo json_encode(['success' => false, 'message' => 'Tu rol no puede aprobar esta etapa']);
             return;
         }
 
         $resultado = $this->model->avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual);
+
+        if ($resultado) {
+            $this->model->registrarHistorialSemaforo(
+                $modulo, $id, $etapaNueva, 'aprobado',
+                (int)($_SESSION['usuario_id'] ?? 0),
+                $_SESSION['usuario_nombre'] ?? '—',
+                $rolEsperado ?? ($_SESSION['usuario_rol'] ?? null)
+            );
+        }
 
         if ($resultado && $etapaNueva === 4) {
             // Sub Administrador es la última etapa: aprobar = publicar
@@ -682,8 +693,10 @@ class Modulo144Controller {
         $rolEsperado = $this->semaforoRoles[$etapaSiguiente] ?? null;
         $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
         $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        // Administrador / Sub Administrador solo pueden actuar sobre la etapa final (4)
+        $esAdminEtapaFinal = $etapaSiguiente === 4 && in_array($rolUsuario, ['administrador', 'sub administrador'], true);
 
-        if (!$esSuperAdmin && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
+        if (!$esSuperAdmin && !$esAdminEtapaFinal && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
             echo json_encode(['success' => false, 'message' => 'Tu rol no puede rechazar esta etapa']);
             return;
         }
@@ -691,6 +704,13 @@ class Modulo144Controller {
         $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual, $etapaSiguiente);
 
         if ($resultado) {
+            $this->model->registrarHistorialSemaforo(
+                $modulo, $id, $etapaSiguiente, 'rechazado',
+                (int)($_SESSION['usuario_id'] ?? 0),
+                $_SESSION['usuario_nombre'] ?? '—',
+                $rolEsperado ?? ($_SESSION['usuario_rol'] ?? null),
+                $motivo
+            );
             $this->enviarMensajeRechazo($modulo, $id, $motivo);
         }
 
@@ -698,6 +718,20 @@ class Modulo144Controller {
             'success' => $resultado,
             'message' => $resultado ? 'Rechazado: vuelve al creador para su corrección' : 'No se pudo actualizar (puede que ya haya avanzado)'
         ]);
+    }
+
+    public function getHistorialSemaforo() {
+        header('Content-Type: application/json');
+        $modulo = $_GET['modulo'] ?? '';
+        $id = intval($_GET['id'] ?? 0);
+
+        if (empty($modulo) || $id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $historial = $this->model->getHistorialSemaforo($modulo, $id);
+        echo json_encode(['success' => true, 'historial' => $historial]);
     }
 
     /**
