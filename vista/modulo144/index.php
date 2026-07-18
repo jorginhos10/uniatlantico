@@ -1089,6 +1089,16 @@ ob_start();
             filter: brightness(1.08);
         }
 
+        .semaforo-dependencia {
+            margin-top: 5px;
+            font-size: 11px;
+            color: #8a95a0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
         .accordion-button > div > span:first-child {
@@ -1448,6 +1458,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
                                                 </div>
+                                                <?php if (!empty($borrador['creado_por_cargo_nombre'])): ?>
+                                                <div class="semaforo-dependencia"><?php echo htmlspecialchars($borrador['creado_por_cargo_nombre']); ?></div>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
