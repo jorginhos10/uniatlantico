@@ -650,9 +650,15 @@ class Modulo144Controller {
         $modulo = $_POST['modulo'] ?? '';
         $id = intval($_POST['id'] ?? 0);
         $etapaActual = intval($_POST['etapa_actual'] ?? 0);
+        $motivo = trim($_POST['motivo'] ?? '');
 
         if (empty($modulo) || $id <= 0 || $etapaActual < 0 || $etapaActual > 3) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        if ($motivo === '') {
+            echo json_encode(['success' => false, 'message' => 'Debes ingresar el motivo del rechazo']);
             return;
         }
 
@@ -668,10 +674,47 @@ class Modulo144Controller {
         }
 
         $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual, $etapaSiguiente);
+
+        if ($resultado) {
+            $this->enviarMensajeRechazo($modulo, $id, $motivo);
+        }
+
         echo json_encode([
             'success' => $resultado,
             'message' => $resultado ? 'Rechazado: vuelve al creador para su corrección' : 'No se pudo actualizar (puede que ya haya avanzado)'
         ]);
+    }
+
+    /**
+     * Envía un mensaje directo al creador del borrador explicando el motivo del rechazo,
+     * incluyendo línea, motor, proyecto, indicador y fórmula del indicador.
+     */
+    private function enviarMensajeRechazo($modulo, $id, $motivo) {
+        try {
+            $borrador = $this->model->getById($modulo, $id);
+            if (!$borrador || empty($borrador['creado_por'])) return;
+
+            $remitenteId = (int)($_SESSION['usuario_id'] ?? 0);
+            $destinatarioId = (int)$borrador['creado_por'];
+            if ($remitenteId <= 0 || $destinatarioId <= 0) return;
+
+            $nombreBorrador = $borrador['nombre_borrador'] ?? 'Sin nombre';
+            $asunto = 'Rechazo de: ' . $nombreBorrador;
+
+            $cuerpo = "Se rechazó el ítem \"{$nombreBorrador}\".\n\n"
+                    . "Línea: " . ($borrador['linea_estrategica'] ?? '—') . "\n"
+                    . "Motor de Desarrollo: " . ($borrador['motor_desarrollo'] ?? '—') . "\n"
+                    . "Proyecto: " . ($borrador['proyecto'] ?? '—') . "\n"
+                    . "Nombre del Indicador: " . ($borrador['nombre_indicador'] ?? '—') . "\n"
+                    . "Fórmula del Indicador: " . ($borrador['formula_medicion'] ?? '—') . "\n\n"
+                    . "Motivo del rechazo:\n" . $motivo;
+
+            require_once 'modelo/MensajesModel.php';
+            $mensajesModel = new MensajesModel();
+            $mensajesModel->crear($asunto, $cuerpo, $remitenteId, 'usuario', (string)$destinatarioId);
+        } catch (Exception $e) {
+            error_log("Error enviarMensajeRechazo: " . $e->getMessage());
+        }
     }
 
     public function eliminar() {

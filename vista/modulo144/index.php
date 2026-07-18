@@ -4195,17 +4195,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function rechazarSemaforo(modulo, id, etapaActual) {
             Swal.fire({
                 title: '¿Rechazar y devolver al creador?',
-                text: 'El ítem volverá al inicio para que el creador lo corrija y vuelva a solicitar aprobación.',
+                html: 'El ítem volverá al inicio para que el creador lo corrija. Este motivo se le enviará como mensaje directo.',
                 icon: 'warning',
+                input: 'textarea',
+                inputPlaceholder: 'Escribe el motivo del rechazo...',
+                inputValidator: (value) => {
+                    if (!value || !value.trim()) return 'Debes ingresar el motivo del rechazo';
+                },
                 showCancelButton: true,
                 confirmButtonColor: '#FF3B30',
-                confirmButtonText: 'Sí, rechazar'
+                confirmButtonText: 'Sí, rechazar',
+                cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    const motivo = result.value.trim();
                     $.ajax({
                         url: basePath + '/modulo144/rechazarSemaforo',
                         type: 'POST',
-                        data: { modulo: modulo, id: id, etapa_actual: etapaActual },
+                        data: { modulo: modulo, id: id, etapa_actual: etapaActual, motivo: motivo },
                         dataType: 'json',
                         success: function(response) {
                             if (response.success) {
