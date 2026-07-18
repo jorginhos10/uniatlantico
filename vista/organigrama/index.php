@@ -147,36 +147,49 @@ ob_start();
 
     /* ═══ RAMA CON VARIOS HIJOS EN EL MISMO NIVEL ═══ */
     .org-branch-row {
-        position: relative;
         display: flex;
         align-items: flex-start;
         justify-content: center;
         gap: 50px;
         flex-wrap: wrap;
-    }
-
-    /* Barra horizontal que une los conectores de los hijos, fusionándose con el tallo del padre */
-    .org-branch-row::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 25%;
-        right: 25%;
-        height: 2px;
-        background: var(--ios-sep);
+        padding-top: 20px;
     }
 
     .org-branch-item {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
     }
 
-    .org-branch-connector {
+    /* Tallo vertical hacia el nodo de este ítem */
+    .org-branch-item::before {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: 50%;
         width: 2px;
         height: 20px;
         background: var(--ios-sep);
     }
+
+    /* Barra horizontal que conecta con los hermanos (se extiende medio "gap" a cada lado) */
+    .org-branch-item::after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: -25px;
+        right: -25px;
+        height: 2px;
+        background: var(--ios-sep);
+    }
+
+    /* El primero no debe sobresalir por la izquierda; el último no debe sobresalir por la derecha */
+    .org-branch-item:first-child::after { left: 50%; }
+    .org-branch-item:last-child::after  { right: 50%; }
+
+    /* Si es hijo único, no hace falta barra horizontal */
+    .org-branch-item:only-child::after { display: none; }
 </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
@@ -244,14 +257,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         <div class="org-branch-row">
             <div class="org-branch-item">
-                <div class="org-branch-connector"></div>
                 <div class="org-node">
                     <div class="org-node-title">Gestor de Metas de Sub-Administrador</div>
                     <div class="org-node-users"><?php org_renderChips($usuariosGestorSubAdmin); ?></div>
                 </div>
             </div>
             <div class="org-branch-item">
-                <div class="org-branch-connector"></div>
                 <div class="org-node">
                     <div class="org-node-title">Responsable de Línea</div>
                     <div class="org-node-users"><?php org_renderChips($usuariosRespLinea); ?></div>
@@ -261,7 +272,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                 <div class="org-branch-row">
                     <div class="org-branch-item">
-                        <div class="org-branch-connector"></div>
+                        <div class="org-node">
+                            <div class="org-node-title">Gestor de Metas de Responsable de Línea</div>
+                            <div class="org-node-users"><?php org_renderChips($usuariosGestorRespLinea); ?></div>
+                        </div>
+                    </div>
+                    <div class="org-branch-item">
                         <div class="org-node">
                             <div class="org-node-title">Líder de Meta</div>
                             <div class="org-node-users"><?php org_renderChips($usuariosLiderMeta); ?></div>
@@ -271,26 +287,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                         <div class="org-branch-row">
                             <div class="org-branch-item">
-                                <div class="org-branch-connector"></div>
                                 <div class="org-node">
                                     <div class="org-node-title">Gestor de Metas</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorMetas); ?></div>
                                 </div>
                             </div>
                             <div class="org-branch-item">
-                                <div class="org-branch-connector"></div>
                                 <div class="org-node">
                                     <div class="org-node-title">Gestor de Facultad</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorFacultad); ?></div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="org-branch-item">
-                        <div class="org-branch-connector"></div>
-                        <div class="org-node">
-                            <div class="org-node-title">Gestor de Metas de Responsable de Línea</div>
-                            <div class="org-node-users"><?php org_renderChips($usuariosGestorRespLinea); ?></div>
                         </div>
                     </div>
                 </div>
