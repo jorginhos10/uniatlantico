@@ -279,7 +279,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                     <div class="org-branch-item">
                         <div class="org-node">
-                            <div class="org-node-title">Líder de Meta</div>
+                            <div class="org-node-title">Líder de Metas</div>
                             <div class="org-node-users"><?php org_renderChips($usuariosLiderMeta); ?></div>
                         </div>
 
@@ -288,7 +288,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="org-branch-row">
                             <div class="org-branch-item">
                                 <div class="org-node">
-                                    <div class="org-node-title">Gestor de Metas de Facultad</div>
+                                    <div class="org-node-title">Gestor de Metas de Dependencia</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorMetas); ?></div>
                                 </div>
                             </div>

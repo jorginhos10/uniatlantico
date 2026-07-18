@@ -376,7 +376,7 @@ class PermisosManager {
                         <input type="checkbox" id="subperm_${s.id}"
                                class="permiso-check-f144" data-subpermiso-id="${s.id}"
                                ${s.activo == 1 ? 'checked' : ''}>
-                        <label for="subperm_${s.id}"><span>${s.etiqueta}</span></label>
+                        <label for="subperm_${s.id}"><span>${s.etiqueta || s.nombre}</span></label>
                     </div>`).join('');
             } else {
                 subsHtml = DEFAULT_SUBS.map(label => {

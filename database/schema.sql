@@ -63,9 +63,11 @@ CREATE TABLE IF NOT EXISTS `subpermisos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `permiso_id` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
+  `etiqueta` varchar(100) NOT NULL DEFAULT '',
   `estado` tinyint(1) NOT NULL DEFAULT 1,
   `orden` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `permiso_nombre` (`permiso_id`,`nombre`),
   KEY `permiso_id` (`permiso_id`),
   CONSTRAINT `subpermisos_ibfk_1` FOREIGN KEY (`permiso_id`) REFERENCES `lista_permisos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
