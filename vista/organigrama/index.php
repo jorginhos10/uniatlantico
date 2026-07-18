@@ -147,11 +147,23 @@ ob_start();
 
     /* ═══ RAMA CON VARIOS HIJOS EN EL MISMO NIVEL ═══ */
     .org-branch-row {
+        position: relative;
         display: flex;
         align-items: flex-start;
         justify-content: center;
         gap: 50px;
         flex-wrap: wrap;
+    }
+
+    /* Barra horizontal que une los conectores de los hijos, fusionándose con el tallo del padre */
+    .org-branch-row::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: var(--ios-sep);
     }
 
     .org-branch-item {
