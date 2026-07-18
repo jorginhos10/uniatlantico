@@ -30,6 +30,7 @@ class AuthController {
                 $_SESSION['usuario_nombre'] = $usuario['nombre'];
                 $_SESSION['usuario_email'] = $usuario['email'];
                 $_SESSION['usuario_rol'] = $usuario['rol'];
+                $_SESSION['usuario_cargo_id'] = $usuario['cargo_id'];
                 $_SESSION['usuario_avatar'] = $usuario['avatar'];
                 $_SESSION['logged_in'] = true;
                 $_SESSION['last_activity'] = time();

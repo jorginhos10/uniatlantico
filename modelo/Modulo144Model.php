@@ -636,6 +636,23 @@ class Modulo144Model {
         }
     }
 
+    public function rechazarSemaforo($modulo, $id, $etapaActual) {
+        try {
+            $tabla = $this->modulos[$modulo]['tabla'];
+            $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
+            $campo_solicitud = $this->modulos[$modulo]['campo_solicitud'];
+            $stmt = $this->db->prepare(
+                "UPDATE {$tabla} SET {$campo_semaforo} = 0, {$campo_solicitud} = 2, fecha_actualizacion = NOW()
+                 WHERE id = :id AND {$campo_semaforo} = :actual"
+            );
+            $stmt->execute([':id' => $id, ':actual' => $etapaActual]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            error_log("Error rechazarSemaforo [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function eliminar($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];

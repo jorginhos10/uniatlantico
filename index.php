@@ -384,6 +384,9 @@ switch ($action) {
             case 'avanzarSemaforo':
                 $modulo144Controller->avanzarSemaforo();
                 break;
+            case 'rechazarSemaforo':
+                $modulo144Controller->rechazarSemaforo();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;

@@ -1099,6 +1099,16 @@ ob_start();
             max-width: 140px;
         }
 
+        .semaforo-circle.semaforo-rechazar {
+            background: #FF3B30;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .semaforo-circle.semaforo-rechazar:hover {
+            filter: brightness(1.1);
+        }
+
         /* ═══ ACCORDION INNER TEXT OVERRIDES ═══ */
         /* !important beats inline style on span/small inside accordion button */
         .accordion-button > div > span:first-child {
@@ -1384,6 +1394,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
                                     $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
                                     $campoSemaforo    = $modulo['config']['campo_semaforo'];
+                                    $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
+                                    $viewerCargoId    = (int)($_SESSION['usuario_cargo_id'] ?? 0);
+                                    // Administrador / Sub Administrador / Súper Admin ven todo el recorrido, en cualquier dependencia
+                                    $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
                                     ?>
                                     <?php foreach ($modulo['borradores'] as $borrador):
                                         $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
@@ -1399,6 +1413,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $solEstado = (int)($borrador[$campoSolicitud] ?? 0);
                                         $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
                                         $etapaActual = (int)($borrador[$campoSemaforo] ?? 0);
+
+                                        // ── Visibilidad en cascada por dependencia ──
+                                        $creadorId = (int)($borrador['creado_por'] ?? 0);
+                                        $creadorCargoId = (int)($borrador['creado_por_cargo_id'] ?? 0);
+                                        $esCreadorFila = $viewerId > 0 && $viewerId === $creadorId;
+                                        $mismaDependenciaFila = $creadorCargoId > 0 && $viewerCargoId === $creadorCargoId;
+
+                                        $puedeVerFila = $puedeVerTodoElSemaforo || $esCreadorFila;
+                                        if (!$puedeVerFila && $mismaDependenciaFila) {
+                                            if ($miRolNormalizado === 'lider de metas' && $etapaActual >= 1) $puedeVerFila = true;
+                                            elseif ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) $puedeVerFila = true;
+                                        }
+                                        if (!$puedeVerFila) continue; // Ni siquiera se renderiza la fila
+
+                                        // Revisor = puede ver por la cascada de aprobación, pero no es el creador ni un admin con acceso total
+                                        $esRevisorFila = !$esCreadorFila && !$puedeVerTodoElSemaforo;
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
@@ -1445,10 +1475,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="semaforo-row">
-                                                    <?php foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
+                                                    <?php
+                                                    $puedeRechazarEtapa = false;
+                                                    foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
                                                         $activo = $etapaNum <= $etapaActual;
                                                         $esSiguiente = $etapaNum === $etapaActual + 1;
                                                         $puedeAprobar = $esSiguiente && ($esSuperAdminSem || m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado);
+                                                        if ($puedeAprobar) $puedeRechazarEtapa = true;
                                                         $clases = 'semaforo-circle' . ($activo ? ' activo' : '') . ($puedeAprobar ? ' clickable' : '');
                                                     ?>
                                                     <span class="<?php echo $clases; ?>"
@@ -1457,6 +1490,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                           onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
+                                                    <?php if ($puedeRechazarEtapa): ?>
+                                                    <span class="semaforo-circle semaforo-rechazar" title="Rechazar y devolver al creador"
+                                                          onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)">
+                                                        <i class="fas fa-times"></i>
+                                                    </span>
+                                                    <?php endif; ?>
                                                 </div>
                                                 <?php if (!empty($borrador['creado_por_cargo_nombre'])): ?>
                                                 <div class="semaforo-dependencia"><?php echo htmlspecialchars($borrador['creado_por_cargo_nombre']); ?></div>
@@ -1464,7 +1503,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <?php if ($solEstado === 1): ?>
+                                                    <?php if ($esRevisorFila): ?>
+                                                    <button class="btn btn-sm btn-info" onclick="verBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <?php elseif ($solEstado === 1): ?>
                                                         <?php if ($esAdminFormulario): ?>
                                                         <button class="btn btn-sm btn-success" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 2)" title="Aprobar y publicar">
                                                             <i class="fas fa-check"></i>
@@ -4116,6 +4159,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo aprobar', 'error');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function rechazarSemaforo(modulo, id, etapaActual) {
+            Swal.fire({
+                title: '¿Rechazar y devolver al creador?',
+                text: 'El ítem volverá al inicio para que el creador lo corrija y vuelva a solicitar aprobación.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#FF3B30',
+                confirmButtonText: 'Sí, rechazar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/modulo144/rechazarSemaforo',
+                        type: 'POST',
+                        data: { modulo: modulo, id: id, etapa_actual: etapaActual },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('Rechazado', response.message, 'success');
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                            } else {
+                                Swal.fire('Error', response.message || 'No se pudo rechazar', 'error');
                             }
                         },
                         error: function() {

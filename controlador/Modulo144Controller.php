@@ -626,9 +626,51 @@ class Modulo144Controller {
         }
 
         $resultado = $this->model->avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual);
+
+        if ($resultado && $etapaNueva === 4) {
+            // Sub Administrador es la última etapa: aprobar = publicar
+            $this->model->cambiarEstado($modulo, $id, 2);
+        }
+
         echo json_encode([
             'success' => $resultado,
-            'message' => $resultado ? 'Etapa aprobada' : 'No se pudo actualizar (puede que ya haya avanzado)'
+            'message' => $resultado
+                ? ($etapaNueva === 4 ? 'Etapa aprobada: publicado exitosamente' : 'Etapa aprobada')
+                : 'No se pudo actualizar (puede que ya haya avanzado)'
+        ]);
+    }
+
+    public function rechazarSemaforo() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+
+        $modulo = $_POST['modulo'] ?? '';
+        $id = intval($_POST['id'] ?? 0);
+        $etapaActual = intval($_POST['etapa_actual'] ?? 0);
+
+        if (empty($modulo) || $id <= 0 || $etapaActual < 0 || $etapaActual > 3) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        // Quien puede aprobar la siguiente etapa también puede rechazarla
+        $etapaSiguiente = $etapaActual + 1;
+        $rolEsperado = $this->semaforoRoles[$etapaSiguiente] ?? null;
+        $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+
+        if (!$esSuperAdmin && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
+            echo json_encode(['success' => false, 'message' => 'Tu rol no puede rechazar esta etapa']);
+            return;
+        }
+
+        $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual);
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? 'Rechazado: vuelve al creador para su corrección' : 'No se pudo actualizar (puede que ya haya avanzado)'
         ]);
     }
 

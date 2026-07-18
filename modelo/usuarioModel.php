@@ -21,7 +21,7 @@ class UsuarioModel {
     }
 
     public function verificarUsuario($username, $password) {
-        $sql = "SELECT id, username, nombre, email, password, rol, avatar FROM usuarios WHERE username = :username AND activo = 1";
+        $sql = "SELECT id, username, nombre, email, password, rol, avatar, cargo_id FROM usuarios WHERE username = :username AND activo = 1";
         
         try {
             $stmt = $this->db->prepare($sql);
