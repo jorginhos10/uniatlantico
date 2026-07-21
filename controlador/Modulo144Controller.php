@@ -604,7 +604,9 @@ class Modulo144Controller {
 
     private $semaforoRolNivel = [
         'gestor de metas' => 1,
+        'gestor de metas de responsable de linea' => 1,
         'lider de meta' => 2,
+        'gestor de metas de sub-admin' => 2,
         'responsable de linea' => 3,
         'sub administrador' => 4,
     ];

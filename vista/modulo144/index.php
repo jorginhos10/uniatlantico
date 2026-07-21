@@ -1242,6 +1242,66 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
         <?php else: ?>
 
+        <?php
+        // ── Precalcular cuántos borradores son realmente visibles para el usuario actual ──
+        // (la cascada de visibilidad por dependencia se aplica fila por fila más abajo; aquí se
+        // replica la misma regla para que los números de las pestañas coincidan con lo que se ve en pantalla).
+        if (!function_exists('m144_normalizarRol')) {
+            function m144_normalizarRol($s) {
+                $s = mb_strtolower(trim((string)$s), 'UTF-8');
+                return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
+            }
+        }
+        $semaforoRolNivel = [
+            'gestor de metas' => 1,
+            'gestor de metas de responsable de linea' => 1,
+            'lider de meta' => 2,
+            'gestor de metas de sub-admin' => 2,
+            'responsable de linea' => 3,
+            'sub administrador' => 4,
+        ];
+        $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
+        $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
+        $viewerCargoId    = (int)($_SESSION['usuario_cargo_id'] ?? 0);
+        $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
+
+        if (!function_exists('m144_filtrarBorradoresVisibles')) {
+            function m144_filtrarBorradoresVisibles($borradores, $campoSemaforo, $campoSolicitud, $semaforoRolNivel, $viewerId, $viewerCargoId, $miRolNormalizado, $puedeVerTodoElSemaforo) {
+                $visibles = [];
+                foreach ($borradores as $b) {
+                    $creadorId = (int)($b['creado_por'] ?? 0);
+                    $creadorCargoId = (int)($b['creado_por_cargo_id'] ?? 0);
+                    $esCreador = $viewerId > 0 && $viewerId === $creadorId;
+                    if ($puedeVerTodoElSemaforo || $esCreador) {
+                        $visibles[] = $b;
+                        continue;
+                    }
+                    if (!($creadorCargoId > 0 && $viewerCargoId === $creadorCargoId)) continue;
+                    $creadorRolNorm = m144_normalizarRol($b['creado_por_rol'] ?? '');
+                    $creadorNivel = $semaforoRolNivel[$creadorRolNorm] ?? 0;
+                    $solEstado = (int)($b[$campoSolicitud] ?? 0);
+                    $etapaActual = (int)($b[$campoSemaforo] ?? 0);
+                    if ($solEstado === 1 && $etapaActual < $creadorNivel) $etapaActual = $creadorNivel;
+                    if ($miRolNormalizado === 'lider de meta' && $etapaActual >= 1) { $visibles[] = $b; continue; }
+                    if ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) { $visibles[] = $b; continue; }
+                }
+                return $visibles;
+            }
+        }
+        // Ojo: se guarda aparte (no se pisa $datos_modulos[...]['borradores']) porque ese arreglo
+        // completo también lo usan, sin filtrar, las pestañas de Facultades y Evaluación Líneas.
+        $borradoresVisiblesPorModulo = [];
+        foreach ($datos_modulos as $_dmKey => $_dmModulo) {
+            $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
+                $_dmModulo['borradores'],
+                $_dmModulo['config']['campo_semaforo'],
+                $_dmModulo['config']['campo_solicitud'],
+                $semaforoRolNivel, $viewerId, $viewerCargoId, $miRolNormalizado, $puedeVerTodoElSemaforo
+            );
+        }
+        ?>
+
         <!-- Pestañas principales -->
         <ul class="nav nav-tabs modulo-tabs-top mb-4" id="moduloTabsTop" role="tablist">
             <?php $primer_modulo_tab = true; ?>
@@ -1249,7 +1309,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link <?php echo $primer_modulo_tab ? 'active' : ''; ?>" data-bs-toggle="tab" data-bs-target="#panelModulo-<?php echo $key; ?>" type="button" role="tab">
                     <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i><?php echo $modulo['config']['nombre']; ?>
-                    <span class="badge bg-secondary ms-2">B:<?php echo count($modulo['borradores']); ?> P:<?php echo count($modulo['publicados']); ?> C:<?php echo count($modulo['cancelados']); ?></span>
+                    <span class="badge bg-secondary ms-2">B:<?php echo count($borradoresVisiblesPorModulo[$key]); ?> P:<?php echo count($modulo['publicados']); ?> C:<?php echo count($modulo['cancelados']); ?></span>
                 </button>
             </li>
             <?php $primer_modulo_tab = false; ?>
@@ -1336,7 +1396,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <ul class="nav nav-tabs lista-tabs mb-4" id="listaTabs-<?php echo $key; ?>" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabBorradores-<?php echo $key; ?>" type="button" role="tab">
-                                    <i class="fas fa-pen-fancy me-1"></i>Borradores <span class="badge bg-secondary ms-1"><?php echo count($modulo['borradores']); ?></span>
+                                    <i class="fas fa-pen-fancy me-1"></i>Borradores <span class="badge bg-secondary ms-1"><?php echo count($borradoresVisiblesPorModulo[$key]); ?></span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -1354,7 +1414,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="tab-content">
                         <!-- BORRADORES -->
                         <div class="tab-pane fade show active" id="tabBorradores-<?php echo $key; ?>" role="tabpanel">
-                            <?php if (count($modulo['borradores']) > 0): ?>
+                            <?php if (count($borradoresVisiblesPorModulo[$key]) > 0): ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
@@ -1369,7 +1429,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <?php
                                     // Pre-calcular suma de ponderacion_actividades por L-M-P
                                     $pond_por_linea_b = [];
-                                    foreach ($modulo['borradores'] as $_b) {
+                                    foreach ($borradoresVisiblesPorModulo[$key] as $_b) {
                                         $lk = ($_b['linea_codigo'] ?? '__') . '|' . ($_b['motor_id_num'] ?? '__') . '|' . ($_b['proyecto_codigo'] ?? '__');
                                         $pond_por_linea_b[$lk] = ($pond_por_linea_b[$lk] ?? 0) + (float)($_b['ponderacion_actividades'] ?? 0);
                                     }
@@ -1386,7 +1446,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ];
                                     $semaforoRolNivel = [
                                         'gestor de metas' => 1,
+                                        'gestor de metas de responsable de linea' => 1,
                                         'lider de meta' => 2,
+                                        'gestor de metas de sub-admin' => 2,
                                         'responsable de linea' => 3,
                                         'sub administrador' => 4,
                                     ];
@@ -1405,7 +1467,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     // Administrador / Sub Administrador / Súper Admin ven todo el recorrido, en cualquier dependencia
                                     $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
                                     ?>
-                                    <?php foreach ($modulo['borradores'] as $borrador):
+                                    <?php foreach ($borradoresVisiblesPorModulo[$key] as $borrador):
                                         $l   = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
                                         $m   = !empty($borrador['motor_codigo'])    ? $borrador['motor_codigo']    : null;
                                         $p   = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
