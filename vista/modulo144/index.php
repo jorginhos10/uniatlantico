@@ -1828,14 +1828,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="p-4">
 
                         <?php
+                        // Solo formulaciones ya publicadas: no tiene sentido gestionar/hacer seguimiento
+                        // por facultades de algo que todavía está en borrador sin publicar.
                         $formulaciones_con_check = [];
-                        if (isset($datos_modulos['formulacion']['borradores'])) {
-                            foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
-                                if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
-                                    $formulaciones_con_check[] = $borrador;
-                                }
-                            }
-                        }
                         if (isset($datos_modulos['formulacion']['publicados'])) {
                             foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
                                 if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
