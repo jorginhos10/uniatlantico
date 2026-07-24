@@ -722,6 +722,32 @@ class Modulo144Controller {
         ]);
     }
 
+    public function getDistribucionFacultades() {
+        header('Content-Type: application/json');
+        $formulacionId = intval($_GET['formulacion_id'] ?? 0);
+        if ($formulacionId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            return;
+        }
+        echo json_encode(['success' => true, 'distribucion' => $this->model->getDistribucionFacultades($formulacionId)]);
+    }
+
+    public function guardarDistribucionFacultad() {
+        header('Content-Type: application/json');
+        $formulacionId = intval($_POST['formulacion_id'] ?? 0);
+        $facultadId = intval($_POST['facultad_id'] ?? 0);
+        $observacion = trim($_POST['observacion'] ?? '');
+        $distribucion = floatval($_POST['distribucion'] ?? 0);
+
+        if ($formulacionId <= 0 || $facultadId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $ok = $this->model->guardarDistribucionFacultad($formulacionId, $facultadId, $observacion, $distribucion);
+        echo json_encode(['success' => $ok]);
+    }
+
     public function getHistorialSemaforo() {
         header('Content-Type: application/json');
         $modulo = $_GET['modulo'] ?? '';

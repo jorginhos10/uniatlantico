@@ -2284,7 +2284,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                                     <div class="col-12 mb-3">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this)">
+                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this); toggleDistribucionFacultadesTabla(this.checked)">
                                             <label class="form-check-label" for="formulacion_gestionado_facultades">
                                                 <strong>12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
                                             </label>
@@ -2382,10 +2382,45 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </div>
                                     </div>
 
+                                    <div class="col-12 mt-4" id="distribucionFacultadesWrap" style="display:none;">
+                                        <div class="meta-section">
+                                            <h5 class="meta-title">DISTRIBUCIÓN POR FACULTADES</h5>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm align-middle" id="tablaDistribucionFacultades">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Facultad</th>
+                                                            <th>Observación</th>
+                                                            <th style="width:160px;">Distribución</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <?php foreach ($facultades as $fac): ?>
+                                                        <tr data-facultad-id="<?php echo (int)$fac['id']; ?>">
+                                                            <td><?php echo htmlspecialchars($fac['nombre']); ?></td>
+                                                            <td>
+                                                                <input type="text" class="form-control form-control-sm distribucion-observacion" placeholder="Observación...">
+                                                            </td>
+                                                            <td>
+                                                                <input type="number" class="form-control form-control-sm distribucion-valor" step="0.01" min="0" placeholder="0.00">
+                                                            </td>
+                                                        </tr>
+                                                        <?php endforeach; ?>
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <td colspan="2" class="text-end fw-bold">Total distribuido:</td>
+                                                            <td><span id="distribucionTotalBadge" class="fw-bold">0.00</span></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
 
                                 </div>
                             </div>
-                            
+
                             <!-- PESTAÑA 3: PLANES INSTITUCIONALES -->
                             <div class="tab-pane fade" id="planes" role="tabpanel" aria-labelledby="tab-planes">
                                 <div class="row">
@@ -2973,19 +3008,109 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 });
                             } else {
                                 checkbox.checked = !estadoActual;
+                                toggleDistribucionFacultadesTabla(checkbox.checked);
                                 Swal.fire('Error', response.message || 'No se pudo guardar el cambio', 'error');
                             }
                         },
                         error: function() {
                             checkbox.checked = !estadoActual;
+                            toggleDistribucionFacultadesTabla(checkbox.checked);
                             Swal.fire('Error', 'Error al comunicarse con el servidor', 'error');
                         }
                     });
                 } else {
                     checkbox.checked = !estadoActual;
+                    toggleDistribucionFacultadesTabla(checkbox.checked);
                 }
             });
         }
+
+        function toggleDistribucionFacultadesTabla(mostrar) {
+            $('#distribucionFacultadesWrap').toggle(!!mostrar);
+        }
+
+        function cargarDistribucionFacultades(formulacionId) {
+            $('#tablaDistribucionFacultades tbody tr').each(function() {
+                $(this).find('.distribucion-observacion').val('');
+                $(this).find('.distribucion-valor').val('');
+            });
+            actualizarTotalDistribucionFacultades();
+            if (!formulacionId) return;
+
+            $.ajax({
+                url: basePath + '/modulo144/getDistribucionFacultades',
+                type: 'GET',
+                data: { formulacion_id: formulacionId },
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.success) return;
+                    (response.distribucion || []).forEach(function(d) {
+                        const fila = $('#tablaDistribucionFacultades tbody tr[data-facultad-id="' + d.facultad_id + '"]');
+                        if (!fila.length) return;
+                        fila.find('.distribucion-observacion').val(d.observacion || '');
+                        fila.find('.distribucion-valor').val(d.distribucion || '');
+                    });
+                    actualizarTotalDistribucionFacultades();
+                }
+            });
+        }
+
+        function actualizarTotalDistribucionFacultades() {
+            let total = 0;
+            $('#tablaDistribucionFacultades tbody tr').each(function() {
+                const v = parseFloat($(this).find('.distribucion-valor').val());
+                if (!isNaN(v)) total += v;
+            });
+            $('#distribucionTotalBadge').text(total.toFixed(2));
+
+            const meta = parseFloat($('#formulacion_anio_base_meta').val());
+            const badge = $('#distribucionTotalBadge');
+            if (!isNaN(meta) && meta > 0 && total > meta) {
+                badge.css('color', '#E74C3C');
+            } else {
+                badge.css('color', '');
+            }
+            return total;
+        }
+
+        let distribucionFacultadTimeout = null;
+        function autoGuardarDistribucionFacultad(fila) {
+            const formulacionId = $('#formulacion_id').val();
+            if (!formulacionId) return;
+            const facultadId = $(fila).data('facultad-id');
+            const observacion = $(fila).find('.distribucion-observacion').val();
+            const distribucion = parseFloat($(fila).find('.distribucion-valor').val()) || 0;
+
+            const totalPrevio = actualizarTotalDistribucionFacultades();
+            const meta = parseFloat($('#formulacion_anio_base_meta').val());
+            if (!isNaN(meta) && meta > 0 && totalPrevio > meta) {
+                Swal.fire({
+                    title: 'Se ha pasado del valor',
+                    text: 'La distribución total (' + totalPrevio.toFixed(2) + ') supera el total de la meta anual (' + meta.toFixed(2) + ').',
+                    icon: 'warning',
+                    confirmButtonText: 'Entendido'
+                });
+            }
+
+            clearTimeout(distribucionFacultadTimeout);
+            distribucionFacultadTimeout = setTimeout(function() {
+                $.ajax({
+                    url: basePath + '/modulo144/guardarDistribucionFacultad',
+                    type: 'POST',
+                    data: {
+                        formulacion_id: formulacionId,
+                        facultad_id: facultadId,
+                        observacion: observacion,
+                        distribucion: distribucion
+                    },
+                    dataType: 'json'
+                });
+            }, 500);
+        }
+
+        $(document).on('input', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
+            autoGuardarDistribucionFacultad($(this).closest('tr'));
+        });
 
         let nombreBorradorProvisional = 'Nuevo Borrador';
 
@@ -4175,6 +4300,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#formulacion_responsable').val(responsablesArray).trigger('change.select2');
                             $('#formulacion_id_indicador').val(b.id_indicador);
                             $('#formulacion_gestionado_facultades').prop('checked', b.gestionado_facultades == 1);
+                            toggleDistribucionFacultadesTabla(b.gestionado_facultades == 1);
+                            cargarDistribucionFacultades(b.id);
                             $('#formulacion_nombre_indicador').val(b.nombre_indicador);
                             $('#formulacion_formula_medicion').val(b.formula_medicion);
                             $('#formulacion_frecuencia_medicion').val(b.frecuencia_medicion);
@@ -4186,6 +4313,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             
                             // Calcular valor anual después de cargar valores
                             calcularValorAnual();
+                            actualizarTotalDistribucionFacultades();
                             setTimeout(function() { calcularAcumuladoActividades(true); }, 400);
                             
                             if (b.planes_institucionales) {

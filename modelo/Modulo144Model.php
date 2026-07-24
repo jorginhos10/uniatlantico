@@ -717,6 +717,40 @@ class Modulo144Model {
         }
     }
 
+    public function getDistribucionFacultades($formulacionId) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT facultad_id, observacion, distribucion
+                 FROM formulacion_distribucion_facultad_144
+                 WHERE formulacion_id = :fid"
+            );
+            $stmt->execute([':fid' => $formulacionId]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getDistribucionFacultades: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function guardarDistribucionFacultad($formulacionId, $facultadId, $observacion, $distribucion) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, observacion, distribucion)
+                 VALUES (:fid, :facid, :obs, :dist)
+                 ON DUPLICATE KEY UPDATE observacion = VALUES(observacion), distribucion = VALUES(distribucion)"
+            );
+            return $stmt->execute([
+                ':fid' => $formulacionId,
+                ':facid' => $facultadId,
+                ':obs' => $observacion,
+                ':dist' => $distribucion,
+            ]);
+        } catch (PDOException $e) {
+            error_log("Error guardarDistribucionFacultad: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function eliminar($modulo, $id) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];

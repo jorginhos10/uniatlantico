@@ -390,6 +390,12 @@ switch ($action) {
             case 'getHistorialSemaforo':
                 $modulo144Controller->getHistorialSemaforo();
                 break;
+            case 'getDistribucionFacultades':
+                $modulo144Controller->getDistribucionFacultades();
+                break;
+            case 'guardarDistribucionFacultad':
+                $modulo144Controller->guardarDistribucionFacultad();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;
