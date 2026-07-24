@@ -26,8 +26,8 @@ $dbError = $informe['error'] ?? null;
 *{box-sizing:border-box;margin:0;padding:0}
 body{
     font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Helvetica Neue',Arial,sans-serif;
-    background:#0a1628;
-    color:#fff;
+    background:#f5f5f7;
+    color:#1d1d1f;
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
 }
@@ -37,69 +37,72 @@ body{
 .header{
     display:flex;align-items:center;justify-content:space-between;
     flex-wrap:wrap;gap:14px;
-    background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.1);
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,.06);
     border-radius:18px;
     padding:20px 26px;
     margin-bottom:24px;
-    backdrop-filter:blur(10px);
+    box-shadow:0 2px 12px rgba(0,0,0,.05);
 }
 .header h1{
     font-size:1.35rem;font-weight:800;letter-spacing:-.3px;
+    color:#1d1d1f;
     display:flex;align-items:center;gap:10px;
 }
-.header h1 i{color:#f39c12;font-size:1.1rem}
-.header h1 span{color:rgba(255,255,255,.55);font-size:.9rem;font-weight:400;margin-left:6px}
+.header h1 i{color:#0071e3;font-size:1.1rem}
+.header h1 span{color:rgba(0,0,0,.45);font-size:.9rem;font-weight:400;margin-left:6px}
 .header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 .btn-back{
     display:inline-flex;align-items:center;gap:7px;
-    background:rgba(255,255,255,.08);
-    border:1px solid rgba(255,255,255,.14);
-    color:#fff;padding:8px 16px;border-radius:20px;
+    background:#f5f5f7;
+    border:1px solid rgba(0,0,0,.08);
+    color:#1d1d1f;padding:8px 16px;border-radius:20px;
     text-decoration:none;font-size:13px;font-weight:600;
     transition:background .2s;
 }
-.btn-back:hover{background:rgba(255,255,255,.15);color:#fff}
+.btn-back:hover{background:#e8e8ed;color:#1d1d1f}
 
 .btn-dep{
     display:inline-flex;align-items:center;gap:7px;
-    background:linear-gradient(135deg,#e67e22,#f39c12);
+    background:linear-gradient(135deg,#0071e3,#42a5f5);
     border:none;color:#fff;padding:8px 18px;
     border-radius:20px;font-size:13px;font-weight:700;
     cursor:pointer;
-    box-shadow:0 4px 14px rgba(230,126,34,.35);
+    box-shadow:0 4px 14px rgba(0,113,227,.28);
     transition:all .2s;
 }
-.btn-dep:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(230,126,34,.45)}
+.btn-dep:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,113,227,.38)}
 
 /* ── Global cumplimiento ── */
 .cumplimiento-global{
-    background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.1);
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,.06);
     border-radius:18px;padding:28px 32px;
     text-align:center;margin-bottom:24px;
+    box-shadow:0 2px 14px rgba(0,0,0,.05);
 }
-.global-label{font-size:.95rem;color:rgba(255,255,255,.65);margin-bottom:10px}
-.global-label span{color:#f39c12;font-weight:700}
+.global-label{font-size:.95rem;color:rgba(0,0,0,.55);margin-bottom:10px}
+.global-label span{color:#0071e3;font-weight:700}
 .global-number{
     font-size:4.2rem;font-weight:900;letter-spacing:-3px;
-    background:linear-gradient(135deg,#f39c12,#e67e22);
+    background:linear-gradient(135deg,#0071e3,#34c759);
     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
     background-clip:text;
 }
-.global-sub{font-size:.8rem;color:rgba(255,255,255,.35);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
+.global-sub{font-size:.8rem;color:rgba(0,0,0,.35);margin-top:6px;text-transform:uppercase;letter-spacing:.5px}
 
 /* ── Lineas grid ── */
 .lineas-grid{display:flex;flex-direction:column;gap:14px;margin-bottom:28px}
 
 .linea-card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.09);
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,.06);
     border-radius:16px;overflow:hidden;
-    transition:border-color .25s;
+    box-shadow:0 1px 4px rgba(0,0,0,.04);
+    transition:border-color .25s,box-shadow .25s;
 }
-.linea-card:hover{border-color:rgba(243,156,18,.35)}
+.linea-card:hover{border-color:rgba(0,113,227,.3);box-shadow:0 4px 16px rgba(0,0,0,.08)}
 
 .linea-header{
     display:grid;
@@ -110,7 +113,7 @@ body{
     cursor:pointer;
 }
 
-.linea-titulo h2{font-size:1rem;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.35}
+.linea-titulo h2{font-size:1rem;font-weight:700;color:#1d1d1f;margin-bottom:6px;line-height:1.35}
 .linea-badge{
     display:inline-block;padding:3px 11px;border-radius:20px;
     font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
@@ -118,42 +121,43 @@ body{
 }
 
 .progress-container{display:flex;align-items:center;gap:10px;min-width:180px}
-.progress-bar-bg{flex:1;height:8px;background:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
+.progress-bar-bg{flex:1;height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden}
 .progress-fill{
     height:100%;
-    background:linear-gradient(90deg,#f39c12,#e67e22);
+    background:linear-gradient(90deg,#0071e3,#34c759);
     border-radius:4px;width:0%;
     transition:width 1.1s cubic-bezier(.4,0,.2,1);
 }
-.porcentaje-num{font-size:1.15rem;font-weight:800;color:#f39c12;min-width:58px;text-align:right}
+.porcentaje-num{font-size:1.15rem;font-weight:800;color:#0071e3;min-width:58px;text-align:right}
 
 .eye-icon{
     font-size:1.1rem;cursor:pointer;
     width:36px;height:36px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.05);
+    background:rgba(0,113,227,.07);
+    color:#1d1d1f;
     transition:background .2s,color .2s;
-    border:1px solid rgba(255,255,255,.08);
+    border:1px solid rgba(0,0,0,.06);
 }
-.eye-icon:hover{background:rgba(243,156,18,.18);color:#f39c12}
+.eye-icon:hover{background:rgba(0,113,227,.15);color:#0071e3}
 
 .expand-icon{
     font-size:.85rem;cursor:pointer;
     width:36px;height:36px;border-radius:50%;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.08);
+    background:rgba(0,0,0,.04);
+    border:1px solid rgba(0,0,0,.06);
     transition:background .2s,transform .35s;
-    color:rgba(255,255,255,.6);
+    color:rgba(0,0,0,.55);
 }
-.expand-icon:hover{background:rgba(255,255,255,.1)}
-.expand-icon.open{transform:rotate(180deg);background:rgba(243,156,18,.15);color:#f39c12}
+.expand-icon:hover{background:rgba(0,0,0,.08)}
+.expand-icon.open{transform:rotate(180deg);background:rgba(0,113,227,.12);color:#0071e3}
 
 /* ── Detalle expandido ── */
 .detalle-contenido{
     max-height:0;overflow:hidden;
     transition:max-height .45s ease;
-    border-top:0px solid rgba(255,255,255,.08);
+    border-top:0px solid rgba(0,0,0,.06);
 }
 .detalle-contenido.expandido{
     max-height:3000px;
@@ -165,16 +169,17 @@ body{
     grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
     gap:12px;
     padding:18px 22px;
+    background:#fafafc;
 }
 
 .motor-card{
-    background:rgba(255,255,255,.04);
-    border:1px solid rgba(255,255,255,.07);
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,.06);
     border-radius:12px;
     padding:14px 16px;
 }
 .motor-titulo{
-    font-size:.85rem;font-weight:700;color:#f39c12;
+    font-size:.85rem;font-weight:700;color:#0071e3;
     margin-bottom:12px;display:flex;align-items:flex-start;
     gap:8px;flex-wrap:wrap;line-height:1.35;
 }
@@ -187,10 +192,10 @@ body{
 .proyecto-item{
     display:flex;justify-content:space-between;align-items:flex-start;
     gap:8px;padding:7px 0;
-    border-bottom:1px solid rgba(255,255,255,.05);
+    border-bottom:1px solid rgba(0,0,0,.05);
 }
 .proyecto-item:last-child{border-bottom:none}
-.proyecto-nombre{font-size:.78rem;color:rgba(255,255,255,.72);flex:1;line-height:1.4}
+.proyecto-nombre{font-size:.78rem;color:rgba(0,0,0,.65);flex:1;line-height:1.4}
 .proyecto-valor{font-size:.82rem;font-weight:700;white-space:nowrap}
 .pv-alto{color:#34C759}
 .pv-medio{color:#FF9500}
@@ -199,7 +204,7 @@ body{
 /* ── Modals ── */
 .modal-overlay{
     display:none;position:fixed;inset:0;
-    background:rgba(0,0,0,.75);
+    background:rgba(0,0,0,.35);
     z-index:99999;align-items:center;justify-content:center;
     backdrop-filter:blur(6px);
     padding:20px;
@@ -207,58 +212,59 @@ body{
 .modal-overlay.active{display:flex}
 
 .modal-content{
-    background:#0d2135;
-    border:1px solid rgba(255,255,255,.12);
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,.08);
     border-radius:20px;padding:28px;
     width:100%;max-width:680px;
     max-height:88vh;overflow-y:auto;
     position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.18);
 }
 .modal-content.dep-modal{max-width:920px}
 
 .modal-close{
     position:absolute;top:14px;right:16px;
-    background:rgba(255,255,255,.08);border:none;
-    color:rgba(255,255,255,.7);font-size:1.1rem;
+    background:rgba(0,0,0,.06);border:none;
+    color:rgba(0,0,0,.55);font-size:1.1rem;
     width:30px;height:30px;border-radius:50%;
     cursor:pointer;display:flex;align-items:center;justify-content:center;
     transition:background .2s,color .2s;
 }
-.modal-close:hover{background:rgba(255,59,48,.25);color:#ff3b30}
+.modal-close:hover{background:rgba(255,59,48,.15);color:#ff3b30}
 
-.modal-title{font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:20px;padding-right:32px;line-height:1.4}
+.modal-title{font-size:1.05rem;font-weight:700;color:#1d1d1f;margin-bottom:20px;padding-right:32px;line-height:1.4}
 .chart-container{position:relative;height:240px;margin-bottom:20px}
 
 .modal-stats{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .stat-item{
     display:flex;justify-content:space-between;align-items:center;
-    padding:9px 13px;background:rgba(255,255,255,.04);border-radius:8px;
+    padding:9px 13px;background:#f5f5f7;border-radius:8px;
 }
-.stat-label{font-size:.82rem;color:rgba(255,255,255,.65);flex:1;margin-right:12px}
-.stat-value{font-weight:700;font-size:.9rem;color:#f39c12;white-space:nowrap}
+.stat-label{font-size:.82rem;color:rgba(0,0,0,.6);flex:1;margin-right:12px}
+.stat-value{font-weight:700;font-size:.9rem;color:#0071e3;white-space:nowrap}
 
 /* ── Dependencias table ── */
 .dep-table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:10px}
 .dep-table th{
-    background:rgba(255,255,255,.08);color:rgba(255,255,255,.9);
+    background:#f5f5f7;color:#1d1d1f;
     padding:11px 14px;font-weight:700;text-align:center;font-size:.75rem;
     text-transform:uppercase;letter-spacing:.4px;
 }
 .dep-table th:first-child{text-align:left;border-radius:8px 0 0 0}
 .dep-table th:last-child{border-radius:0 8px 0 0}
-.dep-table td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.05);color:rgba(255,255,255,.82)}
-.dep-table td:first-child{color:#fff;font-weight:500}
+.dep-table td{padding:10px 14px;border-bottom:1px solid rgba(0,0,0,.06);color:rgba(0,0,0,.75)}
+.dep-table td:first-child{color:#1d1d1f;font-weight:500}
 .dep-table td:not(:first-child){text-align:center}
-.dep-table tr:hover td{background:rgba(255,255,255,.03)}
-.dep-table .total-row td{border-top:2px solid #f39c12;font-weight:800;color:#f39c12}
+.dep-table tr:hover td{background:rgba(0,0,0,.02)}
+.dep-table .total-row td{border-top:2px solid #0071e3;font-weight:800;color:#0071e3}
 
 .cb{display:inline-block;padding:3px 12px;border-radius:20px;font-weight:700;font-size:.8rem}
-.cb-alto{background:rgba(52,199,89,.2);color:#34C759}
-.cb-medio{background:rgba(255,149,0,.2);color:#FF9500}
-.cb-bajo{background:rgba(255,59,48,.2);color:#FF3B30}
+.cb-alto{background:rgba(52,199,89,.15);color:#248a3d}
+.cb-medio{background:rgba(255,149,0,.15);color:#c1690a}
+.cb-bajo{background:rgba(255,59,48,.15);color:#d70015}
 
 /* ── Footer note ── */
-.aclaracion{text-align:center;color:rgba(255,255,255,.3);font-size:.78rem;margin-top:24px;line-height:1.6}
+.aclaracion{text-align:center;color:rgba(0,0,0,.35);font-size:.78rem;margin-top:24px;line-height:1.6}
 
 /* ── Responsive ── */
 @media(max-width:768px){
@@ -293,7 +299,7 @@ body{
     <!-- ── Global cumplimiento ── -->
     <div class="cumplimiento-global">
         <div class="global-label">
-            <i class="fas fa-bullseye" style="color:#f39c12;margin-right:6px"></i>
+            <i class="fas fa-bullseye" style="color:#0071e3;margin-right:6px"></i>
             Cumplimiento integral del Plan — <span>promedio de todas las líneas estratégicas</span>
         </div>
         <div class="global-number" id="globalNum"><?php echo $global; ?>%</div>
@@ -307,10 +313,10 @@ body{
 
     <!-- ── DB error banner (only shows when SQL fails) ── -->
     <?php if ($dbError): ?>
-    <div style="background:rgba(255,59,48,.15);border:1px solid rgba(255,59,48,.35);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#ff6b6b;font-size:.85rem">
+    <div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.25);border-radius:12px;padding:16px 20px;margin-bottom:20px;color:#d70015;font-size:.85rem">
         <strong><i class="fas fa-exclamation-triangle" style="margin-right:8px"></i>Error al cargar datos:</strong>
-        <code style="display:block;margin-top:6px;font-size:.78rem;color:#ffaaaa;word-break:break-all"><?php echo htmlspecialchars($dbError); ?></code>
-        <p style="margin-top:8px;color:rgba(255,255,255,.6);font-size:.78rem">Verifica que la tabla <code>formulacion_144</code> tenga las columnas <code>porcentaje_avance</code>, <code>linea_estrategica</code>, <code>motor_desarrollo</code> y <code>proyecto</code>.</p>
+        <code style="display:block;margin-top:6px;font-size:.78rem;color:#b3001b;word-break:break-all"><?php echo htmlspecialchars($dbError); ?></code>
+        <p style="margin-top:8px;color:rgba(0,0,0,.6);font-size:.78rem">Verifica que la tabla <code>formulacion_144</code> tenga las columnas <code>porcentaje_avance</code>, <code>linea_estrategica</code>, <code>motor_desarrollo</code> y <code>proyecto</code>.</p>
     </div>
     <?php endif; ?>
 
@@ -341,7 +347,7 @@ body{
     <div class="modal-content dep-modal">
         <button class="modal-close" id="depClose"><i class="fas fa-times"></i></button>
         <div class="modal-title">
-            <i class="fas fa-university" style="color:#f39c12;margin-right:8px"></i>
+            <i class="fas fa-university" style="color:#0071e3;margin-right:8px"></i>
             Estadísticas por Dependencia · <?php echo $anio; ?>
         </div>
         <div style="overflow-x:auto;max-height:60vh;overflow-y:auto">
@@ -370,7 +376,7 @@ const depData      = <?php echo json_encode($informe['dependencias'],  JSON_UNES
 
 /* ── Color palette ── */
 const LINEA_COLORS = ['#007AFF','#AF52DE','#34C759','#FF9500','#FF3B30','#32ADE6','#5856D6','#FF2D55'];
-const CHART_COLORS = ['#f39c12','#e67e22','#d35400','#f1c40f','#e74c3c','#3498db','#2ecc71','#9b59b6'];
+const CHART_COLORS = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#32ADE6','#5856D6','#FF2D55'];
 
 function pctColor(p) {
     if (p >= 80) return '#34C759';
@@ -391,7 +397,7 @@ const container = document.getElementById('lineasContainer');
 
 function renderLineas() {
     if (!lineasData.length) {
-        container.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(255,255,255,.4)"><i class="fas fa-inbox fa-2x" style="margin-bottom:14px;display:block"></i>No se encontraron líneas estratégicas con datos registrados.</div>';
+        container.innerHTML = '<div style="text-align:center;padding:60px;color:rgba(0,0,0,.35)"><i class="fas fa-inbox fa-2x" style="margin-bottom:14px;display:block"></i>No se encontraron líneas estratégicas con datos registrados.</div>';
         return;
     }
 
@@ -452,7 +458,7 @@ function renderLineas() {
 }
 
 function buildDetalle(linea) {
-    if (!linea.motores || !linea.motores.length) return '<div style="padding:18px 22px;color:rgba(255,255,255,.4);font-size:.85rem">Sin motores de desarrollo registrados para esta línea.</div>';
+    if (!linea.motores || !linea.motores.length) return '<div style="padding:18px 22px;color:rgba(0,0,0,.35);font-size:.85rem">Sin motores de desarrollo registrados para esta línea.</div>';
 
     var html = '<div class="micro-grid">';
     linea.motores.forEach(function(motor) {
@@ -533,12 +539,12 @@ function openChartModal(linea, color) {
                 scales: {
                     y: {
                         beginAtZero: true, max: 100,
-                        grid: { color: 'rgba(255,255,255,.07)' },
-                        ticks: { color: 'rgba(255,255,255,.6)', callback: function(v) { return v + '%'; } }
+                        grid: { color: 'rgba(0,0,0,.06)' },
+                        ticks: { color: 'rgba(0,0,0,.55)', callback: function(v) { return v + '%'; } }
                     },
                     x: {
                         grid: { display: false },
-                        ticks: { color: 'rgba(255,255,255,.6)', font: { size: 11 } }
+                        ticks: { color: 'rgba(0,0,0,.55)', font: { size: 11 } }
                     }
                 }
             }
@@ -563,7 +569,7 @@ document.getElementById('chartModal').addEventListener('click', function(e) {
 function renderDepTable() {
     var tbody = document.getElementById('depBody');
     if (!depData || !depData.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:rgba(255,255,255,.4)">No se encontraron registros por dependencia.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:rgba(0,0,0,.35)">No se encontraron registros por dependencia.</td></tr>';
         return;
     }
     var html = '';
@@ -576,7 +582,7 @@ function renderDepTable() {
         html += '<tr>' +
             '<td>' + esc(d.dependencia) + '</td>' +
             '<td>' + (d.total_indicadores || 0) + '</td>' +
-            '<td><span style="background:rgba(52,199,89,.15);color:#34C759;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:700">' + (d.indicadores_80 || 0) + '</span></td>' +
+            '<td><span style="background:rgba(52,199,89,.15);color:#248a3d;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:700">' + (d.indicadores_80 || 0) + '</span></td>' +
             '<td><span class="cb ' + cb + '">' + p.toFixed(2) + '%</span></td>' +
         '</tr>';
     });

@@ -1442,7 +1442,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         1 => ['letra' => 'G', 'rol' => 'gestor de metas',       'titulo' => 'Gestor de Metas'],
                                         2 => ['letra' => 'L', 'rol' => 'lider de meta',          'titulo' => 'Líder de Metas'],
                                         3 => ['letra' => 'V', 'rol' => 'responsable de linea',   'titulo' => 'Vicerrectoría'],
-                                        4 => ['letra' => 'S', 'rol' => 'sub administrador',      'titulo' => 'Sub Administrador'],
+                                        4 => ['letra' => 'P', 'rol' => 'sub administrador',      'titulo' => 'Oficina de Planeación'],
                                     ];
                                     $semaforoRolNivel = [
                                         'gestor de metas' => 1,
@@ -2168,7 +2168,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link tab-incomplete" id="tab-indicador" data-bs-toggle="tab" data-bs-target="#indicador" type="button" role="tab" aria-controls="indicador" aria-selected="false" style="font-weight: 600;">
-                                <i class="fas fa-chart-line me-2"></i>INDICADOR DE RESULTADO
+                                <i class="fas fa-chart-line me-2"></i>INDICADOR
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
