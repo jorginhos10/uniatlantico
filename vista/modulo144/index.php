@@ -10,7 +10,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     $fecha_cierre = $formulario['fecha_cierre'];
 }
 
-$titulo       = 'SISTEMA 144 — ' . htmlspecialchars($formulario['titulo'] ?? '');
+$titulo       = 'PLAN DE ACCION — ' . htmlspecialchars($formulario['titulo'] ?? '');
 $paginaActual = 'modulo144';
 
 $eval_colores = ['#9C27B0', '#FF9500', '#007AFF', '#34C759', '#FF3B30', '#673AB7', '#FF6230', '#32ADE6', '#3F51B5', '#FF2D55'];
@@ -1188,7 +1188,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                 <!-- Text block -->
                 <div style="flex:1;min-width:0;">
-                    <div class="header-eyebrow">SISTEMA 144</div>
+                    <div class="header-eyebrow">PLAN DE ACCION</div>
                     <h1 class="header-title"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h1>
                     <p class="header-desc"><?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?></p>
                     <?php if (!empty($formulario['fecha_inicio']) || !empty($formulario['fecha_cierre'])): ?>

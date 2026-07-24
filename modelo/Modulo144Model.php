@@ -68,7 +68,7 @@ class Modulo144Model {
         ],
         'seguimiento' => [
             'tabla' => 'formulacion_144',
-            'nombre' => 'SEGUIMIENTO 144',
+            'nombre' => 'SEGUIMIENTO DEL PLAN DE ACCIÓN FOR-DE-144',
             'icono' => 'fa-chart-line',
             'color' => '#27AE60',
             'color_header' => 'linear-gradient(135deg, #27AE60 0%, #2ECC71 100%)',
