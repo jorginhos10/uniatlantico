@@ -39,9 +39,12 @@ class NovedadesController {
             return;
         }
         $ok = $this->model->crear([
-            'titulo'    => $titulo,
-            'contenido' => $contenido,
-            'activo'    => intval($input['activo'] ?? 1),
+            'titulo'        => $titulo,
+            'contenido'     => $contenido,
+            'activo'        => intval($input['activo'] ?? 1),
+            'visible_desde' => trim($input['visible_desde'] ?? ''),
+            'visible_hasta' => trim($input['visible_hasta'] ?? ''),
+            'auto_abrir'    => intval($input['auto_abrir'] ?? 0),
         ]);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Novedad creada' : 'Error al crear']);
     }
@@ -57,9 +60,12 @@ class NovedadesController {
             return;
         }
         $ok = $this->model->actualizar($id, [
-            'titulo'    => $titulo,
-            'contenido' => $contenido,
-            'activo'    => intval($input['activo'] ?? 1),
+            'titulo'        => $titulo,
+            'contenido'     => $contenido,
+            'activo'        => intval($input['activo'] ?? 1),
+            'visible_desde' => trim($input['visible_desde'] ?? ''),
+            'visible_hasta' => trim($input['visible_hasta'] ?? ''),
+            'auto_abrir'    => intval($input['auto_abrir'] ?? 0),
         ]);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Novedad actualizada' : 'Error al actualizar']);
     }

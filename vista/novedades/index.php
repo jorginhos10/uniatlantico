@@ -227,6 +227,19 @@ require_once __DIR__ . '/../complementos/header.php';
                 <div class="nov-card-top">
                     <div class="nov-card-titulo"><?php echo htmlspecialchars($n['titulo']); ?></div>
                     <div class="nov-card-contenido"><?php echo htmlspecialchars($n['contenido']); ?></div>
+                    <?php if (!empty($n['visible_desde']) || !empty($n['visible_hasta'])): ?>
+                    <div style="font-size:11px;color:var(--nov-sub);margin-top:8px;display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-calendar-alt"></i>
+                        <?php echo !empty($n['visible_desde']) ? date('d/m/Y', strtotime($n['visible_desde'])) : 'Sin inicio'; ?>
+                        &rarr;
+                        <?php echo !empty($n['visible_hasta']) ? date('d/m/Y', strtotime($n['visible_hasta'])) : 'Sin fin'; ?>
+                    </div>
+                    <?php endif; ?>
+                    <?php if (!empty($n['auto_abrir'])): ?>
+                    <div style="font-size:11px;color:var(--nov-blue);margin-top:6px;display:flex;align-items:center;gap:5px;font-weight:600;">
+                        <i class="fas fa-bolt"></i> Abre automáticamente al iniciar sesión
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="nov-card-foot">
                     <span class="<?php echo $n['activo'] ? 'nov-badge-activa' : 'nov-badge-inactiva'; ?>">
@@ -279,6 +292,20 @@ require_once __DIR__ . '/../complementos/header.php';
                     <option value="0">Inactiva</option>
                 </select>
             </div>
+            <div class="nov-field">
+                <label>Visible por fecha (opcional)</label>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="date" id="novVisibleDesde" style="flex:1;">
+                    <span style="color:var(--nov-sub);font-size:12px;">hasta</span>
+                    <input type="date" id="novVisibleHasta" style="flex:1;">
+                </div>
+            </div>
+            <div class="nov-field" style="display:flex;flex-direction:row;align-items:center;gap:8px;">
+                <input type="checkbox" id="novAutoAbrir" style="width:auto;">
+                <label style="margin:0;text-transform:none;font-size:13px;letter-spacing:0;font-weight:500;color:var(--nov-text);" for="novAutoAbrir">
+                    Abrir automáticamente durante el inicio de sesión
+                </label>
+            </div>
         </div>
         <div class="nov-modal-foot">
             <button class="btn-cancel" onclick="novCerrarModal()">Cancelar</button>
@@ -307,6 +334,9 @@ function novAbrirModal(id = null) {
     document.getElementById('novTitulo').value = '';
     document.getElementById('novContenido').value = '';
     document.getElementById('novActivo').value = 1;
+    document.getElementById('novVisibleDesde').value = '';
+    document.getElementById('novVisibleHasta').value = '';
+    document.getElementById('novAutoAbrir').checked = false;
     document.getElementById('novModalTitle').textContent = 'Nueva novedad';
     document.getElementById('novModal').classList.add('open');
     if (id) novCargarDatos(id);
@@ -326,24 +356,39 @@ async function novCargarDatos(id) {
     document.getElementById('novTitulo').value    = n.titulo;
     document.getElementById('novContenido').value = n.contenido;
     document.getElementById('novActivo').value    = n.activo;
+    document.getElementById('novVisibleDesde').value = n.visible_desde || '';
+    document.getElementById('novVisibleHasta').value = n.visible_hasta || '';
+    document.getElementById('novAutoAbrir').checked  = !!parseInt(n.auto_abrir || 0);
     document.getElementById('novModalTitle').textContent = 'Editar novedad';
 }
 
 function novEditar(id) { novAbrirModal(id); }
 
 async function novGuardar() {
-    const id        = document.getElementById('novId').value;
-    const titulo    = document.getElementById('novTitulo').value.trim();
-    const contenido = document.getElementById('novContenido').value.trim();
-    const activo    = parseInt(document.getElementById('novActivo').value);
+    const id            = document.getElementById('novId').value;
+    const titulo        = document.getElementById('novTitulo').value.trim();
+    const contenido     = document.getElementById('novContenido').value.trim();
+    const activo        = parseInt(document.getElementById('novActivo').value);
+    const visibleDesde  = document.getElementById('novVisibleDesde').value;
+    const visibleHasta  = document.getElementById('novVisibleHasta').value;
+    const autoAbrir     = document.getElementById('novAutoAbrir').checked ? 1 : 0;
 
     if (!titulo || !contenido) { novToast('Completa título y contenido', 'error'); return; }
+    if (visibleDesde && visibleHasta && visibleDesde > visibleHasta) {
+        novToast('La fecha "hasta" no puede ser anterior a "desde"', 'error');
+        return;
+    }
 
     const btn = document.getElementById('novBtnSave');
     btn.disabled = true;
 
     const url  = id ? `${NOV_BASE}/actualizar` : `${NOV_BASE}/crear`;
-    const body = { titulo, contenido, activo };
+    const body = {
+        titulo, contenido, activo,
+        visible_desde: visibleDesde,
+        visible_hasta: visibleHasta,
+        auto_abrir: autoAbrir
+    };
     if (id) body.id = parseInt(id);
 
     const r = await fetch(url, {

@@ -130,7 +130,11 @@ if ($pdo) {
     // 10. Novedades activas para el carrusel
     try {
         $novedades = $pdo->query(
-            "SELECT titulo, contenido FROM novedades WHERE activo = 1 ORDER BY orden ASC, fecha_creacion DESC LIMIT 10"
+            "SELECT id, titulo, contenido, auto_abrir FROM novedades
+             WHERE activo = 1
+               AND (visible_desde IS NULL OR visible_desde <= CURDATE())
+               AND (visible_hasta IS NULL OR visible_hasta >= CURDATE())
+             ORDER BY orden ASC, fecha_creacion DESC LIMIT 10"
         )->fetchAll();
     } catch (PDOException $e) { $novedades = []; }
 
@@ -918,6 +922,17 @@ function novVerMas(titulo, contenido) {
 function novCerrarPopup() {
     document.getElementById('novPopupOv').classList.remove('open');
 }
+
+// Apertura automática de novedades marcadas "auto_abrir" — una sola vez por sesión de login
+(function() {
+    var novedadesAutoAbrir = <?php echo json_encode(array_values(array_filter($novedades, fn($n) => !empty($n['auto_abrir']))), JSON_UNESCAPED_UNICODE); ?>;
+    if (!novedadesAutoAbrir.length) return;
+    var SESSION_KEY = 'nov_autoabierta_sesion';
+    if (sessionStorage.getItem(SESSION_KEY)) return;
+    sessionStorage.setItem(SESSION_KEY, '1');
+    var nov = novedadesAutoAbrir[0];
+    setTimeout(function() { novVerMas(nov.titulo, nov.contenido); }, 500);
+})();
 </script>
 
 <?php require_once __DIR__ . '/../complementos/footer.php'; ?>

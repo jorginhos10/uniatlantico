@@ -19,7 +19,11 @@ class NovedadesModel {
 
     public function getActivas(): array {
         return $this->db->query(
-            "SELECT titulo, contenido FROM novedades WHERE activo = 1 ORDER BY orden ASC, fecha_creacion DESC LIMIT 10"
+            "SELECT id, titulo, contenido, auto_abrir FROM novedades
+             WHERE activo = 1
+               AND (visible_desde IS NULL OR visible_desde <= CURDATE())
+               AND (visible_hasta IS NULL OR visible_hasta >= CURDATE())
+             ORDER BY orden ASC, fecha_creacion DESC LIMIT 10"
         )->fetchAll();
     }
 
@@ -34,24 +38,34 @@ class NovedadesModel {
         // La nueva novedad siempre va al inicio (orden = 0), las demás se desplazan
         $this->db->exec("UPDATE novedades SET orden = orden + 1");
         $stmt = $this->db->prepare(
-            "INSERT INTO novedades (titulo, contenido, activo, orden) VALUES (:titulo, :contenido, :activo, 0)"
+            "INSERT INTO novedades (titulo, contenido, activo, visible_desde, visible_hasta, auto_abrir, orden)
+             VALUES (:titulo, :contenido, :activo, :visible_desde, :visible_hasta, :auto_abrir, 0)"
         );
         return $stmt->execute([
-            ':titulo'    => $data['titulo'],
-            ':contenido' => $data['contenido'],
-            ':activo'    => $data['activo'] ?? 1,
+            ':titulo'        => $data['titulo'],
+            ':contenido'     => $data['contenido'],
+            ':activo'        => $data['activo'] ?? 1,
+            ':visible_desde' => $data['visible_desde'] ?: null,
+            ':visible_hasta' => $data['visible_hasta'] ?: null,
+            ':auto_abrir'    => $data['auto_abrir'] ?? 0,
         ]);
     }
 
     public function actualizar(int $id, array $data): bool {
         $stmt = $this->db->prepare(
-            "UPDATE novedades SET titulo=:titulo, contenido=:contenido, activo=:activo WHERE id=:id"
+            "UPDATE novedades
+             SET titulo=:titulo, contenido=:contenido, activo=:activo,
+                 visible_desde=:visible_desde, visible_hasta=:visible_hasta, auto_abrir=:auto_abrir
+             WHERE id=:id"
         );
         return $stmt->execute([
-            ':titulo'    => $data['titulo'],
-            ':contenido' => $data['contenido'],
-            ':activo'    => $data['activo'] ?? 1,
-            ':id'        => $id,
+            ':titulo'        => $data['titulo'],
+            ':contenido'     => $data['contenido'],
+            ':activo'        => $data['activo'] ?? 1,
+            ':visible_desde' => $data['visible_desde'] ?: null,
+            ':visible_hasta' => $data['visible_hasta'] ?: null,
+            ':auto_abrir'    => $data['auto_abrir'] ?? 0,
+            ':id'            => $id,
         ]);
     }
 

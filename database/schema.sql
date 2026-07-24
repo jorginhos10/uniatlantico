@@ -116,6 +116,9 @@ CREATE TABLE IF NOT EXISTS `novedades` (
   `titulo` varchar(255) NOT NULL,
   `contenido` text NOT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `visible_desde` date DEFAULT NULL,
+  `visible_hasta` date DEFAULT NULL,
+  `auto_abrir` tinyint(1) NOT NULL DEFAULT 0,
   `orden` int(11) NOT NULL DEFAULT 0,
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
