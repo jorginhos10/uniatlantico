@@ -2495,7 +2495,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
                                 <div class="col-md-2 mb-3 mb-md-0 ms-md-auto">
-                                    <label class="form-label text-muted">TOTAL/RESULTADO DE SEGUIMIENTO</label>
+                                    <label class="form-label text-muted">TOTAL</label>
                                     <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
                                 </div>
                                 <div class="col-md-2 mb-3 mb-md-0 text-center">
@@ -3717,6 +3717,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#seguimiento_meta_ejecutada').val(logradoNum.toFixed(2));
 
             const meta = parseFloat($('#seguimiento_meta_programada').val());
+            $('#seguimiento_anio_view').text(logradoNum.toFixed(2) + '/' + (!isNaN(meta) ? meta.toFixed(2) : '-'));
+
             let pct;
             if (tipoMedicion === 'Límite') {
                 // Declarado (semestre 2) debe ser MENOR que el calculado (límite) para cumplir.
