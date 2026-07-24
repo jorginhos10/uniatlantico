@@ -2,6 +2,7 @@
 // controlador/usuarioController.php
 
 require_once 'modelo/usuarioModel.php';
+require_once 'modelo/rolesModel.php';
 
 class UsuarioController {
     private $usuarioModel;
@@ -13,7 +14,7 @@ class UsuarioController {
     public function index() {
         $usuarios = $this->usuarioModel->obtenerTodosUsuarios();
         $cargos   = $this->usuarioModel->obtenerCargos();
-        $roles    = $this->usuarioModel->obtenerRoles();
+        $roles    = (new RolesModel())->getActivos();
         require_once 'vista/usuarios/index.php';
     }
 

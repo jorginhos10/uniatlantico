@@ -330,21 +330,14 @@ class UsuariosManager {
                 });
             }
 
-            // Poblar select de roles desde ENUM de la BD
-            const rolLabelsCreate = {
-                admin: 'Administrador', director: 'Director', coordinador: 'Coordinador',
-                jefe: 'Jefe de Área', analista: 'Analista', secretario: 'Secretario(a)',
-                auxiliar: 'Auxiliar Administrativo', tecnico: 'Técnico',
-                asesor: 'Asesor', pasante: 'Pasante',
-                cocina: 'Cocina', inventario: 'Inventario', mesero: 'Mesero'
-            };
+            // Poblar select de roles desde ENUM de la BD, mostrando el nombre visible configurado en Roles
             const createRolSelect = document.getElementById('modalRol');
             if (createRolSelect && window.ROLES_LIST && window.ROLES_LIST.length) {
                 createRolSelect.innerHTML = '<option value="">Selecciona un rol</option>';
                 window.ROLES_LIST.forEach(r => {
                     const opt = document.createElement('option');
-                    opt.value = r;
-                    opt.textContent = rolLabelsCreate[r] || r.charAt(0).toUpperCase() + r.slice(1);
+                    opt.value = r.slug;
+                    opt.textContent = r.nombre;
                     createRolSelect.appendChild(opt);
                 });
             }
@@ -457,21 +450,14 @@ class UsuariosManager {
             
             document.body.insertAdjacentHTML('beforeend', editModalHTML);
 
-            // Poblar select de roles desde ENUM de la BD
-            const rolLabels = {
-                admin: 'Administrador', director: 'Director', coordinador: 'Coordinador',
-                jefe: 'Jefe de Área', analista: 'Analista', secretario: 'Secretario(a)',
-                auxiliar: 'Auxiliar Administrativo', tecnico: 'Técnico',
-                asesor: 'Asesor', pasante: 'Pasante',
-                cocina: 'Cocina', inventario: 'Inventario', mesero: 'Mesero'
-            };
+            // Poblar select de roles desde ENUM de la BD, mostrando el nombre visible configurado en Roles
             const editRolSelect = document.getElementById('editRol');
             if (editRolSelect && window.ROLES_LIST && window.ROLES_LIST.length) {
                 editRolSelect.innerHTML = '<option value="">Selecciona un rol</option>';
                 window.ROLES_LIST.forEach(r => {
                     const opt = document.createElement('option');
-                    opt.value = r;
-                    opt.textContent = rolLabels[r] || r.charAt(0).toUpperCase() + r.slice(1);
+                    opt.value = r.slug;
+                    opt.textContent = r.nombre;
                     editRolSelect.appendChild(opt);
                 });
             }

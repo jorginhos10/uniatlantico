@@ -265,20 +265,12 @@ require_once __DIR__ . '/../complementos/header.php';
                         </td>
                         <td>
                             <span class="badge badge-<?php echo $usuario['rol']; ?>">
-                                <?php 
-                                $roles_labels = [
-                                    'admin'       => 'Administrador',
-                                    'director'    => 'Director',
-                                    'coordinador' => 'Coordinador',
-                                    'jefe'        => 'Jefe de Área',
-                                    'analista'    => 'Analista',
-                                    'secretario'  => 'Secretario(a)',
-                                    'auxiliar'    => 'Auxiliar Adm.',
-                                    'tecnico'     => 'Técnico',
-                                    'asesor'      => 'Asesor',
-                                    'pasante'     => 'Pasante',
-                                ];
-                                echo $roles_labels[$usuario['rol']] ?? ucfirst($usuario['rol']);
+                                <?php
+                                if (!isset($roles_labels)) {
+                                    $roles_labels = [];
+                                    foreach ($roles ?? [] as $r) $roles_labels[$r['slug']] = $r['nombre'];
+                                }
+                                echo htmlspecialchars($roles_labels[$usuario['rol']] ?? ucfirst($usuario['rol']));
                                 ?>
                             </span>
                         </td>
