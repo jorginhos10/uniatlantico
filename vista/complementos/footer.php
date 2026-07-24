@@ -40,6 +40,8 @@
         });
     </script>
 
+    <script src="<?php echo $baseUrl; ?>/assets/js/accessibility.js"></script>
+
     <?php echo $jsExtra ?? ''; ?>
 
     <!-- ── Notificaciones (ntf) ── -->

@@ -20,6 +20,7 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
     <title><?php echo $titulo ?? 'CHEFCONTROL'; ?></title>
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/dashboard.css">
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/header.css">
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/accessibility.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
