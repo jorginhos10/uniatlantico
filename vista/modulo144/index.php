@@ -3693,14 +3693,28 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (s2 !== null) logrado = s2;
                 else if (s1 !== null) logrado = s1;
             } else if (tipoMedicion === 'Límite') {
-                logrado = s2 !== null ? s2 : 0;
+                logrado = s2;
             }
 
             const logradoNum = logrado !== null ? logrado : 0;
             $('#seguimiento_meta_ejecutada').val(logradoNum.toFixed(2));
 
             const meta = parseFloat($('#seguimiento_meta_programada').val());
-            const pct = (!isNaN(meta) && meta > 0) ? (logradoNum / meta) * 100 : 0;
+            let pct;
+            if (tipoMedicion === 'Límite') {
+                // Declarado (semestre 2) debe ser MENOR que el calculado (límite) para cumplir.
+                if (logrado === null || logrado === 0) {
+                    pct = 0;
+                } else if (!isNaN(meta) && logrado >= meta) {
+                    pct = 0;
+                } else if (!isNaN(meta)) {
+                    pct = 100;
+                } else {
+                    pct = 0;
+                }
+            } else {
+                pct = (!isNaN(meta) && meta > 0) ? (logradoNum / meta) * 100 : 0;
+            }
             $('#seguimiento_porcentaje').val(pct.toFixed(2));
             actualizarAnilloCumplimiento(pct);
         }
@@ -3746,7 +3760,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 }
                 valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
             }
-            
+            else if (b.tipo_medicion === 'Límite') {
+                const limiteCalc = obtenerUltimoValorReportado(lineaBaseRaw, metaS1Raw, metaS2Raw);
+                valorAnual = limiteCalc !== null ? limiteCalc.toFixed(2) : '';
+            }
+
             $('#seguimiento_anio_view').text(valorAnual);
             $('#seguimiento_meta_programada').val(valorAnual);
             $('#formSeguimiento').data('tipoMedicion', b.tipo_medicion || '');
