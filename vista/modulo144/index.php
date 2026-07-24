@@ -3684,13 +3684,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
             let logrado = null;
             if (tipoMedicion === 'Acumulado') {
-                const lbRaw = $('#formSeguimiento').data('lineaBaseMeta');
-                const lb = (lbRaw !== '' && lbRaw !== null && lbRaw !== undefined && !isNaN(lbRaw)) ? parseFloat(lbRaw) : null;
-                let suma = 0;
-                if (lb !== null) suma += lb;
-                if (s1 !== null) suma += s1;
-                if (s2 !== null) suma += s2;
-                logrado = suma;
+                if (s1 === null && s2 === null) {
+                    // Sin ningún semestre reportado todavía, la línea base sola no cuenta como avance.
+                    logrado = 0;
+                } else {
+                    const lbRaw = $('#formSeguimiento').data('lineaBaseMeta');
+                    const lb = (lbRaw !== '' && lbRaw !== null && lbRaw !== undefined && !isNaN(lbRaw)) ? parseFloat(lbRaw) : null;
+                    let suma = 0;
+                    if (lb !== null) suma += lb;
+                    if (s1 !== null) suma += s1;
+                    if (s2 !== null) suma += s2;
+                    logrado = suma;
+                }
             } else if (tipoMedicion === 'Nuevo gestionado durante la vigencia') {
                 let suma = 0;
                 if (s1 !== null) suma += s1;
