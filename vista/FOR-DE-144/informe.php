@@ -51,7 +51,8 @@ body{
 }
 .header h1 i{color:#0071e3;font-size:1.1rem}
 .header h1 span{color:rgba(0,0,0,.45);font-size:.9rem;font-weight:400;margin-left:6px}
-.header-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;flex:1}
+.header-actions-left,.header-actions-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 .btn-back{
     display:inline-flex;align-items:center;gap:7px;
@@ -308,18 +309,22 @@ body{
             <span>/ <?php echo $tituloF; ?></span>
         </h1>
         <div class="header-actions">
-            <button class="btn-dep" id="depBtn">
-                <i class="fas fa-university"></i> Estadísticas por Dependencia
-            </button>
-            <button class="btn-export btn-export-pdf" id="btnExportPdf">
-                <i class="fas fa-file-pdf"></i> Exportar PDF
-            </button>
-            <button class="btn-export btn-export-excel" id="btnExportExcel">
-                <i class="fas fa-file-excel"></i> Exportar Excel
-            </button>
-            <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn-back">
-                <i class="fas fa-arrow-left" style="font-size:11px"></i> Volver
-            </a>
+            <div class="header-actions-left">
+                <button class="btn-export btn-export-pdf" id="btnExportPdf">
+                    <i class="fas fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button class="btn-export btn-export-excel" id="btnExportExcel">
+                    <i class="fas fa-file-excel"></i> Exportar Excel
+                </button>
+            </div>
+            <div class="header-actions-right">
+                <button class="btn-dep" id="depBtn">
+                    <i class="fas fa-university"></i> Estadísticas por Dependencia
+                </button>
+                <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn-back">
+                    <i class="fas fa-arrow-left" style="font-size:11px"></i> Volver
+                </a>
+            </div>
         </div>
     </div>
 
