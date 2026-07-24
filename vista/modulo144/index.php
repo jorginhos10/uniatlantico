@@ -1441,7 +1441,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     $semaforoEtapas = [
                                         1 => ['letra' => 'G', 'rol' => 'gestor de metas',       'titulo' => 'Gestor de Metas'],
                                         2 => ['letra' => 'L', 'rol' => 'lider de meta',          'titulo' => 'Líder de Metas'],
-                                        3 => ['letra' => 'R', 'rol' => 'responsable de linea',   'titulo' => 'Responsable de Línea'],
+                                        3 => ['letra' => 'V', 'rol' => 'responsable de linea',   'titulo' => 'Vicerrectoría'],
                                         4 => ['letra' => 'S', 'rol' => 'sub administrador',      'titulo' => 'Sub Administrador'],
                                     ];
                                     $semaforoRolNivel = [
