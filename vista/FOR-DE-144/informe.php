@@ -74,6 +74,27 @@ body{
 }
 .btn-dep:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,113,227,.38)}
 
+.btn-export{
+    display:inline-flex;align-items:center;gap:7px;
+    border:none;color:#fff;padding:8px 16px;
+    border-radius:20px;font-size:13px;font-weight:700;
+    cursor:pointer;transition:all .2s;
+}
+.btn-export-pdf{background:linear-gradient(135deg,#d70015,#ff3b30);box-shadow:0 4px 14px rgba(255,59,48,.28)}
+.btn-export-pdf:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,59,48,.38)}
+.btn-export-excel{background:linear-gradient(135deg,#248a3d,#34c759);box-shadow:0 4px 14px rgba(52,199,89,.28)}
+.btn-export-excel:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(52,199,89,.38)}
+
+/* ── Impresión / Exportar PDF ── */
+@media print {
+    body{background:#fff}
+    .header-actions,.modal-overlay,.aclaracion{display:none !important}
+    .dashboard{max-width:100%;padding:0}
+    .linea-card{break-inside:avoid;box-shadow:none;border:1px solid rgba(0,0,0,.15)}
+    .detalle-contenido{max-height:none !important}
+    .expand-icon{display:none}
+}
+
 /* ── Global cumplimiento ── */
 .cumplimiento-global{
     background:#ffffff;
@@ -289,6 +310,12 @@ body{
         <div class="header-actions">
             <button class="btn-dep" id="depBtn">
                 <i class="fas fa-university"></i> Estadísticas por Dependencia
+            </button>
+            <button class="btn-export btn-export-pdf" id="btnExportPdf">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn-export btn-export-excel" id="btnExportExcel">
+                <i class="fas fa-file-excel"></i> Exportar Excel
             </button>
             <a href="<?php echo $basePath; ?>/FOR-DE-144" class="btn-back">
                 <i class="fas fa-arrow-left" style="font-size:11px"></i> Volver
@@ -614,6 +641,54 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('depModal').classList.remove('active');
         if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null; }
     }
+});
+
+/* ── Exportar PDF (impresión del navegador, con detalle expandido) ── */
+document.getElementById('btnExportPdf').addEventListener('click', function() {
+    var expandidos = [];
+    document.querySelectorAll('.detalle-contenido:not(.expandido)').forEach(function(det) {
+        det.classList.add('expandido');
+        expandidos.push(det);
+    });
+    setTimeout(function() {
+        window.print();
+        expandidos.forEach(function(det) { det.classList.remove('expandido'); });
+    }, 150);
+});
+
+/* ── Exportar Excel (CSV, se abre directo en Excel) ── */
+function csvEsc(v) {
+    v = String(v == null ? '' : v);
+    return '"' + v.replace(/"/g, '""') + '"';
+}
+document.getElementById('btnExportExcel').addEventListener('click', function() {
+    var rows = [['Línea', 'Código', 'Motor de Desarrollo', 'Proyecto', '% Cumplimiento']];
+    lineasData.forEach(function(linea) {
+        if (linea.motores && linea.motores.length) {
+            linea.motores.forEach(function(motor) {
+                if (motor.proyectos && motor.proyectos.length) {
+                    motor.proyectos.forEach(function(proy) {
+                        rows.push([linea.titulo, linea.codigo, motor.nombre, proy.nombre, parseFloat(proy.cumplimiento).toFixed(2) + '%']);
+                    });
+                } else {
+                    rows.push([linea.titulo, linea.codigo, motor.nombre, '', parseFloat(motor.cumplimiento).toFixed(2) + '%']);
+                }
+            });
+        } else {
+            rows.push([linea.titulo, linea.codigo, '', '', parseFloat(linea.cumplimiento).toFixed(2) + '%']);
+        }
+    });
+    rows.push([]);
+    rows.push(['Cumplimiento integral del Plan', '', '', '', document.getElementById('globalNum').textContent]);
+
+    var csv = '﻿' + rows.map(function(r) { return r.map(csvEsc).join(','); }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'lineas_estrategicas_<?php echo preg_replace('/[^A-Za-z0-9_-]/', '_', $anio); ?>.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 });
 
 /* ── Init ── */
