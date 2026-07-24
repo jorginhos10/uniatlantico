@@ -3692,6 +3692,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             } else if (tipoMedicion === 'Último valor reportado') {
                 if (s2 !== null) logrado = s2;
                 else if (s1 !== null) logrado = s1;
+            } else if (tipoMedicion === 'Límite') {
+                logrado = s2 !== null ? s2 : 0;
             }
 
             const logradoNum = logrado !== null ? logrado : 0;
@@ -4140,7 +4142,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             
                             // Calcular valor anual después de cargar valores
                             calcularValorAnual();
-                            setTimeout(calcularAcumuladoActividades, 400);
+                            setTimeout(function() { calcularAcumuladoActividades(true); }, 400);
                             
                             if (b.planes_institucionales) {
                                 cargarPlanesDesdeBD(b.planes_institucionales);
@@ -4172,6 +4174,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             cargarDatosFormulacionEnSeguimiento(b);
                             calcularCumplimientoSeguimiento();
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
+                            $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
                             $('#modalSeguimiento').modal('show');
                         }
                     }
