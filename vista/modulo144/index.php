@@ -2488,6 +2488,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h5>
                             <div class="row">
+                                <div class="col-md-2 mb-3 mb-md-0" id="seguimiento_linea_base_wrap" style="display:none;">
+                                    <label class="form-label text-muted">LÍNEA BASE</label>
+                                    <div class="bg-light-view" id="seguimiento_linea_base_view">-</div>
+                                </div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
                                 <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
                                 <div class="col-md-2 mb-3 mb-md-0 ms-md-auto">
@@ -3679,7 +3683,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const s2 = (s2Raw !== '' && s2Raw !== null && s2Raw !== undefined && !isNaN(s2Raw)) ? parseFloat(s2Raw) : null;
 
             let logrado = null;
-            if (tipoMedicion === 'Acumulado' || tipoMedicion === 'Nuevo gestionado durante la vigencia') {
+            if (tipoMedicion === 'Acumulado') {
+                const lbRaw = $('#formSeguimiento').data('lineaBaseMeta');
+                const lb = (lbRaw !== '' && lbRaw !== null && lbRaw !== undefined && !isNaN(lbRaw)) ? parseFloat(lbRaw) : null;
+                let suma = 0;
+                if (lb !== null) suma += lb;
+                if (s1 !== null) suma += s1;
+                if (s2 !== null) suma += s2;
+                logrado = suma;
+            } else if (tipoMedicion === 'Nuevo gestionado durante la vigencia') {
                 let suma = 0;
                 if (s1 !== null) suma += s1;
                 if (s2 !== null) suma += s2;
@@ -3768,6 +3780,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#seguimiento_anio_view').text(valorAnual);
             $('#seguimiento_meta_programada').val(valorAnual);
             $('#formSeguimiento').data('tipoMedicion', b.tipo_medicion || '');
+            $('#formSeguimiento').data('lineaBaseMeta', lineaBaseRaw);
+            if (b.tipo_medicion === 'Acumulado') {
+                $('#seguimiento_linea_base_wrap').show();
+                $('#seguimiento_linea_base_view').text(lineaBase !== null ? lineaBase.toFixed(2) : '-');
+            } else {
+                $('#seguimiento_linea_base_wrap').hide();
+            }
             $('#seguimiento_linea_view').text(b.linea_estrategica ? (b.linea_codigo ? b.linea_codigo + ' - ' : '') + b.linea_estrategica : '-');
             $('#seguimiento_objetivo_view').text(b.objetivo || '-');
             $('#seguimiento_estrategia_view').text(b.estrategia || '-');
