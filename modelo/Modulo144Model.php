@@ -9,7 +9,7 @@ class Modulo144Model {
     private $modulos = [
         'formulacion' => [
             'tabla' => 'formulacion_144',
-            'nombre' => 'FORMULACIÓN 144',
+            'nombre' => 'FORMULACIÓN DEL PLAN DE ACCIÓN FOR-DE-144',
             'icono' => 'fa-clipboard-list',
             'color' => '#2C3E50',
             'color_header' => 'linear-gradient(135deg, #2C3E50 0%, #34495E 100%)',

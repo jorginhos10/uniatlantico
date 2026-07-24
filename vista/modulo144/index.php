@@ -1362,7 +1362,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Mi usuario</option>
                                 <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
                                 <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
-                                <option value="nombre"      <?php echo $pref_key['tipo_filtro']==='nombre'      ? 'selected':''; ?>>Por nombre</option>
+                                <option value="nombre"      <?php echo $pref_key['tipo_filtro']==='nombre'      ? 'selected':''; ?>>Por indicador</option>
                                 <option value="con_seguimiento" <?php echo $pref_key['tipo_filtro']==='con_seguimiento' ? 'selected':''; ?>>Con seguimiento</option>
                                 <option value="sin_seguimiento" <?php echo $pref_key['tipo_filtro']==='sin_seguimiento' ? 'selected':''; ?>>Sin seguimiento</option>
                             </select>
@@ -1383,7 +1383,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <input type="text" class="filtro-texto-input"
                                        id="filtroTexto-<?php echo $key; ?>"
                                        autocomplete="off"
-                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : ($pref_key['tipo_filtro']==='nombre' ? 'Buscar por nombre...' : 'Buscar dependencia...'); ?>"
+                                       placeholder="<?php echo $pref_key['tipo_filtro']==='persona' ? 'Buscar persona...' : ($pref_key['tipo_filtro']==='nombre' ? 'Buscar por indicador...' : 'Buscar dependencia...'); ?>"
                                        value="<?php echo htmlspecialchars($pref_key['valor_filtro'] ?? ''); ?>"
                                        oninput="onFiltroTextoInput('<?php echo $key; ?>')"
                                        onfocus="mostrarSugerencias('<?php echo $key; ?>')"
@@ -4413,7 +4413,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (tipo === 'dependencia' || tipo === 'persona' || tipo === 'nombre') {
                 wrap.style.display = 'block';
                 input.placeholder  = tipo === 'persona' ? 'Buscar persona...'
-                                   : tipo === 'nombre'  ? 'Buscar por nombre...'
+                                   : tipo === 'nombre'  ? 'Buscar por indicador...'
                                    : 'Buscar dependencia...';
                 input.value = '';
                 input.focus();
