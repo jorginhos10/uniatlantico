@@ -369,9 +369,6 @@ class Modulo144Model {
             $tabla = $modulo_config['tabla'];
             $campo_estado = $modulo_config['campo_estado'];
 
-            // La formulación debe estar publicada antes de poder hacerle seguimiento
-            $filtroFormulacionPublicada = $modulo === 'seguimiento' ? " AND f.estado_formulacion = 2" : "";
-
             $stmt = $this->db->prepare("SELECT f.*,
                                         le.codigo  AS linea_codigo,
                                         m.id       AS motor_id_num,
@@ -387,7 +384,7 @@ class Modulo144Model {
                                         LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
                                         LEFT JOIN usuarios u ON f.creado_por = u.id
                                         LEFT JOIN cargos c ON u.cargo_id = c.id
-                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado{$filtroFormulacionPublicada}
+                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
                                         ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
             $stmt->execute([
                 ':formulario_id' => $formulario_id,

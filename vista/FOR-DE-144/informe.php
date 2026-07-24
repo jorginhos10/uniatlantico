@@ -35,14 +35,17 @@ body{
 
 /* ── Header ── */
 .header{
-    display:flex;align-items:center;justify-content:space-between;
-    flex-wrap:wrap;gap:14px;
+    display:flex;flex-direction:column;gap:14px;
     background:#ffffff;
     border:1px solid rgba(0,0,0,.06);
     border-radius:18px;
     padding:20px 26px;
     margin-bottom:24px;
     box-shadow:0 2px 12px rgba(0,0,0,.05);
+}
+.header-top{
+    display:flex;align-items:center;justify-content:space-between;
+    flex-wrap:wrap;gap:14px;
 }
 .header h1{
     font-size:1.35rem;font-weight:800;letter-spacing:-.3px;
@@ -51,7 +54,6 @@ body{
 }
 .header h1 i{color:#0071e3;font-size:1.1rem}
 .header h1 span{color:rgba(0,0,0,.45);font-size:.9rem;font-weight:400;margin-left:6px}
-.header-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;flex:1}
 .header-actions-left,.header-actions-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 .btn-back{
@@ -303,20 +305,12 @@ body{
 
     <!-- ── Header ── -->
     <div class="header">
-        <h1>
-            <i class="fas fa-chart-bar"></i>
-            Líneas Estratégicas · Cumplimiento <?php echo $anio; ?>
-            <span>/ <?php echo $tituloF; ?></span>
-        </h1>
-        <div class="header-actions">
-            <div class="header-actions-left">
-                <button class="btn-export btn-export-pdf" id="btnExportPdf">
-                    <i class="fas fa-file-pdf"></i> Exportar PDF
-                </button>
-                <button class="btn-export btn-export-excel" id="btnExportExcel">
-                    <i class="fas fa-file-excel"></i> Exportar Excel
-                </button>
-            </div>
+        <div class="header-top">
+            <h1>
+                <i class="fas fa-chart-bar"></i>
+                Líneas Estratégicas · Cumplimiento <?php echo $anio; ?>
+                <span>/ <?php echo $tituloF; ?></span>
+            </h1>
             <div class="header-actions-right">
                 <button class="btn-dep" id="depBtn">
                     <i class="fas fa-university"></i> Estadísticas por Dependencia
@@ -325,6 +319,14 @@ body{
                     <i class="fas fa-arrow-left" style="font-size:11px"></i> Volver
                 </a>
             </div>
+        </div>
+        <div class="header-actions-left">
+            <button class="btn-export btn-export-pdf" id="btnExportPdf">
+                <i class="fas fa-file-pdf"></i> Exportar PDF
+            </button>
+            <button class="btn-export btn-export-excel" id="btnExportExcel">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
         </div>
     </div>
 
