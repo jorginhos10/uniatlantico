@@ -294,7 +294,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </div>
                             <div class="org-branch-item">
                                 <div class="org-node">
-                                    <div class="org-node-title">Gestor de Proyectos</div>
+                                    <div class="org-node-title">Gestor de Metas de Proyectos</div>
                                     <div class="org-node-users"><?php org_renderChips($usuariosGestorFacultad); ?></div>
                                 </div>
                             </div>
