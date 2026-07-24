@@ -1347,7 +1347,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </h4>
                             <?php if ($key === 'formulacion'): ?>
                             <button class="btn btn-success" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
-                                <i class="fas fa-plus me-1"></i>Nuevo Borrador
+                                <i class="fas fa-plus me-1"></i>Nuevo Indicador
                             </button>
                             <?php endif; ?>
                         </div>
@@ -1359,7 +1359,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <select class="filtro-tipo-select" id="filtroTipo-<?php echo $key; ?>"
                                     onchange="onFiltroTipoChange('<?php echo $key; ?>')">
                                 <option value="todos"       <?php echo $pref_key['tipo_filtro']==='todos'       ? 'selected':''; ?>>Todos</option>
-                                <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Solo mío</option>
+                                <option value="mio"         <?php echo $pref_key['tipo_filtro']==='mio'         ? 'selected':''; ?>>Mi usuario</option>
                                 <option value="dependencia" <?php echo $pref_key['tipo_filtro']==='dependencia' ? 'selected':''; ?>>Por dependencia</option>
                                 <option value="persona"     <?php echo $pref_key['tipo_filtro']==='persona'     ? 'selected':''; ?>>Por persona</option>
                                 <option value="nombre"      <?php echo $pref_key['tipo_filtro']==='nombre'      ? 'selected':''; ?>>Por nombre</option>
@@ -1625,7 +1625,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="empty-state p-4">
                                     <i class="fas fa-file-alt fa-3x mb-3"></i>
                                     <h6>No hay borradores</h6>
-                                    <p class="text-muted small"><?php echo $key === 'formulacion' ? 'Haz clic en "Nuevo Borrador" para comenzar' : 'Los borradores de formulación aparecerán aquí'; ?></p>
+                                    <p class="text-muted small"><?php echo $key === 'formulacion' ? 'Haz clic en "Nuevo Indicador" para comenzar' : 'Los borradores de formulación aparecerán aquí'; ?></p>
                                 </div>
                             <?php endif; ?>
                         </div>
