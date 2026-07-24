@@ -8,12 +8,15 @@
     var STORAGE_KEY = 'a11y_prefs_v1';
     var MAX_FS = 4;
 
+    function prefsPorDefecto() {
+        return { fs: 0, contrast: false, grayscale: false, underline: false, readable: false, adhd: false, colorblind: false };
+    }
+
     function leerPrefs() {
         try {
-            return Object.assign({ fs: 0, contrast: false, grayscale: false, underline: false, readable: false },
-                JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
+            return Object.assign(prefsPorDefecto(), JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
         } catch (e) {
-            return { fs: 0, contrast: false, grayscale: false, underline: false, readable: false };
+            return prefsPorDefecto();
         }
     }
 
@@ -24,6 +27,38 @@
     var prefs = leerPrefs();
     var html = document.documentElement;
 
+    /* ── Guía de lectura del modo TDAH: franja clara que sigue el cursor ── */
+    var guiaTop, guiaBottom, guiaActiva = false;
+    var MEDIO_ALTO_GUIA = 45;
+
+    function moverGuia(e) {
+        var y = e.clientY;
+        guiaTop.style.height = Math.max(0, y - MEDIO_ALTO_GUIA) + 'px';
+        guiaBottom.style.top = (y + MEDIO_ALTO_GUIA) + 'px';
+    }
+
+    function activarGuiaLectura() {
+        if (guiaActiva) return;
+        guiaActiva = true;
+        guiaTop = document.createElement('div');
+        guiaTop.id = 'a11yGuideTop';
+        guiaTop.className = 'a11y-reading-guide';
+        guiaBottom = document.createElement('div');
+        guiaBottom.id = 'a11yGuideBottom';
+        guiaBottom.className = 'a11y-reading-guide';
+        document.body.appendChild(guiaTop);
+        document.body.appendChild(guiaBottom);
+        document.addEventListener('mousemove', moverGuia);
+    }
+
+    function desactivarGuiaLectura() {
+        if (!guiaActiva) return;
+        guiaActiva = false;
+        document.removeEventListener('mousemove', moverGuia);
+        if (guiaTop) guiaTop.remove();
+        if (guiaBottom) guiaBottom.remove();
+    }
+
     function aplicar() {
         for (var i = 1; i <= MAX_FS; i++) html.classList.remove('a11y-fs-' + i);
         if (prefs.fs > 0) html.classList.add('a11y-fs-' + prefs.fs);
@@ -32,15 +67,23 @@
         html.classList.toggle('a11y-grayscale', !!prefs.grayscale);
         html.classList.toggle('a11y-underline', !!prefs.underline);
         html.classList.toggle('a11y-readable', !!prefs.readable);
+        html.classList.toggle('a11y-adhd', !!prefs.adhd);
+        html.classList.toggle('a11y-colorblind', !!prefs.colorblind);
 
-        var contrastSwitch = document.getElementById('a11yContrastSwitch');
-        var graySwitch = document.getElementById('a11yGraySwitch');
-        var underlineSwitch = document.getElementById('a11yUnderlineSwitch');
-        var readableSwitch = document.getElementById('a11yReadableSwitch');
-        if (contrastSwitch) contrastSwitch.classList.toggle('a11y-on', !!prefs.contrast);
-        if (graySwitch) graySwitch.classList.toggle('a11y-on', !!prefs.grayscale);
-        if (underlineSwitch) underlineSwitch.classList.toggle('a11y-on', !!prefs.underline);
-        if (readableSwitch) readableSwitch.classList.toggle('a11y-on', !!prefs.readable);
+        if (prefs.adhd) activarGuiaLectura(); else desactivarGuiaLectura();
+
+        var switches = {
+            a11yContrastSwitch: prefs.contrast,
+            a11yGraySwitch: prefs.grayscale,
+            a11yUnderlineSwitch: prefs.underline,
+            a11yReadableSwitch: prefs.readable,
+            a11yAdhdSwitch: prefs.adhd,
+            a11yColorblindSwitch: prefs.colorblind
+        };
+        for (var id in switches) {
+            var el = document.getElementById(id);
+            if (el) el.classList.toggle('a11y-on', !!switches[id]);
+        }
     }
 
     aplicar();
@@ -79,6 +122,14 @@
                     '<div class="a11y-row">' +
                         '<span class="a11y-row-label"><i class="fas fa-font"></i> Fuente legible</span>' +
                         '<button type="button" class="a11y-switch" id="a11yReadableSwitch"></button>' +
+                    '</div>' +
+                    '<div class="a11y-row">' +
+                        '<span class="a11y-row-label"><i class="fas fa-brain"></i> Modo TDAH</span>' +
+                        '<button type="button" class="a11y-switch" id="a11yAdhdSwitch"></button>' +
+                    '</div>' +
+                    '<div class="a11y-row">' +
+                        '<span class="a11y-row-label"><i class="fas fa-eye"></i> Daltonismo / baja visión</span>' +
+                        '<button type="button" class="a11y-switch" id="a11yColorblindSwitch"></button>' +
                     '</div>' +
                     '<button type="button" class="a11y-reset-btn" id="a11yResetBtn"><i class="fas fa-undo me-1"></i> Restablecer</button>' +
                 '</div>' +
@@ -120,8 +171,14 @@
         document.getElementById('a11yReadableSwitch').addEventListener('click', function () {
             prefs.readable = !prefs.readable; guardarPrefs(prefs); aplicar();
         });
+        document.getElementById('a11yAdhdSwitch').addEventListener('click', function () {
+            prefs.adhd = !prefs.adhd; guardarPrefs(prefs); aplicar();
+        });
+        document.getElementById('a11yColorblindSwitch').addEventListener('click', function () {
+            prefs.colorblind = !prefs.colorblind; guardarPrefs(prefs); aplicar();
+        });
         document.getElementById('a11yResetBtn').addEventListener('click', function () {
-            prefs = { fs: 0, contrast: false, grayscale: false, underline: false, readable: false };
+            prefs = prefsPorDefecto();
             guardarPrefs(prefs); aplicar();
         });
 

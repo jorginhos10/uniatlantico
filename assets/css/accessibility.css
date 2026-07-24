@@ -166,3 +166,29 @@ html.a11y-readable body * {
     letter-spacing: .01em;
 }
 html.a11y-readable body { line-height: 1.6; }
+
+/* Modo TDAH: quita animaciones/distracciones y agrega una guía de lectura que sigue el cursor */
+html.a11y-adhd *,
+html.a11y-adhd *::before,
+html.a11y-adhd *::after {
+    animation-duration: .001s !important;
+    animation-iteration-count: 1 !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+}
+.a11y-reading-guide {
+    position: fixed;
+    left: 0;
+    width: 100%;
+    background: rgba(0,0,0,.55);
+    pointer-events: none;
+    z-index: 999997;
+}
+#a11yGuideTop { top: 0; }
+#a11yGuideBottom { bottom: 0; }
+
+/* Modo daltonismo / baja visión: aumenta la separación entre tonos rojo-verde y el
+   contraste general para que sean más distinguibles. No es una corrección clínica exacta
+   por tipo de daltonismo, es un ajuste general de asistencia. Cubre toda la página,
+   incluidas las imágenes (igual que hacen los correctores de color reales). */
+html.a11y-colorblind { filter: saturate(1.6) contrast(1.12) hue-rotate(-8deg); }
