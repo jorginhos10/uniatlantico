@@ -2808,22 +2808,32 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
+        // Recuerda la pestaña principal visible (hijo directo: las pestañas internas de los módulos ocultos
+        // también tienen .active) y la interna (Borradores / Publicados / Cancelados) para restaurarlas al recargar
         function guardarEstadoAcordeon() {
-            const abierto = document.querySelector('#moduloTabsTopContent .tab-pane.active');
+            const abierto = document.querySelector('#moduloTabsTopContent > .tab-pane.active');
             if (abierto) {
-                sessionStorage.setItem('mod144_acordeon_' + formularioId, abierto.id);
+                const interno = abierto.querySelector('.tab-content > .tab-pane.active');
+                sessionStorage.setItem('mod144_acordeon_' + formularioId, JSON.stringify({
+                    top: abierto.id,
+                    inner: interno ? interno.id : null
+                }));
             } else {
                 sessionStorage.removeItem('mod144_acordeon_' + formularioId);
             }
         }
 
         function restaurarEstadoAcordeon() {
-            const id = sessionStorage.getItem('mod144_acordeon_' + formularioId);
-            if (!id) return;
+            const raw = sessionStorage.getItem('mod144_acordeon_' + formularioId);
+            if (!raw) return;
             sessionStorage.removeItem('mod144_acordeon_' + formularioId);
-            const btn = document.querySelector('[data-bs-target="#' + id + '"]');
-            if (!btn) return;
-            new bootstrap.Tab(btn).show();
+            let estado;
+            try { estado = JSON.parse(raw); } catch (e) { estado = { top: raw, inner: null }; }
+            [estado.top, estado.inner].forEach(function (id) {
+                if (!id) return;
+                const btn = document.querySelector('[data-bs-target="#' + id + '"]');
+                if (btn) new bootstrap.Tab(btn).show();
+            });
         }
 
         $(document).ready(function() {
