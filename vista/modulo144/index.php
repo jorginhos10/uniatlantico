@@ -1640,6 +1640,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $puedeAprobar = !$noAplica && $esSiguiente && (
                                                             m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado
                                                             || (($esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true)) && $etapaNum === 4)
+                                                            // El superadministrador puede aprobar cualquier etapa en nombre del rol que corresponde,
+                                                            // una vez el indicador fue enviado a aprobación
+                                                            || ($esSuperAdminSem && $solEstado === 1)
                                                         );
                                                         if ($puedeAprobar) $puedeRechazarEtapa = true;
                                                         $clases = 'semaforo-circle';
@@ -1665,7 +1668,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <?php if (!$esCreadorFila): ?>
+                                                    <?php if (!$esCreadorFila || ($esSuperAdminSem && $puedeRechazarEtapa)): ?>
                                                     <button class="btn btn-sm btn-info" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
