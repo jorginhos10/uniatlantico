@@ -1507,7 +1507,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-3">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
-                                                    <?php echo htmlspecialchars($borrador['nombre_borrador']); ?>
+                                                    <?php echo htmlspecialchars(!empty(trim($borrador['formula_medicion'] ?? '')) ? $borrador['formula_medicion'] : $borrador['nombre_borrador']); ?>
                                                     <?php if ($borrador['gestionado_facultades'] == 1): ?>
                                                     <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
                                                     <?php endif; ?>
