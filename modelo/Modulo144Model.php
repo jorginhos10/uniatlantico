@@ -553,11 +553,22 @@ class Modulo144Model {
             
             $sets = [];
             $params = [':id' => $id];
-            
+
+            // Columnas numéricas: un campo vacío se guarda como NULL (si no, MySQL lo convierte en 0.00
+            // y el formulario vuelve a abrir mostrando "0,00" en vez de vacío)
+            $camposNumericos = [
+                'semestre1_seguimiento', 'semestre2_seguimiento', 'porcentaje_avance',
+                'ponderacion_proyectos', 'ponderacion_actividades', 'anio_base_meta',
+            ];
+
             foreach ($campos as $campo) {
                 if (isset($data[$campo])) {
+                    $valor = $data[$campo];
+                    if (in_array($campo, $camposNumericos, true) && trim((string)$valor) === '') {
+                        $valor = null;
+                    }
                     $sets[] = "{$campo} = :{$campo}";
-                    $params[":{$campo}"] = $data[$campo];
+                    $params[":{$campo}"] = $valor;
                 }
             }
             
