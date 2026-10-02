@@ -406,6 +406,8 @@ class Modulo144Controller {
                 return;
             }
 
+            if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
+
             // Validación server-side: ponderación acumulada no puede superar 100%
             if ($modulo === 'formulacion' && isset($_POST['ponderacion_actividades']) && $_POST['ponderacion_actividades'] !== '') {
                 $proyecto      = $_POST['proyecto']              ?? '';
@@ -551,6 +553,8 @@ class Modulo144Controller {
                 return;
             }
             
+            if ((int)$estado === 2 && $this->bloquearSeguimientoNoPublicado($modulo, (int)$id)) return;
+
             $resultado = $this->model->cambiarEstado($modulo, $id, $estado);
             $mensajes = [0 => 'Movido a Borrador', 1 => 'Cancelado', 2 => 'Publicado exitosamente'];
             echo json_encode([
@@ -577,6 +581,8 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Faltan datos']);
             return;
         }
+
+        if ($solicitud_estado === 1 && $this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
         // Al solicitar aprobación (1), el nivel del creador "pasa" automáticamente su propia
         // etapa del semáforo (para que la cascada de visibilidad la vea el siguiente rol).
@@ -611,6 +617,16 @@ class Modulo144Controller {
         'sub administrador' => 4,
     ];
 
+    // El seguimiento solo aplica a formulaciones publicadas (estado_formulacion = 2).
+    // Devuelve true (y responde el error) si la acción debe bloquearse.
+    private function bloquearSeguimientoNoPublicado($modulo, $id) {
+        if ($modulo !== 'seguimiento') return false;
+        $registro = $this->model->getById('formulacion', $id);
+        if ($registro && (int)($registro['estado_formulacion'] ?? 0) === 2) return false;
+        echo json_encode(['success' => false, 'message' => 'Solo se puede hacer seguimiento a formulaciones publicadas']);
+        return true;
+    }
+
     private function normalizarRol($s) {
         $s = mb_strtolower(trim((string)$s), 'UTF-8');
         return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
@@ -631,6 +647,8 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }
+
+        if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
         $etapaNueva = $etapaActual + 1;
         $rolEsperado = $this->semaforoRoles[$etapaNueva] ?? null;

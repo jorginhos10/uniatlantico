@@ -385,6 +385,7 @@ class Modulo144Model {
                                         LEFT JOIN usuarios u ON f.creado_por = u.id
                                         LEFT JOIN cargos c ON u.cargo_id = c.id
                                         WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
+                                        " . ($modulo === 'seguimiento' ? "AND f.estado_formulacion = 2" : "") . "
                                         ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
             $stmt->execute([
                 ':formulario_id' => $formulario_id,

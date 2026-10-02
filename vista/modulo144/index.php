@@ -1780,7 +1780,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
-                                                    <?php echo htmlspecialchars($publicado['nombre_borrador']); ?>
+                                                    <?php echo htmlspecialchars(!empty(trim($publicado['formula_medicion'] ?? '')) ? $publicado['formula_medicion'] : $publicado['nombre_borrador']); ?>
                                                     <?php if ($publicado['gestionado_facultades'] == 1): ?>
                                                     <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
                                                     <?php endif; ?>
@@ -1876,7 +1876,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row align-items-center g-2">
                                             <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
-                                                    <?php echo htmlspecialchars($cancelado['nombre_borrador']); ?>
+                                                    <?php echo htmlspecialchars(!empty(trim($cancelado['formula_medicion'] ?? '')) ? $cancelado['formula_medicion'] : $cancelado['nombre_borrador']); ?>
                                                 </div>
                                                 <?php if (!empty($cancelado['anio'])): ?>
                                                 <div class="lista-item-sub"><i class="fas fa-calendar me-1"></i> Año: <?php echo $cancelado['anio']; ?></div>
@@ -2476,7 +2476,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 </div>
                                                 
                                                 <div class="col-md-6 mb-3">
-                                                    <label class="form-label">14.4 VALOR AÑO</label>
+                                                    <label class="form-label">14.4 META AÑO</label>
                                                     <input type="text" class="form-control" name="anio_base_meta" id="formulacion_anio_base_meta" readonly placeholder="Valor anual" style="background-color: #e8f5e9; font-weight: bold; color: #2e7d32;">
                                                 </div>
                                                 
