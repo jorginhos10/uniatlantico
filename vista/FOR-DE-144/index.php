@@ -442,171 +442,295 @@ ob_start();
         .formulario-titulo, .formulario-descripcion { white-space: normal; }
         .btn-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
     }
+
+    /* ══════════════ Listado (diseño claro estilo Apple) ══════════════ */
+    .fl { --fl-text: #1D1D1F; --fl-text2: #3A3A3C; --fl-sub: #6E6E73; --fl-fill: #F2F2F7; --fl-seg: #E3E3E8; --fl-sep: #F0F0F3;
+          --fl-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.04);
+          display: flex; flex-direction: column; gap: 20px; max-width: 1100px; color: var(--fl-text); }
+    .fl-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+    .fl-eyebrow { font-size: 13px; font-weight: 600; color: var(--fl-sub); text-transform: uppercase; letter-spacing: .04em; }
+    .fl-head h1 { margin: 4px 0 0; font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+    .fl-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; min-height: 44px; padding: 0 20px;
+              border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+    .fl-btn-sm { min-height: 38px; padding: 0 15px; border-radius: 10px; font-size: 14px; }
+    .fl-btn-primary { background: #007AFF; color: #fff; }
+    .fl-btn-primary:hover { background: #0068D9; color: #fff; }
+    .fl-btn-tinted { background: rgba(0,122,255,.12); color: #0066CC; }
+    .fl-btn-tinted:hover { background: rgba(0,122,255,.18); color: #0066CC; }
+    .fl-btn:focus-visible, .fl-more:focus-visible, .fl-seg button:focus-visible, .fl-search input:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
+
+    .fl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .fl-stat { background: #fff; border-radius: 16px; padding: 14px 18px; box-shadow: var(--fl-shadow); display: flex; align-items: center; gap: 12px; }
+    .fl-stat b { display: block; font-size: 24px; font-weight: 700; line-height: 1.1; }
+    .fl-stat small { font-size: 13px; color: var(--fl-sub); }
+    .fl-num { font-variant-numeric: tabular-nums; }
+    .fl-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+    .fl-dot-abierto { background: #007AFF; } .fl-dot-libre { background: #34C759; }
+    .fl-dot-programado { background: #5856D6; } .fl-dot-finalizado { background: #AEAEB2; }
+
+    .fl-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+    .fl-seg { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 9px; background: var(--fl-seg); gap: 2px; }
+    .fl-seg button { border: 0; background: transparent; cursor: pointer; padding: 6px 14px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--fl-text2); }
+    .fl-seg button.on { background: #fff; color: var(--fl-text); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04); }
+    .fl-search { display: flex; align-items: center; gap: 8px; flex: 0 1 300px; min-width: 200px; margin: 0; background: var(--fl-seg); border-radius: 10px; padding: 0 12px; color: var(--fl-sub); }
+    .fl-search input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 9px 0; font-size: 14px; color: var(--fl-text); outline: none; }
+
+    .fl-list { background: #fff; border-radius: 18px; box-shadow: var(--fl-shadow); }
+    .fl-item { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 20px 24px; border-bottom: 1px solid var(--fl-sep); }
+    .fl-item:last-of-type { border-bottom: 0; }
+    .fl-main { flex: 1 1 300px; min-width: 0; display: flex; gap: 14px; align-items: flex-start; }
+    .fl-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 18px; }
+    .fl-icon-abierto { background: rgba(0,122,255,.12); color: #0066CC; }
+    .fl-icon-libre { background: rgba(52,199,89,.14); color: #248A3D; }
+    .fl-icon-programado { background: rgba(88,86,214,.14); color: #4A48C8; }
+    .fl-icon-finalizado, .fl-icon-inactivo { background: var(--fl-fill); color: #8E8E93; }
+    .fl-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fl-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .fl-title-row h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+    .fl-desc { font-size: 14px; color: var(--fl-text2); }
+    .fl-desc.vacia { color: #8E8E93; }
+    .fl-meta { font-size: 12px; color: var(--fl-sub); }
+    .fl-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; }
+    .fl-pill i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .fl-pill-abierto { background: rgba(0,122,255,.12); color: #0066CC; }
+    .fl-pill-libre { background: rgba(52,199,89,.14); color: #248A3D; }
+    .fl-pill-programado { background: rgba(88,86,214,.14); color: #4A48C8; }
+    .fl-pill-finalizado, .fl-pill-inactivo { background: var(--fl-fill); color: var(--fl-sub); }
+
+    .fl-time { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+    .fl-time-top { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--fl-text2); }
+    .fl-time-top b { font-weight: 600; white-space: nowrap; }
+    .fl-ink-abierto { color: #0066CC; } .fl-ink-libre { color: #248A3D; } .fl-ink-programado { color: #4A48C8; }
+    .fl-ink-finalizado, .fl-ink-inactivo { color: var(--fl-sub); }
+    .fl-bar { height: 6px; border-radius: 999px; background: #EEEEF2; overflow: hidden; }
+    .fl-bar span { display: block; height: 100%; border-radius: 999px; }
+    .fl-fill-abierto { background: #007AFF; } .fl-fill-programado { background: #5856D6; } .fl-fill-finalizado { background: #AEAEB2; }
+    .fl-bar-libre { background: repeating-linear-gradient(90deg, rgba(52,199,89,.35) 0 8px, transparent 8px 14px); }
+
+    .fl-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 8px; }
+    .fl-more { border: 0; cursor: pointer; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--fl-fill); color: var(--fl-text2); }
+    .fl-more:hover, .fl-more[aria-expanded="true"] { background: var(--fl-seg); }
+    .fl-menu { min-width: 220px; padding: 6px; border: 0; border-radius: 14px; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.14); }
+    .fl-menu .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 14px; color: var(--fl-text); }
+    .fl-menu .dropdown-item i { width: 16px; color: var(--fl-sub); }
+    .fl-menu .fl-danger, .fl-menu .fl-danger i { color: #D70015; }
+    .fl-menu .dropdown-item:active { background: rgba(0,122,255,.12); }
+
+    .fl-empty { padding: 44px 24px; text-align: center; color: var(--fl-sub); }
+    .fl-empty i { font-size: 32px; color: #AEAEB2; margin-bottom: 10px; }
+    .fl-empty h5 { font-size: 17px; font-weight: 600; color: var(--fl-text); }
+    .fl-empty p { margin: 0; font-size: 14px; }
+
+    @media (max-width: 720px) {
+        .fl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .fl-head h1 { font-size: 28px; }
+    }
 </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
 
-<div class="f144-wrap">
+<?php
+// ── Estado de cada formulario (abierto, tiempo libre, programado, finalizado, inactivo) ──
+$fl_items  = [];
+$fl_counts = ['abierto' => 0, 'libre' => 0, 'programado' => 0, 'finalizado' => 0, 'inactivo' => 0];
+$fl_ahora  = time();
+foreach (($formularios ?? []) as $formulario) {
+    $it = ['f' => $formulario, 'progreso' => null, 'rango' => '', 'resta' => ''];
+    if ($formulario['estado'] != 1) {
+        $it['estado'] = 'inactivo';
+        $it['resta']  = 'No disponible';
+    } elseif ($formulario['tipo_tiempo'] == 'libre') {
+        $it['estado'] = 'libre';
+        $it['rango']  = 'Siempre disponible';
+        $it['resta']  = 'Sin cierre';
+    } else {
+        $ini = strtotime($formulario['fecha_inicio']);
+        $fin = strtotime($formulario['fecha_fin']);
+        $it['rango'] = date('d/m/Y', $ini) . ' – ' . date('d/m/Y H:i', $fin);
+        if ($fl_ahora < $ini) {
+            $it['estado']   = 'programado';
+            $dias           = (int)ceil(($ini - $fl_ahora) / 86400);
+            $it['resta']    = 'Abre en ' . $dias . ($dias === 1 ? ' día' : ' días');
+            $it['progreso'] = 0;
+        } elseif ($fl_ahora > $fin) {
+            $it['estado']   = 'finalizado';
+            $it['resta']    = 'Cerró el ' . date('d/m/Y', $fin);
+            $it['progreso'] = 100;
+        } else {
+            $it['estado']   = 'abierto';
+            $dias           = (int)ceil(($fin - $fl_ahora) / 86400);
+            $it['resta']    = $dias <= 1 ? 'Cierra hoy' : 'Quedan ' . $dias . ' días';
+            $it['progreso'] = $fin > $ini ? (int)round(($fl_ahora - $ini) / ($fin - $ini) * 100) : 100;
+        }
+    }
+    $fl_counts[$it['estado']]++;
+    $fl_items[] = $it;
+}
+$fl_etiquetas = [
+    'abierto'    => 'Abierto',
+    'libre'      => 'Tiempo libre',
+    'programado' => 'Programado',
+    'finalizado' => 'Finalizado',
+    'inactivo'   => 'Inactivo',
+];
+?>
+<div class="f144-wrap fl">
 
-    <!-- Page header -->
-    <div class="f144-header">
-        <div class="f144-header-icon">
-            <i class="fas fa-file-alt"></i>
-        </div>
-        <div class="f144-header-text">
+    <!-- Encabezado -->
+    <header class="fl-head">
+        <div>
+            <div class="fl-eyebrow">Formularios con control de tiempo</div>
             <h1>FOR-DE-144</h1>
-            <p>Crea, edita y gestiona tus formularios con control de tiempo</p>
         </div>
-        <div class="f144-header-date">
-            <i class="far fa-clock me-1"></i><?php echo date('d/m/Y H:i'); ?>
-        </div>
-    </div>
-
-    <!-- List -->
-    <div id="formulariosContainer" class="card-grid">
-
-        <!-- Add new -->
         <?php if ($perms_f144['crear']): ?>
-        <div class="formulario-add" data-bs-toggle="modal" data-bs-target="#modalAgregar">
-            <i class="fas fa-plus-circle add-icon"></i>
-            <div>
-                <h3>Nuevo Formulario</h3>
-                <p>Toca para crear un nuevo formulario</p>
-            </div>
-        </div>
+        <button type="button" class="fl-btn fl-btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregar">
+            <i class="fas fa-plus"></i> Nuevo formulario
+        </button>
         <?php endif; ?>
+    </header>
 
-        <?php
-        if (isset($formularios) && is_array($formularios) && count($formularios) > 0):
-            foreach ($formularios as $formulario):
-                $fecha           = new DateTime($formulario['fecha_creacion']);
-                $fechaFormateada = $fecha->format('d/m/Y H:i');
-                $ahora           = new DateTime();
-                $disponible      = false;
-                $estadoTiempo    = 'no-disponible';
-                $mensajeEstado   = '';
+    <?php if (!empty($fl_items)): ?>
+    <!-- Resumen -->
+    <section class="fl-stats" aria-label="Resumen">
+        <?php foreach (['abierto' => 'Abiertos', 'libre' => 'Tiempo libre', 'programado' => 'Programados', 'finalizado' => 'Finalizados'] as $k => $lbl): ?>
+        <div class="fl-stat">
+            <span class="fl-dot fl-dot-<?php echo $k; ?>"></span>
+            <span><b class="fl-num"><?php echo $fl_counts[$k]; ?></b><small><?php echo $lbl; ?></small></span>
+        </div>
+        <?php endforeach; ?>
+    </section>
 
-                if ($formulario['estado'] != 1) {
-                    $estadoTiempo  = 'inactivo';
-                    $mensajeEstado = 'Formulario inactivo';
-                } elseif ($formulario['tipo_tiempo'] == 'libre') {
-                    $disponible   = true;
-                    $estadoTiempo = 'disponible';
-                } elseif ($formulario['tipo_tiempo'] == 'rango') {
-                    $inicio = new DateTime($formulario['fecha_inicio']);
-                    $fin    = new DateTime($formulario['fecha_fin']);
-                    if ($ahora < $inicio) {
-                        $estadoTiempo  = 'proximamente';
-                        $mensajeEstado = 'Disponible desde ' . $inicio->format('d/m/Y H:i');
-                    } elseif ($ahora > $fin) {
-                        $estadoTiempo  = 'finalizado';
-                        $mensajeEstado = 'Finalizado el ' . $fin->format('d/m/Y H:i');
-                    } else {
-                        $disponible   = true;
-                        $estadoTiempo = 'disponible';
-                    }
-                }
+    <!-- Filtros -->
+    <div class="fl-tools">
+        <div class="fl-seg" role="group" aria-label="Filtrar por estado" id="flFiltros">
+            <button type="button" class="on" data-filtro="todos" aria-pressed="true">Todos</button>
+            <button type="button" data-filtro="abierto" aria-pressed="false">Abiertos</button>
+            <button type="button" data-filtro="libre" aria-pressed="false">Tiempo libre</button>
+            <button type="button" data-filtro="programado" aria-pressed="false">Programados</button>
+            <button type="button" data-filtro="finalizado" aria-pressed="false">Finalizados</button>
+            <?php if ($fl_counts['inactivo']): ?>
+            <button type="button" data-filtro="inactivo" aria-pressed="false">Inactivos</button>
+            <?php endif; ?>
+        </div>
+        <label class="fl-search" for="flBuscar">
+            <i class="fas fa-search"></i>
+            <input type="search" id="flBuscar" placeholder="Buscar formulario" aria-label="Buscar formulario">
+        </label>
+    </div>
+    <?php endif; ?>
 
-                $cardClass = ($estadoTiempo === 'disponible') ? 'disponible'
-                           : (($estadoTiempo === 'proximamente') ? 'proximamente' : 'no-disponible');
+    <!-- Lista -->
+    <section id="formulariosContainer" class="fl-list" aria-label="Formularios">
+        <?php foreach ($fl_items as $it):
+            $formulario = $it['f'];
+            $est = $it['estado'];
+            $puedeConstruir = in_array($est, ['abierto', 'libre'], true);
+            $tieneMenu = $perms_f144['editar'] || $perms_f144['eliminar'];
         ?>
+        <article class="fl-item" id="formulario-<?php echo $formulario['id']; ?>"
+                 data-estado="<?php echo $est; ?>"
+                 data-buscar="<?php echo htmlspecialchars(mb_strtolower(($formulario['titulo'] ?? '') . ' ' . ($formulario['descripcion'] ?? ''), 'UTF-8')); ?>">
 
-        <div class="formulario-card <?php echo $cardClass; ?>" id="formulario-<?php echo $formulario['id']; ?>">
-
-            <div class="formulario-main">
-                <div class="formulario-titulo">
-                    <?php echo htmlspecialchars($formulario['titulo']); ?>
-                    <?php if ($formulario['estado'] != 1): ?>
-                        <span class="badge bg-secondary">Inactivo</span>
-                    <?php endif; ?>
-                </div>
-
-                <div class="formulario-descripcion">
-                    <?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?>
-                </div>
-            </div>
-
-            <div class="formulario-meta">
-                <div class="tiempo-info">
-                    <?php if ($formulario['estado'] != 1): ?>
-                        <span class="badge-estado badge-no-disponible"><i class="fas fa-times-circle"></i> Inactivo</span>
-                        <div class="fecha-item"><i class="fas fa-ban"></i> No disponible</div>
-
-                    <?php elseif ($formulario['tipo_tiempo'] == 'libre'): ?>
-                        <span class="badge-estado badge-disponible"><i class="fas fa-infinity"></i> Tiempo libre</span>
-                        <div class="fecha-item"><i class="fas fa-check-circle" style="color:var(--ios-green);"></i> Siempre disponible</div>
-
-                    <?php else: ?>
-                        <?php if ($estadoTiempo == 'disponible'): ?>
-                            <span class="badge-estado badge-disponible"><i class="fas fa-clock"></i> Disponible ahora</span>
-                        <?php elseif ($estadoTiempo == 'proximamente'): ?>
-                            <span class="badge-estado badge-proximamente"><i class="fas fa-hourglass-half"></i> Próximamente</span>
-                        <?php else: ?>
-                            <span class="badge-estado badge-no-disponible"><i class="fas fa-ban"></i> Finalizado</span>
-                        <?php endif; ?>
-
-                        <div class="fecha-rango">
-                            <div class="fecha-item"><i class="fas fa-play-circle"></i> Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></div>
-                            <div class="fecha-item"><i class="fas fa-stop-circle"></i> Fin: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_fin'])); ?></div>
-                        </div>
-
-                        <?php if ($mensajeEstado): ?>
-                            <small style="color:var(--ios-label2);display:block;margin-top:5px;">
-                                <i class="fas fa-info-circle"></i> <?php echo $mensajeEstado; ?>
-                            </small>
-                        <?php endif; ?>
-                    <?php endif; ?>
-                </div>
-
-                <div class="formulario-fecha">
-                    <i class="far fa-clock me-1"></i><?php echo $fechaFormateada; ?>
-                    <?php if (!empty($formulario['anio'])): ?>
-                        &nbsp;·&nbsp;<i class="fas fa-calendar-check me-1"></i><?php echo htmlspecialchars($formulario['anio']); ?>
-                    <?php endif; ?>
+            <div class="fl-main">
+                <span class="fl-icon fl-icon-<?php echo $est; ?>"><i class="fas fa-file-alt"></i></span>
+                <div class="fl-text">
+                    <div class="fl-title-row">
+                        <h2><?php echo htmlspecialchars($formulario['titulo']); ?></h2>
+                        <span class="fl-pill fl-pill-<?php echo $est; ?>"><i></i><?php echo $fl_etiquetas[$est]; ?></span>
+                    </div>
+                    <div class="fl-desc <?php echo $formulario['descripcion'] ? '' : 'vacia'; ?>"><?php echo htmlspecialchars($formulario['descripcion'] ?: 'Sin descripción'); ?></div>
+                    <div class="fl-meta">
+                        <?php if (!empty($formulario['anio'])): ?>Vigencia <?php echo htmlspecialchars($formulario['anio']); ?> · <?php endif; ?>
+                        creado el <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_creacion'])); ?>
+                    </div>
                 </div>
             </div>
 
-            <div class="btn-actions">
-                <?php if ($perms_f144['ver']): ?>
-                <button class="btn btn-sm btn-success"
-                        onclick="window.location.href='<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>'"
-                        <?php echo !$disponible ? 'disabled' : ''; ?>>
-                    <i class="fas fa-hammer me-1"></i>Construir
-                </button>
+            <div class="fl-time">
+                <div class="fl-time-top">
+                    <span><?php echo htmlspecialchars($it['rango']); ?></span>
+                    <b class="fl-ink-<?php echo $est; ?>"><?php echo htmlspecialchars($it['resta']); ?></b>
+                </div>
+                <?php if ($est === 'libre'): ?>
+                <div class="fl-bar fl-bar-libre"></div>
+                <?php elseif ($it['progreso'] !== null): ?>
+                <div class="fl-bar"><span class="fl-fill-<?php echo $est; ?>" style="width:<?php echo max(0, min(100, $it['progreso'])); ?>%"></span></div>
+                <?php endif; ?>
+            </div>
+
+            <div class="fl-actions">
+                <?php if ($perms_f144['ver'] && $puedeConstruir): ?>
+                <a class="fl-btn fl-btn-primary fl-btn-sm" href="<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>">Construir</a>
                 <?php endif; ?>
                 <?php if ($perms_f144['informe']): ?>
-                <a class="btn btn-sm btn-info"
-                   href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=informePage&id=<?php echo $formulario['id']; ?>"
-                   target="_blank">
-                    <i class="fas fa-chart-bar me-1"></i>Informe
-                </a>
+                <a class="fl-btn fl-btn-tinted fl-btn-sm" target="_blank"
+                   href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=informePage&id=<?php echo $formulario['id']; ?>">Informe</a>
                 <?php endif; ?>
-                <?php if ($perms_f144['editar']): ?>
-                <button class="btn btn-sm btn-warning" onclick="editarFormulario(<?php echo $formulario['id']; ?>)">
-                    <i class="fas fa-edit me-1"></i>Editar
-                </button>
-                <?php endif; ?>
-                <?php if ($perms_f144['eliminar']): ?>
-                <button class="btn btn-sm btn-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)">
-                    <i class="fas fa-trash me-1"></i>Eliminar
-                </button>
+                <?php if ($tieneMenu): ?>
+                <div class="dropdown">
+                    <button type="button" class="fl-more" data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Más acciones para <?php echo htmlspecialchars($formulario['titulo']); ?>">
+                        <i class="fas fa-ellipsis-h"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end fl-menu">
+                        <?php if ($perms_f144['editar']): ?>
+                        <li><button type="button" class="dropdown-item" onclick="editarFormulario(<?php echo $formulario['id']; ?>)"><i class="fas fa-pen"></i> Editar datos y fechas</button></li>
+                        <?php endif; ?>
+                        <?php if ($perms_f144['editar'] && $perms_f144['eliminar']): ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <?php endif; ?>
+                        <?php if ($perms_f144['eliminar']): ?>
+                        <li><button type="button" class="dropdown-item fl-danger" onclick="eliminarFormulario(<?php echo $formulario['id']; ?>)"><i class="fas fa-trash"></i> Eliminar formulario</button></li>
+                        <?php endif; ?>
+                    </ul>
+                </div>
                 <?php endif; ?>
             </div>
-        </div>
+        </article>
+        <?php endforeach; ?>
 
-        <?php
-            endforeach;
-        else:
-        ?>
-        <div class="empty-state">
+        <div class="fl-empty" id="flVacio" <?php echo empty($fl_items) ? '' : 'hidden'; ?>>
             <i class="fas fa-inbox"></i>
+            <?php if (empty($fl_items)): ?>
             <h5>Sin formularios</h5>
-            <p>Crea tu primer formulario tocando el botón de arriba</p>
+            <p>Crea el primero con el botón “Nuevo formulario”.</p>
+            <?php else: ?>
+            <p>No hay formularios que coincidan con el filtro.</p>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
-
-    </div><!-- /card-grid -->
+    </section>
 </div><!-- /f144-wrap -->
+
+<script>
+// Filtro por estado y búsqueda del listado
+(function () {
+    var seg = document.getElementById('flFiltros');
+    var buscar = document.getElementById('flBuscar');
+    if (!seg) return;
+    var filtro = 'todos';
+    function aplicar() {
+        var q = (buscar.value || '').trim().toLowerCase();
+        var visibles = 0;
+        document.querySelectorAll('.fl-item').forEach(function (el) {
+            var ok = (filtro === 'todos' || el.dataset.estado === filtro) && (!q || el.dataset.buscar.indexOf(q) !== -1);
+            el.hidden = !ok;
+            if (ok) visibles++;
+        });
+        document.getElementById('flVacio').hidden = visibles > 0;
+    }
+    seg.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        filtro = b.dataset.filtro;
+        seg.querySelectorAll('button').forEach(function (x) {
+            x.classList.toggle('on', x === b);
+            x.setAttribute('aria-pressed', x === b ? 'true' : 'false');
+        });
+        aplicar();
+    });
+    buscar.addEventListener('input', aplicar);
+})();
+</script>
 
 
 <!-- ══════════════ MODAL AGREGAR ══════════════ -->

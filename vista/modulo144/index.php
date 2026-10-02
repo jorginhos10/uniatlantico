@@ -1175,45 +1175,137 @@ ob_start();
             background: rgba(0,122,255,0.09); color: #007aff;
             border: 1px solid rgba(0,122,255,0.18);
         }
+
+        /* ══════════════ Rediseño claro estilo Apple ══════════════ */
+        .m144-head { padding: 22px 26px !important; }
+        .m144-head-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 16px; }
+        .m144-head-text { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .m144-crumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #6E6E73; }
+        .m144-crumb a { color: #0066CC; font-weight: 500; text-decoration: none; }
+        .m144-crumb i { font-size: 9px; }
+        .m144-title-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+        .m144-head .header-title { margin: 0; font-size: 30px; letter-spacing: -.02em; }
+        .m144-head .header-desc { margin: 0; }
+        .m144-btn { display: inline-flex; align-items: center; gap: 8px; border: 0; cursor: pointer; min-height: 44px; padding: 0 18px;
+                    border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+        .m144-btn i { font-size: 13px; }
+        .m144-btn-gray { background: #E9E9EE; color: #1D1D1F; }
+        .m144-btn-gray:hover { background: #E0E0E5; color: #1D1D1F; }
+        .m144-btn-primary { background: #007AFF; color: #fff; }
+        .m144-btn-primary:hover { background: #0068D9; color: #fff; }
+        .m144-btn:focus-visible, .m144-more:focus-visible, .m144-estado:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
+
+        /* Pestañas principales: una fila, subrayado azul y conteo */
+        .modulo-tabs-top { border-bottom: 1px solid #E0E0E5 !important; gap: 4px; flex-wrap: wrap; }
+        .modulo-tabs-top .nav-link { border: 0 !important; border-bottom: 2px solid transparent !important; background: transparent !important;
+                                     color: #3A3A3C !important; font-weight: 600; text-transform: none; padding: 12px 14px; margin-bottom: -1px; }
+        .modulo-tabs-top .nav-link.active { color: #0066CC !important; border-bottom-color: #007AFF !important; }
+        .modulo-tabs-top .nav-link:hover { color: #1D1D1F !important; }
+        .m144-tab-count { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #E9E9EE; color: #6E6E73; }
+        .modulo-tabs-top .nav-link.active .m144-tab-count { background: rgba(0,122,255,.12); color: #0066CC; }
+
+        /* Panel sin banner oscuro */
+        .m144-panel { padding: 4px 0 0; }
+        .m144-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .m144-panel-desc { margin: 0; font-size: 15px; color: #6E6E73; }
+
+        /* Filtros */
+        .filtro-lista-bar { background: transparent !important; border: 0 !important; padding: 0 !important; box-shadow: none !important; gap: 10px; }
+        .filtro-lista-bar .filtro-tipo-select, .filtro-lista-bar .filtro-texto-input { background: #E3E3E8 !important; border: 0 !important; border-radius: 9px !important; font-size: 13px; font-weight: 600; color: #1D1D1F; }
+
+        /* Borradores / Publicados / Cancelados como control segmentado */
+        .lista-tabs { display: inline-flex !important; flex-wrap: wrap; gap: 2px; padding: 2px; border: 0 !important; border-radius: 9px; background: #E3E3E8; }
+        .lista-tabs .nav-link { border: 0 !important; border-radius: 7px !important; background: transparent !important; color: #3A3A3C !important;
+                                font-size: 13px; font-weight: 600; padding: 6px 14px; margin: 0 !important; }
+        .lista-tabs .nav-link.active { background: #fff !important; color: #1D1D1F !important; box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04); }
+        .lista-tabs .nav-link i { display: none; }
+        .lista-tabs .badge { background: transparent !important; color: #6E6E73 !important; font-weight: 600; padding: 0 0 0 2px; }
+
+        /* Lista como una sola tarjeta con separadores finos */
+        .lista-container { background: #fff !important; border: 0 !important; border-radius: 18px !important; overflow: visible !important;
+                           box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.04) !important; }
+        .lista-header { background: #FAFAFC !important; border-bottom: 1px solid #F0F0F3 !important; border-radius: 18px 18px 0 0;
+                        color: #6E6E73 !important; font-size: 12px !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: 0 !important; }
+        .lista-item { border-bottom: 1px solid #F0F0F3 !important; padding-top: 16px !important; padding-bottom: 16px !important; }
+        .lista-item:hover { background: #FAFAFC !important; }
+        .lista-item-titulo { color: #1D1D1F !important; font-size: 15px !important; font-weight: 600 !important; line-height: 1.35; }
+        .lista-item-titulo.titulo-linea-excedida { color: #D70015 !important; }
+
+        /* Estado en palabras */
+        .m144-estado { display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; font-size: 12px; font-weight: 600;
+                       padding: 3px 10px; border-radius: 999px; white-space: nowrap; background: #F2F2F7; color: #6E6E73; }
+        .m144-estado i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+        .m144-estado.estado-letra-s { background: rgba(255,149,0,.14); color: #B25000; }
+        .m144-estado.estado-letra-r { background: rgba(255,59,48,.10); color: #D70015; }
+
+        /* Semáforo como pasos conectados */
+        .semaforo-row { gap: 0 !important; }
+        .semaforo-row .semaforo-circle { width: 24px; height: 24px; font-size: 11px; font-weight: 700; background: #F2F2F7; color: #8E8E93; position: relative; }
+        .semaforo-row .semaforo-circle + .semaforo-circle { margin-left: 10px; }
+        .semaforo-row .semaforo-circle + .semaforo-circle::before { content: ""; position: absolute; right: 100%; top: 50%; width: 10px; height: 2px; background: #E3E3E8; }
+        .semaforo-row .semaforo-circle.activo { background: #34C759; color: #fff; }
+        .semaforo-row .semaforo-circle.activo + .semaforo-circle::before { background: #34C759; }
+        .semaforo-row .semaforo-circle.rechazado { background: #FF3B30; color: #fff; }
+        .semaforo-row .semaforo-circle.no-aplica { background: #FFF4D6; color: #8A6100; }
+        .semaforo-row .semaforo-circle.clickable { background: #fff; color: #B25000; box-shadow: inset 0 0 0 2px #FF9500; }
+        .semaforo-dependencia { color: #6E6E73 !important; }
+
+        /* Acciones: botones con tinte suave y menú "…" */
+        .lista-item-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .lista-item-actions .btn { width: 38px; height: 38px; padding: 0; border: 0 !important; border-radius: 10px !important;
+                                   display: inline-grid; place-items: center; box-shadow: none !important; }
+        .lista-item-actions .btn-warning, .lista-item-actions .btn-info { background: rgba(0,122,255,.12) !important; color: #0066CC !important; }
+        .lista-item-actions .btn-success { background: rgba(52,199,89,.16) !important; color: #248A3D !important; }
+        .lista-item-actions .btn-danger { background: rgba(255,59,48,.10) !important; color: #D70015 !important; }
+        .lista-item-actions .btn:hover { filter: brightness(.96); }
+        .lista-item-actions .badge.bg-warning { background: rgba(255,149,0,.14) !important; color: #B25000 !important; font-weight: 600; border-radius: 999px; padding: 5px 10px; }
+        .m144-more { border: 0; cursor: pointer; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #F2F2F7; color: #3A3A3C; }
+        .m144-more:hover, .m144-more[aria-expanded="true"] { background: #E3E3E8; }
+        .m144-menu { min-width: 230px; padding: 6px; border: 0; border-radius: 14px; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 12px 32px rgba(0,0,0,.14); }
+        .m144-menu .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 14px; color: #1D1D1F; }
+        .m144-menu .dropdown-item i { width: 16px; color: #6E6E73; }
+        .m144-menu .m144-danger, .m144-menu .m144-danger i { color: #D70015; }
     </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="container-fluid">
-        <div class="header-info">
-            <div style="display:flex;align-items:flex-start;gap:16px;">
-                <!-- Icon -->
-                <div class="header-icon-box">
-                    <i class="fas fa-cubes"></i>
-                </div>
-
-                <!-- Text block -->
-                <div style="flex:1;min-width:0;">
-                    <div class="header-eyebrow">PLAN DE ACCION</div>
-                    <h1 class="header-title"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h1>
-                    <p class="header-desc"><?php echo htmlspecialchars($formulario['descripcion'] ?? 'Sin descripción'); ?></p>
-                    <?php if (!empty($formulario['fecha_inicio']) || !empty($formulario['fecha_cierre'])): ?>
+        <?php
+        // Fechas vacías de MySQL (0000-00-00) se ven como "30/11/-0001": solo se muestran fechas reales
+        $m144_fechaReal = function ($d) { return !empty($d) && (int)date('Y', strtotime($d)) > 1; };
+        $m144_desc = trim((string)($formulario['descripcion'] ?? ''));
+        ?>
+        <div class="header-info m144-head">
+            <div class="m144-head-row">
+                <div class="m144-head-text">
+                    <nav class="m144-crumb" aria-label="Ruta">
+                        <a href="<?php echo $basePath; ?>/FOR-DE-144">FOR-DE-144</a>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        <span>Plan de acción</span>
+                    </nav>
+                    <div class="m144-title-row">
+                        <h1 class="header-title"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?></h1>
+                        <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?>">
+                            <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?>"></i>
+                            <?php echo $estado_fechas['mensaje']; ?>
+                        </span>
+                    </div>
+                    <?php if ($m144_desc !== ''): ?>
+                    <p class="header-desc"><?php echo htmlspecialchars($m144_desc); ?></p>
+                    <?php endif; ?>
+                    <?php if ($m144_fechaReal($formulario['fecha_inicio'] ?? null) || $m144_fechaReal($formulario['fecha_cierre'] ?? null)): ?>
                     <div class="header-meta">
-                        <?php if (!empty($formulario['fecha_inicio'])): ?>
+                        <?php if ($m144_fechaReal($formulario['fecha_inicio'] ?? null)): ?>
                         <span><i class="fas fa-play-circle me-1" style="color:#34C759;"></i>Inicio: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_inicio'])); ?></span>
                         <?php endif; ?>
-                        <?php if (!empty($formulario['fecha_cierre'])): ?>
+                        <?php if ($m144_fechaReal($formulario['fecha_cierre'] ?? null)): ?>
                         <span><i class="fas fa-stop-circle me-1" style="color:#FF3B30;"></i>Cierre: <?php echo date('d/m/Y H:i', strtotime($formulario['fecha_cierre'])); ?></span>
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
                 </div>
-
-                <!-- Right: status + back -->
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
-                    <span class="estado-badge estado-<?php echo $estado_fechas['clase']; ?>">
-                        <i class="fas fa-<?php echo $estado_fechas['valido'] ? 'check-circle' : 'exclamation-circle'; ?>"></i>
-                        <?php echo $estado_fechas['mensaje']; ?>
-                    </span>
-                    <a href="<?php echo $basePath; ?>/FOR-DE-144"
-                       style="display:inline-flex;align-items:center;gap:6px;background:#F2F2F7;color:#1d1d1f;padding:7px 14px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:none;transition:background .15s;">
-                        <i class="fas fa-arrow-left" style="font-size:11px;"></i>Volver
-                    </a>
-                </div>
+                <a href="<?php echo $basePath; ?>/FOR-DE-144" class="m144-btn m144-btn-gray">
+                    <i class="fas fa-chevron-left"></i>Volver
+                </a>
             </div>
 
             <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
@@ -1309,7 +1401,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link <?php echo $primer_modulo_tab ? 'active' : ''; ?>" data-bs-toggle="tab" data-bs-target="#panelModulo-<?php echo $key; ?>" type="button" role="tab">
                     <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i><?php echo $modulo['config']['nombre']; ?>
-                    <span class="badge bg-secondary ms-2">B:<?php echo count($borradoresVisiblesPorModulo[$key]); ?> P:<?php echo count($modulo['publicados']); ?> C:<?php echo count($modulo['cancelados']); ?></span>
+                    <span class="m144-tab-count" title="Borradores: <?php echo count($borradoresVisiblesPorModulo[$key]); ?> · Publicados: <?php echo count($modulo['publicados']); ?> · Cancelados: <?php echo count($modulo['cancelados']); ?>"><?php echo count($borradoresVisiblesPorModulo[$key]) + count($modulo['publicados']); ?></span>
                 </button>
             </li>
             <?php $primer_modulo_tab = false; ?>
@@ -1317,7 +1409,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelFacultades" type="button" role="tab">
                     <i class="fas fa-university me-2"></i>FORMULACIÓN Y SEGUIMIENTO POR FACULTADES
-                    <span class="badge bg-secondary ms-2"><?php echo count($facultades ?? []); ?> facultades</span>
+                    <span class="m144-tab-count" title="<?php echo count($facultades ?? []); ?> facultades"><?php echo count($facultades ?? []); ?></span>
                 </button>
             </li>
             <li class="nav-item" role="presentation">
@@ -1331,23 +1423,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <?php $primer_modulo = true; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
             <div class="tab-pane fade <?php echo $primer_modulo ? 'show active' : ''; ?>" id="panelModulo-<?php echo $key; ?>" role="tabpanel">
-                <div class="modulo-panel-header" style="background: <?php echo $modulo['config']['color_header']; ?>;">
-                    <i class="fas <?php echo $modulo['config']['icono']; ?> fa-2x me-3"></i>
-                    <div>
-                        <span class="modulo-panel-title"><?php echo $modulo['config']['nombre']; ?></span><br>
-                        <small><?php echo $modulo['config']['descripcion']; ?></small>
-                    </div>
-                </div>
-                <div class="p-4">
+                <div class="m144-panel">
 
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="mb-0" style="color: <?php echo $modulo['config']['color']; ?>;">
-                                <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i>
-                                Gestión de <?php echo $modulo['config']['nombre']; ?>
-                            </h4>
+                        <div class="m144-panel-head">
+                            <p class="m144-panel-desc"><?php echo $modulo['config']['descripcion']; ?></p>
                             <?php if ($key === 'formulacion'): ?>
-                            <button class="btn btn-success" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
-                                <i class="fas fa-plus me-1"></i>Nuevo Indicador
+                            <button type="button" class="m144-btn m144-btn-primary" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
+                                <i class="fas fa-plus"></i>Nuevo indicador
                             </button>
                             <?php endif; ?>
                         </div>
@@ -1544,7 +1626,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php endif; ?>
                                             </div>
                                             <div class="col-md-1">
-                                                <span class="estado-letra-badge <?php echo $solInfo['clase']; ?>" style="cursor:pointer;" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><?php echo $solInfo['letra']; ?></span>
+                                                <button type="button" class="m144-estado <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i></i><?php echo $solInfo['titulo']; ?></button>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="semaforo-row">
@@ -1600,19 +1682,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php elseif ($solEstado === 1): ?>
                                                     <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
                                                     <?php else: ?>
-                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)">
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar" aria-label="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
-                                                    <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación">
+                                                    <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación" aria-label="Solicitar aprobación">
                                                         <i class="fas fa-paper-plane"></i>
                                                     </button>
                                                     <?php if ($key === 'formulacion'): ?>
-                                                    <button class="btn btn-sm btn-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Cancelar">
-                                                        <i class="fas fa-ban"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-info" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')">
-                                                        <i class="fas fa-copy"></i>
-                                                    </button>
+                                                    <div class="dropdown">
+                                                        <button type="button" class="m144-more" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones">
+                                                            <i class="fas fa-ellipsis-h"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end m144-menu">
+                                                            <li><button type="button" class="dropdown-item" onclick="abrirModalDuplicar('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, '<?php echo htmlspecialchars($borrador['nombre_borrador']); ?>')"><i class="fas fa-copy"></i>Duplicar</button></li>
+                                                            <li><button type="button" class="dropdown-item" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i class="fas fa-history"></i>Ver historial de aprobación</button></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li><button type="button" class="dropdown-item m144-danger" onclick="cambiarEstadoBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)"><i class="fas fa-ban"></i>Cancelar indicador</button></li>
+                                                        </ul>
+                                                    </div>
                                                     <?php endif; ?>
                                                     <?php endif; ?>
                                                 </div>
