@@ -1265,6 +1265,13 @@ ob_start();
         .m144-menu .dropdown-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 14px; color: #1D1D1F; }
         .m144-menu .dropdown-item i { width: 16px; color: #6E6E73; }
         .m144-menu .m144-danger, .m144-menu .m144-danger i { color: #D70015; }
+        .m144-menu .m144-ok, .m144-menu .m144-ok i { color: #248A3D; }
+        .m144-menu .dropdown-header { font-size: 12px; color: #6E6E73; padding: 6px 10px 4px; }
+        .m144-pendiente { display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; font-size: 13px; font-weight: 600;
+                          padding: 5px 12px; border-radius: 999px; background: rgba(255,149,0,.14); color: #B25000; }
+        .m144-pendiente i { font-size: 10px; }
+        .m144-pendiente:hover, .m144-pendiente[aria-expanded="true"] { background: rgba(255,149,0,.24); }
+        .m144-pendiente:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
     </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
@@ -1668,7 +1675,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">
-                                                    <?php if (!$esCreadorFila || ($esSuperAdminSem && $puedeRechazarEtapa)): ?>
+                                                    <?php if (!$esCreadorFila): ?>
                                                     <button class="btn btn-sm btn-info" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Ver (solo lectura)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
@@ -1682,6 +1689,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                     <?php endif; ?>
+                                                    <?php elseif ($solEstado === 1 && $puedeRechazarEtapa):
+                                                        // El creador es el superadministrador: "Pendiente" abre las opciones para aprobar en nombre de la etapa
+                                                        $esEtapaFinalAdmin = ($etapaActual + 1) === 4;
+                                                        $etapaPendiente = $semaforoEtapas[$etapaActual + 1]['titulo'] ?? '';
+                                                    ?>
+                                                    <div class="dropdown">
+                                                        <button type="button" class="m144-pendiente" data-bs-toggle="dropdown" aria-expanded="false"
+                                                                title="Pendiente de <?php echo htmlspecialchars($etapaPendiente); ?>">
+                                                            Pendiente <i class="fas fa-chevron-down"></i>
+                                                        </button>
+                                                        <ul class="dropdown-menu dropdown-menu-end m144-menu">
+                                                            <li><h6 class="dropdown-header">Espera a <?php echo htmlspecialchars($etapaPendiente); ?></h6></li>
+                                                            <li><button type="button" class="dropdown-item" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i class="fas fa-eye"></i>Ver</button></li>
+                                                            <li><button type="button" class="dropdown-item m144-ok" onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"><i class="fas fa-<?php echo $esEtapaFinalAdmin ? 'globe' : 'check'; ?>"></i><?php echo $esEtapaFinalAdmin ? 'Aceptar y publicar' : 'Aceptar'; ?></button></li>
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            <li><button type="button" class="dropdown-item m144-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"><i class="fas fa-times"></i>Rechazar</button></li>
+                                                        </ul>
+                                                    </div>
                                                     <?php elseif ($solEstado === 1): ?>
                                                     <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
                                                     <?php else: ?>
