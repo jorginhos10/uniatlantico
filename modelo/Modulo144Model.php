@@ -606,9 +606,20 @@ class Modulo144Model {
                                                 fecha_actualizacion = NOW() 
                                             WHERE id = :id");
                 return $stmt->execute([':id' => $id]);
+            } elseif ($estado == 0) {
+                // Devolver a borrador: se reinicia el flujo de aprobación (semáforo y solicitud)
+                // para que el creador pueda editarlo y volver a solicitar aprobación.
+                $stmt = $this->db->prepare("UPDATE {$tabla}
+                                            SET {$campo_estado} = 0,
+                                                {$modulo_config['campo_solicitud']} = 0,
+                                                {$modulo_config['campo_semaforo']} = 0,
+                                                {$modulo_config['campo_semaforo_rechazo']} = 0,
+                                                fecha_actualizacion = NOW()
+                                            WHERE id = :id");
+                return $stmt->execute([':id' => $id]);
             } else {
-                $stmt = $this->db->prepare("UPDATE {$tabla} 
-                                            SET {$campo_estado} = :estado, 
+                $stmt = $this->db->prepare("UPDATE {$tabla}
+                                            SET {$campo_estado} = :estado,
                                                 {$campo_fecha} = CASE WHEN :estado = 2 THEN NOW() ELSE {$campo_fecha} END,
                                                 fecha_actualizacion = NOW() 
                                             WHERE id = :id");

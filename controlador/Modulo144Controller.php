@@ -555,6 +555,12 @@ class Modulo144Controller {
             
             if ((int)$estado === 2 && $this->bloquearSeguimientoNoPublicado($modulo, (int)$id)) return;
 
+            // Devolver un publicado a borrador: solo el superadmin (id=1)
+            if ((int)$estado === 0 && (int)($_SESSION['usuario_id'] ?? 0) !== 1) {
+                echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
+                return;
+            }
+
             $resultado = $this->model->cambiarEstado($modulo, $id, $estado);
             $mensajes = [0 => 'Movido a Borrador', 1 => 'Cancelado', 2 => 'Publicado exitosamente'];
             echo json_encode([

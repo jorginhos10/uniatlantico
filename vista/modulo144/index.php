@@ -1827,6 +1827,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         <i class="fas fa-eye me-1"></i>Ver
                                                     </button>
                                                     <?php endif; ?>
+                                                    <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="devolverABorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)" title="Devolver a borradores" aria-label="Devolver a borradores">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                         </div>
@@ -4532,6 +4537,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
                                 setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function devolverABorrador(modulo, id) {
+            Swal.fire({
+                title: '¿Devolver a borradores?',
+                text: 'El registro dejará de estar PUBLICADO y se reiniciará su flujo de aprobación',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#FF9500',
+                confirmButtonText: 'Sí, devolver',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: basePath + '/modulo144/cambiarEstado',
+                        type: 'POST',
+                        data: { modulo: modulo, id: id, estado: 0 },
+                        dataType: 'json',
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire('¡Listo!', response.message, 'success');
+                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                            } else {
+                                Swal.fire('Error', response.message, 'error');
                             }
                         }
                     });
