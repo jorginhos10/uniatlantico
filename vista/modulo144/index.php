@@ -2846,6 +2846,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
 
         let timeoutId = null;
+        // Autoguardado de formulación: timer propio, "sesión" por cada apertura del modal (para descartar
+        // respuestas AJAX de una apertura anterior) y bandera de edición real del usuario (abrir/ver no guarda).
+        let timeoutFormulacion = null;
+        let formulacionSesion = 0;
+        let formulacionEditadaPorUsuario = false;
         let currentModule = null;
         let editandoTitulo = false;
         let planesSeleccionados = [];
@@ -3045,12 +3050,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return;
             }
 
+            const sesion = formulacionSesion;
             $.ajax({
                 url: basePath + '/modulo144/getPonderacionProyecto',
                 type: 'GET',
                 data: { proyecto_id: proyectoId, anio: anio },
                 dataType: 'json',
                 success: function(response) {
+                    if (sesion !== formulacionSesion) return;
                     if (response.success && response.porcentaje !== null) {
                         input.val(parseFloat(response.porcentaje).toFixed(2));
                     } else {
@@ -4070,70 +4077,96 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function autoGuardarFormulacion() {
             const id = $('#formulacion_id').val();
             if (!id) return;
-            
-            if (timeoutId) clearTimeout(timeoutId);
-            
-            timeoutId = setTimeout(function() {
-                const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
-                
-                const nombreIndicadorActual = $('#formulacion_nombre_indicador').val();
-                const nombreBorradorActual = (nombreIndicadorActual && nombreIndicadorActual.trim() !== '') ? nombreIndicadorActual.trim() : nombreBorradorProvisional;
 
-                const data = {
-                    modulo: 'formulacion', id: id,
-                    nombre_borrador: nombreBorradorActual,
-                    formulario_id: formularioId,
-                    anio: formularioAnio,
-                    linea_estrategica: $('#formulacion_linea').val(),
-                    objetivo: $('#formulacion_objetivo').val(),
-                    estrategia: $('#formulacion_estrategia').val(),
-                    motor_desarrollo: $('#formulacion_motor').val(),
-                    proyecto: $('#formulacion_proyecto').val(),
-                    meta_resultado: $('#formulacion_meta').val(),
-                    ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
-                    actividad_proyecto: $('#formulacion_actividad').val(),
-                    ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
-                    responsable_formulacion: $('#formulacion_responsable_hidden').val(),
-                    id_indicador: $('#formulacion_id_indicador').val(),
-                    gestionado_facultades: gestionado,
-                    nombre_indicador: $('#formulacion_nombre_indicador').val(),
-                    formula_medicion: $('#formulacion_formula_medicion').val(),
-                    frecuencia_medicion: $('#formulacion_frecuencia_medicion').val(),
-                    unidad_medida: $('#formulacion_unidad_medida').val(),
-                    tipo_medicion: $('#formulacion_tipo_medicion').val(),
-                    descripcion_indicador: $('#formulacion_descripcion_indicador').val(),
-                    linea_base_meta: $('#formulacion_linea_base_meta').val(),
-                    anio_base_meta: $('#formulacion_anio_base_meta').val(),
-                    meta_s1: $('#formulacion_meta_s1').val(),
-                    meta_s2: $('#formulacion_meta_s2').val(),
-                    planes_institucionales: $('#formulacion_planes_institucionales').val()
-                };
-                
-                $.ajax({
-                    url: basePath + '/modulo144/guardar',
-                    type: 'POST',
-                    data: data,
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            mostrarAutoSaveIndicator();
-                            validarPestanas();
-                            // Refrescar datos locales tras guardar exitoso
-                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
-                        } else if (response.acumulado !== undefined) {
-                            // Error de ponderación server-side: actualizar badge y bloquear
-                            formulacionesExistentes = formulacionesExistentes; // forzar recalculo
-                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
-                            Swal.fire({
-                                icon: 'warning',
-                                title: 'Ponderación excedida',
-                                text: response.message,
-                                confirmButtonColor: '#007AFF'
-                            });
-                        }
-                    }
-                });
+            if (timeoutFormulacion) clearTimeout(timeoutFormulacion);
+
+            const sesion = formulacionSesion;
+            timeoutFormulacion = setTimeout(function() {
+                timeoutFormulacion = null;
+                // Solo se guarda si el usuario editó algo en esta apertura del modal; las cargas
+                // automáticas (selects en cascada, ponderación del proyecto) no deben sobrescribir.
+                if (sesion !== formulacionSesion || !formulacionEditadaPorUsuario) return;
+                enviarFormulacion(construirDatosFormulacion());
             }, 500);
+        }
+
+        // Envía de inmediato un autoguardado pendiente (p. ej. al cerrar el modal antes de los 500 ms)
+        function flushAutoGuardarFormulacion() {
+            if (!timeoutFormulacion) return;
+            clearTimeout(timeoutFormulacion);
+            timeoutFormulacion = null;
+            if (formulacionEditadaPorUsuario && $('#formulacion_id').val()) {
+                enviarFormulacion(construirDatosFormulacion());
+            }
+        }
+
+        function construirDatosFormulacion() {
+            const id = $('#formulacion_id').val();
+            const gestionado = $('#formulacion_gestionado_facultades').is(':checked') ? 1 : 0;
+
+            const nombreIndicadorActual = $('#formulacion_nombre_indicador').val();
+            const nombreBorradorActual = (nombreIndicadorActual && nombreIndicadorActual.trim() !== '') ? nombreIndicadorActual.trim() : nombreBorradorProvisional;
+
+            return {
+                modulo: 'formulacion', id: id,
+                nombre_borrador: nombreBorradorActual,
+                formulario_id: formularioId,
+                anio: formularioAnio,
+                linea_estrategica: $('#formulacion_linea').val(),
+                objetivo: $('#formulacion_objetivo').val(),
+                estrategia: $('#formulacion_estrategia').val(),
+                motor_desarrollo: $('#formulacion_motor').val(),
+                proyecto: $('#formulacion_proyecto').val(),
+                meta_resultado: $('#formulacion_meta').val(),
+                ponderacion_proyectos: $('#formulacion_ponderacion_proyectos').val(),
+                actividad_proyecto: $('#formulacion_actividad').val(),
+                ponderacion_actividades: $('#formulacion_ponderacion_actividades').val(),
+                responsable_formulacion: $('#formulacion_responsable_hidden').val(),
+                id_indicador: $('#formulacion_id_indicador').val(),
+                gestionado_facultades: gestionado,
+                nombre_indicador: $('#formulacion_nombre_indicador').val(),
+                formula_medicion: $('#formulacion_formula_medicion').val(),
+                frecuencia_medicion: $('#formulacion_frecuencia_medicion').val(),
+                unidad_medida: $('#formulacion_unidad_medida').val(),
+                tipo_medicion: $('#formulacion_tipo_medicion').val(),
+                descripcion_indicador: $('#formulacion_descripcion_indicador').val(),
+                linea_base_meta: $('#formulacion_linea_base_meta').val(),
+                anio_base_meta: $('#formulacion_anio_base_meta').val(),
+                meta_s1: $('#formulacion_meta_s1').val(),
+                meta_s2: $('#formulacion_meta_s2').val(),
+                planes_institucionales: $('#formulacion_planes_institucionales').val()
+            };
+        }
+
+        function enviarFormulacion(data) {
+            const sesion = formulacionSesion;
+            $.ajax({
+                url: basePath + '/modulo144/guardar',
+                type: 'POST',
+                data: data,
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        mostrarAutoSaveIndicator();
+                        // Si el modal ya se cerró/reabrió, no tocar el formulario actual
+                        if (sesion !== formulacionSesion) return;
+                        validarPestanas();
+                        // Refrescar datos locales tras guardar exitoso
+                        refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                    } else if (response.acumulado !== undefined) {
+                        // Error de ponderación server-side: actualizar badge y bloquear
+                        if (sesion === formulacionSesion) {
+                            refrescarFormulacionesExistentes(function() { _ejecutarCalculoAcumulado(); });
+                        }
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Ponderación excedida',
+                            text: response.message,
+                            confirmButtonColor: '#007AFF'
+                        });
+                    }
+                }
+            });
         }
 
         function autoGuardarSeguimiento() {
@@ -4301,6 +4334,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         const b = response.borrador;
                         
                         if (modulo === 'formulacion') {
+                            // Nueva apertura: invalida timers/respuestas pendientes de la anterior
+                            if (timeoutFormulacion) { clearTimeout(timeoutFormulacion); timeoutFormulacion = null; }
+                            const sesion = ++formulacionSesion;
+                            formulacionEditadaPorUsuario = false;
                             $('#formulacion_id').val(b.id);
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
                             nombreBorradorProvisional = (b.nombre_indicador && b.nombre_indicador.trim() !== '') ? 'Nuevo Borrador' : (b.nombre_borrador || 'Nuevo Borrador');
@@ -4321,6 +4358,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         data: { linea_id: lineaId },
                                         dataType: 'json',
                                         success: function(res) {
+                                            if (sesion !== formulacionSesion) return;
                                             const selectEstrategia = document.getElementById('formulacion_estrategia');
                                             selectEstrategia.innerHTML = '<option value="">Seleccione una estrategia</option>';
                                             if (res.success && res.estrategias && res.estrategias.length > 0) {
@@ -4352,6 +4390,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         data: { linea_id: lineaId },
                                         dataType: 'json',
                                         success: function(res) {
+                                            if (sesion !== formulacionSesion) return;
                                             const selectMotor = document.getElementById('formulacion_motor');
                                             selectMotor.innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
                                             if (res.success && res.motores && res.motores.length > 0) {
@@ -4364,7 +4403,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 });
                                                 if (valorMotor) {
                                                     $('#formulacion_motor').val(valorMotor);
-                                                    setTimeout(function() { cargarProyectosPorMotorConValor(b.proyecto); }, 300);
+                                                    setTimeout(function() {
+                                                        if (sesion !== formulacionSesion) return;
+                                                        cargarProyectosPorMotorConValor(b.proyecto);
+                                                    }, 300);
                                                 }
                                             } else {
                                                 selectMotor.innerHTML = '<option value="">No hay motores disponibles</option>';
@@ -4391,6 +4433,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         data: { linea_id: lineaId, motor_id: motorId },
                                         dataType: 'json',
                                         success: function(res) {
+                                            if (sesion !== formulacionSesion) return;
                                             const selectProyecto = document.getElementById('formulacion_proyecto');
                                             selectProyecto.innerHTML = '<option value="">Seleccione un proyecto</option>';
                                             if (res.success && res.proyectos && res.proyectos.length > 0) {
@@ -4780,6 +4823,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#modalFormulacion').on('shown.bs.modal', function() {
                 validarPestanas();
                 calcularValorAnual();
+            });
+
+            // Solo una edición real del usuario habilita el autoguardado (isTrusted = evento del navegador,
+            // no un .val()/trigger del código al cargar el borrador)
+            const modalFormulacionEl = document.getElementById('modalFormulacion');
+            ['input', 'change'].forEach(function(tipo) {
+                modalFormulacionEl.addEventListener(tipo, function(e) {
+                    if (e.isTrusted) formulacionEditadaPorUsuario = true;
+                }, true);
+            });
+            $('#formulacion_responsable').on('select2:select select2:unselect select2:clear', function() {
+                formulacionEditadaPorUsuario = true;
+            });
+
+            // Al cerrar: enviar lo pendiente y cortar cualquier carga/guardado tardío de esta apertura
+            $('#modalFormulacion').on('hide.bs.modal', function() {
+                flushAutoGuardarFormulacion();
+                formulacionSesion++;
+                formulacionEditadaPorUsuario = false;
+                $('#formulacion_id').val('');
             });
             $('#formulacion_nombre_indicador, #formulacion_formula_medicion, #formulacion_frecuencia_medicion, #formulacion_unidad_medida, #formulacion_tipo_medicion, #formulacion_descripcion_indicador, #formulacion_linea_base_meta, #formulacion_meta_s1, #formulacion_meta_s2, #formulacion_gestionado_facultades').on('input change', function() {
                 calcularValorAnual();
