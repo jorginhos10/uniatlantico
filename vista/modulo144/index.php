@@ -321,33 +321,6 @@ ob_start();
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        .lista-item-responsable {
-            margin-top: 3px;
-            font-weight: 400;
-            color: #6c757d;
-            overflow: visible;
-        }
-        .lista-item-responsable-nombre {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            min-width: 0;
-        }
-        .responsable-mas {
-            flex-shrink: 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 22px;
-            height: 22px;
-            padding: 0 5px;
-            border-radius: 11px;
-            background: var(--apple-blue, #0071e3);
-            color: #fff;
-            font-size: 0.68rem;
-            font-weight: 600;
-            cursor: default;
-        }
         .lista-item-autor.sin-datos {
             color: #b0b0b5;
             font-style: italic;
@@ -444,16 +417,6 @@ ob_start();
             color: #6c757d;
             line-height: 1.3;
             margin-top: 2px;
-        }
-        /* Borradores: 7 columnas (Nombre, L-M-P, Meta/Medición, Creado por, Estado, Semáforo, Acciones) */
-        @media (min-width: 768px) {
-            .lista-row-7 > div:nth-child(1) { flex: 0 0 20%; max-width: 20%; }
-            .lista-row-7 > div:nth-child(2) { flex: 0 0 14%; max-width: 14%; }
-            .lista-row-7 > div:nth-child(3) { flex: 0 0 13%; max-width: 13%; }
-            .lista-row-7 > div:nth-child(4) { flex: 0 0 15%; max-width: 15%; }
-            .lista-row-7 > div:nth-child(5) { flex: 0 0 10%; max-width: 10%; }
-            .lista-row-7 > div:nth-child(6) { flex: 0 0 13%; max-width: 13%; }
-            .lista-row-7 > div:nth-child(7) { flex: 0 0 15%; max-width: 15%; }
         }
         .cumplido-meta i { font-size: 0.7rem; color: var(--apple-blue, #0071e3); }
         .cumplido-meta strong { color: var(--apple-text, #1d1d1f); font-weight: 600; }
@@ -1447,21 +1410,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return $html !== '' ? $html : '<span class="lista-item-autor sin-datos">—</span>';
             }
         }
-        // Responsable(s) de la fila: muestra el primero y, si hay más, un círculo "+N" con tooltip de todos
-        if (!function_exists('m144_responsableHtml')) {
-            function m144_responsableHtml($valor) {
-                $lista = array_values(array_filter(array_map('trim', explode(',', (string)$valor)), 'strlen'));
-                if (!$lista) return '';
-                $html = '<span class="lista-item-autor lista-item-responsable"><i class="fas fa-user-tie me-1"></i>'
-                      . '<span class="lista-item-responsable-nombre" title="' . htmlspecialchars($lista[0]) . '">' . htmlspecialchars($lista[0]) . '</span>';
-                if (count($lista) > 1) {
-                    $tooltip = implode('<br>', array_map('htmlspecialchars', $lista));
-                    $html .= '<span class="responsable-mas" tabindex="0" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="'
-                           . htmlspecialchars($tooltip) . '">+' . (count($lista) - 1) . '</span>';
-                }
-                return $html . '</span>';
-            }
-        }
         $semaforoRolNivel = [
             'gestor de metas' => 1,
             'gestor de metas de responsable de linea' => 1,
@@ -1611,11 +1559,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <?php if (count($borradoresVisiblesPorModulo[$key]) > 0): ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
-                                        <div class="row lista-row-7">
+                                        <div class="row">
                                             <div class="col-md-3">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Meta / Medición</div>
-                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-1">Estado</div>
                                             <div class="col-md-2">Semáforo</div>
                                             <div class="col-md-2">Acciones</div>
@@ -1699,7 +1646,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         if (!$puedeVerFila) continue; // Ni siquiera se renderiza la fila
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
-                                        <div class="row align-items-center g-2 lista-row-7">
+                                        <div class="row align-items-center g-2">
                                             <div class="col-md-3">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
                                                     <?php echo htmlspecialchars(!empty(trim($borrador['formula_medicion'] ?? '')) ? $borrador['formula_medicion'] : $borrador['nombre_borrador']); ?>
@@ -1733,14 +1680,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php echo m144_cumplidoMetaHtml($borrador); ?>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <?php if (!empty($borrador['creado_por_nombre'])): ?>
-                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($borrador['creado_por_nombre']); ?></span>
-                                                <?php else: ?>
-                                                <span class="lista-item-autor sin-datos">—</span>
-                                                <?php endif; ?>
-                                                <?php echo m144_responsableHtml($borrador['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-1">
                                                 <button type="button" class="m144-estado <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i></i><?php echo $solInfo['titulo']; ?></button>
@@ -1861,10 +1800,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-2">Nombre</div>
+                                            <div class="col-md-4">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Meta / Medición</div>
-                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-2">Fecha de publicación</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
@@ -1889,7 +1827,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $publicado['id']; ?>" data-ponderacion="<?php echo (float)($publicado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($publicado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($publicado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($publicado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($publicado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($publicado['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($publicado['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($publicado['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($publicado['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($publicado['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_p ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
-                                            <div class="col-md-2">
+                                            <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
                                                     <?php echo htmlspecialchars(!empty(trim($publicado['formula_medicion'] ?? '')) ? $publicado['formula_medicion'] : $publicado['nombre_borrador']); ?>
                                                     <?php if ($publicado['gestionado_facultades'] == 1): ?>
@@ -1917,14 +1855,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php echo m144_cumplidoMetaHtml($publicado); ?>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <?php if (!empty($publicado['creado_por_nombre'])): ?>
-                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($publicado['creado_por_nombre']); ?></span>
-                                                <?php else: ?>
-                                                <span class="lista-item-autor sin-datos">—</span>
-                                                <?php endif; ?>
-                                                <?php echo m144_responsableHtml($publicado['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-fecha">
@@ -1968,10 +1898,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="lista-container">
                                     <div class="lista-header">
                                         <div class="row">
-                                            <div class="col-md-2">Nombre</div>
+                                            <div class="col-md-4">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Meta / Medición</div>
-                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-2">Fecha de cancelación</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
@@ -1995,7 +1924,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $cancelado['id']; ?>" data-ponderacion="<?php echo (float)($cancelado['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($cancelado['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($cancelado['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($cancelado['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($cancelado['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($cancelado['creado_por_cargo_nombre'] ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($cancelado['nombre_borrador'] ?? '')); ?>">
                                         <div class="row align-items-center g-2">
-                                            <div class="col-md-2">
+                                            <div class="col-md-4">
                                                 <div class="lista-item-titulo <?php echo $linea_completa ? 'titulo-linea-completa' : ($linea_excedida ? 'titulo-linea-excedida' : ''); ?>">
                                                     <?php echo htmlspecialchars(!empty(trim($cancelado['formula_medicion'] ?? '')) ? $cancelado['formula_medicion'] : $cancelado['nombre_borrador']); ?>
                                                 </div>
@@ -2017,14 +1946,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php echo m144_cumplidoMetaHtml($cancelado); ?>
-                                            </div>
-                                            <div class="col-md-2">
-                                                <?php if (!empty($cancelado['creado_por_nombre'])): ?>
-                                                <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($cancelado['creado_por_nombre']); ?></span>
-                                                <?php else: ?>
-                                                <span class="lista-item-autor sin-datos">—</span>
-                                                <?php endif; ?>
-                                                <?php echo m144_responsableHtml($cancelado['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-fecha">
@@ -2863,9 +2784,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         $(document).ready(function() {
             restaurarEstadoAcordeon();
-            document.querySelectorAll('.responsable-mas[data-bs-toggle="tooltip"]').forEach(function(el) {
-                new bootstrap.Tooltip(el);
-            });
         });
 
         let timeoutId = null;
