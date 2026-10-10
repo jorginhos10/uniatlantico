@@ -418,6 +418,15 @@ ob_start();
             line-height: 1.3;
             margin-top: 2px;
         }
+        .cumplido-semestres {
+            display: flex;
+            gap: 10px;
+            font-size: 0.78rem;
+            color: #6c757d;
+            font-variant-numeric: tabular-nums;
+            margin-top: 1px;
+        }
+        .cumplido-semestres strong { color: var(--apple-text, #1d1d1f); font-weight: 600; }
         .cumplido-meta i { font-size: 0.7rem; color: var(--apple-blue, #0071e3); }
         .cumplido-meta strong { color: var(--apple-text, #1d1d1f); font-weight: 600; }
         .lmp-suma {
@@ -1401,8 +1410,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 }
                 $html = '';
                 if ($meta !== null) {
-                    $html .= '<div class="cumplido-meta" title="Cumplido ' . $fmt($cumplido) . ' de una meta anual de ' . $fmt($meta) . '">'
-                           . '<i class="fas fa-bullseye"></i><strong>' . $fmt($cumplido) . '</strong><span>/ ' . $fmt($meta) . '</span></div>';
+                    // Meta del año y, debajo, lo reportado en el seguimiento de cada semestre
+                    $html .= '<div class="cumplido-meta" title="Meta del año: ' . $fmt($meta) . ' · Cumplido acumulado: ' . $fmt($cumplido) . '">'
+                           . '<i class="fas fa-bullseye"></i><span>Meta año</span><strong>' . $fmt($meta) . '</strong></div>'
+                           . '<div class="cumplido-semestres">'
+                           . '<span title="Seguimiento reportado en el semestre 1">S1 <strong>' . ($s1 !== null ? $fmt($s1) : '—') . '</strong></span>'
+                           . '<span title="Seguimiento reportado en el semestre 2">S2 <strong>' . ($s2 !== null ? $fmt($s2) : '—') . '</strong></span>'
+                           . '</div>';
                 }
                 if (trim($tipo) !== '') {
                     $html .= '<div class="cumplido-medicion" title="Tipo de medición: ' . htmlspecialchars($tipo) . '">' . htmlspecialchars($tipo) . '</div>';
