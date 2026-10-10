@@ -431,6 +431,17 @@ ob_start();
             opacity: 1;
         }
 
+        .cumplido-meta {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-top: 5px;
+            font-size: 0.78rem;
+            color: #6c757d;
+            font-variant-numeric: tabular-nums;
+        }
+        .cumplido-meta i { font-size: 0.7rem; color: var(--apple-blue, #0071e3); }
+        .cumplido-meta strong { color: var(--apple-text, #1d1d1f); font-weight: 600; }
         .lmp-suma {
             font-size: 0.68rem;
             font-weight: 600;
@@ -1378,6 +1389,44 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
             }
         }
+        // Cumplido / meta del año de la fila, con las mismas reglas por tipo de medición que el modal de seguimiento
+        if (!function_exists('m144_cumplidoMetaHtml')) {
+            function m144_cumplidoMetaHtml($row) {
+                $num = function ($v) { return ($v !== null && $v !== '' && is_numeric($v)) ? (float)$v : null; };
+                $fmt = function ($n) { return rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.'); };
+                $tipo = $row['tipo_medicion'] ?? '';
+                $lb = $num($row['linea_base_meta'] ?? null);
+                $m1 = $num($row['meta_s1'] ?? null);
+                $m2 = $num($row['meta_s2'] ?? null);
+                $s1 = $num($row['semestre1_seguimiento'] ?? null);
+                $s2 = $num($row['semestre2_seguimiento'] ?? null);
+
+                $meta = null; $cumplido = 0.0;
+                if ($tipo === 'Acumulado') {
+                    $meta = ($lb ?? 0) + ($m1 ?? 0) + ($m2 ?? 0);
+                    // Sin ningún semestre reportado, la línea base sola no cuenta como avance
+                    $cumplido = ($s1 === null && $s2 === null) ? 0.0 : ($lb ?? 0) + ($s1 ?? 0) + ($s2 ?? 0);
+                } elseif ($tipo === 'Nuevo gestionado durante la vigencia') {
+                    $meta = ($m1 ?? 0) + ($m2 ?? 0);
+                    $cumplido = ($s1 ?? 0) + ($s2 ?? 0);
+                } elseif ($tipo === 'Promedio') {
+                    $metas = array_filter([$m1, $m2], function ($v) { return $v !== null; });
+                    $segs  = array_filter([$s1, $s2], function ($v) { return $v !== null; });
+                    $meta = $metas ? array_sum($metas) / count($metas) : 0.0;
+                    $cumplido = $segs ? array_sum($segs) / count($segs) : 0.0;
+                } elseif ($tipo === 'Último valor reportado') {
+                    $meta = $m2 ?? $m1 ?? $lb;
+                    $cumplido = $s2 ?? $s1 ?? 0.0;
+                } elseif ($tipo === 'Límite') {
+                    $meta = $m2 ?? $m1 ?? $lb;
+                    $cumplido = $s2 ?? 0.0;
+                }
+                if ($meta === null) return '';
+
+                return '<div class="cumplido-meta" title="Cumplido ' . $fmt($cumplido) . ' de una meta anual de ' . $fmt($meta) . '">'
+                     . '<i class="fas fa-bullseye"></i><strong>' . $fmt($cumplido) . '</strong><span>/ ' . $fmt($meta) . '</span></div>';
+            }
+        }
         // Responsable(s) de la fila: muestra el primero y, si hay más, un círculo "+N" con tooltip de todos
         if (!function_exists('m144_responsableHtml')) {
             function m144_responsableHtml($valor) {
@@ -1660,6 +1709,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_cumplidoMetaHtml($borrador); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php if (!empty($borrador['creado_por_nombre'])): ?>
@@ -1840,6 +1890,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_cumplidoMetaHtml($publicado); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php if (!empty($publicado['creado_por_nombre'])): ?>
@@ -1936,6 +1987,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lmp-badge sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_cumplidoMetaHtml($cancelado); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php if (!empty($cancelado['creado_por_nombre'])): ?>

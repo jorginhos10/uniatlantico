@@ -345,6 +345,12 @@ foreach ($historial as $h) {
 // Saludo
 $minTotal = (int)date('G') * 60 + (int)date('i');
 $saludo = ($minTotal >= 360 && $minTotal < 720) ? 'Buenos días' : (($minTotal >= 720 && $minTotal < 1140) ? 'Buenas tardes' : 'Buenas noches');
+// Tema del banner según la hora: 6:00–16:29 día | 16:30–18:59 atardecer | resto noche
+$temaCielo = ($minTotal >= 360 && $minTotal < 990) ? 'dia' : (($minTotal >= 990 && $minTotal < 1140) ? 'atardecer' : 'noche');
+$estrellas = [];
+for ($i = 0; $i < 28; $i++) {
+    $estrellas[] = ['x' => mt_rand(2, 96), 'y' => mt_rand(5, 80), 'size' => mt_rand(1, 3), 'delay' => mt_rand(0, 3000) / 1000, 'dur' => mt_rand(15, 35) / 10];
+}
 $dias   = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 $meses  = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 $fechaLarga = ucfirst($dias[(int)date('w')]) . ', ' . (int)date('j') . ' de ' . $meses[(int)date('n')] . ' de ' . date('Y');
@@ -383,7 +389,40 @@ ob_start();
 .pa-eyebrow { font-size: 13px; font-weight: 600; color: var(--pa-sub); text-transform: uppercase; letter-spacing: .04em; }
 .pa-head h1 { margin: 4px 0 2px; font-size: 32px; line-height: 1.15; font-weight: 700; letter-spacing: -.02em; }
 .pa-head p { margin: 0; color: var(--pa-sub); }
-.pa-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.pa-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin-left: auto; }
+
+/* ── Banner con cielo según la hora (día / atardecer / noche) ── */
+.pa-hero { position: relative; overflow: hidden; border-radius: 18px; padding: 26px 30px; min-height: 132px; align-items: center; color: #fff; }
+.pa-hero.dia       { background: linear-gradient(160deg, #1E88E5 0%, #42A5F5 45%, #81D4FA 100%); box-shadow: 0 4px 20px rgba(66,165,245,.35); }
+.pa-hero.atardecer { background: linear-gradient(160deg, #3d1c72 0%, #9b3a6a 28%, #e8563a 58%, #f4913a 80%, #ffd060 100%); box-shadow: 0 4px 20px rgba(232,86,58,.35); }
+.pa-hero.noche     { background: linear-gradient(160deg, #0d1b3e 0%, #1a2d5a 50%, #0f2347 100%); box-shadow: 0 4px 20px rgba(13,27,62,.45); }
+.pa-hero-text { position: relative; z-index: 2; max-width: 70%; text-shadow: 0 1px 2px rgba(0,0,0,.18); }
+.pa-hero .pa-eyebrow { color: rgba(255,255,255,.88); }
+.pa-hero h1 { color: #fff; }
+.pa-hero p { color: rgba(255,255,255,.92); }
+.pa-sky { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.pa-sky-set { display: none; position: absolute; inset: 0; }
+.pa-hero.dia .pa-sky-dia, .pa-hero.atardecer .pa-sky-atardecer, .pa-hero.noche .pa-sky-noche { display: block; }
+.pa-sun { position: absolute; right: 110px; top: -18px; width: 78px; height: 78px; border-radius: 50%; background: radial-gradient(circle, #FFE066 30%, #FFD000 70%, #FFA500 100%); box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10); animation: paSunPulse 4s ease-in-out infinite; }
+.pa-sun-tard { position: absolute; right: 100px; bottom: -22px; width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle, #fff5b0 15%, #FFD000 45%, #FF6B00 80%); box-shadow: 0 0 0 14px rgba(255,160,0,.20), 0 0 0 34px rgba(255,100,0,.12); animation: paSunPulse 4s ease-in-out infinite; }
+@keyframes paSunPulse { 0%,100% { box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10); } 50% { box-shadow: 0 0 0 18px rgba(255,220,0,.22), 0 0 0 40px rgba(255,200,0,.12); } }
+.pa-cloud { position: absolute; background: rgba(255,255,255,.82); border-radius: 50px; animation: paFloat linear infinite; }
+.pa-cloud::before, .pa-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
+.pa-cloud-1 { width: 80px; height: 28px; top: 30px; right: 190px; animation-duration: 18s; }
+.pa-cloud-1::before { width: 36px; height: 36px; top: -18px; left: 12px; }
+.pa-cloud-1::after  { width: 26px; height: 26px; top: -13px; left: 34px; }
+.pa-cloud-2 { width: 56px; height: 20px; top: 56px; right: 290px; opacity: .65; animation-duration: 25s; animation-delay: -8s; }
+.pa-cloud-2::before { width: 26px; height: 26px; top: -14px; left: 8px; }
+.pa-cloud-2::after  { width: 18px; height: 18px; top: -10px; left: 26px; }
+.pa-cloud-3 { width: 44px; height: 16px; bottom: 22px; right: 40px; opacity: .5; animation-duration: 30s; animation-delay: -14s; }
+.pa-cloud-3::before { width: 22px; height: 22px; top: -12px; left: 6px; }
+.pa-cloud-3::after  { width: 16px; height: 16px; top: -9px; left: 20px; }
+.pa-cloud-tard { background: rgba(255,180,120,.75); }
+@keyframes paFloat { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-14px); } }
+.pa-moon { position: absolute; right: 100px; top: 50%; margin-top: -28px; width: 56px; height: 56px; border-radius: 50%; background: #E8EBF4; box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); animation: paMoonGlow 5s ease-in-out infinite; }
+@keyframes paMoonGlow { 0%,100% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); } 50% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 36px rgba(200,210,255,.45); } }
+.pa-star { position: absolute; border-radius: 50%; background: #fff; animation: paTwinkle ease-in-out infinite; }
+@keyframes paTwinkle { 0%,100% { opacity: .9; transform: scale(1); } 50% { opacity: .2; transform: scale(.6); } }
 .pa-seg { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 9px; background: var(--pa-seg); gap: 2px; }
 .pa-seg a { padding: 6px 13px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--pa-text-2); }
 .pa-seg a:hover { color: var(--pa-text); }
@@ -496,12 +535,19 @@ ob_start();
 
 @media (max-width: 720px) {
     .pa-head h1 { font-size: 28px; }
+    .pa-hero { padding: 22px 20px; }
+    .pa-hero-text { max-width: 100%; }
+    .pa-sun, .pa-sun-tard, .pa-moon { right: 18px; opacity: .55; }
+    .pa-cloud { display: none; }
     .pa-line { grid-template-columns: minmax(0, 1fr) 64px; }
     .pa-line .pa-track { grid-column: 1 / -1; grid-row: 2; }
     .pa-kpi.hero { flex-direction: column; align-items: flex-start; }
     .pa-weights { grid-template-columns: 1fr; }
 }
-@media (prefers-reduced-motion: reduce) { .nov-track, .nov-popup, .nov-popup-ov { transition: none; } }
+@media (prefers-reduced-motion: reduce) {
+    .nov-track, .nov-popup, .nov-popup-ov { transition: none; }
+    .pa-sun, .pa-sun-tard, .pa-moon, .pa-cloud, .pa-star { animation: none; }
+}
 </style>
 <?php
 $cssExtra = ob_get_clean();
@@ -511,12 +557,47 @@ require_once __DIR__ . '/../complementos/header.php';
 <div class="pa">
 
     <!-- ── Encabezado ── -->
-    <header class="pa-head">
-        <div>
+    <header class="pa-head pa-hero <?php echo $temaCielo; ?>" id="paHero">
+        <!-- Cielo decorativo: se muestra el conjunto que corresponde a la hora -->
+        <div class="pa-sky" aria-hidden="true">
+            <div class="pa-sky-set pa-sky-dia">
+                <div class="pa-sun"></div>
+                <div class="pa-cloud pa-cloud-1"></div>
+                <div class="pa-cloud pa-cloud-2"></div>
+                <div class="pa-cloud pa-cloud-3"></div>
+            </div>
+            <div class="pa-sky-set pa-sky-atardecer">
+                <div class="pa-sun-tard"></div>
+                <div class="pa-cloud pa-cloud-tard pa-cloud-1"></div>
+                <div class="pa-cloud pa-cloud-tard pa-cloud-2"></div>
+                <div class="pa-cloud pa-cloud-tard pa-cloud-3"></div>
+            </div>
+            <div class="pa-sky-set pa-sky-noche">
+                <div class="pa-moon"></div>
+                <?php foreach ($estrellas as $e): ?>
+                <div class="pa-star" style="left:<?php echo $e['x']; ?>%;top:<?php echo $e['y']; ?>%;width:<?php echo $e['size']; ?>px;height:<?php echo $e['size']; ?>px;animation-duration:<?php echo $e['dur']; ?>s;animation-delay:-<?php echo $e['delay']; ?>s;"></div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <div class="pa-hero-text">
             <div class="pa-eyebrow"><?php echo htmlspecialchars($fechaLarga); ?></div>
             <h1><?php echo $plan ? htmlspecialchars($plan['titulo']) : 'Plan de Acción'; ?></h1>
-            <p><?php echo $saludo . ', ' . htmlspecialchars(explode(' ', $unombre)[0]); ?>. Así va el plan y esto es lo que espera tu revisión.</p>
+            <p><span id="paSaludo"><?php echo $saludo; ?></span>, <?php echo htmlspecialchars(explode(' ', $unombre)[0]); ?>. Así va el plan y esto es lo que espera tu revisión.</p>
         </div>
+    </header>
+    <script>
+    // Ajusta tema y saludo a la hora local del navegador (el reloj del servidor puede estar en otra zona)
+    (function () {
+        var d = new Date(), m = d.getHours() * 60 + d.getMinutes();
+        var tema = (m >= 360 && m < 990) ? 'dia' : ((m >= 990 && m < 1140) ? 'atardecer' : 'noche');
+        var hero = document.getElementById('paHero');
+        hero.classList.remove('dia', 'atardecer', 'noche');
+        hero.classList.add(tema);
+        document.getElementById('paSaludo').textContent = (m >= 360 && m < 720) ? 'Buenos días' : ((m >= 720 && m < 1140) ? 'Buenas tardes' : 'Buenas noches');
+    })();
+    </script>
+
+    <div class="pa-head">
         <div class="pa-tools">
             <?php if ($mensajesNl > 0): ?>
             <a class="pa-msg" href="<?php echo $basePath; ?>/mensajes"><i class="fas fa-envelope"></i> <?php echo $mensajesNl; ?> sin leer</a>
@@ -545,7 +626,7 @@ require_once __DIR__ . '/../complementos/header.php';
             </nav>
             <?php endif; ?>
         </div>
-    </header>
+    </div>
 
     <?php if (!$plan): ?>
     <div class="pa-card">
