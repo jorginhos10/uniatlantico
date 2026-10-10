@@ -1370,7 +1370,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // Cumplido / meta del año de la fila, con las mismas reglas por tipo de medición que el modal de seguimiento
         if (!function_exists('m144_cumplidoMetaHtml')) {
             function m144_cumplidoMetaHtml($row) {
-                $num = function ($v) { return ($v !== null && $v !== '' && is_numeric($v)) ? (float)$v : null; };
+                // Igual que parseFloat en el modal: toma el número inicial aunque traiga texto detrás ("20.00%" → 20)
+                $num = function ($v) {
+                    return preg_match('/^\s*([-+]?(?:\d+\.?\d*|\.\d+))/', (string)$v, $m) ? (float)$m[1] : null;
+                };
                 $fmt = function ($n) { return rtrim(rtrim(number_format($n, 2, '.', ''), '0'), '.'); };
                 $tipo = $row['tipo_medicion'] ?? '';
                 $lb = $num($row['linea_base_meta'] ?? null);
