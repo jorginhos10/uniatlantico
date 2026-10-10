@@ -81,6 +81,50 @@ class PerfilController {
         }
     }
 
+    // Cambiar nombre y correo del propio usuario
+    public function updateDatos() {
+        header('Content-Type: application/json');
+
+        $id = $_SESSION['usuario_id'] ?? 0;
+        if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            return;
+        }
+
+        $input  = json_decode(file_get_contents('php://input'), true) ?: $_POST;
+        $nombre = trim($input['nombre'] ?? '');
+        $email  = trim($input['email'] ?? '');
+
+        if ($nombre === '' || $email === '') {
+            echo json_encode(['success' => false, 'message' => 'El nombre y el correo son obligatorios']);
+            return;
+        }
+
+        if (mb_strlen($nombre, 'UTF-8') > 150 || mb_strlen($email, 'UTF-8') > 150) {
+            echo json_encode(['success' => false, 'message' => 'El nombre y el correo no pueden superar 150 caracteres']);
+            return;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'El correo electrónico no es válido']);
+            return;
+        }
+
+        // El correo también sirve para iniciar sesión, así que no puede repetirse
+        if ($this->usuarioModel->emailUsadoPorOtro($email, $id)) {
+            echo json_encode(['success' => false, 'message' => 'Ese correo ya está registrado por otro usuario']);
+            return;
+        }
+
+        if ($this->usuarioModel->actualizarDatosPerfil($id, $nombre, $email)) {
+            $_SESSION['usuario_nombre'] = $nombre;
+            $_SESSION['usuario_email']  = $email;
+            echo json_encode(['success' => true, 'message' => 'Datos actualizados correctamente']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar los datos']);
+        }
+    }
+
     public function updatePassword() {
         header('Content-Type: application/json');
 

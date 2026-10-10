@@ -279,6 +279,29 @@ class UsuarioModel {
         }
     }
 
+    // ¿Otro usuario (distinto de $id) ya usa este correo?
+    public function emailUsadoPorOtro($email, $id) {
+        try {
+            $stmt = $this->db->prepare("SELECT COUNT(*) FROM usuarios WHERE email = :email AND id <> :id");
+            $stmt->execute([':email' => $email, ':id' => $id]);
+            return $stmt->fetchColumn() > 0;
+        } catch (PDOException $e) {
+            error_log("Error en emailUsadoPorOtro: " . $e->getMessage());
+            return true; // ante la duda, no permitir el cambio
+        }
+    }
+
+    // Datos que el propio usuario puede cambiar desde su perfil
+    public function actualizarDatosPerfil($id, $nombre, $email) {
+        try {
+            $stmt = $this->db->prepare("UPDATE usuarios SET nombre = :nombre, email = :email WHERE id = :id");
+            return $stmt->execute([':nombre' => $nombre, ':email' => $email, ':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error en actualizarDatosPerfil: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function obtenerUsuarioPorUsername($username) {
         $sql = "SELECT id, username, nombre, email, rol, avatar, activo FROM usuarios WHERE username = :username";
         

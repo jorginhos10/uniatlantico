@@ -80,6 +80,9 @@ switch ($action) {
             case 'update-password':
                 $perfilController->updatePassword();
                 break;
+            case 'update-datos':
+                $perfilController->updateDatos();
+                break;
             default:
                 $perfilController->index();
                 break;

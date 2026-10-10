@@ -205,16 +205,16 @@ require_once __DIR__ . '/../complementos/header.php';
         <div class="perfil-card-title"><i class="fas fa-id-card me-1"></i> Información de cuenta</div>
         <div class="info-grid">
             <div class="info-item">
-                <span class="info-label">Nombre completo</span>
-                <span class="info-value"><?php echo htmlspecialchars($usuario['nombre']); ?></span>
+                <label class="info-label" for="perfilNombre">Nombre completo</label>
+                <input type="text" id="perfilNombre" class="field-input" maxlength="150" value="<?php echo htmlspecialchars($usuario['nombre']); ?>">
             </div>
             <div class="info-item">
                 <span class="info-label">Usuario</span>
                 <span class="info-value">@<?php echo htmlspecialchars($usuario['username']); ?></span>
             </div>
             <div class="info-item">
-                <span class="info-label">Correo electrónico</span>
-                <span class="info-value"><?php echo htmlspecialchars($usuario['email']); ?></span>
+                <label class="info-label" for="perfilEmail">Correo electrónico</label>
+                <input type="email" id="perfilEmail" class="field-input" maxlength="150" value="<?php echo htmlspecialchars($usuario['email']); ?>">
             </div>
             <div class="info-item">
                 <span class="info-label">Rol</span>
@@ -228,6 +228,11 @@ require_once __DIR__ . '/../complementos/header.php';
                 <span class="info-label">Estado</span>
                 <span class="info-value"><?php echo $usuario['activo'] ? '✅ Activo' : '❌ Inactivo'; ?></span>
             </div>
+        </div>
+        <div style="margin-top: 18px; text-align: right;">
+            <button class="btn-primary-perfil" id="btnGuardarDatos" onclick="guardarDatos()">
+                <i class="fas fa-save me-1"></i> Guardar cambios
+            </button>
         </div>
     </div>
 
@@ -326,6 +331,45 @@ require_once __DIR__ . '/../complementos/header.php';
                 Swal.fire({ icon: 'error', title: 'Error de conexión', confirmButtonColor: '#0071e3' });
             });
     });
+
+    /* ===== NOMBRE Y CORREO ===== */
+    function guardarDatos() {
+        const nombre = document.getElementById('perfilNombre').value.trim();
+        const email  = document.getElementById('perfilEmail').value.trim();
+
+        if (!nombre || !email) {
+            Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'El nombre y el correo son obligatorios', confirmButtonColor: '#0071e3' });
+            return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            Swal.fire({ icon: 'warning', title: 'Correo no válido', text: 'Revisa el correo electrónico', confirmButtonColor: '#0071e3' });
+            return;
+        }
+
+        const btn = document.getElementById('btnGuardarDatos');
+        btn.disabled = true;
+
+        fetch(basePath + '/perfil/update-datos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: nombre, email: email })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                // Recargar para que el nombre nuevo se vea también en el encabezado
+                Swal.fire({ icon: 'success', title: '¡Datos actualizados!', toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true })
+                    .then(() => location.reload());
+            } else {
+                btn.disabled = false;
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message, confirmButtonColor: '#0071e3' });
+            }
+        })
+        .catch(() => {
+            btn.disabled = false;
+            Swal.fire({ icon: 'error', title: 'Error de conexión', confirmButtonColor: '#0071e3' });
+        });
+    }
 
     /* ===== FUERZA DE CONTRASEÑA ===== */
     function evaluarFuerza(pwd) {
