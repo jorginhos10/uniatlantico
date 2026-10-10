@@ -321,6 +321,33 @@ ob_start();
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        .lista-item-responsable {
+            margin-top: 3px;
+            font-weight: 400;
+            color: #6c757d;
+            overflow: visible;
+        }
+        .lista-item-responsable-nombre {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        .responsable-mas {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 22px;
+            padding: 0 5px;
+            border-radius: 11px;
+            background: var(--apple-blue, #0071e3);
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: default;
+        }
         .lista-item-autor.sin-datos {
             color: #b0b0b5;
             font-style: italic;
@@ -1351,6 +1378,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
             }
         }
+        // Responsable(s) de la fila: muestra el primero y, si hay más, un círculo "+N" con tooltip de todos
+        if (!function_exists('m144_responsableHtml')) {
+            function m144_responsableHtml($valor) {
+                $lista = array_values(array_filter(array_map('trim', explode(',', (string)$valor)), 'strlen'));
+                if (!$lista) return '';
+                $html = '<span class="lista-item-autor lista-item-responsable"><i class="fas fa-user-tie me-1"></i>'
+                      . '<span class="lista-item-responsable-nombre" title="' . htmlspecialchars($lista[0]) . '">' . htmlspecialchars($lista[0]) . '</span>';
+                if (count($lista) > 1) {
+                    $tooltip = implode('<br>', array_map('htmlspecialchars', $lista));
+                    $html .= '<span class="responsable-mas" tabindex="0" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="top" title="'
+                           . htmlspecialchars($tooltip) . '">+' . (count($lista) - 1) . '</span>';
+                }
+                return $html . '</span>';
+            }
+        }
         $semaforoRolNivel = [
             'gestor de metas' => 1,
             'gestor de metas de responsable de linea' => 1,
@@ -1503,7 +1545,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row">
                                             <div class="col-md-3">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
-                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-1">Estado</div>
                                             <div class="col-md-2">Semáforo</div>
                                             <div class="col-md-2">Acciones</div>
@@ -1625,6 +1667,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lista-item-autor sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_responsableHtml($borrador['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-1">
                                                 <button type="button" class="m144-estado <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i></i><?php echo $solInfo['titulo']; ?></button>
@@ -1747,7 +1790,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row">
                                             <div class="col-md-4">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
-                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-2">Fecha de publicación</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
@@ -1804,6 +1847,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lista-item-autor sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_responsableHtml($publicado['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-fecha">
@@ -1849,7 +1893,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="row">
                                             <div class="col-md-4">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
-                                            <div class="col-md-2">Creado por</div>
+                                            <div class="col-md-2">Creado por / Responsable</div>
                                             <div class="col-md-2">Fecha de cancelación</div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
@@ -1899,6 +1943,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php else: ?>
                                                 <span class="lista-item-autor sin-datos">—</span>
                                                 <?php endif; ?>
+                                                <?php echo m144_responsableHtml($cancelado['responsable_formulacion'] ?? ''); ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-fecha">
@@ -2737,6 +2782,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         $(document).ready(function() {
             restaurarEstadoAcordeon();
+            document.querySelectorAll('.responsable-mas[data-bs-toggle="tooltip"]').forEach(function(el) {
+                new bootstrap.Tooltip(el);
+            });
         });
 
         let timeoutId = null;
