@@ -18,6 +18,78 @@ class UsuarioController {
         require_once 'vista/usuarios/index.php';
     }
 
+    // Claves de sesión que identifican al usuario (se guardan/restauran al impersonar)
+    private const SESSION_USUARIO = [
+        'usuario_id', 'usuario_username', 'usuario_nombre', 'usuario_email',
+        'usuario_rol', 'usuario_cargo_id', 'usuario_avatar'
+    ];
+
+    /**
+     * Impersonar: el superadmin (id=1) entra como otro usuario sin conocer su contraseña.
+     * La identidad original queda en $_SESSION['impersonador'] para poder volver.
+     */
+    public function impersonar() {
+        $volver = Config::getBasePath() . '/usuarios';
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header("Location: $volver");
+            exit;
+        }
+
+        if ((int)($_SESSION['usuario_id'] ?? 0) !== 1 || isset($_SESSION['impersonador'])) {
+            $_SESSION['error'] = 'Solo el superadministrador puede impersonar usuarios';
+            header("Location: $volver");
+            exit;
+        }
+
+        $id = (int)($_POST['id'] ?? 0);
+        $usuario = $id > 1 ? $this->usuarioModel->obtenerUsuarioPorId($id) : false;
+
+        if (!$usuario || (int)$usuario['activo'] !== 1) {
+            $_SESSION['error'] = 'No se puede impersonar: el usuario no existe o está inactivo';
+            header("Location: $volver");
+            exit;
+        }
+
+        $original = [];
+        foreach (self::SESSION_USUARIO as $clave) {
+            $original[$clave] = $_SESSION[$clave] ?? null;
+        }
+
+        session_regenerate_id(true);
+        $_SESSION['impersonador'] = $original;
+        $_SESSION['usuario_id'] = $usuario['id'];
+        $_SESSION['usuario_username'] = $usuario['username'];
+        $_SESSION['usuario_nombre'] = $usuario['nombre'];
+        $_SESSION['usuario_email'] = $usuario['email'];
+        $_SESSION['usuario_rol'] = $usuario['rol'];
+        $_SESSION['usuario_cargo_id'] = $usuario['cargo_id'];
+        $_SESSION['usuario_avatar'] = $usuario['avatar'];
+        unset($_SESSION['redirect_url']);
+
+        error_log("Impersonación: superadmin entra como usuario {$usuario['id']} ({$usuario['username']})");
+
+        header("Location: " . Config::getBasePath() . "/dashboard");
+        exit;
+    }
+
+    /**
+     * Termina la impersonación y restaura la sesión del superadmin.
+     */
+    public function dejarImpersonar() {
+        if (isset($_SESSION['impersonador']) && is_array($_SESSION['impersonador'])) {
+            $original = $_SESSION['impersonador'];
+            session_regenerate_id(true);
+            unset($_SESSION['impersonador'], $_SESSION['redirect_url']);
+            foreach (self::SESSION_USUARIO as $clave) {
+                $_SESSION[$clave] = $original[$clave] ?? null;
+            }
+        }
+
+        header("Location: " . Config::getBasePath() . "/usuarios");
+        exit;
+    }
+
     public function paginaRegistro() {
         $roles  = array_values(array_filter($this->usuarioModel->obtenerRoles(), fn($r) => $r !== 'admin'));
         $cargos = $this->usuarioModel->obtenerCargos();

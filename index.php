@@ -45,6 +45,18 @@ switch ($action) {
         }
         break;
         
+    // Volver a la cuenta del superadmin tras impersonar. Va fuera de 'usuarios' porque
+    // el usuario impersonado normalmente no tiene acceso a esa sección.
+    case 'dejar-impersonar':
+        if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+            header("Location: {$basePath}/login");
+            exit;
+        }
+        require_once 'controlador/usuarioController.php';
+        $usuarioController = new UsuarioController();
+        $usuarioController->dejarImpersonar();
+        break;
+
     case 'logout':
         require_once 'controlador/authController.php';
         $authController = new AuthController();
@@ -158,6 +170,9 @@ switch ($action) {
                 break;
             case 'reset-password':
                 $usuarioController->resetPassword();
+                break;
+            case 'impersonar':
+                $usuarioController->impersonar();
                 break;
             case 'get-stats':
                 $usuarioController->getStats();

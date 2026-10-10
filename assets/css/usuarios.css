@@ -405,6 +405,23 @@
     color: #af52de;
 }
 
+.form-impersonar {
+    display: inline-flex;
+    margin: 0;
+}
+
+.btn-impersonar {
+    background: rgba(48, 176, 199, 0.12);
+    color: #1a8fa3;
+}
+
+.btn-impersonar:hover:not(:disabled) {
+    background: #30b0c7;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(48, 176, 199, 0.3);
+}
+
 .btn-permisos:hover {
     background: #af52de;
     color: #ffffff;

@@ -48,7 +48,7 @@ $baseUrl = Config::getBaseUrl();
         <form id="loginForm" method="POST" action="<?php echo $basePath; ?>/login">
             <div class="formGroup">
                 <input type="text" id="username" name="username" required 
-                       placeholder="Usuario" value="<?php echo $_POST['username'] ?? ''; ?>">
+                       placeholder="Usuario o correo" value="<?php echo $_POST['username'] ?? ''; ?>">
             </div>
             
             <div class="formGroup">

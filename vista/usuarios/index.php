@@ -360,6 +360,21 @@ require_once __DIR__ . '/../complementos/header.php';
                                         <?php if ($isSuperAdmin || $isCurrentUser): ?>disabled style="opacity: 0.5; cursor: not-allowed;"<?php endif; ?>>
                                     <i class="fas fa-user-lock"></i>
                                 </button>
+
+                                <?php if ((int)$currentUserId === 1 && !isset($_SESSION['impersonador'])):
+                                    $canImpersonar = !$isCurrentUser && !$isSuperAdmin && (int)$usuario['activo'] === 1;
+                                ?>
+                                <!-- Botón Impersonar (solo superadmin) -->
+                                <form method="POST" action="<?php echo $basePath; ?>/usuarios/impersonar" class="form-impersonar"
+                                      onsubmit="return confirm('¿Entrar al sistema como <?php echo htmlspecialchars(addslashes($usuario['nombre'])); ?>?');">
+                                    <input type="hidden" name="id" value="<?php echo $usuario['id']; ?>">
+                                    <button type="submit" class="btn-accion btn-impersonar"
+                                            title="<?php echo $canImpersonar ? 'Impersonar (entrar como este usuario)' : 'No se puede impersonar (usuario inactivo o tu propia cuenta)'; ?>"
+                                            <?php if (!$canImpersonar): ?>disabled style="opacity: 0.5; cursor: not-allowed;"<?php endif; ?>>
+                                        <i class="fas fa-user-secret"></i>
+                                    </button>
+                                </form>
+                                <?php endif; ?>
                             </div>
                             <?php endif; ?>
                         </td>

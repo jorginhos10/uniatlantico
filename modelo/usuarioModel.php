@@ -21,15 +21,15 @@ class UsuarioModel {
     }
 
     public function verificarUsuario($username, $password) {
-        $sql = "SELECT id, username, nombre, email, password, rol, avatar, cargo_id FROM usuarios WHERE username = :username AND activo = 1";
+        $sql = "SELECT id, username, nombre, email, password, rol, avatar, cargo_id FROM usuarios WHERE (username = :username OR email = :email) AND activo = 1 ORDER BY (username = :username2) DESC LIMIT 1";
         
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':username', $username);
-            $stmt->execute();
-            
+            // Se puede iniciar sesión con el usuario o con el correo (si coinciden ambos, gana el username)
+            $stmt->execute([':username' => $username, ':email' => $username, ':username2' => $username]);
+
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if ($usuario && password_verify($password, $usuario['password'])) {
                 $this->actualizarUltimoLogin($usuario['id']);
                 return $usuario;

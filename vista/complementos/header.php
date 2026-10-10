@@ -51,6 +51,15 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
 
         <!-- Main Content -->
         <main class="mainContent">
+            <?php if ($usuarioLogueado && isset($_SESSION['impersonador'])): ?>
+            <!-- Aviso de impersonación: el superadmin está viendo el sistema como otro usuario -->
+            <div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 16px;background:#ff9f0a;color:#1d1d1f;font-size:0.85rem;font-weight:600;">
+                <span><i class="fas fa-user-secret"></i> Estás viendo el sistema como <?php echo htmlspecialchars($_SESSION['usuario_nombre'] ?? ''); ?></span>
+                <a href="<?php echo $basePath; ?>/dejar-impersonar" style="padding:4px 12px;border-radius:8px;background:#1d1d1f;color:#fff;text-decoration:none;">
+                    Volver a mi cuenta
+                </a>
+            </div>
+            <?php endif; ?>
             <!-- Nuevo Header -->
             <header class="mainHeader">
                 <!-- Logo a la izquierda -->
