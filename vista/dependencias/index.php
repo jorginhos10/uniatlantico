@@ -204,9 +204,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <p>Gestiona las dependencias del sistema</p>
             </div>
         </div>
-        <button class="btn-nueva" onclick="abrirModalCrear()">
-            <i class="fas fa-plus"></i> Nueva Dependencia
-        </button>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-nueva" onclick="exportarExcel()" title="Descargar el listado en Excel">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </button>
+            <button class="btn-nueva" onclick="abrirModalCrear()">
+                <i class="fas fa-plus"></i> Nueva Dependencia
+            </button>
+        </div>
     </div>
 
     <div class="stats-row">
@@ -382,6 +387,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     function filtrar(q) {
         if (!q) { renderTabla(todasLasDeps); return; }
         renderTabla(todasLasDeps.filter(d => (d.nombre || '').toLowerCase().includes(q)));
+    }
+
+    // Descarga el listado en Excel; si hay texto en el buscador, exporta solo lo filtrado
+    function exportarExcel() {
+        const q = ($('#searchInput').val() || '').trim();
+        window.location.href = basePath + '/dependencias/exportar' + (q ? '?q=' + encodeURIComponent(q) : '');
     }
 
     function mostrarError() {

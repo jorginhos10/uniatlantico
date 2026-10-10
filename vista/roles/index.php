@@ -47,6 +47,21 @@ ob_start();
         display: flex; align-items: center; justify-content: center;
         font-size: 22px; flex-shrink: 0;
     }
+    .btn-exportar {
+        background: rgba(255,255,255,.22);
+        color: white;
+        border: 1.5px solid rgba(255,255,255,.4);
+        padding: 10px 20px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        display: flex; align-items: center; gap: 7px;
+        transition: background .2s;
+        font-family: var(--font);
+        white-space: nowrap;
+    }
+    .btn-exportar:hover { background: rgba(255,255,255,.32); }
     .rol-header h1 { font-size: 22px; font-weight: 700; margin: 0 0 3px; letter-spacing: -.3px; }
     .rol-header p  { font-size: 14px; opacity: .85; margin: 0; }
 
@@ -204,6 +219,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <p>Administra los nombres visibles de cada rol del sistema</p>
             </div>
         </div>
+        <button class="btn-exportar" onclick="exportarExcel()" title="Descargar el listado en Excel">
+            <i class="fas fa-file-excel"></i> Exportar Excel
+        </button>
     </div>
 
     <div class="info-banner">
@@ -363,6 +381,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             (r.slug   || '').toLowerCase().includes(q) ||
             (r.nombre || '').toLowerCase().includes(q)
         ));
+    }
+
+    // Descarga el listado en Excel; si hay texto en el buscador, exporta solo lo filtrado
+    function exportarExcel() {
+        const q = ($('#searchInput').val() || '').trim();
+        window.location.href = basePath + '/roles/exportar' + (q ? '?q=' + encodeURIComponent(q) : '');
     }
 
     function mostrarError() {

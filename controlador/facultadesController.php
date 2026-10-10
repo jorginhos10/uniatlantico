@@ -19,6 +19,24 @@ class FacultadesController {
         echo json_encode(['success' => true, 'facultades' => $facultades]);
     }
 
+    // Exporta el listado a Excel; respeta el texto del buscador (?q=, por código o nombre)
+    public function exportar() {
+        require_once 'config/ExcelExport.php';
+        $q = mb_strtolower(trim($_GET['q'] ?? ''), 'UTF-8');
+
+        $filas = [];
+        foreach ($this->model->getAll() as $f) {
+            if ($q !== '' && !ExcelExport::contiene($f['nombre'] ?? '', $q) && !ExcelExport::contiene($f['codigo'] ?? '', $q)) continue;
+            $filas[] = [
+                (string)($f['codigo'] ?? ''),
+                (string)($f['nombre'] ?? ''),
+                (int)($f['estado'] ?? 0) === 1 ? 'Activa' : 'Inactiva'
+            ];
+        }
+
+        ExcelExport::descargar('facultades_' . date('Y-m-d'), 'Facultades', ['Código', 'Nombre', 'Estado'], $filas, [14, 60, 14]);
+    }
+
     public function crear() {
         header('Content-Type: application/json');
 

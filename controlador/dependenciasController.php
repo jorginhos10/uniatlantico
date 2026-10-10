@@ -19,6 +19,25 @@ class DependenciasController {
         echo json_encode(['success' => true, 'dependencias' => $deps]);
     }
 
+    // Exporta el listado a Excel; respeta el texto del buscador (?q=)
+    public function exportar() {
+        require_once 'config/ExcelExport.php';
+        $q = mb_strtolower(trim($_GET['q'] ?? ''), 'UTF-8');
+
+        $filas = [];
+        foreach ($this->model->getAll() as $d) {
+            if ($q !== '' && !ExcelExport::contiene($d['nombre'] ?? '', $q)) continue;
+            $filas[] = [
+                count($filas) + 1,
+                (string)($d['nombre'] ?? ''),
+                (int)($d['activo'] ?? 0) === 1 ? 'Activo' : 'Inactivo',
+                !empty($d['fecha_creacion']) ? date('d/m/Y', strtotime($d['fecha_creacion'])) : ''
+            ];
+        }
+
+        ExcelExport::descargar('dependencias_' . date('Y-m-d'), 'Dependencias', ['#', 'Nombre', 'Estado', 'Creado'], $filas, [6, 60, 14, 14]);
+    }
+
     public function crear() {
         header('Content-Type: application/json');
 

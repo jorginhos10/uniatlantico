@@ -700,6 +700,9 @@ switch ($action) {
             case 'listar':
                 $rolesController->listar();
                 break;
+            case 'exportar':
+                $rolesController->exportar();
+                break;
             case 'activos':
                 $rolesController->activos();
                 break;
@@ -726,6 +729,9 @@ switch ($action) {
         switch ($actionParam) {
             case 'listar':
                 $facultadesController->listar();
+                break;
+            case 'exportar':
+                $facultadesController->exportar();
                 break;
             case 'crear':
                 $facultadesController->crear();
@@ -762,6 +768,9 @@ switch ($action) {
         switch ($actionParam) {
             case 'listar':
                 $dependenciasController->listar();
+                break;
+            case 'exportar':
+                $dependenciasController->exportar();
                 break;
             case 'crear':
                 $dependenciasController->crear();
