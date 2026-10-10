@@ -1414,12 +1414,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <?php $primer_modulo_tab = false; ?>
             <?php endforeach; ?>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelFacultades" type="button" role="tab">
-                    <i class="fas fa-university me-2"></i>FORMULACIÓN Y SEGUIMIENTO POR FACULTADES
-                    <span class="m144-tab-count" title="<?php echo count($facultades ?? []); ?> facultades"><?php echo count($facultades ?? []); ?></span>
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelEvaluacion" type="button" role="tab">
                     <i class="fas fa-chart-pie me-2"></i>EVALUACIÓN LÍNEAS
                 </button>
@@ -1935,106 +1929,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
             <?php $primer_modulo = false; ?>
             <?php endforeach; ?>
-
-            <!-- FORMULACIÓN Y SEGUIMIENTO POR FACULTADES -->
-            <div class="tab-pane fade" id="panelFacultades" role="tabpanel">
-                <div class="modulo-panel-header" style="background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);">
-                    <i class="fas fa-university fa-2x me-3"></i>
-                    <div>
-                        <span class="modulo-panel-title">FORMULACIÓN Y SEGUIMIENTO POR FACULTADES</span><br>
-                        <small>Solo formulaciones con gestión desde facultades activada</small>
-                    </div>
-                </div>
-                <div class="p-4">
-
-                        <?php
-                        $formulaciones_con_check = [];
-                        if (isset($datos_modulos['formulacion']['borradores'])) {
-                            foreach ($datos_modulos['formulacion']['borradores'] as $borrador) {
-                                if (isset($borrador['gestionado_facultades']) && $borrador['gestionado_facultades'] == 1) {
-                                    $formulaciones_con_check[] = $borrador;
-                                }
-                            }
-                        }
-                        if (isset($datos_modulos['formulacion']['publicados'])) {
-                            foreach ($datos_modulos['formulacion']['publicados'] as $publicado) {
-                                if (isset($publicado['gestionado_facultades']) && $publicado['gestionado_facultades'] == 1) {
-                                    $formulaciones_con_check[] = $publicado;
-                                }
-                            }
-                        }
-                        usort($formulaciones_con_check, function($a, $b) {
-                            return strtotime($b['fecha_creacion']) - strtotime($a['fecha_creacion']);
-                        });
-                        ?>
-                        <?php if (count($formulaciones_con_check) > 0): ?>
-                            <?php foreach ($formulaciones_con_check as $borrador): ?>
-                                <?php
-                                $estadoClass = 'bg-secondary';
-                                $estadoText = 'Borrador';
-
-                                if ($borrador['estado_formulacion'] == 2) {
-                                    $estadoClass = 'bg-success';
-                                    $estadoText = 'Publicado';
-                                } else if ($borrador['estado_formulacion'] == 1) {
-                                    $estadoClass = 'bg-danger';
-                                    $estadoText = 'Cancelado';
-                                }
-
-                                $fecha = isset($borrador['fecha_creacion']) ? date('d/m/Y H:i', strtotime($borrador['fecha_creacion'])) : '-';
-                                $l = !empty($borrador['linea_codigo'])    ? $borrador['linea_codigo']    : null;
-                                $m = !empty($borrador['motor_codigo'])    ? $borrador['motor_codigo']    : null;
-                                $p = !empty($borrador['proyecto_codigo']) ? $borrador['proyecto_codigo'] : null;
-                                $lmp = array_filter([$l, $m, $p]);
-                                ?>
-                                <div class="facultad-item" id="formulacion-item-<?php echo $borrador['id']; ?>">
-                                    <div class="facultad-item-info">
-                                        <h6>
-                                            <?php echo htmlspecialchars($borrador['nombre_borrador'] ?? 'Sin nombre'); ?>
-                                            <span class="gestionado-indicador"><i class="fas fa-check-circle"></i> Gestionado</span>
-                                        </h6>
-                                        <small>
-                                            <i class="far fa-calendar-alt me-1"></i> <?php echo $fecha; ?>
-                                            <?php if (!empty($borrador['anio'])): ?>
-                                                | <i class="fas fa-calendar me-1"></i> Año: <?php echo $borrador['anio']; ?>
-                                            <?php endif; ?>
-                                        </small>
-                                        <div class="mt-2 d-flex align-items-center flex-wrap gap-3">
-                                            <?php if (!empty($lmp)): ?>
-                                            <span class="lmp-badge">
-                                                <i class="fas fa-sitemap"></i><?php echo implode(' - ', $lmp); ?>
-                                                <small class="lmp-suma"><?php echo number_format((float)($borrador['ponderacion_actividades'] ?? 0),1); ?></small>
-                                            </span>
-                                            <?php endif; ?>
-                                            <?php if (!empty($borrador['creado_por_nombre'])): ?>
-                                            <span class="lista-item-autor"><i class="fas fa-user me-1"></i><?php echo htmlspecialchars($borrador['creado_por_nombre']); ?></span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="mt-1">
-                                            <span class="badge <?php echo $estadoClass; ?>"><?php echo $estadoText; ?></span>
-                                        </div>
-                                    </div>
-                                    <div class="facultad-item-actions">
-                                        <button class="btn btn-sm btn-warning" onclick="abrirEditarFacultadItem(<?php echo $borrador['id']; ?>)" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
-                            <div class="empty-state p-3">
-                                <i class="fas fa-file-alt fa-2x mb-2"></i>
-                                <p class="text-muted mb-0">No hay formulaciones con gestión desde facultades activada</p>
-                                <p class="text-muted small mb-0 mt-2">
-                                    Para que aparezcan aquí, marca la opción:
-                                    <br>
-                                    <strong>"12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES"</strong>
-                                </p>
-                            </div>
-                        <?php endif; ?>
-
-                    </div>
-                </div>
 
             <!-- EVALUACIÓN LÍNEAS -->
             <div class="tab-pane fade" id="panelEvaluacion" role="tabpanel">
