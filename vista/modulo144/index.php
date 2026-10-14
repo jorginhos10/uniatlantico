@@ -2536,7 +2536,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
 
                         <div class="row mb-4">
-                            <div class="col-12"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view">-</div></div>
+                            <div class="col-md-9 mb-3 mb-md-0"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view">-</div></div>
+                            <div class="col-md-3"><label class="form-label text-muted">ID INDICADOR</label><div class="bg-light-view" id="seguimiento_id_indicador_view">-</div></div>
                         </div>
 
                         <div class="row mb-4">
@@ -4026,6 +4027,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#seguimiento_meta_resultado_view').text(b.meta_resultado || '-');
             $('#seguimiento_proyecto_view').text(b.proyecto ? (b.proyecto_codigo ? b.proyecto_codigo + ' - ' : '') + b.proyecto : '-');
             $('#seguimiento_formula_medicion_view').text(b.formula_medicion || '-');
+            $('#seguimiento_id_indicador_view').text(b.id_indicador || '-');
             $('#seguimiento_frecuencia_medicion_view').text(b.frecuencia_medicion || '-');
             $('#seguimiento_unidad_medida_view').text(b.unidad_medida || '-');
             $('#seguimiento_tipo_medicion_view').text(b.tipo_medicion || '-');
