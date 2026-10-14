@@ -156,6 +156,12 @@ ob_start();
     }
     .btn-action:hover { opacity: .82; transform: translateY(-1px); }
     .btn-edit       { background: rgba(255,149,0,.12); color: var(--ios-orange); }
+    .btn-conectar   { background: rgba(0,122,255,.1); color: var(--ios-blue); font-weight: 600; }
+    .conexiones-count { display: inline-block; margin-left: 5px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ios-blue); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+    .flujo-conexiones { background: var(--ios-bg); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
+    .flujo-conexiones-titulo { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--ios-label2); margin-bottom: 6px; }
+    .flujo-conexiones ul { margin: 0; padding-left: 18px; }
+    .flujo-conexiones li { margin: 2px 0; }
     .btn-delete     { background: rgba(255,59,48,.1);  color: var(--ios-red); }
     .btn-toggle-on  { background: rgba(255,59,48,.1);  color: var(--ios-red); }
     .btn-toggle-off { background: rgba(52,199,89,.12); color: #1a7a3a; }
@@ -377,6 +383,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <form id="formFlujo">
                 <input type="hidden" id="flujo_id" name="id">
                 <div class="modal-body">
+                    <div class="flujo-conexiones" id="flujo_conexiones" style="display:none;"></div>
                     <div class="mb-3">
                         <label class="form-label" for="flujo_origen">Dependencia que envía *</label>
                         <select class="form-select" id="flujo_origen" name="origen_id" required></select>
@@ -467,7 +474,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             url: basePath + '/dependencias/listarFlujos',
             type: 'GET', dataType: 'json',
             success: function(res) {
-                if (res.success) { todosLosFlujos = res.flujos; renderFlujos(); }
+                if (res.success) {
+                    todosLosFlujos = res.flujos;
+                    renderFlujos();
+                    // Actualiza el contador del botón "Conectar" en el listado
+                    if (todasLasDeps.length) filtrar(($('#searchInput').val() || '').toLowerCase());
+                }
                 else { errorFlujos(); }
             },
             error: errorFlujos
@@ -518,9 +530,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $(selector).html(html).val(seleccionado || '');
     }
 
-    function abrirModalFlujo(flujo) {
+    // Cantidad de conexiones (envía o aprueba) de una dependencia, para el botón "Conectar"
+    function badgeConexiones(depId) {
+        const n = todosLosFlujos.filter(f => f.origen_id == depId || f.destino_id == depId).length;
+        return n ? `<span class="conexiones-count" title="${n} conexión(es)">${n}</span>` : '';
+    }
+
+    // Botón "Conectar" del listado: abre el pop up con esta dependencia como la que envía
+    // y muestra arriba sus conexiones actuales
+    function conectarDep(depId) {
+        abrirModalFlujo(null, depId);
+        const dep = todasLasDeps.find(d => d.id == depId);
+        const envia  = todosLosFlujos.filter(f => f.origen_id == depId);
+        const recibe = todosLosFlujos.filter(f => f.destino_id == depId);
+        if (!envia.length && !recibe.length) return;
+
+        let html = `<div class="flujo-conexiones-titulo">Conexiones actuales de ${escHtml(dep ? dep.nombre : '')}</div><ul>`;
+        envia.forEach(f => {
+            html += `<li>Envía a <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+        });
+        recibe.forEach(f => {
+            html += `<li>Le aprueba a <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+        });
+        $('#flujo_conexiones').html(html + '</ul>').show();
+    }
+
+    function abrirModalFlujo(flujo, origenId) {
+        $('#flujo_conexiones').hide().empty();
         $('#flujo_id').val(flujo ? flujo.id : '');
-        llenarSelectDependencias('#flujo_origen', flujo ? flujo.origen_id : '');
+        llenarSelectDependencias('#flujo_origen', flujo ? flujo.origen_id : (origenId || ''));
         llenarSelectDependencias('#flujo_destino', flujo ? flujo.destino_id : '');
         $('#flujo_aplica').val(flujo ? flujo.aplica_a : 'ambos');
         $('#flujo_observacion').val(flujo ? (flujo.observacion || '') : '');
@@ -613,7 +651,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <td><strong>${escHtml(d.nombre)}</strong></td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
                 <td style="color:var(--ios-label2);font-size:13px;">${fecha}</td>
-                <td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-action btn-conectar" onclick="conectarDep(${d.id})" title="Conectar con otra dependencia"><i class="fas fa-link me-1"></i>Conectar${badgeConexiones(d.id)}</button>
                     <button class="btn-action btn-edit"   onclick="editarDep(${d.id})" title="Editar"><i class="fas fa-edit"></i></button>
                     <button class="btn-action ${toggleClass}" onclick="cambiarEstado(${d.id}, ${d.activo == 1 ? 0 : 1})"><i class="fas ${toggleIcon}"></i></button>
                     <button class="btn-action btn-delete" onclick="pedirEliminar(${d.id}, '${escHtml(d.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>

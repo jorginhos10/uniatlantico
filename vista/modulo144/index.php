@@ -1565,6 +1565,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <i class="fas fa-times-circle me-1"></i>Cancelados <span class="badge bg-danger ms-1"><?php echo count($modulo['cancelados']); ?></span>
                                 </button>
                             </li>
+                            <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0): ?>
+                            <li class="nav-item ms-auto" role="presentation">
+                                <button type="button" class="nav-link text-danger" onclick="devolverTodosABorrador('<?php echo $key; ?>', <?php echo count($modulo['publicados']); ?>)" title="Devuelve todos los publicados de este módulo a borrador">
+                                    <i class="fas fa-undo me-1"></i>Devolver todos a borrador
+                                </button>
+                            </li>
+                            <?php endif; ?>
                         </ul>
 
                         <div class="tab-content">
@@ -4633,6 +4640,46 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
+        // Solo superadministrador: devuelve a borrador todos los publicados del módulo
+        function devolverTodosABorrador(modulo, total) {
+            const nombre = modulo === 'formulacion' ? 'Formulación' : 'Seguimiento';
+            const extra = modulo === 'formulacion'
+                ? '<br><br><strong>Ojo:</strong> al volver a borrador la formulación, esos indicadores dejan de aparecer en Seguimiento hasta que se publiquen de nuevo.'
+                : '';
+            Swal.fire({
+                title: '¿Devolver todos a borrador?',
+                html: 'Se devolverán <strong>' + total + '</strong> registro(s) publicados de <strong>' + nombre + '</strong> a borrador y se reiniciará su semáforo de aprobación.' + extra +
+                      '<br><br>Escribe <strong>DEVOLVER</strong> para confirmar.',
+                icon: 'warning',
+                input: 'text',
+                inputPlaceholder: 'DEVOLVER',
+                inputValidator: (v) => { if ((v || '').trim().toUpperCase() !== 'DEVOLVER') return 'Escribe DEVOLVER para confirmar'; },
+                showCancelButton: true,
+                confirmButtonColor: '#FF3B30',
+                confirmButtonText: 'Sí, devolver todos',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+                $.ajax({
+                    url: basePath + '/modulo144/devolverTodosABorrador',
+                    type: 'POST',
+                    data: { modulo: modulo, formulario_id: formularioId },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            Swal.fire('Listo', response.message, 'success');
+                            setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                        } else {
+                            Swal.fire('Error', response.message || 'No se pudo devolver a borrador', 'error');
+                        }
+                    },
+                    error: function() {
+                        Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                    }
+                });
+            });
+        }
+
         function rechazarSemaforo(modulo, id, etapaActual) {
             Swal.fire({
                 title: '¿Rechazar y devolver al creador?',
@@ -5134,6 +5181,60 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 }
             })();
             <?php endforeach; ?>
+        });
+
+        // Enlace directo desde el Dashboard: ?id=FORM&ver=ITEM[&modulo=formulacion|seguimiento][&lista=publicados|borradores|cancelados]
+        // Abre la pestaña correspondiente y lleva al indicador (o a la lista pedida) resaltándolo.
+        document.addEventListener('DOMContentLoaded', function() {
+            const params = new URLSearchParams(location.search);
+            const itemId = params.get('ver');
+            const modulo = params.get('modulo') || 'formulacion';
+            const lista  = params.get('lista');
+            if (!itemId && !lista && !params.get('modulo')) return;
+
+            function mostrarPestana(destino) {
+                const boton = document.querySelector('[data-bs-target="' + destino + '"]');
+                if (!boton) return;
+                if (window.bootstrap && bootstrap.Tab) bootstrap.Tab.getOrCreateInstance(boton).show();
+                else boton.click();
+            }
+
+            // Se espera a que terminen de aplicarse los filtros guardados y el estado de los acordeones
+            setTimeout(function() {
+                mostrarPestana('#panelModulo-' + modulo);
+                if (lista) {
+                    const nombre = lista.charAt(0).toUpperCase() + lista.slice(1);
+                    mostrarPestana('#tab' + nombre + '-' + modulo);
+                }
+                if (!itemId) return;
+
+                const item = document.querySelector('.lista-item[data-item-id="' + CSS.escape(itemId) + '"][data-modulo="' + CSS.escape(modulo) + '"]');
+                if (!item) {
+                    Swal.fire({ icon: 'info', title: 'Indicador no disponible', text: 'No tienes acceso a este indicador o ya cambió de estado.', timer: 2600, showConfirmButton: false });
+                    return;
+                }
+                const pane = item.closest('.tab-pane[id^="tab"]');
+                if (pane) mostrarPestana('#' + pane.id);
+
+                // Muestra el indicador aunque un filtro guardado lo esté ocultando, y abre los acordeones que lo contienen
+                item.style.display = '';
+                let padre = item.parentElement;
+                while (padre) {
+                    if (padre.classList && padre.classList.contains('collapse') && !padre.classList.contains('show')) {
+                        if (window.bootstrap && bootstrap.Collapse) bootstrap.Collapse.getOrCreateInstance(padre, { toggle: false }).show();
+                        else padre.classList.add('show');
+                    }
+                    padre = padre.parentElement;
+                }
+
+                setTimeout(function() {
+                    item.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    item.style.transition = 'box-shadow .3s, background-color .3s';
+                    item.style.boxShadow = '0 0 0 3px rgba(0,122,255,.55)';
+                    item.style.backgroundColor = 'rgba(0,122,255,.06)';
+                    setTimeout(function() { item.style.boxShadow = ''; item.style.backgroundColor = ''; }, 3500);
+                }, 350);
+            }, 400);
         });
 
     </script>

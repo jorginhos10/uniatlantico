@@ -572,6 +572,36 @@ class Modulo144Controller {
         }
     }
 
+    // Devuelve a borrador todos los publicados de un módulo (formulación o seguimiento) del formulario.
+    // Igual que devolver uno solo: exclusivo del superadministrador (id=1).
+    public function devolverTodosABorrador() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        if ((int)($_SESSION['usuario_id'] ?? 0) !== 1) {
+            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
+            return;
+        }
+        $modulo = $_POST['modulo'] ?? '';
+        $formularioId = intval($_POST['formulario_id'] ?? 0);
+        if (!in_array($modulo, ['formulacion', 'seguimiento'], true) || $formularioId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+
+        $movidos = $this->model->devolverTodosABorrador($modulo, $formularioId);
+        if ($movidos === false) {
+            echo json_encode(['success' => false, 'message' => 'Error al devolver a borrador']);
+            return;
+        }
+        echo json_encode([
+            'success' => true,
+            'message' => $movidos === 0 ? 'No había publicados para devolver' : ($movidos === 1 ? '1 registro devuelto a borrador' : "$movidos registros devueltos a borrador")
+        ]);
+    }
+
     /**
      * Cambia el estado de solicitud de un borrador (0=Construcción, 1=Solicitado, 2=Rechazado)
      */

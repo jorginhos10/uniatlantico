@@ -660,6 +660,26 @@ class Modulo144Model {
         }
     }
 
+    // Devuelve a borrador TODOS los publicados del módulo en este formulario, reiniciando su
+    // flujo de aprobación igual que cambiarEstado(..., 0). Devuelve cuántos se movieron (o false).
+    public function devolverTodosABorrador($modulo, $formulario_id) {
+        try {
+            $c = $this->modulos[$modulo];
+            $stmt = $this->db->prepare("UPDATE {$c['tabla']}
+                                        SET {$c['campo_estado']} = 0,
+                                            {$c['campo_solicitud']} = 0,
+                                            {$c['campo_semaforo']} = 0,
+                                            {$c['campo_semaforo_rechazo']} = 0,
+                                            fecha_actualizacion = NOW()
+                                        WHERE formulario_id = :fid AND {$c['campo_estado']} = 2");
+            $stmt->execute([':fid' => $formulario_id]);
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            error_log("Error devolverTodosABorrador [{$modulo}]: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador = null) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];

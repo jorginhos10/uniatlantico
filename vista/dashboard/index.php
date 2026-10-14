@@ -325,6 +325,7 @@ foreach ($filas as $r) {
     $desde = $ultimaAccion[(int)$r['id']] ?? $r['fecha_creacion'];
     $r['tipo'] = $item;
     $r['dias'] = max(0, (int)floor((time() - strtotime($desde)) / 86400));
+    $r['puede_aprobar'] = dbPuedeAprobar($r, $uid, $rolNorm);
     $bandeja[] = $r;
 }
 usort($bandeja, fn($a, $b) => $b['dias'] <=> $a['dias']);
@@ -370,6 +371,23 @@ for ($i = 0; $i < 28; $i++) {
 $dias   = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 $meses  = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 $fechaLarga = ucfirst($dias[(int)date('w')]) . ', ' . (int)date('j') . ' de ' . $meses[(int)date('n')] . ' de ' . date('Y');
+
+// ¿El usuario puede aprobar/rechazar desde aquí la siguiente etapa del registro?
+// Misma regla que Modulo144Controller::avanzarSemaforo: el rol de la etapa siguiente, el súper admin
+// en cualquier etapa, y administrador / sub administrador solo en la etapa final (4).
+function dbPuedeAprobar(array $r, $uid, $rolNorm) {
+    $rolesEtapa = [1 => 'gestor de metas', 2 => 'lider de meta', 3 => 'responsable de linea', 4 => 'sub administrador'];
+    $siguiente = (int)$r['etapa'] + 1;
+    if ($r['publicado'] || $r['solicitud'] !== 1 || $siguiente < 1 || $siguiente > 4) return false;
+    return $uid === 1
+        || $rolNorm === $rolesEtapa[$siguiente]
+        || ($siguiente === 4 && in_array($rolNorm, ['administrador', 'sub administrador'], true));
+}
+
+// Enlace al indicador dentro del Módulo 144 (lo abre en su pestaña y lo resalta)
+function dbVerUrl($moduloUrl, $id, $modulo = 'formulacion') {
+    return $moduloUrl . (strpos($moduloUrl, '?') === false ? '?' : '&') . http_build_query(['modulo' => $modulo, 'ver' => (int)$id]);
+}
 
 // URL con filtros
 function dbUrl($basePath, array $cambios) {
@@ -509,6 +527,24 @@ ob_start();
 .pa-inbox { display: flex; flex-direction: column; gap: 8px; }
 .pa-inbox a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: var(--pa-bg); color: var(--pa-text); }
 .pa-inbox a:hover { background: #ECECF0; }
+.pa-inbox-item { display: flex; flex-direction: column; gap: 6px; }
+.pa-inbox-actions { display: flex; gap: 6px; padding: 0 4px; }
+.pa-inbox-actions button { border: 0; border-radius: 8px; padding: 5px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.pa-inbox-actions .ok  { background: rgba(52,199,89,.16); color: #248A3D; }
+.pa-inbox-actions .no  { background: rgba(255,59,48,.10); color: #D70015; }
+.pa-inbox-actions button:hover { filter: brightness(.95); }
+.pa-inbox-actions button:disabled { opacity: .5; cursor: wait; }
+/* Tarjetas y filas que llevan a otra vista */
+a.pa-card.pa-kpi { color: inherit; transition: transform .15s, box-shadow .15s; }
+a.pa-card.pa-kpi:hover { transform: translateY(-2px); box-shadow: 0 2px 4px rgba(0,0,0,.06), 0 10px 26px rgba(0,0,0,.08); }
+a.pa-card.pa-kpi .go { font-size: 12px; font-weight: 600; color: var(--pa-blue-ink); margin-top: 4px; }
+a.pa-line { color: inherit; border-radius: 10px; padding: 4px 6px; margin: -4px -6px; transition: background .15s; }
+a.pa-line:hover { background: var(--pa-fill); }
+a.pa-line.on { background: var(--pa-blue-tint); }
+a.pa-stage { color: inherit; border-radius: 10px; transition: background .15s; }
+a.pa-stage:hover { background: var(--pa-fill); }
+.pa-feed a { color: inherit; }
+.pa-feed a:hover .t { color: var(--pa-blue-ink); }
 .pa-inbox .t { font-size: 14px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .pa-inbox .s { display: block; margin-top: 3px; font-size: 12px; color: var(--pa-sub); }
 .pa-weights { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -674,21 +710,24 @@ require_once __DIR__ . '/../complementos/header.php';
                 </span>
             </div>
         </div>
-        <div class="pa-card pa-kpi">
+        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=publicados'); ?>" title="Ver los publicados en el Módulo 144">
             <span class="lbl">Indicadores publicados</span>
             <span class="val num"><?php echo count($pubs); ?><small> / <?php echo count($filas); ?></small></span>
             <span class="note"><?php echo count($filas) - count($pubs); ?> en borrador</span>
-        </div>
-        <div class="pa-card pa-kpi">
+            <span class="go">Ver publicados →</span>
+        </a>
+        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=borradores'); ?>" title="Ir al seguimiento en el Módulo 144">
             <span class="lbl">Con seguimiento S<?php echo $sem; ?></span>
             <span class="val num"><?php echo $conReporte; ?><small> / <?php echo count($pubs); ?></small></span>
             <span class="note"><?php echo $sinReporte; ?> sin reporte</span>
-        </div>
-        <div class="pa-card pa-kpi">
+            <span class="go">Ir al seguimiento →</span>
+        </a>
+        <a class="pa-card pa-kpi" href="#atencion" title="Ver los indicadores que necesitan atención">
             <span class="lbl">En riesgo</span>
             <span class="val num" style="color:<?php echo $enRiesgo ? '#D70015' : 'inherit'; ?>"><?php echo $enRiesgo; ?></span>
             <span class="note">Menos del 60 % de la meta</span>
-        </div>
+            <span class="go">Ver detalle →</span>
+        </a>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
             <span class="val num"><?php echo $cierreVal; ?><small><?php echo $cierreUnidad; ?></small></span>
@@ -706,14 +745,16 @@ require_once __DIR__ . '/../complementos/header.php';
             <div class="pa-lines">
                 <?php foreach ($porLinea as $pl):
                     $t = $TONO[dbTono($pl['pct'])]; ?>
-                <div class="pa-line">
+                <a class="pa-line<?php echo $linea === (string)$pl['cod'] ? ' on' : ''; ?>"
+                   href="<?php echo htmlspecialchars(dbUrl($basePath, ['l' => $linea === (string)$pl['cod'] ? null : $pl['cod']])); ?>"
+                   title="<?php echo $linea === (string)$pl['cod'] ? 'Quitar filtro de línea' : 'Filtrar el tablero por esta línea'; ?>">
                     <div class="nm"><span class="pa-code"><?php echo htmlspecialchars($pl['cod']); ?></span><span><?php echo htmlspecialchars($pl['nombre']); ?></span></div>
                     <div class="pa-track" role="img" aria-label="<?php echo htmlspecialchars($pl['nombre']) . ': ' . ($pl['pct'] === null ? 'sin publicados' : dbFmt($pl['pct']) . ' %'); ?>">
                         <div class="fill" style="width:<?php echo round($pl['pct'] ?? 0, 1); ?>%;background:<?php echo $t['bar']; ?>"></div>
                         <div class="goal" style="left:calc(<?php echo $esperado; ?>% - 1px)"></div>
                     </div>
                     <span class="pct num" style="color:<?php echo $t['ink']; ?>"><?php echo $pl['pct'] === null ? '—' : dbFmt($pl['pct']) . ' %'; ?></span>
-                </div>
+                </a>
                 <?php endforeach; ?>
                 <?php if (!$porLinea): ?><div class="pa-empty-box">No hay indicadores en este plan.</div><?php endif; ?>
             </div>
@@ -737,11 +778,11 @@ require_once __DIR__ . '/../complementos/header.php';
                     'P' => ['Oficina de Planeación · publicado',     'rgba(52,199,89,.16)',  '#248A3D', '#34C759'],
                 ];
                 foreach ($etapasFlujo as $k => [$nom, $tint, $ink, $bar]): ?>
-                <div class="pa-stage">
+                <a class="pa-stage" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=' . ($k === 'P' ? 'publicados' : 'borradores')); ?>" title="Ver en el Módulo 144">
                     <span class="dot" style="background:<?php echo $tint; ?>;color:<?php echo $ink; ?>"><?php echo $k; ?></span>
                     <div><span class="nm"><?php echo $nom; ?></span><div class="bar"><span style="width:<?php echo round($flujo[$k] / $flujoMax * 100); ?>%;background:<?php echo $bar; ?>"></span></div></div>
                     <span class="n num"><?php echo $flujo[$k]; ?></span>
-                </div>
+                </a>
                 <?php endforeach; ?>
             </div>
             <div class="pa-chips" style="margin-top:auto;padding-top:16px">
@@ -754,7 +795,7 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
 
     <!-- ── Indicadores que necesitan atención ── -->
-    <section class="pa-card pa-table-card">
+    <section class="pa-card pa-table-card" id="atencion">
         <div class="pa-card-head">
             <h2>Indicadores que necesitan atención</h2>
             <span class="pa-note">Menor avance frente a la meta de S<?php echo $sem; ?><?php echo $sinReporte ? ' · ' . $sinReporte . ' publicados sin reporte' : ''; ?></span>
@@ -768,7 +809,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <?php foreach ($riesgo as $r):
                     $t = $TONO[dbTono($r['pct'])]; ?>
                 <div class="pa-tr">
-                    <a class="f" href="<?php echo $moduloUrl; ?>"><?php echo htmlspecialchars($r['texto']); ?>
+                    <a class="f" href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $r['id'])); ?>" title="Abrir en el Módulo 144"><?php echo htmlspecialchars($r['texto']); ?>
                         <small><?php echo htmlspecialchars($r['linea_estrategica'] ?: 'Sin línea'); ?> · ponderación <?php echo dbFmtNum($r['peso']); ?></small></a>
                     <span class="pa-lmp"><?php echo htmlspecialchars($r['lmp']); ?></span>
                     <span class="r num"><?php echo dbFmtNum($r['meta']); ?></span>
@@ -800,12 +841,20 @@ require_once __DIR__ . '/../complementos/header.php';
             <div class="pa-inbox">
                 <?php foreach ($bandeja as $b):
                     $tarde = $b['dias'] >= 7; ?>
-                <a href="<?php echo $moduloUrl; ?>">
-                    <span><span class="t"><?php echo htmlspecialchars($b['texto']); ?></span><span class="s"><?php echo htmlspecialchars($b['lmp'] . ' · ' . $b['tipo']); ?></span></span>
-                    <span class="pa-pill num" style="background:<?php echo $tarde ? 'rgba(255,59,48,.10)' : '#E9E9EE'; ?>;color:<?php echo $tarde ? '#D70015' : '#3A3A3C'; ?>">
-                        <?php echo $b['dias'] === 0 ? 'Hoy' : ($b['dias'] === 1 ? '1 día' : $b['dias'] . ' días'); ?>
-                    </span>
-                </a>
+                <div class="pa-inbox-item">
+                    <a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $b['id'])); ?>" title="Abrir en el Módulo 144">
+                        <span><span class="t"><?php echo htmlspecialchars($b['texto']); ?></span><span class="s"><?php echo htmlspecialchars($b['lmp'] . ' · ' . $b['tipo']); ?></span></span>
+                        <span class="pa-pill num" style="background:<?php echo $tarde ? 'rgba(255,59,48,.10)' : '#E9E9EE'; ?>;color:<?php echo $tarde ? '#D70015' : '#3A3A3C'; ?>">
+                            <?php echo $b['dias'] === 0 ? 'Hoy' : ($b['dias'] === 1 ? '1 día' : $b['dias'] . ' días'); ?>
+                        </span>
+                    </a>
+                    <?php if ($b['puede_aprobar']): ?>
+                    <div class="pa-inbox-actions">
+                        <button type="button" class="ok" onclick="dbAprobar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>)"><i class="fas fa-check"></i> Aprobar</button>
+                        <button type="button" class="no" onclick="dbRechazar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>)"><i class="fas fa-times"></i> Rechazar</button>
+                    </div>
+                    <?php endif; ?>
+                </div>
                 <?php endforeach; ?>
                 <?php if (!$bandeja): ?><div class="pa-empty-box">Nada pendiente de tu revisión.</div><?php endif; ?>
             </div>
@@ -839,11 +888,11 @@ require_once __DIR__ . '/../complementos/header.php';
                     $rech = $a['accion'] === 'rechazado'; ?>
                 <li>
                     <span class="dot" style="background:<?php echo $rech ? '#FF3B30' : ((int)$a['etapa'] >= 4 ? '#34C759' : '#007AFF'); ?>"></span>
-                    <span>
+                    <a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $a['formulacion_id'])); ?>" title="Abrir en el Módulo 144">
                         <span class="t"><b style="font-weight:600"><?php echo htmlspecialchars($a['usuario_nombre']); ?></b>
                             <?php echo $rech ? 'rechazó' : 'aprobó'; ?> como <?php echo $etapaNombre[(int)$a['etapa']] ?? 'revisor'; ?><?php echo $rech && $a['motivo'] ? ': ' . htmlspecialchars(mb_strimwidth($a['motivo'], 0, 70, '…')) : ''; ?></span>
                         <span class="s"><?php echo relTime($a['fecha_creacion']) . ' · ' . htmlspecialchars($a['lmp']); ?></span>
-                    </span>
+                    </a>
                 </li>
                 <?php endforeach; ?>
             </ul>
@@ -899,7 +948,64 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// Aprobar / rechazar desde "Mi bandeja" (mismos endpoints que el semáforo del Módulo 144)
+var DB_BASE = <?php echo json_encode($basePath); ?>;
+
+function dbEnviarSemaforo(accion, datos, boton) {
+    var botones = boton.parentElement.querySelectorAll('button');
+    botones.forEach(function (b) { b.disabled = true; });
+    var cuerpo = new FormData();
+    Object.keys(datos).forEach(function (k) { cuerpo.append(k, datos[k]); });
+    fetch(DB_BASE + '/modulo144/' + accion, { method: 'POST', body: cuerpo, credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (res.success) {
+                Swal.fire({ icon: 'success', title: res.message, timer: 1300, showConfirmButton: false });
+                setTimeout(function () { location.reload(); }, 1300);
+            } else {
+                botones.forEach(function (b) { b.disabled = false; });
+                Swal.fire('No se pudo completar', res.message || 'Intenta de nuevo', 'error');
+            }
+        })
+        .catch(function () {
+            botones.forEach(function (b) { b.disabled = false; });
+            Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+        });
+}
+
+function dbAprobar(boton, id, etapa) {
+    Swal.fire({
+        title: '¿Aprobar esta etapa?',
+        text: 'Tu aprobación quedará registrada en el semáforo.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#34C759',
+        confirmButtonText: 'Sí, aprobar',
+        cancelButtonText: 'Cancelar'
+    }).then(function (r) {
+        if (r.isConfirmed) dbEnviarSemaforo('avanzarSemaforo', { modulo: 'formulacion', id: id, etapa_actual: etapa }, boton);
+    });
+}
+
+function dbRechazar(boton, id, etapa) {
+    Swal.fire({
+        title: '¿Rechazar y devolver al creador?',
+        text: 'El motivo se le enviará como mensaje directo.',
+        icon: 'warning',
+        input: 'textarea',
+        inputPlaceholder: 'Escribe el motivo del rechazo...',
+        inputValidator: function (v) { if (!v || !v.trim()) return 'Debes ingresar el motivo del rechazo'; },
+        showCancelButton: true,
+        confirmButtonColor: '#FF3B30',
+        confirmButtonText: 'Sí, rechazar',
+        cancelButtonText: 'Cancelar'
+    }).then(function (r) {
+        if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'formulacion', id: id, etapa_actual: etapa, motivo: r.value.trim() }, boton);
+    });
+}
+
 // Carrusel de novedades
 (function() {
     var track = document.getElementById('novTrack');

@@ -396,6 +396,9 @@ switch ($action) {
             case 'cambiarEstado':
                 $modulo144Controller->cambiarEstado();
                 break;
+            case 'devolverTodosABorrador':
+                $modulo144Controller->devolverTodosABorrador();
+                break;
             case 'cambiarSolicitudEstado':
                 $modulo144Controller->cambiarSolicitudEstado();
                 break;
