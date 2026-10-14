@@ -13,31 +13,43 @@ class Plantilla144Controller {
     const HOJA_SEGUIMIENTO = 'Seguimiento';
     const FILAS_VACIAS = 30; // filas libres al final de "Formulación" para agregar indicadores nuevos
 
-    // clave => [encabezado en el Excel, ancho]
+    // Formato institucional de la hoja Formulación (mismo orden y títulos que el formato FOR-DE-144).
+    // clave => [título, ancho, opciones]. Después se agregan una columna por plan institucional (21.)
+    // y una por facultad (22.), que se marcan con X.
     private $colsFormulacion = [
-        'id'                      => ['ID (no modificar · vacío = nuevo)', 14],
-        'estado'                  => ['ESTADO (solo lectura)', 14],
-        'linea_estrategica'       => ['LÍNEA ESTRATÉGICA', 34],
-        'estrategia'              => ['ESTRATEGIA', 34],
-        'motor_desarrollo'        => ['MOTOR DE DESARROLLO', 34],
-        'proyecto'                => ['PROYECTO', 34],
-        'meta_resultado'          => ['META DE RESULTADO', 34],
-        'actividad_proyecto'      => ['ACTIVIDAD DEL PROYECTO', 34],
-        'ponderacion_actividades' => ['PONDERACIÓN ACTIVIDADES (%)', 16],
-        'responsable_formulacion' => ['RESPONSABLE (dependencias separadas por ;)', 34],
-        'id_indicador'            => ['ID INDICADOR', 14],
-        'gestionado_facultades'   => ['GESTIONADO EN FACULTADES (SI/NO)', 16],
-        'nombre_indicador'        => ['NOMBRE DEL INDICADOR', 34],
-        'formula_medicion'        => ['FÓRMULA DEL INDICADOR', 34],
-        'descripcion_indicador'   => ['DESCRIPCIÓN DEL INDICADOR', 34],
-        'frecuencia_medicion'     => ['FRECUENCIA DE MEDICIÓN', 18],
-        'unidad_medida'           => ['UNIDAD DE MEDIDA', 16],
-        'tipo_medicion'           => ['TIPO DE MEDICIÓN', 26],
-        'linea_base_meta'         => ['LÍNEA BASE', 12],
-        'meta_s1'                 => ['META SEMESTRE 1', 14],
-        'meta_s2'                 => ['META SEMESTRE 2', 14],
-        'planes_institucionales'  => ['PLANES INSTITUCIONALES (separados por ;)', 34],
+        'id'                      => ['N°', 8, ['sombreado' => true]],
+        'anio'                    => ['AÑO', 9],
+        'linea_estrategica'       => ['5. LÍNEA ESTRATÉGICA', 22],
+        'objetivo'                => ['6. OBJETIVO', 46, ['sombreado' => true]],
+        'estrategia'              => ['7. ESTRATEGIA', 30],
+        'motor_desarrollo'        => ['8. MOTOR DE DESARROLLO', 24],
+        'meta_resultado'          => ['9. META DE RESULTADO', 50],
+        'proyecto'                => ['10. PROYECTO', 30],
+        'ponderacion_proyectos'   => ['11. PONDERACIÓN DE LOS PROYECTOS', 18, ['formato' => 'pct0']],
+        'actividad_proyecto'      => ['12. ACTIVIDAD DEL PROYECTO', 40],
+        'ponderacion_actividades' => ['13. PONDERACIÓN DE LA ACTIVIDADES POR PROYECTO', 18, ['formato' => 'pct0']],
+        'responsable_formulacion' => ['14. RESPONSABLE', 22],
+        'id_indicador'            => ['ID.INDICADOR', 7, ['vertical' => true]],
+        'gestionado_facultades'   => ['15. GESTIONADO EN FACULTADES', 9, ['vertical' => true]],
+        'nombre_indicador'        => ['16.1 NOMBRE DEL INDICADOR', 32, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'formula_medicion'        => ['16.2 FÓRMULA DE LA MEDICIÓN', 36, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'frecuencia_medicion'     => ['16.3 FRECUENCIA DE MEDICIÓN', 16, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'unidad_medida'           => ['16.4. UNIDAD DE MEDIDA', 16, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'descripcion_indicador'   => ['DESCRIPCIÓN', 46, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'tipo_medicion'           => ['16.5 TIPO DE MEDICIÓN', 18, ['grupo' => '16. INDICADOR DE RESULTADO']],
+        'linea_base_meta'         => ['17.1 LÍNEA BASE', 13, ['grupo' => '17. META PROPUESTA']],
+        'meta_s1'                 => ['17.2 SEMESTRE 1', 13, ['grupo' => '17. META PROPUESTA']],
+        'meta_s2'                 => ['17.3 SEMESTRE 2', 13, ['grupo' => '17. META PROPUESTA']],
+        'anio_base_meta'          => ['17.4 AÑO', 13, ['grupo' => '17. META PROPUESTA', 'sombreado' => true]],
+        'propuestas_rectorales'   => ['19. Propuestas rectorales', 18],
+        'plan_mejoramiento'       => ['20. Plan de Mejoramiento Institucional', 18],
     ];
+
+    // Columnas que el sistema calcula o que no se guardan: se exportan pero no se importan
+    private $soloLectura = ['anio', 'objetivo', 'ponderacion_proyectos', 'anio_base_meta', 'propuestas_rectorales', 'plan_mejoramiento'];
+
+    const GRUPO_PLANES     = '21. PLANES INSTITUCIONALES DECRETO 612 DE 2018';
+    const GRUPO_FACULTADES = '22. GESTIÓN POR FACULTADES';
 
     private $colsSeguimiento = [
         'id'                       => ['ID (no modificar)', 12],
@@ -70,20 +82,43 @@ class Plantilla144Controller {
             return;
         }
 
+        $catalogos = $this->catalogos();
+        $distribucion = $this->model->getFacultadesConDistribucion((int)$formulario['id']);
+        $registros = array_values(array_filter($this->model->getRegistrosParaPlantilla((int)$formulario['id']), [$this, 'puedeEditar']));
+        $columnas = $this->columnasFormulacion($catalogos, count($registros));
+
         $filasF = [];
         $filasS = [];
-        foreach ($this->model->getRegistrosParaPlantilla((int)$formulario['id']) as $r) {
-            if (!$this->puedeEditar($r)) continue;
-
-            $estadoF = (int)$r['estado_formulacion'] === 2 ? 'Publicado' : 'Borrador';
+        foreach ($registros as $r) {
             $planes = json_decode((string)($r['planes_institucionales'] ?? ''), true);
+            $planes = is_array($planes) ? array_map([$this, 'normalizar'], $planes) : [];
+            $facultadesConValor = $distribucion[(int)$r['id']] ?? [];
+            // Las metas se muestran como porcentaje cuando la unidad de medida es "Porcentaje"
+            $fmtMeta = ($r['unidad_medida'] ?? '') === 'Porcentaje' ? 'pct2' : 'num2';
+            $conCodigo = function ($codigo, $nombre) {
+                $nombre = (string)$nombre;
+                return $nombre !== '' && $codigo ? $codigo . ' - ' . $nombre : $nombre;
+            };
+
             $fila = [];
-            foreach (array_keys($this->colsFormulacion) as $k) {
+            foreach ($columnas as $k => $col) {
+                if (strpos($k, 'plan:') === 0) {
+                    $fila[] = in_array($this->normalizar(substr($k, 5)), $planes, true) ? 'X' : '';
+                    continue;
+                }
+                if (strpos($k, 'fac:') === 0) {
+                    $fila[] = in_array((int)substr($k, 4), $facultadesConValor, true) ? 'X' : '';
+                    continue;
+                }
                 switch ($k) {
-                    case 'estado': $fila[] = $estadoF; break;
-                    case 'gestionado_facultades': $fila[] = (int)($r[$k] ?? 0) === 1 ? 'SI' : 'NO'; break;
+                    case 'linea_estrategica': $fila[] = $conCodigo($r['linea_codigo'] ?? '', $r[$k] ?? ''); break;
+                    case 'motor_desarrollo':  $fila[] = $conCodigo($r['motor_codigo'] ?? '', $r[$k] ?? ''); break;
+                    case 'proyecto':          $fila[] = $conCodigo($r['proyecto_codigo'] ?? '', $r[$k] ?? ''); break;
+                    case 'gestionado_facultades': $fila[] = (int)($r[$k] ?? 0) === 1 ? 'X' : ''; break;
                     case 'responsable_formulacion': $fila[] = implode('; ', $this->separarResponsables($r[$k] ?? '')); break;
-                    case 'planes_institucionales': $fila[] = is_array($planes) ? implode('; ', $planes) : ''; break;
+                    case 'linea_base_meta': case 'meta_s1': case 'meta_s2': case 'anio_base_meta':
+                        $fila[] = ['v' => $r[$k] ?? '', 'formato' => $fmtMeta]; break;
+                    case 'propuestas_rectorales': case 'plan_mejoramiento': $fila[] = ''; break;
                     default: $fila[] = $r[$k] ?? '';
                 }
             }
@@ -107,12 +142,15 @@ class Plantilla144Controller {
         for ($i = 0; $i < self::FILAS_VACIAS; $i++) $filasF[] = [];
 
         $nombre = 'plantilla_plan_accion_' . preg_replace('/[^A-Za-z0-9_-]+/', '_', $formulario['titulo'] ?? 'formulario') . '_' . date('Y-m-d');
+        $columnasExcel = [];
+        foreach ($columnas as $col) {
+            $columnasExcel[] = ['titulo' => $col[0], 'ancho' => $col[1]] + ($col[2] ?? []);
+        }
         ExcelLibro::descargar($nombre, [
             [
-                'nombre'      => self::HOJA_FORMULACION,
-                'encabezados' => array_column($this->colsFormulacion, 0),
-                'anchos'      => array_column($this->colsFormulacion, 1),
-                'filas'       => $filasF,
+                'nombre'   => self::HOJA_FORMULACION,
+                'columnas' => $columnasExcel,
+                'filas'    => $filasF,
             ],
             [
                 'nombre'      => self::HOJA_SEGUIMIENTO,
@@ -191,26 +229,40 @@ class Plantilla144Controller {
     }
 
     private function importarFormulacion(array $filas, array $formulario, array &$registros, array &$resumen) {
-        $mapa = $this->mapaEncabezados($filas, $this->colsFormulacion);
+        $catalogos = $this->catalogos();
+        $columnas = $this->columnasFormulacion($catalogos, 0);
+        [$mapa, $filaInicio] = $this->mapaEncabezados($filas, $columnas);
         if (!isset($mapa['id'])) {
-            $resumen['errores'][] = 'Hoja Formulación: no se encontró la columna ID. Usa la plantilla exportada.';
+            $resumen['errores'][] = 'Hoja Formulación: no se encontró la columna N°. Usa la plantilla exportada.';
             return;
         }
-        $catalogos = $this->catalogos();
+        $columnasPlan = array_filter(array_keys($mapa), function ($k) { return strpos($k, 'plan:') === 0; });
+        $columnasFac  = array_filter(array_keys($mapa), function ($k) { return strpos($k, 'fac:') === 0; });
 
         foreach ($filas as $numFila => $fila) {
-            if ($numFila === 0) continue; // encabezados
+            if ($numFila < $filaInicio) continue; // encabezados
             $excelFila = $numFila + 1;
-            $val = function ($k) use ($mapa, $fila) {
+            $celda = function ($k) use ($mapa, $fila) {
                 return isset($mapa[$k]) ? trim((string)($fila[$mapa[$k]] ?? '')) : null;
+            };
+            // Los planes marcados con X se pasan a la validación como una lista, igual que antes
+            $val = function ($k) use ($celda, $columnasPlan) {
+                if (in_array($k, $this->soloLectura, true)) return null;
+                if ($k === 'planes_institucionales') {
+                    if (!$columnasPlan) return null;
+                    $marcados = [];
+                    foreach ($columnasPlan as $cp) if ($this->marcado($celda($cp))) $marcados[] = substr($cp, 5);
+                    return implode('; ', $marcados);
+                }
+                return $celda($k);
             };
 
             // Fila sin datos editables: se ignora
             $tieneDatos = false;
-            foreach (array_keys($this->colsFormulacion) as $k) {
-                if (!in_array($k, ['id', 'estado'], true) && $val($k) !== null && $val($k) !== '') { $tieneDatos = true; break; }
+            foreach (array_keys($mapa) as $k) {
+                if ($k !== 'id' && !in_array($k, $this->soloLectura, true) && $celda($k) !== null && $celda($k) !== '') { $tieneDatos = true; break; }
             }
-            $id = (int)$val('id');
+            $id = (int)$celda('id');
             if (!$tieneDatos && $id <= 0) continue;
 
             $pref = "Formulación, fila {$excelFila}: ";
@@ -228,9 +280,18 @@ class Plantilla144Controller {
             }
             $this->calcularValorAnual($actual, $datos);
 
+            // Facultades marcadas con X (o con un número = su distribución)
+            $distNueva = null;
+            if ($columnasFac) {
+                [$distNueva, $erroresFac] = $this->leerFacultades($columnasFac, $celda, $id > 0 ? $id : 0);
+                if ($erroresFac) { foreach ($erroresFac as $e) $resumen['errores'][] = $pref . $e; continue; }
+                if (array_filter($distNueva)) $datos['gestionado_facultades'] = 1;
+            }
+            $distCambia = $distNueva !== null && $this->distribucionCambia($id, $distNueva);
+
             // Publicado: no se modifica desde la plantilla (primero hay que devolverlo a borrador)
             if ($id > 0 && (int)$actual['estado_formulacion'] !== 0) {
-                if ($this->sinCambios($actual, $datos)) $resumen['formulacion']['sin_cambios']++;
+                if ($this->sinCambios($actual, $datos) && !$distCambia) $resumen['formulacion']['sin_cambios']++;
                 else $resumen['errores'][] = $pref . "el ID {$id} ya está publicado; sus cambios de formulación no se aplicaron.";
                 continue;
             }
@@ -251,11 +312,13 @@ class Plantilla144Controller {
                 if ($nuevoId <= 0) { $resumen['errores'][] = $pref . 'no se pudo crear el registro.'; continue; }
                 $datos['nombre_borrador'] = mb_substr($nombre, 0, 250);
                 $this->model->actualizar('formulacion', $nuevoId, $datos);
+                if ($distNueva !== null) $this->guardarDistribucion($nuevoId, $distNueva);
                 $registros[$nuevoId] = ['id' => $nuevoId, 'estado_formulacion' => 0, 'creado_por' => $_SESSION['usuario_id'] ?? 0] + $datos;
                 $resumen['formulacion']['creados']++;
             } else {
-                if ($this->sinCambios($registros[$id], $datos)) { $resumen['formulacion']['sin_cambios']++; continue; }
+                if ($this->sinCambios($registros[$id], $datos) && !$distCambia) { $resumen['formulacion']['sin_cambios']++; continue; }
                 if ($this->model->actualizar('formulacion', $id, $datos)) {
+                    if ($distCambia) $this->guardarDistribucion($id, $distNueva);
                     $registros[$id] = array_merge($registros[$id], $datos);
                     $resumen['formulacion']['actualizados']++;
                 } else {
@@ -266,7 +329,7 @@ class Plantilla144Controller {
     }
 
     private function importarSeguimiento(array $filas, array $registros, array &$resumen) {
-        $mapa = $this->mapaEncabezados($filas, $this->colsSeguimiento);
+        [$mapa, $filaInicio] = $this->mapaEncabezados($filas, $this->colsSeguimiento);
         if (!isset($mapa['id'])) {
             $resumen['errores'][] = 'Hoja Seguimiento: no se encontró la columna ID. Usa la plantilla exportada.';
             return;
@@ -274,7 +337,7 @@ class Plantilla144Controller {
         $editables = ['semestre1_seguimiento', 'semestre2_seguimiento', 'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'];
 
         foreach ($filas as $numFila => $fila) {
-            if ($numFila === 0) continue;
+            if ($numFila < $filaInicio) continue;
             $excelFila = $numFila + 1;
             $id = isset($mapa['id']) ? (int)trim((string)($fila[$mapa['id']] ?? '')) : 0;
             if ($id <= 0) continue;
@@ -414,7 +477,10 @@ class Plantilla144Controller {
         $vResp = $val('responsable_formulacion');
         if ($vResp !== null) {
             $nombres = [];
-            foreach (array_filter(array_map('trim', explode(';', $vResp)), 'strlen') as $parte) {
+            $partesResp = strpos($vResp, ';') !== false
+                ? array_filter(array_map('trim', explode(';', $vResp)), 'strlen')
+                : $this->separarResponsables($vResp);
+            foreach ($partesResp as $parte) {
                 $dep = $this->buscarTexto($cat['cargos'], $parte);
                 if ($dep === null) $errores[] = "la dependencia responsable \"{$parte}\" no existe.";
                 else $nombres[] = $dep;
@@ -453,6 +519,7 @@ class Plantilla144Controller {
             'cargos'         => $cargos,
             'planes'         => $planes,
             'id_indicadores' => $this->model->getIdIndicadores(),
+            'facultades'     => $this->model->getFacultades(),
         ];
     }
 
@@ -506,17 +573,88 @@ class Plantilla144Controller {
         return $resultado;
     }
 
-    // Columna de cada clave según el texto del encabezado (sin importar orden, mayúsculas, tildes ni el texto entre paréntesis)
+    // Columna de cada clave según el texto del encabezado (sin importar orden, mayúsculas, tildes ni el
+    // texto entre paréntesis). El encabezado puede ocupar una fila o dos (grupo arriba, título abajo).
+    // Devuelve [mapa clave => columna, número de la primera fila de datos].
     private function mapaEncabezados(array $filas, array $columnas) {
-        $encabezados = $filas[0] ?? [];
         $porTexto = [];
-        foreach ($columnas as $k => [$titulo]) $porTexto[$this->normalizarEncabezado($titulo)] = $k;
+        foreach ($columnas as $k => $col) $porTexto[$this->normalizarEncabezado($col[0])] = $k;
+
         $mapa = [];
-        foreach ($encabezados as $col => $texto) {
-            $k = $porTexto[$this->normalizarEncabezado($texto)] ?? null;
-            if ($k !== null && !isset($mapa[$k])) $mapa[$k] = $col;
+        $filaInicio = 1;
+        foreach ([1, 0] as $numFila) { // primero la fila de abajo (títulos bajo un grupo)
+            foreach ($filas[$numFila] ?? [] as $col => $texto) {
+                $k = $porTexto[$this->normalizarEncabezado($texto)] ?? null;
+                if ($k === null || isset($mapa[$k]) || in_array($col, $mapa, true)) continue;
+                $mapa[$k] = $col;
+                if ($numFila === 1) $filaInicio = 2;
+            }
         }
-        return $mapa;
+        return [$mapa, $filaInicio];
+    }
+
+    // Columnas de Formulación: las fijas + una por plan institucional + una por facultad
+    private function columnasFormulacion(array $catalogos, $nActividades) {
+        $columnas = $this->colsFormulacion;
+        if ($nActividades > 0) $columnas['actividad_proyecto'][0] .= ' (' . $nActividades . ')';
+        foreach ($catalogos['planes'] as $plan) {
+            $columnas['plan:' . $plan] = [$plan, 18, ['grupo' => self::GRUPO_PLANES]];
+        }
+        foreach ($catalogos['facultades'] as $fac) {
+            $columnas['fac:' . (int)$fac['id']] = [$fac['nombre'], 16, ['grupo' => self::GRUPO_FACULTADES]];
+        }
+        return $columnas;
+    }
+
+    private function marcado($v) {
+        $v = $this->normalizar($v);
+        return $v !== '' && !in_array($v, ['no', 'n', '0', 'false'], true);
+    }
+
+    // Lee las columnas de facultades de una fila: X = participa (conserva su distribución actual o 1),
+    // un número = esa distribución, vacío = no participa. Devuelve [[facultad_id => distribución], errores].
+    private function leerFacultades(array $columnasFac, callable $celda, $id) {
+        $actual = $id > 0 ? $this->distribucionActual($id) : [];
+        $dist = [];
+        $errores = [];
+        foreach ($columnasFac as $k) {
+            $facId = (int)substr($k, 4);
+            $v = $celda($k);
+            if (!$this->marcado($v)) { $dist[$facId] = 0.0; continue; }
+            $n = $this->numero($v);
+            if ($n !== null) {
+                if ($n < 0) { $errores[] = 'la distribución por facultad no puede ser negativa.'; continue; }
+                $dist[$facId] = $n;
+            } else {
+                $previo = (float)($actual[$facId]['distribucion'] ?? 0);
+                $dist[$facId] = $previo > 0 ? $previo : 1.0;
+            }
+        }
+        return [$dist, $errores];
+    }
+
+    private function distribucionActual($id) {
+        $actual = [];
+        foreach ($this->model->getDistribucionFacultades($id) as $d) $actual[(int)$d['facultad_id']] = $d;
+        return $actual;
+    }
+
+    private function distribucionCambia($id, array $nueva) {
+        $actual = $id > 0 ? $this->distribucionActual($id) : [];
+        foreach ($nueva as $facId => $valor) {
+            if (abs((float)($actual[$facId]['distribucion'] ?? 0) - $valor) > 0.0001) return true;
+        }
+        return false;
+    }
+
+    private function guardarDistribucion($id, array $nueva) {
+        $actual = $this->distribucionActual($id);
+        foreach ($nueva as $facId => $valor) {
+            $previo = (float)($actual[$facId]['distribucion'] ?? 0);
+            if (abs($previo - $valor) <= 0.0001) continue;
+            if ($valor <= 0 && !isset($actual[$facId])) continue;
+            $this->model->guardarDistribucionFacultad($id, $facId, $actual[$facId]['observacion'] ?? '', $valor);
+        }
     }
 
     private function normalizarEncabezado($texto) {
