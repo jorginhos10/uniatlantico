@@ -30,6 +30,7 @@ class Modulo144Controller {
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         $cargos = $this->model->getCargos();
         $planes_institucionales = $this->model->getPlanesInstitucionales();
+        $id_indicadores = $this->model->getIdIndicadores();
         $facultades = $this->model->getFacultades();
         
         $modulos = $this->model->getModulos();

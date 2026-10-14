@@ -238,6 +238,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <i class="fas fa-file-alt me-1"></i> Planes Institucionales
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-indicadores-btn" data-bs-toggle="tab" data-bs-target="#tab-indicadores" type="button">
+                <i class="fas fa-tag me-1"></i> ID Indicador
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content">
@@ -428,6 +433,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </div>
         </div>
 
+        <!-- ===================== TAB ID INDICADOR ===================== -->
+        <div class="tab-pane fade" id="tab-indicadores" role="tabpanel">
+            <div class="table-card">
+                <div class="table-card-header">
+                    <div class="table-card-title">
+                        <i class="fas fa-tag me-2" style="color:var(--ios-blue);"></i>
+                        ID Indicador
+                    </div>
+                    <div class="table-card-actions">
+                        <input type="text" class="search-input" id="searchIndicadores" placeholder="Buscar ID indicador...">
+                        <button class="btn-add" onclick="abrirModalIndicador()">
+                            <i class="fas fa-plus me-1"></i> Agregar ID Indicador
+                        </button>
+                    </div>
+                </div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width:60px">ID</th>
+                            <th>Nombre</th>
+                            <th style="width:100px">Estado</th>
+                            <th style="width:120px">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaIndicadoresBody">
+                        <tr class="empty-row"><td colspan="4"><div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div><div>Cargando...</div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 </div>
 
@@ -456,6 +492,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="modal-footer">
                     <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardarPlan"><i class="fas fa-save me-1"></i> Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ID Indicador -->
+<div class="modal fade" id="modalIndicador" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalIndicadorTitulo">Nuevo ID Indicador</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formIndicador">
+                <input type="hidden" id="indicador_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre *</label>
+                        <input type="text" class="form-control" name="nombre" id="indicador_nombre" maxlength="100" required placeholder="Ej: PR-PDI">
+                    </div>
+                    <div class="mb-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="activo" id="indicador_activo" value="1" checked>
+                            <label class="form-check-label" for="indicador_activo"><strong>Activo</strong> — aparece disponible en los formularios</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardarIndicador"><i class="fas fa-save me-1"></i> Guardar</button>
                 </div>
             </form>
         </div>
@@ -668,6 +735,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         cargarMotores();
         cargarProyectos();
         cargarPlanes();
+        cargarIndicadores();
 
         $('#searchLineas').on('input', function() { filtrarLineas($(this).val().toLowerCase()); });
         $('#searchEstrategias').on('input', function() { guardarFiltroEstrategias(); aplicarFiltrosEstrategias(); });
@@ -1381,6 +1449,87 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
     });
 
+    // ===================== ID INDICADOR =====================
+
+    let todosIndicadores = [];
+
+    function cargarIndicadores() {
+        $.ajax({
+            url: basePath + '/catalogos144/listarIdIndicadores',
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) { todosIndicadores = res.indicadores; renderTablaIndicadores(todosIndicadores); }
+                else { $('#tablaIndicadoresBody').html('<tr class="empty-row"><td colspan="4"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar</div></td></tr>'); }
+            },
+            error: function() { $('#tablaIndicadoresBody').html('<tr class="empty-row"><td colspan="4">Error al cargar</td></tr>'); }
+        });
+    }
+
+    $('#searchIndicadores').on('input', function() {
+        const q = $(this).val().toLowerCase();
+        renderTablaIndicadores(q ? todosIndicadores.filter(i => i.nombre.toLowerCase().includes(q)) : todosIndicadores);
+    });
+
+    function renderTablaIndicadores(indicadores) {
+        if (!indicadores.length) {
+            $('#tablaIndicadoresBody').html('<tr class="empty-row"><td colspan="4"><div class="empty-icon"><i class="fas fa-tag"></i></div><div>No hay ID indicador registrados</div></td></tr>');
+            return;
+        }
+        let html = '';
+        indicadores.forEach(i => {
+            const badge = i.activo == 1
+                ? '<span class="badge-estado activo"><i class="fas fa-check-circle me-1"></i>Activo</span>'
+                : '<span class="badge-estado inactivo"><i class="fas fa-times-circle me-1"></i>Inactivo</span>';
+            html += `<tr>
+                <td><strong>#${i.id}</strong></td>
+                <td>${escHtml(i.nombre)}</td>
+                <td>${badge}</td>
+                <td>
+                    <button class="btn-action-sm btn-edit" onclick="editarIndicador(${i.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action-sm btn-delete" onclick="pedirEliminar(${i.id}, '${escHtml(i.nombre).replace(/'/g,"\\'")}', 'indicador')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        $('#tablaIndicadoresBody').html(html);
+    }
+
+    function abrirModalIndicador(indicador) {
+        $('#indicador_id').val('');
+        $('#indicador_nombre').val('');
+        $('#indicador_activo').prop('checked', true);
+        $('#modalIndicadorTitulo').text('Nuevo ID Indicador');
+        if (indicador) {
+            $('#indicador_id').val(indicador.id);
+            $('#indicador_nombre').val(indicador.nombre);
+            $('#indicador_activo').prop('checked', indicador.activo == 1);
+            $('#modalIndicadorTitulo').text('Editar ID Indicador');
+        }
+        $('#modalIndicador').modal('show');
+    }
+
+    function editarIndicador(id) {
+        const indicador = todosIndicadores.find(i => i.id == id);
+        if (indicador) abrirModalIndicador(indicador);
+    }
+
+    $('#formIndicador').on('submit', function(e) {
+        e.preventDefault();
+        const id  = $('#indicador_id').val();
+        const url = id ? basePath + '/catalogos144/actualizarIdIndicador' : basePath + '/catalogos144/crearIdIndicador';
+        $.ajax({
+            url: url, type: 'POST', dataType: 'json',
+            data: { id: id, nombre: $('#indicador_nombre').val(), activo: $('#indicador_activo').is(':checked') ? 1 : 0 },
+            success: function(res) {
+                if (res.success) {
+                    $('#modalIndicador').modal('hide');
+                    Swal.fire({ icon: 'success', title: '¡Listo!', text: res.message, timer: 1600, showConfirmButton: false });
+                    cargarIndicadores();
+                } else { Swal.fire('Error', res.message, 'error'); }
+            },
+            error: function() { Swal.fire('Error', 'Error al guardar el ID indicador', 'error'); }
+        });
+    });
+
     function confirmarEliminar() {
         const id   = $('#id_eliminar').val();
         const tipo = $('#tipo_eliminar').val();
@@ -1389,7 +1538,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             estrategia: { url: '/catalogos144/eliminarEstrategia', reload: cargarEstrategias },
             motor:      { url: '/catalogos144/eliminarMotor',      reload: cargarMotores },
             proyecto:   { url: '/catalogos144/eliminarProyecto',   reload: cargarProyectos },
-            plan:       { url: '/catalogos144/eliminarPlan',       reload: cargarPlanes }
+            plan:       { url: '/catalogos144/eliminarPlan',       reload: cargarPlanes },
+            indicador:  { url: '/catalogos144/eliminarIdIndicador', reload: cargarIndicadores }
         };
         const cfg = endpoints[tipo];
         if (!cfg) return;

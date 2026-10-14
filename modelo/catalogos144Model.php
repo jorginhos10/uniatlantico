@@ -451,5 +451,50 @@ class Catalogos144Model {
             return ['success' => false, 'message' => 'Error al eliminar el plan'];
         }
     }
+
+    // ============= ID INDICADOR =============
+
+    public function getAllIdIndicadores() {
+        try {
+            $stmt = $this->db->query("SELECT id, nombre, activo FROM id_indicadores ORDER BY id ASC");
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getAllIdIndicadores: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function crearIdIndicador($nombre, $activo = 1) {
+        try {
+            $stmt = $this->db->prepare("INSERT INTO id_indicadores (nombre, activo) VALUES (:nombre, :activo)");
+            $stmt->execute([':nombre' => $nombre, ':activo' => $activo]);
+            return ['success' => true, 'message' => 'ID indicador creado exitosamente', 'id' => $this->db->lastInsertId()];
+        } catch (PDOException $e) {
+            error_log("Error crearIdIndicador: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getCode() == 23000 ? 'Ya existe un ID indicador con ese nombre' : 'Error al crear el ID indicador'];
+        }
+    }
+
+    public function actualizarIdIndicador($id, $nombre, $activo) {
+        try {
+            $stmt = $this->db->prepare("UPDATE id_indicadores SET nombre = :nombre, activo = :activo WHERE id = :id");
+            $stmt->execute([':nombre' => $nombre, ':activo' => $activo, ':id' => $id]);
+            return ['success' => true, 'message' => 'ID indicador actualizado exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error actualizarIdIndicador: " . $e->getMessage());
+            return ['success' => false, 'message' => $e->getCode() == 23000 ? 'Ya existe un ID indicador con ese nombre' : 'Error al actualizar el ID indicador'];
+        }
+    }
+
+    public function eliminarIdIndicador($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM id_indicadores WHERE id = :id");
+            $stmt->execute([':id' => $id]);
+            return ['success' => true, 'message' => 'ID indicador eliminado exitosamente'];
+        } catch (PDOException $e) {
+            error_log("Error eliminarIdIndicador: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al eliminar el ID indicador'];
+        }
+    }
 }
 ?>

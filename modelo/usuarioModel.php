@@ -130,10 +130,43 @@ class UsuarioModel {
             $registroPublico = !empty($datos['registro_publico']) ? 1 : 0;
             $stmt->bindParam(':registro_publico', $registroPublico, PDO::PARAM_INT);
 
-            return $stmt->execute();
+            if (!$stmt->execute()) {
+                return false;
+            }
+
+            $this->asignarPermisosPorDefecto((int)$this->db->lastInsertId());
+            return true;
         } catch (PDOException $e) {
             error_log("Error creando usuario: " . $e->getMessage());
             return false;
+        }
+    }
+
+    // Todo usuario nuevo arranca con Chat, Dashboard y FOR-DE-144 (con su sub-permiso "ver").
+    // Si falla no se revierte la creación del usuario: los permisos se pueden asignar a mano.
+    private function asignarPermisosPorDefecto($usuarioId) {
+        if ($usuarioId <= 0) return;
+
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT IGNORE INTO detalle_permiso (id_usuario, id_permiso, fecha_asignacion)
+                 SELECT :uid, lp.id, NOW()
+                 FROM lista_permisos lp
+                 WHERE lp.estado = 1
+                   AND (lp.nombre IN ('ver_dashboard', 'for_de_144', 'gestionar_recetas') OR lp.nombre LIKE '%chat%')"
+            );
+            $stmt->execute([':uid' => $usuarioId]);
+
+            $stmt = $this->db->prepare(
+                "INSERT IGNORE INTO detalle_subpermiso (usuario_id, subpermiso_id, fecha_asignacion)
+                 SELECT dp.id_usuario, s.id, NOW()
+                 FROM detalle_permiso dp
+                 JOIN subpermisos s ON s.permiso_id = dp.id_permiso AND s.nombre = 'ver' AND s.estado = 1
+                 WHERE dp.id_usuario = :uid"
+            );
+            $stmt->execute([':uid' => $usuarioId]);
+        } catch (PDOException $e) {
+            error_log("Error asignando permisos por defecto: " . $e->getMessage());
         }
     }
 

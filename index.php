@@ -683,6 +683,20 @@ switch ($action) {
                 $catalogos144Controller->eliminarPlan();
                 break;
 
+            // ID Indicador
+            case 'listarIdIndicadores':
+                $catalogos144Controller->listarIdIndicadores();
+                break;
+            case 'crearIdIndicador':
+                $catalogos144Controller->crearIdIndicador();
+                break;
+            case 'actualizarIdIndicador':
+                $catalogos144Controller->actualizarIdIndicador();
+                break;
+            case 'eliminarIdIndicador':
+                $catalogos144Controller->eliminarIdIndicador();
+                break;
+
             case 'index':
             default:
                 $catalogos144Controller->index();

@@ -2340,9 +2340,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <label class="form-label">11. ID INDICADOR</label>
                                         <select class="form-select" name="id_indicador" id="formulacion_id_indicador" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione...</option>
-                                            <option value="PDI">PDI</option>
-                                            <option value="PA">PA</option>
-                                            <option value="PR">PR</option>
+                                            <?php foreach ($id_indicadores as $idIndicador): ?>
+                                            <option value="<?php echo htmlspecialchars($idIndicador); ?>">
+                                                <?php echo htmlspecialchars($idIndicador); ?>
+                                            </option>
+                                            <?php endforeach; ?>
                                         </select>
                                     </div>
 

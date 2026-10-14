@@ -334,6 +334,21 @@ class Modulo144Model {
         }
     }
 
+    // Opciones del select "ID INDICADOR". Si el catálogo aún no existe o está vacío,
+    // se devuelven las opciones base para que el formulario no quede sin opciones.
+    public function getIdIndicadores() {
+        $porDefecto = ['PR', 'PDI', 'PA', 'PR-PDI', 'PR-PA', 'PDI-PA'];
+        try {
+            $stmt = $this->db->prepare("SELECT nombre FROM id_indicadores WHERE activo = 1 ORDER BY id");
+            $stmt->execute();
+            $nombres = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            return $nombres ?: $porDefecto;
+        } catch (PDOException $e) {
+            error_log("Error getIdIndicadores: " . $e->getMessage());
+            return $porDefecto;
+        }
+    }
+
     public function getFacultades() {
         try {
             $stmt = $this->db->prepare("SELECT id, codigo, nombre, estado FROM facultades WHERE estado = 1 ORDER BY codigo, nombre");
