@@ -828,6 +828,8 @@ class Modulo144Controller {
         };
         $sem1 = $num($_POST['seguimiento_sem1'] ?? '');
         $sem2 = $num($_POST['seguimiento_sem2'] ?? '');
+        $descripcion = trim((string)($_POST['seguimiento_descripcion'] ?? ''));
+        $descripcion = $descripcion === '' ? null : $descripcion;
 
         $item = $formulacionId > 0 ? $this->model->getById('seguimiento', $formulacionId) : null;
         if (!$item || $facultadId <= 0) {
@@ -839,7 +841,7 @@ class Modulo144Controller {
             return;
         }
 
-        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2);
+        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
     }
 

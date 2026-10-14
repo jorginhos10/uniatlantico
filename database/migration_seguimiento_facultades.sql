@@ -20,3 +20,13 @@ SET @sql := IF(@col = 0,
     'ALTER TABLE `formulacion_distribucion_facultad_144` ADD COLUMN `seguimiento_sem2` decimal(12,2) DEFAULT NULL AFTER `seguimiento_sem1`',
     'SELECT ''seguimiento_sem2 ya existe''');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Descripción del seguimiento de cada facultad (al lado de los semestres)
+SET @col := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = 'formulacion_distribucion_facultad_144'
+               AND COLUMN_NAME = 'seguimiento_descripcion');
+SET @sql := IF(@col = 0,
+    'ALTER TABLE `formulacion_distribucion_facultad_144` ADD COLUMN `seguimiento_descripcion` text DEFAULT NULL AFTER `seguimiento_sem2`',
+    'SELECT ''seguimiento_descripcion ya existe''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

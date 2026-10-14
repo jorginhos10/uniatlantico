@@ -2599,8 +2599,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <tr>
                                             <th>Facultad</th>
                                             <th style="width:120px;" class="text-end">Distribución</th>
-                                            <th style="width:170px;">Seguimiento semestre 1</th>
-                                            <th style="width:170px;">Seguimiento semestre 2</th>
+                                            <th style="width:140px;">Seguimiento semestre 1</th>
+                                            <th style="width:140px;">Seguimiento semestre 2</th>
+                                            <th style="min-width:220px;">Descripción</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -2610,6 +2611,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td class="text-end seg-fac-distribucion">0</td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="0.00"></td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
+                                            <td><input type="text" class="form-control form-control-sm seg-fac-descripcion" maxlength="1000" placeholder="Descripción del avance..."></td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -2619,6 +2621,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td class="text-end fw-bold" id="segFacTotalDist">0</td>
                                             <td class="fw-bold" id="segFacTotalS1">0</td>
                                             <td class="fw-bold" id="segFacTotalS2">0</td>
+                                            <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -3251,6 +3254,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         fila.find('.seg-fac-distribucion').text(dist.toFixed(2));
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
+                        fila.find('.seg-fac-descripcion').val(d.seguimiento_descripcion || '');
                         if (parseInt(d.facultad_id, 10) === VIEWER_FACULTAD_ID) fila.addClass('table-primary');
                         fila.show();
                         hay = true;
@@ -3262,7 +3266,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         let seguimientoFacultadTimeout = {};
-        $(document).on('input', '#tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-s2', function() {
+        $(document).on('input', '#tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-descripcion', function() {
             const fila = $(this).closest('tr');
             const facultadId = fila.data('facultad-id');
             const formulacionId = $('#seguimiento_id').val();
@@ -3278,7 +3282,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         formulacion_id: formulacionId,
                         facultad_id: facultadId,
                         seguimiento_sem1: fila.find('.seg-fac-s1').val(),
-                        seguimiento_sem2: fila.find('.seg-fac-s2').val()
+                        seguimiento_sem2: fila.find('.seg-fac-s2').val(),
+                        seguimiento_descripcion: fila.find('.seg-fac-descripcion').val()
                     },
                     dataType: 'json',
                     success: function(res) {

@@ -787,29 +787,27 @@ class Modulo144Model {
     }
 
     public function getDistribucionFacultades($formulacionId) {
-        try {
-            $stmt = $this->db->prepare(
-                "SELECT facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2
-                 FROM formulacion_distribucion_facultad_144
-                 WHERE formulacion_id = :fid"
-            );
-            $stmt->execute([':fid' => $formulacionId]);
-            return $stmt->fetchAll();
-        } catch (PDOException $e) {
-            // Sin la migración de seguimiento por facultad todavía: se devuelve solo la distribución
+        // Se prueba de la versión más completa a la más simple, por si aún no se ejecutó toda la
+        // migración de seguimiento por facultad (así lo que ya existe se sigue cargando)
+        $columnas = [
+            'facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion',
+            'facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2',
+            'facultad_id, observacion, distribucion',
+        ];
+        foreach ($columnas as $i => $cols) {
             try {
                 $stmt = $this->db->prepare(
-                    "SELECT facultad_id, observacion, distribucion
-                     FROM formulacion_distribucion_facultad_144
-                     WHERE formulacion_id = :fid"
+                    "SELECT {$cols} FROM formulacion_distribucion_facultad_144 WHERE formulacion_id = :fid"
                 );
                 $stmt->execute([':fid' => $formulacionId]);
                 return $stmt->fetchAll();
-            } catch (PDOException $e2) {
-                error_log("Error getDistribucionFacultades: " . $e2->getMessage());
-                return [];
+            } catch (PDOException $e) {
+                if ($i === count($columnas) - 1) {
+                    error_log("Error getDistribucionFacultades: " . $e->getMessage());
+                }
             }
         }
+        return [];
     }
 
     // Facultades con valor en la distribución de cada indicador del formulario: [formulacion_id => [facultad_id, ...]]
@@ -845,14 +843,15 @@ class Modulo144Model {
         return 0;
     }
 
-    public function guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2) {
+    public function guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion = null) {
         try {
             $stmt = $this->db->prepare(
-                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, seguimiento_sem1, seguimiento_sem2)
-                 VALUES (:fid, :facid, 0, :s1, :s2)
-                 ON DUPLICATE KEY UPDATE seguimiento_sem1 = VALUES(seguimiento_sem1), seguimiento_sem2 = VALUES(seguimiento_sem2)"
+                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion)
+                 VALUES (:fid, :facid, 0, :s1, :s2, :descr)
+                 ON DUPLICATE KEY UPDATE seguimiento_sem1 = VALUES(seguimiento_sem1), seguimiento_sem2 = VALUES(seguimiento_sem2),
+                                         seguimiento_descripcion = VALUES(seguimiento_descripcion)"
             );
-            return $stmt->execute([':fid' => $formulacionId, ':facid' => $facultadId, ':s1' => $sem1, ':s2' => $sem2]);
+            return $stmt->execute([':fid' => $formulacionId, ':facid' => $facultadId, ':s1' => $sem1, ':s2' => $sem2, ':descr' => $descripcion]);
         } catch (PDOException $e) {
             error_log("Error guardarSeguimientoFacultad: " . $e->getMessage());
             return false;
