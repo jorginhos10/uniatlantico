@@ -309,15 +309,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
         <div class="flujo-ayuda">
             <i class="fas fa-info-circle me-1" style="color:var(--ios-orange);"></i>
-            Cada relación indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento, y cuál se lo <strong>aprueba</strong>.
+            Cada relación indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento. La dependencia que lo recibe es la misma que lo <strong>aprueba</strong>.
         </div>
         <div class="table-responsive">
             <table class="dep-table">
                 <thead>
                     <tr>
-                        <th>Envía</th>
+                        <th>Dependencia que envía</th>
                         <th></th>
-                        <th>Aprueba</th>
+                        <th>Le envía a (y le aprueba)</th>
                         <th>Aplica a</th>
                         <th>Observación</th>
                         <th>Acciones</th>
@@ -389,7 +389,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <select class="form-select" id="flujo_origen" name="origen_id" required></select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="flujo_destino">Dependencia que aprueba *</label>
+                        <label class="form-label" for="flujo_destino">Envía a (dependencia que aprueba) *</label>
                         <select class="form-select" id="flujo_destino" name="destino_id" required></select>
                     </div>
                     <div class="mb-3">
@@ -508,7 +508,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             html += `<tr>
                 <td><span class="flujo-rol">Envía</span><span class="flujo-dep">${escHtml(f.origen_nombre)}</span></td>
                 <td class="flujo-flecha"><i class="fas fa-arrow-right"></i></td>
-                <td><span class="flujo-rol">Aprueba</span><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
+                <td><span class="flujo-rol">Recibe y aprueba</span><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
                 <td><span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || escHtml(f.aplica_a)}</span></td>
                 <td class="flujo-obs">${f.observacion ? escHtml(f.observacion) : '—'}</td>
                 <td style="white-space:nowrap;">
@@ -547,10 +547,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         let html = `<div class="flujo-conexiones-titulo">Conexiones actuales de ${escHtml(dep ? dep.nombre : '')}</div><ul>`;
         envia.forEach(f => {
-            html += `<li>Envía a <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+            html += `<li>Envía a (y le aprueba) <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
         });
         recibe.forEach(f => {
-            html += `<li>Le aprueba a <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+            html += `<li>Recibe y le aprueba a <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
         });
         $('#flujo_conexiones').html(html + '</ul>').show();
     }
