@@ -14,17 +14,48 @@ class OrganigramaController {
     }
 
     public function index() {
-        $todosUsuarios = $this->usuarioModel->obtenerTodosUsuarios();
+        $esAdminOrganigrama = $this->esAdmin();
+
+        // Igual que en Jerarquías de new-ua: los formularios envían un POST a esta misma página.
+        // Se redirige después para que recargar no reenvíe el formulario.
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            if ($esAdminOrganigrama) {
+                $accion = $_POST['accion'] ?? 'crear';
+                if ($accion === 'cambiar_estado') {
+                    $resultado = $this->cambiarEstado();
+                } elseif ($accion === 'actualizar') {
+                    $resultado = $this->actualizar();
+                } elseif ($accion === 'eliminar') {
+                    $resultado = $this->eliminar();
+                } else {
+                    $resultado = $this->guardar();
+                }
+            } else {
+                $resultado = ['No tienes permisos para esta acción.', ''];
+            }
+            $_SESSION['organigrama_flash'] = $resultado;
+            header('Location: ' . Config::getBasePath() . '/organigrama');
+            exit;
+        }
+
+        [$error, $exito] = $_SESSION['organigrama_flash'] ?? ['', ''];
+        unset($_SESSION['organigrama_flash']);
 
         // Agrupa usuarios activos por rol (el valor de "rol" ya es el nombre legible, ej. "Administrador")
         $usuariosPorRol = [];
-        foreach ($todosUsuarios as $u) {
+        foreach ($this->usuarioModel->obtenerTodosUsuarios() as $u) {
             if ((int)$u['activo'] !== 1) continue;
             $usuariosPorRol[$u['rol']][] = $u;
         }
 
-        $esAdminOrganigrama = $this->esAdmin();
         $nodos = $this->model->getAll();
+        foreach ($nodos as &$nodo) {
+            $nodo['roles'] = $this->decodificarRoles($nodo['rol']);
+        }
+        unset($nodo);
+
+        $padresDisponibles = array_values(array_filter($nodos, function ($n) { return (int)$n['activo'] === 1; }));
+        usort($padresDisponibles, function ($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
         $nodosPlanos = $this->construirArbol($nodos);
         $nodosAnidados = $this->construirArbolAnidado($nodos);
         $roles = (new RolesModel())->getAll();
@@ -32,81 +63,66 @@ class OrganigramaController {
         require_once 'vista/organigrama/index.php';
     }
 
-    public function crear() {
-        if (!$this->validarPeticionAdmin()) return;
+    // Cada acción devuelve [error, éxito], como en new-ua
 
+    private function guardar() {
         $nombre  = trim($_POST['nombre'] ?? '');
         $padreId = intval($_POST['padre_id'] ?? 0);
-        $rol     = trim($_POST['rol'] ?? '');
         $orden   = intval($_POST['orden'] ?? 0);
 
         if ($nombre === '') {
-            echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']);
-            return;
+            return ['El nombre es obligatorio.', ''];
         }
         if ($padreId > 0 && $this->model->getById($padreId) === null) {
-            echo json_encode(['success' => false, 'message' => 'El nodo padre seleccionado no existe']);
-            return;
+            return ['El nodo padre seleccionado no existe.', ''];
         }
 
-        echo json_encode($this->model->crear($nombre, $padreId > 0 ? $padreId : null, $rol !== '' ? $rol : null, $orden));
+        $ok = $this->model->crear($nombre, $padreId > 0 ? $padreId : null, $this->rolesEnviados(), $orden);
+        return $ok ? ['', 'Nodo agregado correctamente.'] : ['No se pudo agregar el nodo.', ''];
     }
 
-    public function actualizar() {
-        if (!$this->validarPeticionAdmin()) return;
-
+    private function actualizar() {
         $id      = intval($_POST['id'] ?? 0);
         $nombre  = trim($_POST['nombre'] ?? '');
         $padreId = intval($_POST['padre_id'] ?? 0);
-        $rol     = trim($_POST['rol'] ?? '');
         $orden   = intval($_POST['orden'] ?? 0);
 
         if ($id <= 0 || $this->model->getById($id) === null) {
-            echo json_encode(['success' => false, 'message' => 'El nodo que intentas editar no existe']);
-            return;
+            return ['El nodo que intentas editar no existe.', ''];
         }
         if ($nombre === '') {
-            echo json_encode(['success' => false, 'message' => 'El nombre es obligatorio']);
-            return;
+            return ['El nombre es obligatorio.', ''];
         }
         if ($padreId > 0) {
             if ($this->model->getById($padreId) === null) {
-                echo json_encode(['success' => false, 'message' => 'El nodo padre seleccionado no existe']);
-                return;
+                return ['El nodo padre seleccionado no existe.', ''];
             }
             if ($this->creaCiclo($id, $padreId)) {
-                echo json_encode(['success' => false, 'message' => 'No puedes asignar como padre a un nodo que está dentro de su propia rama']);
-                return;
+                return ['No puedes asignar como padre a un nodo que está dentro de su propia rama.', ''];
             }
         }
 
-        echo json_encode($this->model->actualizar($id, $nombre, $padreId > 0 ? $padreId : null, $rol !== '' ? $rol : null, $orden));
+        $ok = $this->model->actualizar($id, $nombre, $padreId > 0 ? $padreId : null, $this->rolesEnviados(), $orden);
+        return $ok ? ['', 'Nodo actualizado correctamente.'] : ['No se pudo actualizar el nodo.', ''];
     }
 
-    public function cambiarEstado() {
-        if (!$this->validarPeticionAdmin()) return;
-
+    private function cambiarEstado() {
         $id = intval($_POST['id'] ?? 0);
-        if ($id <= 0) {
-            echo json_encode(['success' => false, 'message' => 'ID inválido']);
-            return;
+        if ($id > 0) {
+            $this->model->cambiarEstado($id);
         }
-        echo json_encode($this->model->cambiarEstado($id));
+        return ['', ''];
     }
 
-    public function eliminar() {
-        if (!$this->validarPeticionAdmin()) return;
-
+    private function eliminar() {
         $id = intval($_POST['id'] ?? 0);
         if ($id <= 0) {
-            echo json_encode(['success' => false, 'message' => 'ID inválido']);
-            return;
+            return ['Nodo no válido.', ''];
         }
         if ($this->model->tieneHijos($id)) {
-            echo json_encode(['success' => false, 'message' => 'No puedes eliminar este nodo porque tiene ramas debajo. Elimínalas o reasígnalas primero.']);
-            return;
+            return ['No puedes eliminar este nodo porque tiene ramas debajo de él. Elimínalas o reasígnalas primero.', ''];
         }
-        echo json_encode($this->model->eliminar($id));
+        return $this->model->eliminar($id) ? ['', 'Nodo eliminado correctamente.'] : ['No se pudo eliminar el nodo.', ''];
     }
 
     private function esAdmin() {
@@ -114,18 +130,18 @@ class OrganigramaController {
         return (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array($rol, ['admin', 'administrador'], true);
     }
 
-    // Responde el error y devuelve false si la petición no es un POST de un administrador
-    private function validarPeticionAdmin() {
-        header('Content-Type: application/json');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
-            return false;
-        }
-        if (!$this->esAdmin()) {
-            echo json_encode(['success' => false, 'message' => 'No tienes permisos para esta acción']);
-            return false;
-        }
-        return true;
+    // Roles marcados en el formulario, como JSON para la columna `rol` (null si no hay ninguno)
+    private function rolesEnviados() {
+        $roles = array_values(array_unique(array_filter(array_map('trim', (array)($_POST['roles'] ?? [])), 'strlen')));
+        return $roles ? json_encode($roles, JSON_UNESCAPED_UNICODE) : null;
+    }
+
+    // La columna `rol` guarda una lista JSON; un texto simple se toma como un solo rol
+    private function decodificarRoles($valor) {
+        $valor = trim((string)$valor);
+        if ($valor === '') return [];
+        $lista = json_decode($valor, true);
+        return is_array($lista) ? array_values(array_filter(array_map('strval', $lista), 'strlen')) : [$valor];
     }
 
     // ¿El nuevo padre es el mismo nodo o está dentro de su rama?

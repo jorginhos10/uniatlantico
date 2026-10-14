@@ -48,10 +48,10 @@ class OrganigramaModel {
                 "INSERT INTO organigrama_nodos (nombre, padre_id, rol, orden) VALUES (:nombre, :padre_id, :rol, :orden)"
             );
             $stmt->execute([':nombre' => $nombre, ':padre_id' => $padreId, ':rol' => $rol, ':orden' => $orden]);
-            return ['success' => true, 'message' => 'Nodo agregado correctamente', 'id' => $this->db->lastInsertId()];
+            return true;
         } catch (PDOException $e) {
             error_log("Error crear organigrama: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error al agregar el nodo'];
+            return false;
         }
     }
 
@@ -61,10 +61,10 @@ class OrganigramaModel {
                 "UPDATE organigrama_nodos SET nombre = :nombre, padre_id = :padre_id, rol = :rol, orden = :orden WHERE id = :id"
             );
             $stmt->execute([':nombre' => $nombre, ':padre_id' => $padreId, ':rol' => $rol, ':orden' => $orden, ':id' => $id]);
-            return ['success' => true, 'message' => 'Nodo actualizado correctamente'];
+            return true;
         } catch (PDOException $e) {
             error_log("Error actualizar organigrama: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error al actualizar el nodo'];
+            return false;
         }
     }
 
@@ -72,10 +72,10 @@ class OrganigramaModel {
         try {
             $stmt = $this->db->prepare("UPDATE organigrama_nodos SET activo = IF(activo = 1, 0, 1) WHERE id = :id");
             $stmt->execute([':id' => $id]);
-            return ['success' => true, 'message' => 'Estado actualizado'];
+            return true;
         } catch (PDOException $e) {
             error_log("Error cambiarEstado organigrama: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error al cambiar el estado'];
+            return false;
         }
     }
 
@@ -94,10 +94,10 @@ class OrganigramaModel {
         try {
             $stmt = $this->db->prepare("DELETE FROM organigrama_nodos WHERE id = :id");
             $stmt->execute([':id' => $id]);
-            return ['success' => true, 'message' => 'Nodo eliminado correctamente'];
+            return true;
         } catch (PDOException $e) {
             error_log("Error eliminar organigrama: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error al eliminar el nodo'];
+            return false;
         }
     }
 }

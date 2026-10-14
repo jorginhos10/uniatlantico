@@ -1,5 +1,6 @@
--- Organigrama administrable: cada nodo depende de otro (padre_id) y puede asociarse a un rol,
--- cuyos usuarios activos se muestran dentro del nodo.
+-- Organigrama administrable (mismo esquema de Jerarquías de new-ua): cada nodo depende de otro
+-- (padre_id) y puede tener varios roles asociados. La columna `rol` guarda la lista de roles
+-- en JSON (ej. ["Lider de meta","Gestor de metas"]); un texto simple se toma como un solo rol.
 -- Se administra desde Organigrama > Estructural (solo administradores).
 -- Se puede ejecutar varias veces: no duplica los nodos iniciales.
 
@@ -7,13 +8,16 @@ CREATE TABLE IF NOT EXISTS `organigrama_nodos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(150) NOT NULL,
   `padre_id` int(11) DEFAULT NULL,
-  `rol` varchar(100) DEFAULT NULL,
+  `rol` text DEFAULT NULL,
   `orden` int(11) NOT NULL DEFAULT 0,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `padre_id` (`padre_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Por si la tabla se creó con la primera versión de esta migración (rol varchar(100))
+ALTER TABLE `organigrama_nodos` MODIFY `rol` text DEFAULT NULL;
 
 -- Estructura inicial: la misma que estaba fija en el código
 INSERT IGNORE INTO `organigrama_nodos` (`id`, `nombre`, `padre_id`, `rol`, `orden`, `activo`) VALUES
