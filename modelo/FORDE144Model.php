@@ -208,60 +208,163 @@ class FORDE144Model {
         }
     }
 
+    // Cumplimiento ponderado según Configuraciones (data_linea_estrategica / data_motores / data_proyectos
+    // del año del formulario): cada nivel suma sus hijos por su peso. Un hijo con peso configurado pero
+    // sin indicadores aporta 0. Si un nivel no tiene pesos configurados, se usa el promedio simple.
+    // Dentro de cada proyecto, los indicadores pesan según su "ponderación de actividades".
     public function getInformeCompleto($formulario_id) {
         // porcentaje_avance (0-100) is the user-entered progress field in formulacion_144
         $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
 
         try {
+            $formulario = $this->getById($formulario_id);
+            $anio = (int)($formulario['anio'] ?? 0);
+
+            // Indicadores del formulario (sin cancelados)
             $stmt = $this->db->prepare(
-                "SELECT
-                    COALESCE(f.linea_estrategica,'Sin línea') as linea,
-                    COALESCE(le.codigo,'—') as linea_codigo,
-                    COALESCE(f.motor_desarrollo,'Sin motor') as motor,
-                    COALESCE(f.proyecto,'Sin proyecto') as proyecto,
-                    COUNT(f.id) as total,
-                    ROUND(AVG($calc),2) as cumplimiento_proyecto
+                "SELECT f.id,
+                        COALESCE(f.linea_estrategica,'Sin línea') AS linea,
+                        le.id AS linea_id, le.codigo AS linea_codigo,
+                        COALESCE(f.motor_desarrollo,'Sin motor') AS motor,
+                        m.id AS motor_id, m.codigo AS motor_codigo,
+                        COALESCE(f.proyecto,'Sin proyecto') AS proyecto,
+                        p.id AS proyecto_id, p.codigo AS proyecto_codigo,
+                        $calc AS avance,
+                        COALESCE(f.ponderacion_actividades, 0) AS ponderacion
                  FROM formulacion_144 f
-                 LEFT JOIN lineas_estrategicas le
-                        ON f.linea_estrategica = le.nombre AND le.activo = 1
-                 WHERE f.formulario_id = :fid
-                 GROUP BY f.linea_estrategica, le.codigo, f.motor_desarrollo, f.proyecto
-                 ORDER BY le.codigo ASC, f.linea_estrategica ASC, f.motor_desarrollo ASC, f.proyecto ASC"
+                 LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                 LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion != 1"
             );
             $stmt->execute([':fid' => $formulario_id]);
             $rows = $stmt->fetchAll();
 
-            $lineasMap = [];
-            foreach ($rows as $row) {
-                $lKey = $row['linea'];
-                $mKey = $row['motor'];
-                if (!isset($lineasMap[$lKey])) {
-                    $lineasMap[$lKey] = ['codigo' => $row['linea_codigo'], 'titulo' => $lKey, 'motores' => [], '_vals' => []];
-                }
-                if (!isset($lineasMap[$lKey]['motores'][$mKey])) {
-                    $lineasMap[$lKey]['motores'][$mKey] = ['nombre' => $mKey, 'proyectos' => [], '_vals' => []];
-                }
-                $pct = (float)$row['cumplimiento_proyecto'];
-                $lineasMap[$lKey]['motores'][$mKey]['proyectos'][] = [
-                    'nombre' => $row['proyecto'], 'total' => (int)$row['total'], 'cumplimiento' => $pct
-                ];
-                $lineasMap[$lKey]['motores'][$mKey]['_vals'][] = $pct;
-                $lineasMap[$lKey]['_vals'][] = $pct;
+            // Pesos configurados para el año (solo los mayores a 0), con nombres para los que no tengan datos
+            $pesosLinea = $pesosMotor = $pesosProyecto = [];
+            if ($anio > 0) {
+                $s = $this->db->prepare(
+                    "SELECT d.linea_id AS id, d.porcentaje, le.nombre, le.codigo
+                     FROM data_linea_estrategica d JOIN lineas_estrategicas le ON le.id = d.linea_id
+                     WHERE d.anio = :anio AND d.porcentaje > 0"
+                );
+                $s->execute([':anio' => $anio]);
+                foreach ($s->fetchAll() as $r) $pesosLinea[(int)$r['id']] = $r;
+
+                $s = $this->db->prepare(
+                    "SELECT d.motor_id AS id, d.linea_id AS padre_id, d.porcentaje, m.nombre, m.codigo
+                     FROM data_motores d JOIN motores m ON m.id = d.motor_id
+                     WHERE d.anio = :anio AND d.porcentaje > 0"
+                );
+                $s->execute([':anio' => $anio]);
+                foreach ($s->fetchAll() as $r) $pesosMotor[(int)$r['id']] = $r;
+
+                $s = $this->db->prepare(
+                    "SELECT d.proyecto_id AS id, d.motor_id AS padre_id, d.porcentaje, p.nombre, p.codigo
+                     FROM data_proyectos d JOIN proyectos p ON p.id = d.proyecto_id
+                     WHERE d.anio = :anio AND d.porcentaje > 0"
+                );
+                $s->execute([':anio' => $anio]);
+                foreach ($s->fetchAll() as $r) $pesosProyecto[(int)$r['id']] = $r;
             }
+
+            // Árbol línea → motor → proyecto → indicadores (clave por id; por nombre si no está en el catálogo)
+            $arbol = [];
+            foreach ($rows as $r) {
+                $lk = $r['linea_id'] ? 'i' . $r['linea_id'] : 'n' . $r['linea'];
+                $mk = $r['motor_id'] ? 'i' . $r['motor_id'] : 'n' . $r['motor'];
+                $pk = $r['proyecto_id'] ? 'i' . $r['proyecto_id'] : 'n' . $r['proyecto'];
+                $arbol[$lk] = $arbol[$lk] ?? ['id' => (int)$r['linea_id'], 'nombre' => $r['linea'], 'codigo' => $r['linea_codigo'], 'hijos' => []];
+                $motores = &$arbol[$lk]['hijos'];
+                $motores[$mk] = $motores[$mk] ?? ['id' => (int)$r['motor_id'], 'nombre' => $r['motor'], 'codigo' => $r['motor_codigo'], 'hijos' => []];
+                $proyectos = &$motores[$mk]['hijos'];
+                $proyectos[$pk] = $proyectos[$pk] ?? ['id' => (int)$r['proyecto_id'], 'nombre' => $r['proyecto'], 'codigo' => $r['proyecto_codigo'], 'indicadores' => []];
+                $proyectos[$pk]['indicadores'][] = ['avance' => (float)$r['avance'], 'ponderacion' => (float)$r['ponderacion']];
+                unset($motores, $proyectos);
+            }
+
+            // Agrega los elementos con peso configurado que no tienen indicadores (aportan 0)
+            $agregarConfigurados = function (array &$hijos, array $pesos, $padreId, $conHijos) {
+                foreach ($pesos as $id => $w) {
+                    if ($padreId !== null && (int)$w['padre_id'] !== $padreId) continue;
+                    if (!isset($hijos['i' . $id])) {
+                        $hijos['i' . $id] = ['id' => $id, 'nombre' => $w['nombre'], 'codigo' => $w['codigo']]
+                                          + ($conHijos ? ['hijos' => []] : ['indicadores' => []]);
+                    }
+                }
+            };
+
+            // Promedio ponderado por el peso configurado de cada hijo; sin pesos, promedio simple
+            $ponderar = function (array $items, array $pesos) {
+                $sumaPesos = 0.0;
+                foreach ($items as $it) $sumaPesos += isset($pesos[$it['id']]) ? (float)$pesos[$it['id']]['porcentaje'] : 0;
+                if ($sumaPesos > 0) {
+                    $total = 0.0;
+                    foreach ($items as $it) $total += (isset($pesos[$it['id']]) ? (float)$pesos[$it['id']]['porcentaje'] : 0) * $it['cumplimiento'];
+                    return $total / $sumaPesos;
+                }
+                return $items ? array_sum(array_column($items, 'cumplimiento')) / count($items) : 0;
+            };
+
+            $peso = function (array $pesos, $id) {
+                return isset($pesos[$id]) ? round((float)$pesos[$id]['porcentaje'], 2) : null;
+            };
+            $titulo = function ($codigo, $nombre) {
+                return $codigo ? $codigo . ' - ' . $nombre : $nombre;
+            };
+            $ordenar = function (array &$lista) {
+                usort($lista, function ($a, $b) {
+                    return strnatcasecmp($a['codigo'] ?: '~' . $a['nombre'], $b['codigo'] ?: '~' . $b['nombre']);
+                });
+            };
+
+            $agregarConfigurados($arbol, $pesosLinea, null, true);
 
             $lineas = [];
-            foreach ($lineasMap as $lKey => $linea) {
-                $motores = [];
-                foreach ($linea['motores'] as $motor) {
-                    $mc = count($motor['_vals']) > 0 ? array_sum($motor['_vals']) / count($motor['_vals']) : 0;
-                    $motores[] = ['nombre' => $motor['nombre'], 'cumplimiento' => round($mc, 2), 'proyectos' => $motor['proyectos']];
-                }
-                $lc = count($linea['_vals']) > 0 ? array_sum($linea['_vals']) / count($linea['_vals']) : 0;
-                $titulo = ($linea['codigo'] !== '—') ? $linea['codigo'] . ' - ' . $lKey : $lKey;
-                $lineas[] = ['codigo' => $linea['codigo'], 'titulo' => $titulo, 'cumplimiento' => round($lc, 2), 'motores' => $motores];
-            }
+            foreach ($arbol as $linea) {
+                $lineaId = $linea['id'] ?: null;
+                if ($lineaId !== null) $agregarConfigurados($linea['hijos'], $pesosMotor, $lineaId, true);
 
-            $global = count($lineas) > 0 ? array_sum(array_column($lineas, 'cumplimiento')) / count($lineas) : 0;
+                $motores = [];
+                foreach ($linea['hijos'] as $motor) {
+                    $motorId = $motor['id'] ?: null;
+                    if ($motorId !== null) $agregarConfigurados($motor['hijos'], $pesosProyecto, $motorId, false);
+
+                    $proyectos = [];
+                    foreach ($motor['hijos'] as $proy) {
+                        $inds = $proy['indicadores'];
+                        $sumaPond = array_sum(array_column($inds, 'ponderacion'));
+                        if ($sumaPond > 0) {
+                            $cp = 0.0;
+                            foreach ($inds as $ind) $cp += $ind['ponderacion'] * $ind['avance'];
+                            $cp /= $sumaPond;
+                        } else {
+                            $cp = $inds ? array_sum(array_column($inds, 'avance')) / count($inds) : 0;
+                        }
+                        $proyectos[] = [
+                            'id' => $proy['id'], 'codigo' => $proy['codigo'],
+                            'nombre' => $proy['nombre'], 'total' => count($inds),
+                            'cumplimiento' => round($cp, 2), 'peso' => $peso($pesosProyecto, $proy['id']),
+                        ];
+                    }
+                    $ordenar($proyectos);
+                    $motores[] = [
+                        'id' => $motor['id'], 'codigo' => $motor['codigo'], 'nombre' => $motor['nombre'],
+                        'cumplimiento' => round($ponderar($proyectos, $pesosProyecto), 2),
+                        'peso' => $peso($pesosMotor, $motor['id']), 'proyectos' => $proyectos,
+                    ];
+                }
+                $ordenar($motores);
+                $lineas[] = [
+                    'id' => $linea['id'], 'codigo' => $linea['codigo'] ?: '—', 'nombre' => $linea['nombre'],
+                    'titulo' => $titulo($linea['codigo'], $linea['nombre']),
+                    'cumplimiento' => round($ponderar($motores, $pesosMotor), 2),
+                    'peso' => $peso($pesosLinea, $linea['id']), 'motores' => $motores,
+                ];
+            }
+            $ordenar($lineas);
+
+            $global = $ponderar($lineas, $pesosLinea);
 
             $stmtD = $this->db->prepare(
                 "SELECT

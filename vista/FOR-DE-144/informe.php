@@ -220,6 +220,7 @@ body{
 }
 .proyecto-item:last-child{border-bottom:none}
 .proyecto-nombre{font-size:.78rem;color:rgba(0,0,0,.65);flex:1;line-height:1.4}
+.peso-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:rgba(0,113,227,.1);color:#0058b0;font-size:.68rem;font-weight:700;white-space:nowrap;vertical-align:middle}
 .proyecto-valor{font-size:.82rem;font-weight:700;white-space:nowrap}
 .pv-alto{color:#34C759}
 .pv-medio{color:#FF9500}
@@ -334,7 +335,7 @@ body{
     <div class="cumplimiento-global">
         <div class="global-label">
             <i class="fas fa-bullseye" style="color:#0071e3;margin-right:6px"></i>
-            Cumplimiento integral del Plan — <span>promedio de todas las líneas estratégicas</span>
+            Cumplimiento integral del Plan — <span>ponderado según la distribución de Configuraciones</span>
         </div>
         <div class="global-number" id="globalNum"><?php echo $global; ?>%</div>
         <div class="global-sub">
@@ -360,7 +361,8 @@ body{
     <div class="aclaracion">
         <i class="fas fa-eye" style="margin-right:4px"></i> Clic en el ojo para ver gráfica por motores &nbsp;·&nbsp;
         <i class="fas fa-chevron-down" style="margin-right:4px"></i> para expandir motores y proyectos<br>
-        * El porcentaje de avance corresponde al valor registrado por cada dependencia en el seguimiento
+        * El porcentaje de avance corresponde al valor registrado por cada dependencia en el seguimiento.<br>
+        * Cada nivel se pondera con la distribución de Configuraciones del año (líneas, motores y proyectos); los indicadores de un proyecto, con su ponderación de actividades.
     </div>
 </div>
 
@@ -422,6 +424,10 @@ function cbClass(p) {
     if (p >= 60) return 'cb-medio';
     return 'cb-bajo';
 }
+// Etiqueta con el peso configurado en Configuraciones (vacía si no tiene)
+function pesoTag(p) {
+    return (p === null || p === undefined) ? '' : '<span class="peso-tag" title="Peso configurado">Peso ' + parseFloat(p).toFixed(2) + '%</span>';
+}
 function esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
@@ -447,7 +453,7 @@ function renderLineas() {
             '<div class="linea-header" id="lh-' + idx + '">' +
                 '<div class="linea-titulo">' +
                     '<h2>' + esc(linea.titulo) + '</h2>' +
-                    '<span class="linea-badge" style="background:' + color + '">' + esc(linea.codigo) + '</span>' +
+                    '<span class="linea-badge" style="background:' + color + '">' + esc(linea.codigo) + '</span>' + pesoTag(linea.peso) +
                 '</div>' +
                 '<div class="eye-icon" id="eye-' + idx + '" title="Ver gráfica de motores"><i class="fas fa-eye"></i></div>' +
                 '<div class="progress-container">' +
@@ -501,7 +507,7 @@ function buildDetalle(linea) {
             '<div class="motor-card">' +
                 '<div class="motor-titulo">' +
                     '<i class="fas fa-cog"></i>' +
-                    '<span style="flex:1">' + esc(motor.nombre) + '</span>' +
+                    '<span style="flex:1">' + esc(motor.nombre) + pesoTag(motor.peso) + '</span>' +
                     '<span class="motor-pct" style="color:' + pctColor(mp) + '">' + mp.toFixed(2) + '%</span>' +
                 '</div>';
 
@@ -511,7 +517,7 @@ function buildDetalle(linea) {
                 var cls = pctColor(pp);
                 html +=
                     '<div class="proyecto-item">' +
-                        '<span class="proyecto-nombre">' + esc(proy.nombre) + '</span>' +
+                        '<span class="proyecto-nombre">' + esc(proy.nombre) + pesoTag(proy.peso) + '</span>' +
                         '<span class="proyecto-valor" style="color:' + cls + '">' + pp.toFixed(2) + '%</span>' +
                     '</div>';
             });
@@ -669,24 +675,25 @@ function csvEsc(v) {
     return '"' + v.replace(/"/g, '""') + '"';
 }
 document.getElementById('btnExportExcel').addEventListener('click', function() {
-    var rows = [['Línea', 'Código', 'Motor de Desarrollo', 'Proyecto', '% Cumplimiento']];
+    var rows = [['Línea', 'Código', 'Peso línea', 'Motor de Desarrollo', 'Peso motor', 'Proyecto', 'Peso proyecto', '% Cumplimiento']];
+    var pesoTxt = function(p) { return (p === null || p === undefined) ? '' : parseFloat(p).toFixed(2) + '%'; };
     lineasData.forEach(function(linea) {
         if (linea.motores && linea.motores.length) {
             linea.motores.forEach(function(motor) {
                 if (motor.proyectos && motor.proyectos.length) {
                     motor.proyectos.forEach(function(proy) {
-                        rows.push([linea.titulo, linea.codigo, motor.nombre, proy.nombre, parseFloat(proy.cumplimiento).toFixed(2) + '%']);
+                        rows.push([linea.titulo, linea.codigo, pesoTxt(linea.peso), motor.nombre, pesoTxt(motor.peso), proy.nombre, pesoTxt(proy.peso), parseFloat(proy.cumplimiento).toFixed(2) + '%']);
                     });
                 } else {
-                    rows.push([linea.titulo, linea.codigo, motor.nombre, '', parseFloat(motor.cumplimiento).toFixed(2) + '%']);
+                    rows.push([linea.titulo, linea.codigo, pesoTxt(linea.peso), motor.nombre, pesoTxt(motor.peso), '', '', parseFloat(motor.cumplimiento).toFixed(2) + '%']);
                 }
             });
         } else {
-            rows.push([linea.titulo, linea.codigo, '', '', parseFloat(linea.cumplimiento).toFixed(2) + '%']);
+            rows.push([linea.titulo, linea.codigo, pesoTxt(linea.peso), '', '', '', '', parseFloat(linea.cumplimiento).toFixed(2) + '%']);
         }
     });
     rows.push([]);
-    rows.push(['Cumplimiento integral del Plan', '', '', '', document.getElementById('globalNum').textContent]);
+    rows.push(['Cumplimiento integral del Plan', '', '', '', '', '', '', document.getElementById('globalNum').textContent]);
 
     var csv = '﻿' + rows.map(function(r) { return r.map(csvEsc).join(','); }).join('\r\n');
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
