@@ -302,22 +302,19 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             </div>
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <input type="text" class="search-input" id="searchFlujo" placeholder="Buscar dependencia...">
-                <button type="button" class="btn-add-flujo" onclick="abrirModalFlujo()">
-                    <i class="fas fa-plus me-1"></i> Nueva relación
-                </button>
             </div>
         </div>
         <div class="flujo-ayuda">
             <i class="fas fa-info-circle me-1" style="color:var(--ios-orange);"></i>
-            Cada relación indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento. La dependencia que lo recibe es la misma que lo <strong>aprueba</strong>.
+            Cada fila indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento. Para agregar una, usa <strong>Conectar</strong> en el listado.
         </div>
         <div class="table-responsive">
             <table class="dep-table">
                 <thead>
                     <tr>
-                        <th>Dependencia que envía</th>
+                        <th>Dependencia</th>
                         <th></th>
-                        <th>Le envía a (y le aprueba)</th>
+                        <th>Envía a</th>
                         <th>Aplica a</th>
                         <th>Observación</th>
                         <th>Acciones</th>
@@ -384,12 +381,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <input type="hidden" id="flujo_id" name="id">
                 <div class="modal-body">
                     <div class="flujo-conexiones" id="flujo_conexiones" style="display:none;"></div>
+                    <input type="hidden" id="flujo_origen" name="origen_id">
                     <div class="mb-3">
-                        <label class="form-label" for="flujo_origen">Dependencia que envía *</label>
-                        <select class="form-select" id="flujo_origen" name="origen_id" required></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="flujo_destino">Envía a (dependencia que aprueba) *</label>
+                        <label class="form-label" for="flujo_destino">Enviar a *</label>
                         <select class="form-select" id="flujo_destino" name="destino_id" required></select>
                     </div>
                     <div class="mb-3">
@@ -506,9 +500,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         let html = '';
         lista.forEach(f => {
             html += `<tr>
-                <td><span class="flujo-rol">Envía</span><span class="flujo-dep">${escHtml(f.origen_nombre)}</span></td>
+                <td><span class="flujo-dep">${escHtml(f.origen_nombre)}</span></td>
                 <td class="flujo-flecha"><i class="fas fa-arrow-right"></i></td>
-                <td><span class="flujo-rol">Recibe y aprueba</span><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
+                <td><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
                 <td><span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || escHtml(f.aplica_a)}</span></td>
                 <td class="flujo-obs">${f.observacion ? escHtml(f.observacion) : '—'}</td>
                 <td style="white-space:nowrap;">
@@ -521,9 +515,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     // Llena un select con las dependencias activas (y la ya seleccionada, aunque esté inactiva)
-    function llenarSelectDependencias(selector, seleccionado) {
+    function llenarSelectDependencias(selector, seleccionado, excluirId) {
         let html = '<option value="">Seleccione...</option>';
         todasLasDeps.forEach(d => {
+            if (excluirId && d.id == excluirId) return;
             if (d.activo != 1 && d.id != seleccionado) return;
             html += `<option value="${d.id}">${escHtml(d.nombre)}${d.activo != 1 ? ' (inactiva)' : ''}</option>`;
         });
@@ -547,22 +542,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         let html = `<div class="flujo-conexiones-titulo">Conexiones actuales de ${escHtml(dep ? dep.nombre : '')}</div><ul>`;
         envia.forEach(f => {
-            html += `<li>Envía a (y le aprueba) <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+            html += `<li>Envía a <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
         });
         recibe.forEach(f => {
-            html += `<li>Recibe y le aprueba a <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
+            html += `<li>Recibe de <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
         });
         $('#flujo_conexiones').html(html + '</ul>').show();
     }
 
+    // La dependencia que envía es fija (la de la fila del listado o la de la relación que se edita)
     function abrirModalFlujo(flujo, origenId) {
+        const origen = flujo ? flujo.origen_id : origenId;
+        const dep = todasLasDeps.find(d => d.id == origen);
         $('#flujo_conexiones').hide().empty();
         $('#flujo_id').val(flujo ? flujo.id : '');
-        llenarSelectDependencias('#flujo_origen', flujo ? flujo.origen_id : (origenId || ''));
-        llenarSelectDependencias('#flujo_destino', flujo ? flujo.destino_id : '');
+        $('#flujo_origen').val(origen || '');
+        llenarSelectDependencias('#flujo_destino', flujo ? flujo.destino_id : '', origen);
         $('#flujo_aplica').val(flujo ? flujo.aplica_a : 'ambos');
         $('#flujo_observacion').val(flujo ? (flujo.observacion || '') : '');
-        $('#modalFlujoTitulo').text(flujo ? 'Editar relación' : 'Nueva relación');
+        $('#modalFlujoTitulo').text((flujo ? 'Editar conexión · ' : 'Conectar · ') + (dep ? dep.nombre : (flujo ? flujo.origen_nombre : '')));
         $('#modalFlujo').modal('show');
     }
 
