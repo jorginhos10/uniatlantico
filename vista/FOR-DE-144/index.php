@@ -660,7 +660,7 @@ $fl_etiquetas = [
 
             <div class="fl-actions">
                 <?php if ($perms_f144['ver'] && $puedeConstruir): ?>
-                <a class="fl-btn fl-btn-primary fl-btn-sm" href="<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>">Construir</a>
+                <a class="fl-btn fl-btn-primary fl-btn-sm" href="<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $formulario['id']; ?>">PLAN DE ACCIÓN</a>
                 <?php endif; ?>
                 <?php if ($perms_f144['informe']): ?>
                 <a class="fl-btn fl-btn-tinted fl-btn-sm" target="_blank"
