@@ -804,6 +804,18 @@ switch ($action) {
             case 'cambiarEstado':
                 $dependenciasController->cambiarEstado();
                 break;
+            case 'listarFlujos':
+                $dependenciasController->listarFlujos();
+                break;
+            case 'crearFlujo':
+                $dependenciasController->crearFlujo();
+                break;
+            case 'actualizarFlujo':
+                $dependenciasController->actualizarFlujo();
+                break;
+            case 'eliminarFlujo':
+                $dependenciasController->eliminarFlujo();
+                break;
             case 'index':
             default:
                 $dependenciasController->index();

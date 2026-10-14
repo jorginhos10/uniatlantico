@@ -139,4 +139,81 @@ class DependenciasController {
         $resultado = $this->model->cambiarEstado($id, $activo);
         echo json_encode($resultado);
     }
+
+    // ============= FLUJO DE INFORMACIÓN =============
+
+    public function listarFlujos() {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'flujos' => $this->model->getFlujos()]);
+    }
+
+    public function crearFlujo() {
+        header('Content-Type: application/json');
+        $datos = $this->validarFlujo();
+        if ($datos === null) return;
+        echo json_encode($this->model->crearFlujo($datos['origen'], $datos['destino'], $datos['aplica_a'], $datos['observacion']));
+    }
+
+    public function actualizarFlujo() {
+        header('Content-Type: application/json');
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        $datos = $this->validarFlujo($id);
+        if ($datos === null) return;
+        echo json_encode($this->model->actualizarFlujo($id, $datos['origen'], $datos['destino'], $datos['aplica_a'], $datos['observacion']));
+    }
+
+    public function eliminarFlujo() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $id = intval($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
+            return;
+        }
+        echo json_encode($this->model->eliminarFlujo($id));
+    }
+
+    // Devuelve los datos limpios, o responde el error y devuelve null
+    private function validarFlujo($exceptoId = 0) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return null;
+        }
+        $origen      = intval($_POST['origen_id'] ?? 0);
+        $destino     = intval($_POST['destino_id'] ?? 0);
+        $aplicaA     = $_POST['aplica_a'] ?? 'ambos';
+        $observacion = trim($_POST['observacion'] ?? '');
+
+        if ($origen <= 0 || $destino <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Selecciona la dependencia que envía y la que aprueba']);
+            return null;
+        }
+        if ($origen === $destino) {
+            echo json_encode(['success' => false, 'message' => 'Una dependencia no puede enviarse a sí misma']);
+            return null;
+        }
+        if (!in_array($aplicaA, ['ambos', 'formulacion', 'seguimiento'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Valor de "Aplica a" no válido']);
+            return null;
+        }
+        if (!$this->model->getById($origen) || !$this->model->getById($destino)) {
+            echo json_encode(['success' => false, 'message' => 'Una de las dependencias seleccionadas no existe']);
+            return null;
+        }
+        if ($this->model->existeFlujo($origen, $destino, $aplicaA, $exceptoId)) {
+            echo json_encode(['success' => false, 'message' => 'Ya existe esa relación entre estas dependencias']);
+            return null;
+        }
+        return [
+            'origen' => $origen, 'destino' => $destino, 'aplica_a' => $aplicaA,
+            'observacion' => $observacion !== '' ? mb_substr($observacion, 0, 255) : null,
+        ];
+    }
 }

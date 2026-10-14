@@ -188,6 +188,23 @@ ob_start();
     .btn-ios-primary   { background: var(--ios-orange); color: white; }
     .btn-ios-secondary { background: var(--ios-bg); color: var(--ios-orange); border: 1.5px solid var(--ios-sep); }
     .btn-ios-danger    { background: var(--ios-red); color: white; }
+    /* Pestañas Listado / Flujo de información */
+    .dep-tabs { display: inline-flex; gap: 4px; background: var(--ios-surface); padding: 4px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 16px; flex-wrap: wrap; }
+    .dep-tab { border: none; background: transparent; padding: 9px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--ios-label2); font-family: var(--font); cursor: pointer; transition: background .15s, color .15s; }
+    .dep-tab.active { background: var(--ios-orange); color: #fff; }
+    .dep-tab-panel[hidden] { display: none; }
+    .btn-add-flujo { border: none; background: var(--ios-orange); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 600; font-family: var(--font); cursor: pointer; }
+    .btn-add-flujo:hover { opacity: .87; }
+    .flujo-flecha { color: var(--ios-orange); font-size: 13px; text-align: center; width: 40px; }
+    .flujo-dep { font-weight: 600; }
+    .flujo-rol { display: block; font-size: 11px; font-weight: 500; color: var(--ios-label2); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
+    .badge-aplica { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(0,122,255,.1); color: #0058b0; white-space: nowrap; }
+    .badge-aplica.formulacion { background: rgba(175,82,222,.12); color: #7d3aa6; }
+    .badge-aplica.seguimiento { background: rgba(52,199,89,.14); color: #1a7a3a; }
+    .flujo-obs { color: var(--ios-label2); font-size: 13px; }
+    .flujo-ayuda { padding: 12px 20px; font-size: 13px; color: var(--ios-label2); border-bottom: 1px solid var(--ios-sep); background: rgba(255,149,0,.05); }
+    .form-select { border: 1.5px solid var(--ios-sep); border-radius: 12px; padding: 11px 14px; font-family: var(--font); font-size: 15px; background-color: var(--ios-bg); }
+    .form-select:focus { border-color: var(--ios-orange); box-shadow: 0 0 0 3px rgba(255,149,0,.15); }
     @media (max-width: 768px) { .stats-row { grid-template-columns: 1fr 1fr; } .search-input { width: 100%; } }
     @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } .dep-header { flex-direction: column; align-items: flex-start; } }
 </style>
@@ -229,6 +246,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
     </div>
 
+    <div class="dep-tabs" role="tablist">
+        <button type="button" class="dep-tab active" data-dep-tab="listado"><i class="fas fa-list me-1"></i> Listado</button>
+        <button type="button" class="dep-tab" data-dep-tab="flujo"><i class="fas fa-project-diagram me-1"></i> Flujo de información</button>
+    </div>
+
+    <div class="dep-tab-panel" data-dep-panel="listado">
     <div class="table-card">
         <div class="table-card-header">
             <div class="table-card-title">
@@ -259,6 +282,52 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </tbody>
             </table>
         </div>
+    </div>
+    </div>
+
+    <!-- ===================== FLUJO DE INFORMACIÓN ===================== -->
+    <div class="dep-tab-panel" data-dep-panel="flujo" hidden>
+    <div class="table-card">
+        <div class="table-card-header">
+            <div class="table-card-title">
+                <i class="fas fa-project-diagram" style="color:var(--ios-orange);"></i>
+                Flujo de información
+                <span class="badge-count" id="badge-count-flujo">0</span>
+            </div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <input type="text" class="search-input" id="searchFlujo" placeholder="Buscar dependencia...">
+                <button type="button" class="btn-add-flujo" onclick="abrirModalFlujo()">
+                    <i class="fas fa-plus me-1"></i> Nueva relación
+                </button>
+            </div>
+        </div>
+        <div class="flujo-ayuda">
+            <i class="fas fa-info-circle me-1" style="color:var(--ios-orange);"></i>
+            Cada relación indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento, y cuál se lo <strong>aprueba</strong>.
+        </div>
+        <div class="table-responsive">
+            <table class="dep-table">
+                <thead>
+                    <tr>
+                        <th>Envía</th>
+                        <th></th>
+                        <th>Aprueba</th>
+                        <th>Aplica a</th>
+                        <th>Observación</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaFlujoBody">
+                    <tr class="empty-row">
+                        <td colspan="6">
+                            <div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div>
+                            <div>Cargando...</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
     </div>
 
 </div>
@@ -291,6 +360,47 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardar">
                         <i class="fas fa-save me-1"></i> Guardar
                     </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Relación del flujo -->
+<div class="modal fade" id="modalFlujo" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalFlujoTitulo">Nueva relación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formFlujo">
+                <input type="hidden" id="flujo_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label" for="flujo_origen">Dependencia que envía *</label>
+                        <select class="form-select" id="flujo_origen" name="origen_id" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="flujo_destino">Dependencia que aprueba *</label>
+                        <select class="form-select" id="flujo_destino" name="destino_id" required></select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="flujo_aplica">Aplica a</label>
+                        <select class="form-select" id="flujo_aplica" name="aplica_a">
+                            <option value="ambos">Formulación y seguimiento</option>
+                            <option value="formulacion">Solo formulación</option>
+                            <option value="seguimiento">Solo seguimiento</option>
+                        </select>
+                    </div>
+                    <div class="mb-1">
+                        <label class="form-label" for="flujo_observacion">Observación</label>
+                        <input type="text" class="form-control" id="flujo_observacion" name="observacion" maxlength="255" placeholder="Opcional">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-ios btn-ios-primary"><i class="fas fa-save me-1"></i> Guardar</button>
                 </div>
             </form>
         </div>
@@ -331,8 +441,137 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     $(document).ready(function() {
         cargarDependencias();
+        cargarFlujos();
         $('#searchInput').on('input', function() { filtrar($(this).val().toLowerCase()); });
+        $('#searchFlujo').on('input', function() { renderFlujos(); });
+
+        // Pestañas (se recuerda la última abierta)
+        $('[data-dep-tab]').on('click', function() { mostrarTab($(this).data('dep-tab')); });
+        let tabGuardada = null;
+        try { tabGuardada = sessionStorage.getItem('dependencias_tab'); } catch (e) {}
+        if (tabGuardada === 'flujo') mostrarTab('flujo');
     });
+
+    function mostrarTab(tab) {
+        $('[data-dep-tab]').each(function() { $(this).toggleClass('active', $(this).data('dep-tab') === tab); });
+        $('[data-dep-panel]').each(function() { this.hidden = $(this).data('dep-panel') !== tab; });
+        try { sessionStorage.setItem('dependencias_tab', tab); } catch (e) {}
+    }
+
+    // ===================== FLUJO DE INFORMACIÓN =====================
+    let todosLosFlujos = [];
+    const APLICA_TEXTO = { ambos: 'Formulación y seguimiento', formulacion: 'Formulación', seguimiento: 'Seguimiento' };
+
+    function cargarFlujos() {
+        $.ajax({
+            url: basePath + '/dependencias/listarFlujos',
+            type: 'GET', dataType: 'json',
+            success: function(res) {
+                if (res.success) { todosLosFlujos = res.flujos; renderFlujos(); }
+                else { errorFlujos(); }
+            },
+            error: errorFlujos
+        });
+    }
+
+    function errorFlujos() {
+        $('#tablaFlujoBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar el flujo de información</div></td></tr>');
+    }
+
+    function renderFlujos() {
+        const q = ($('#searchFlujo').val() || '').toLowerCase().trim();
+        const lista = q ? todosLosFlujos.filter(f =>
+            (f.origen_nombre || '').toLowerCase().includes(q) || (f.destino_nombre || '').toLowerCase().includes(q)
+        ) : todosLosFlujos;
+
+        $('#badge-count-flujo').text(todosLosFlujos.length);
+        if (!lista.length) {
+            $('#tablaFlujoBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-project-diagram"></i></div><div>' +
+                (q ? 'Ninguna relación coincide con la búsqueda' : 'Aún no hay relaciones. Agrega la primera con "Nueva relación".') + '</div></td></tr>');
+            return;
+        }
+
+        let html = '';
+        lista.forEach(f => {
+            html += `<tr>
+                <td><span class="flujo-rol">Envía</span><span class="flujo-dep">${escHtml(f.origen_nombre)}</span></td>
+                <td class="flujo-flecha"><i class="fas fa-arrow-right"></i></td>
+                <td><span class="flujo-rol">Aprueba</span><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
+                <td><span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || escHtml(f.aplica_a)}</span></td>
+                <td class="flujo-obs">${f.observacion ? escHtml(f.observacion) : '—'}</td>
+                <td style="white-space:nowrap;">
+                    <button class="btn-action btn-edit" onclick="editarFlujo(${f.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn-action btn-delete" onclick="eliminarFlujo(${f.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+        $('#tablaFlujoBody').html(html);
+    }
+
+    // Llena un select con las dependencias activas (y la ya seleccionada, aunque esté inactiva)
+    function llenarSelectDependencias(selector, seleccionado) {
+        let html = '<option value="">Seleccione...</option>';
+        todasLasDeps.forEach(d => {
+            if (d.activo != 1 && d.id != seleccionado) return;
+            html += `<option value="${d.id}">${escHtml(d.nombre)}${d.activo != 1 ? ' (inactiva)' : ''}</option>`;
+        });
+        $(selector).html(html).val(seleccionado || '');
+    }
+
+    function abrirModalFlujo(flujo) {
+        $('#flujo_id').val(flujo ? flujo.id : '');
+        llenarSelectDependencias('#flujo_origen', flujo ? flujo.origen_id : '');
+        llenarSelectDependencias('#flujo_destino', flujo ? flujo.destino_id : '');
+        $('#flujo_aplica').val(flujo ? flujo.aplica_a : 'ambos');
+        $('#flujo_observacion').val(flujo ? (flujo.observacion || '') : '');
+        $('#modalFlujoTitulo').text(flujo ? 'Editar relación' : 'Nueva relación');
+        $('#modalFlujo').modal('show');
+    }
+
+    function editarFlujo(id) {
+        const flujo = todosLosFlujos.find(f => f.id == id);
+        if (flujo) abrirModalFlujo(flujo);
+    }
+
+    $('#formFlujo').on('submit', function(e) {
+        e.preventDefault();
+        const id = $('#flujo_id').val();
+        $.ajax({
+            url: basePath + '/dependencias/' + (id ? 'actualizarFlujo' : 'crearFlujo'),
+            type: 'POST', data: $(this).serialize(), dataType: 'json',
+            success: function(res) {
+                if (res.success) {
+                    $('#modalFlujo').modal('hide');
+                    Swal.fire({ icon: 'success', title: res.message, timer: 1400, showConfirmButton: false, toast: true, position: 'top-end' });
+                    cargarFlujos();
+                } else { Swal.fire('Error', res.message, 'error'); }
+            },
+            error: function() { Swal.fire('Error', 'No se pudo guardar la relación', 'error'); }
+        });
+    });
+
+    function eliminarFlujo(id) {
+        const flujo = todosLosFlujos.find(f => f.id == id);
+        Swal.fire({
+            icon: 'warning',
+            title: '¿Eliminar relación?',
+            html: flujo ? `<strong>${escHtml(flujo.origen_nombre)}</strong> → <strong>${escHtml(flujo.destino_nombre)}</strong>` : '',
+            showCancelButton: true,
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#FF3B30'
+        }).then(r => {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: basePath + '/dependencias/eliminarFlujo',
+                type: 'POST', data: { id: id }, dataType: 'json',
+                success: function(res) {
+                    if (res.success) { cargarFlujos(); }
+                    else { Swal.fire('Error', res.message, 'error'); }
+                }
+            });
+        });
+    }
 
     function cargarDependencias() {
         $.ajax({
@@ -477,6 +716,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (res.success) {
                     Swal.fire({ icon: 'success', title: '¡Eliminado!', text: res.message, timer: 1800, showConfirmButton: false });
                     cargarDependencias();
+                    cargarFlujos(); // sus relaciones del flujo también se borran
                 } else { Swal.fire('Error', res.message, 'error'); }
             },
             error: function() { $('#modalEliminar').modal('hide'); Swal.fire('Error', 'Error al eliminar', 'error'); }
