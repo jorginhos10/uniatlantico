@@ -278,7 +278,7 @@ if ($plan && $plan['tipo_tiempo'] === 'rango' && !empty($plan['fecha_fin'])) {
 }
 
 $conReporte = count(array_filter($pubs, fn($r) => $r['pct'] !== null));
-$enRiesgo   = count(array_filter($pubs, fn($r) => $r['pct'] !== null && $r['pct'] < 60));
+$enMeta     = count(array_filter($pubs, fn($r) => $r['pct'] !== null && $r['pct'] >= 90));
 
 // Avance por línea
 $porLinea = [];
@@ -292,19 +292,17 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
 
 // Flujo de aprobación (C = en construcción o rechazado; G/L/V = aprobado hasta esa etapa; P = Planeación o publicado)
 $flujo = ['C' => 0, 'G' => 0, 'L' => 0, 'V' => 0, 'P' => 0];
-$rechazados = 0;
 foreach ($filas as $r) {
     if ($r['publicado'] || $r['etapa'] >= 4) { $flujo['P']++; continue; }
-    if ($r['solicitud'] === 2) $rechazados++;
     if ($r['solicitud'] !== 1 || $r['etapa'] === 0) { $flujo['C']++; continue; }
     $flujo[['', 'G', 'L', 'V'][$r['etapa']]]++;
 }
 $flujoMax = max(1, max($flujo));
 $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
 
-// Indicadores que necesitan atención: publicados con reporte, menor avance primero
+// Avance de indicadores: publicados con reporte, mayor avance primero
 $riesgo = array_values(array_filter($pubs, fn($r) => $r['pct'] !== null));
-usort($riesgo, fn($a, $b) => $a['pct'] <=> $b['pct']);
+usort($riesgo, fn($a, $b) => $b['pct'] <=> $a['pct']);
 $riesgo = array_slice($riesgo, 0, 6);
 $sinReporte = count($pubs) - $conReporte;
 
@@ -317,7 +315,7 @@ foreach ($filas as $r) {
         && ($veTodo || $miNivel === 4 || dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre))) {
         $item = 'Aprobado por ' . $etapaNombre[$r['etapa']];
     } elseif ($miNivel === 1 && $r['solicitud'] === 2 && (int)$r['creado_por'] === $uid) {
-        $item = 'Rechazado: requiere corrección';
+        $item = 'Devuelto para ajustes';
     } elseif ($miNivel === 0 && $veTodo && $r['solicitud'] === 1 && $r['etapa'] < 4) {
         $item = 'Espera a ' . $etapaNombre[min($r['etapa'] + 1, 4)];
     }
@@ -398,8 +396,9 @@ function dbUrl($basePath, array $cambios) {
 
 $TONO = [
     'ok'   => ['bar' => '#34C759', 'ink' => '#248A3D', 'tint' => 'rgba(52,199,89,.14)',  'label' => 'En meta'],
-    'warn' => ['bar' => '#FF9500', 'ink' => '#B25000', 'tint' => 'rgba(255,149,0,.14)',  'label' => 'Atención'],
-    'bad'  => ['bar' => '#FF3B30', 'ink' => '#D70015', 'tint' => 'rgba(255,59,48,.10)',  'label' => 'En riesgo'],
+    // El dashboard no muestra alertas negativas: lo que aún no está en meta se ve como "En progreso"
+    'warn' => ['bar' => '#007AFF', 'ink' => '#0066CC', 'tint' => 'rgba(0,122,255,.12)',  'label' => 'En progreso'],
+    'bad'  => ['bar' => '#007AFF', 'ink' => '#0066CC', 'tint' => 'rgba(0,122,255,.12)',  'label' => 'En progreso'],
     'none' => ['bar' => '#AEAEB2', 'ink' => '#6E6E73', 'tint' => '#F2F2F7',              'label' => 'Sin reporte'],
 ];
 $tonoAvance = $avance === null ? 'none' : ($avance >= $esperado ? 'ok' : dbTono($esperado > 0 ? $avance / $esperado * 100 : 100));
@@ -462,7 +461,7 @@ ob_start();
 .pa-seg a:hover { color: var(--pa-text); }
 .pa-seg a.on { background: var(--pa-card); color: var(--pa-text); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 1px rgba(0,0,0,.04); }
 .pa-select { appearance: none; border: 0; background: var(--pa-seg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%233A3A3C' stroke-width='1.6' fill='none'/%3E%3C/svg%3E") no-repeat right 12px center; padding: 7px 32px 7px 12px; border-radius: 9px; font: 600 13px inherit; font-family: inherit; color: var(--pa-text); max-width: 280px; cursor: pointer; }
-.pa-msg { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: rgba(255,59,48,.10); color: #D70015 !important; font-size: 13px; font-weight: 600; }
+.pa-msg { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: rgba(0,122,255,.12); color: #0066CC !important; font-size: 13px; font-weight: 600; }
 .pa-seg a:focus-visible, .pa-select:focus-visible, .pa a:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
 
 .pa-card { background: var(--pa-card); border-radius: 18px; box-shadow: var(--pa-shadow); padding: 22px 24px; min-width: 0; }
@@ -706,7 +705,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <span class="val num"><?php echo $avance === null ? '—' : dbFmt($avance); ?><small> %</small></span>
                 <span class="note">Esperado a la fecha: <?php echo $esperado; ?> %</span>
                 <span class="pa-pill" style="margin-top:6px;background:<?php echo $TONO[$tonoAvance]['tint']; ?>;color:<?php echo $TONO[$tonoAvance]['ink']; ?>">
-                    <?php echo $avance === null ? 'Sin indicadores publicados' : ($avance >= $esperado ? 'Por encima de lo esperado' : ($tonoAvance === 'bad' ? 'Muy por debajo de lo esperado' : 'Por debajo de lo esperado')); ?>
+                    <?php echo $avance === null ? 'Sin indicadores publicados' : ($avance >= $esperado ? 'Por encima de lo esperado' : 'Avance en curso'); ?>
                 </span>
             </div>
         </div>
@@ -722,10 +721,10 @@ require_once __DIR__ . '/../complementos/header.php';
             <span class="note"><?php echo $sinReporte; ?> sin reporte</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
-        <a class="pa-card pa-kpi" href="#atencion" title="Ver los indicadores que necesitan atención">
-            <span class="lbl">En riesgo</span>
-            <span class="val num" style="color:<?php echo $enRiesgo ? '#D70015' : 'inherit'; ?>"><?php echo $enRiesgo; ?></span>
-            <span class="note">Menos del 60 % de la meta</span>
+        <a class="pa-card pa-kpi" href="#atencion" title="Ver el avance de los indicadores">
+            <span class="lbl">En meta</span>
+            <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
+            <span class="note">90 % o más de la meta</span>
             <span class="go">Ver detalle →</span>
         </a>
         <div class="pa-card pa-kpi">
@@ -760,8 +759,7 @@ require_once __DIR__ . '/../complementos/header.php';
             </div>
             <div class="pa-legend">
                 <span><i style="background:#34C759"></i>90 % o más</span>
-                <span><i style="background:#FF9500"></i>60 a 89 %</span>
-                <span><i style="background:#FF3B30"></i>Menos de 60 %</span>
+                <span><i style="background:#007AFF"></i>En progreso</span>
                 <span><i style="width:2px;height:12px;background:#1D1D1F;opacity:.5"></i>Avance esperado hoy</span>
             </div>
         </section>
@@ -787,18 +785,15 @@ require_once __DIR__ . '/../complementos/header.php';
             </div>
             <div class="pa-chips" style="margin-top:auto;padding-top:16px">
                 <span><b class="num"><?php echo $esperanFirma; ?></b> esperan una firma intermedia</span>
-                <?php if ($rechazados): ?>
-                <span style="background:rgba(255,59,48,.10);color:#D70015"><b class="num"><?php echo $rechazados; ?></b> rechazado<?php echo $rechazados > 1 ? 's' : ''; ?> para corregir</span>
-                <?php endif; ?>
             </div>
         </section>
     </div>
 
-    <!-- ── Indicadores que necesitan atención ── -->
+    <!-- ── Avance de indicadores ── -->
     <section class="pa-card pa-table-card" id="atencion">
         <div class="pa-card-head">
-            <h2>Indicadores que necesitan atención</h2>
-            <span class="pa-note">Menor avance frente a la meta de S<?php echo $sem; ?><?php echo $sinReporte ? ' · ' . $sinReporte . ' publicados sin reporte' : ''; ?></span>
+            <h2>Avance de indicadores</h2>
+            <span class="pa-note">Publicados con seguimiento de S<?php echo $sem; ?></span>
         </div>
         <?php if (!$riesgo): ?>
         <div class="pa-empty">Todavía no hay indicadores publicados con seguimiento del semestre <?php echo $sem; ?>.</div>
@@ -835,16 +830,16 @@ require_once __DIR__ . '/../complementos/header.php';
         <?php if ($plan): ?>
         <section class="pa-card pa-col">
             <div class="pa-card-head">
-                <h2>Mi bandeja<?php echo $bandejaTotal ? ' <span class="pa-pill num" style="background:#FF3B30;color:#fff;vertical-align:3px">' . $bandejaTotal . '</span>' : ''; ?></h2>
+                <h2>Mi bandeja<?php echo $bandejaTotal ? ' <span class="pa-pill num" style="background:#007AFF;color:#fff;vertical-align:3px">' . $bandejaTotal . '</span>' : ''; ?></h2>
                 <span class="pa-note"><?php echo htmlspecialchars($rolEtiqueta); ?></span>
             </div>
             <div class="pa-inbox">
                 <?php foreach ($bandeja as $b):
-                    $tarde = $b['dias'] >= 7; ?>
+                    ?>
                 <div class="pa-inbox-item">
                     <a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $b['id'])); ?>" title="Abrir en el Módulo 144">
                         <span><span class="t"><?php echo htmlspecialchars($b['texto']); ?></span><span class="s"><?php echo htmlspecialchars($b['lmp'] . ' · ' . $b['tipo']); ?></span></span>
-                        <span class="pa-pill num" style="background:<?php echo $tarde ? 'rgba(255,59,48,.10)' : '#E9E9EE'; ?>;color:<?php echo $tarde ? '#D70015' : '#3A3A3C'; ?>">
+                        <span class="pa-pill num" style="background:#E9E9EE;color:#3A3A3C">
                             <?php echo $b['dias'] === 0 ? 'Hoy' : ($b['dias'] === 1 ? '1 día' : $b['dias'] . ' días'); ?>
                         </span>
                     </a>
@@ -863,7 +858,7 @@ require_once __DIR__ . '/../complementos/header.php';
         <section class="pa-card pa-col">
             <div class="pa-card-head">
                 <h2>Ponderación por proyecto</h2>
-                <span class="pa-note"><?php echo $pondProblemas ? $pondProblemas . ' por ajustar' : 'Todas suman 100'; ?></span>
+                <span class="pa-note"><?php echo $pondProblemas ? $pondProblemas . ' en ajuste' : 'Todas suman 100'; ?></span>
             </div>
             <div class="pa-weights">
                 <?php foreach ($pondLista as $p):
@@ -871,7 +866,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <div class="pa-w">
                     <div class="top"><span class="k"><?php echo htmlspecialchars($p['k']); ?></span><span class="v num" style="color:<?php echo $t['ink']; ?>"><?php echo dbFmtNum($p['v']); ?></span></div>
                     <div class="bar"><span style="width:<?php echo min(100, round($p['v'])); ?>%;background:<?php echo $t['bar']; ?>"></span></div>
-                    <span class="lbl" style="color:<?php echo $t['ink']; ?>"><?php echo $p['estado'] === 'ok' ? 'Completo' : ($p['v'] > 100 ? 'Excede por ' . dbFmtNum($p['v'] - 100) : 'Faltan ' . dbFmtNum(100 - $p['v'])); ?></span>
+                    <span class="lbl" style="color:<?php echo $t['ink']; ?>"><?php echo $p['estado'] === 'ok' ? 'Completo' : 'En ajuste · suma ' . dbFmtNum($p['v']) . ' de 100'; ?></span>
                 </div>
                 <?php endforeach; ?>
             </div>
@@ -887,10 +882,10 @@ require_once __DIR__ . '/../complementos/header.php';
                 <?php foreach ($actividad as $a):
                     $rech = $a['accion'] === 'rechazado'; ?>
                 <li>
-                    <span class="dot" style="background:<?php echo $rech ? '#FF3B30' : ((int)$a['etapa'] >= 4 ? '#34C759' : '#007AFF'); ?>"></span>
+                    <span class="dot" style="background:<?php echo $rech ? '#AEAEB2' : ((int)$a['etapa'] >= 4 ? '#34C759' : '#007AFF'); ?>"></span>
                     <a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $a['formulacion_id'])); ?>" title="Abrir en el Módulo 144">
                         <span class="t"><b style="font-weight:600"><?php echo htmlspecialchars($a['usuario_nombre']); ?></b>
-                            <?php echo $rech ? 'rechazó' : 'aprobó'; ?> como <?php echo $etapaNombre[(int)$a['etapa']] ?? 'revisor'; ?><?php echo $rech && $a['motivo'] ? ': ' . htmlspecialchars(mb_strimwidth($a['motivo'], 0, 70, '…')) : ''; ?></span>
+                            <?php echo $rech ? 'devolvió para ajustes' : 'aprobó'; ?> como <?php echo $etapaNombre[(int)$a['etapa']] ?? 'revisor'; ?></span>
                         <span class="s"><?php echo relTime($a['fecha_creacion']) . ' · ' . htmlspecialchars($a['lmp']); ?></span>
                     </a>
                 </li>

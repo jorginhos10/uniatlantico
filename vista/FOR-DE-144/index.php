@@ -3,7 +3,7 @@
 
 require_once __DIR__ . '/../../config/security.php';
 
-$titulo      = 'FOR-DE-144 — Formularios';
+$titulo      = 'Plan de Acción — Formularios';
 $paginaActual = 'FOR-DE-144';
 
 ob_start();
@@ -580,7 +580,7 @@ $fl_etiquetas = [
     <header class="fl-head">
         <div>
             <div class="fl-eyebrow">Formularios con control de tiempo</div>
-            <h1>FOR-DE-144</h1>
+            <h1>Plan de Acción</h1>
         </div>
         <?php if ($perms_f144['crear']): ?>
         <button type="button" class="fl-btn fl-btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgregar">
