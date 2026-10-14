@@ -820,7 +820,27 @@ switch ($action) {
         require_once 'config/security.php';
         require_once 'controlador/organigramaController.php';
         $organigramaController = new OrganigramaController();
-        $organigramaController->index();
+
+        $actionParam = isset($_GET['action']) ? $_GET['action'] : (isset($urlParts[1]) ? $urlParts[1] : 'index');
+
+        switch ($actionParam) {
+            case 'crear':
+                $organigramaController->crear();
+                break;
+            case 'actualizar':
+                $organigramaController->actualizar();
+                break;
+            case 'cambiarEstado':
+                $organigramaController->cambiarEstado();
+                break;
+            case 'eliminar':
+                $organigramaController->eliminar();
+                break;
+            case 'index':
+            default:
+                $organigramaController->index();
+                break;
+        }
         break;
 
     // ====================================================
