@@ -35,6 +35,11 @@ class ExcelLibro {
             return $estilos[$clave];
         };
 
+        $tipoEncabezado = function (array $col) {
+            if (!empty($col['vertical'])) return 'encV';
+            return !empty($col['encabezadoClaro']) ? 'encC' : 'enc';
+        };
+
         $archivos = [];
         $tipos = '';
         $hojasWb = '';
@@ -65,7 +70,7 @@ class ExcelLibro {
                 $c = 0;
                 while ($c < $nCols) {
                     $col = $columnas[$c];
-                    $tipoEnc = !empty($col['vertical']) ? 'encV' : 'enc';
+                    $tipoEnc = $tipoEncabezado($col);
                     if (empty($col['grupo'])) {
                         $fila1 .= self::celdaTexto(self::columna($c) . '1', $col['titulo'], $estilo($tipoEnc), $esc);
                         $fila2 .= '<c r="' . self::columna($c) . '2" s="' . $estilo($tipoEnc) . '"/>';
@@ -80,7 +85,7 @@ class ExcelLibro {
                         $fila1 .= $k === $c
                             ? self::celdaTexto(self::columna($k) . '1', $col['grupo'], $estilo('enc'), $esc)
                             : '<c r="' . self::columna($k) . '1" s="' . $estilo('enc') . '"/>';
-                        $tipoK = !empty($columnas[$k]['vertical']) ? 'encV' : 'enc';
+                        $tipoK = $tipoEncabezado($columnas[$k]);
                         $fila2 .= self::celdaTexto(self::columna($k) . '2', $columnas[$k]['titulo'], $estilo($tipoK), $esc);
                     }
                     if ($fin > $c) $combinadas[] = self::columna($c) . '1:' . self::columna($fin) . '1';
@@ -90,7 +95,7 @@ class ExcelLibro {
             } else {
                 $xml .= '<row r="1" ht="42" customHeight="1">';
                 foreach ($columnas as $c => $col) {
-                    $xml .= self::celdaTexto(self::columna($c) . '1', $col['titulo'], $estilo(!empty($col['vertical']) ? 'encV' : 'enc'), $esc);
+                    $xml .= self::celdaTexto(self::columna($c) . '1', $col['titulo'], $estilo($tipoEncabezado($col)), $esc);
                 }
                 $xml .= '</row>';
             }
@@ -197,8 +202,9 @@ class ExcelLibro {
             . '<numFmt numFmtId="165" formatCode="0&quot;%&quot;"/>'
             . '<numFmt numFmtId="166" formatCode="0.00&quot;%&quot;"/>'
             . '</numFmts>';
-        $fonts = '<fonts count="2"><font><sz val="10"/><name val="Arial"/></font>'
-               . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font></fonts>';
+        $fonts = '<fonts count="3"><font><sz val="10"/><name val="Arial"/></font>'
+               . '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Arial"/></font>'
+               . '<font><b/><sz val="11"/><color rgb="FF14254A"/><name val="Arial"/></font></fonts>';
         // 0 none, 1 gray125 (obligatorios), 2 azul oscuro (encabezado), 3 azul claro (columnas calculadas)
         $fills = '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'
                . '<fill><patternFill patternType="solid"><fgColor rgb="FF14254A"/><bgColor indexed="64"/></patternFill></fill>'
@@ -211,9 +217,11 @@ class ExcelLibro {
         foreach ($estilos as $clave => $indice) {
             [$tipo, $formato, $sombreado] = explode('|', $clave);
             $numFmt = $formatos[$formato] ?? 0;
-            if ($tipo === 'enc' || $tipo === 'encV') {
+            if ($tipo === 'enc' || $tipo === 'encV' || $tipo === 'encC') {
                 $giro = $tipo === 'encV' ? ' textRotation="90"' : '';
-                $xfs .= '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'
+                $fuente = $tipo === 'encC' ? 2 : 1;
+                $relleno = $tipo === 'encC' ? 3 : 2;
+                $xfs .= '<xf numFmtId="0" fontId="' . $fuente . '" fillId="' . $relleno . '" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'
                       . '<alignment horizontal="center" vertical="center" wrapText="1"' . $giro . '/></xf>';
             } else {
                 $xfs .= '<xf numFmtId="' . $numFmt . '" fontId="0" fillId="' . ($sombreado ? 3 : 0) . '" borderId="1" xfId="0"'

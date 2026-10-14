@@ -51,17 +51,38 @@ class Plantilla144Controller {
     const GRUPO_PLANES     = '21. PLANES INSTITUCIONALES DECRETO 612 DE 2018';
     const GRUPO_FACULTADES = '22. GESTIÓN POR FACULTADES';
 
+    // Formato institucional de la hoja Seguimiento. Lo sombreado viene de la formulación (solo lectura);
+    // se llenan Semestre 1, Semestre 2 y Estado de proyectos.
     private $colsSeguimiento = [
-        'id'                       => ['ID (no modificar)', 12],
-        'ref_indicador'            => ['INDICADOR (referencia)', 40],
-        'ref_lmp'                  => ['L - M - P (referencia)', 16],
-        'ref_tipo'                 => ['TIPO DE MEDICIÓN (referencia)', 24],
-        'semestre1_seguimiento'    => ['SEGUIMIENTO SEMESTRE 1', 16],
-        'semestre2_seguimiento'    => ['SEGUIMIENTO SEMESTRE 2', 16],
-        'logros'                   => ['LOGROS', 34],
-        'limites'                  => ['LÍMITES', 34],
-        'observacion_estado'       => ['OBSERVACIÓN', 34],
-        'acciones_fortalecimiento' => ['ACCIONES DE FORTALECIMIENTO', 34],
+        'id'                       => ['N°', 8, ['sombreado' => true]],
+        'anio'                     => ['AÑO', 9, ['sombreado' => true]],
+        'linea_estrategica'        => ['LÍNEA ESTRATÉGICA', 20, ['sombreado' => true]],
+        'objetivo'                 => ['OBJETIVO', 40, ['sombreado' => true]],
+        'estrategia'               => ['ESTRATEGIA', 28, ['sombreado' => true]],
+        'motor_desarrollo'         => ['MOTOR DE DESARROLLO', 20, ['sombreado' => true]],
+        'meta_resultado'           => ['META DE RESULTADO', 44, ['sombreado' => true]],
+        'proyecto'                 => ['PROYECTO', 38, ['sombreado' => true]],
+        'ponderacion_proyectos'    => ['PONDERACIÓN DE LOS PROYECTOS', 18, ['sombreado' => true, 'formato' => 'pct0']],
+        'actividad_proyecto'       => ['ACTIVIDAD DEL PROYECTO', 20, ['sombreado' => true]],
+        'ponderacion_actividades'  => ['PONDERACIÓN DE LA ACTIVIDADES POR PROYECTO', 16, ['sombreado' => true, 'formato' => 'pct0']],
+        'responsable_formulacion'  => ['RESPONSABLE', 20, ['sombreado' => true]],
+        'id_indicador'             => ['ID.INDICADOR', 7, ['sombreado' => true, 'vertical' => true]],
+        'nombre_indicador'         => ['NOMBRE DEL INDICADOR', 24, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'formula_medicion'         => ['FÓRMULA DE LA MEDICIÓN', 30, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'frecuencia_medicion'      => ['FRECUENCIA DE MEDICIÓN', 10, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'unidad_medida'            => ['UNIDAD DE MEDIDA', 12, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'descripcion_indicador'    => ['DESCRIPCIÓN', 24, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'tipo_medicion'            => ['TIPO DE MEDICIÓN', 15, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'anio_base_meta'           => ['META P.A.', 10, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'linea_base_meta'          => ['LÍNEA BASE', 13, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
+        'semestre1_seguimiento'    => ['SEMESTRE 1', 16, ['grupo' => 'REPORTE DE LA META']],
+        'semestre2_seguimiento'    => ['SEMESTRE 2', 15, ['grupo' => 'REPORTE DE LA META']],
+        'reporte_anio'             => ['AÑO', 10, ['sombreado' => true, 'grupo' => 'REPORTE DE LA META']],
+        'seg_fac'                  => ['SEG. FAC', 11, ['sombreado' => true]],
+        'logros'                   => ['LOGROS', 60, ['grupo' => 'ESTADO DE PROYECTOS', 'encabezadoClaro' => true]],
+        'limites'                  => ['LÍMITES', 34, ['grupo' => 'ESTADO DE PROYECTOS', 'encabezadoClaro' => true]],
+        'observacion_estado'       => ['OBSERVACIÓN', 34, ['grupo' => 'ESTADO DE PROYECTOS', 'encabezadoClaro' => true]],
+        'acciones_fortalecimiento' => ['ACCIONES DE FORTALECIMIENTO', 64, ['grupo' => 'ESTADO DE PROYECTOS', 'encabezadoClaro' => true]],
     ];
 
     private $opcionesFrecuencia = ['Mensual', 'Bimestral', 'Trimestral', 'Semestral', 'Anual'];
@@ -126,13 +147,19 @@ class Plantilla144Controller {
 
             // En Seguimiento solo van las formulaciones publicadas
             if ((int)$r['estado_formulacion'] === 2) {
-                $lmp = implode(' - ', array_filter([$r['linea_codigo'] ?? '', $r['motor_codigo'] ?? '', $r['proyecto_codigo'] ?? '']));
                 $filaS = [];
                 foreach (array_keys($this->colsSeguimiento) as $k) {
                     switch ($k) {
-                        case 'ref_indicador': $filaS[] = trim((string)($r['formula_medicion'] ?? '')) !== '' ? $r['formula_medicion'] : ($r['nombre_borrador'] ?? ''); break;
-                        case 'ref_lmp': $filaS[] = $lmp; break;
-                        case 'ref_tipo': $filaS[] = $r['tipo_medicion'] ?? ''; break;
+                        case 'linea_estrategica': $filaS[] = $conCodigo($r['linea_codigo'] ?? '', $r[$k] ?? ''); break;
+                        case 'motor_desarrollo':  $filaS[] = $conCodigo($r['motor_codigo'] ?? '', $r[$k] ?? ''); break;
+                        case 'proyecto':          $filaS[] = $conCodigo($r['proyecto_codigo'] ?? '', $r[$k] ?? ''); break;
+                        case 'responsable_formulacion': $filaS[] = implode('; ', $this->separarResponsables($r[$k] ?? '')); break;
+                        case 'anio_base_meta': case 'linea_base_meta': case 'semestre1_seguimiento': case 'semestre2_seguimiento':
+                            $filaS[] = ['v' => $r[$k] ?? '', 'formato' => $fmtMeta]; break;
+                        case 'reporte_anio':
+                            $filaS[] = ['v' => $this->cumplidoAnual($r), 'formato' => $fmtMeta]; break;
+                        // Indicador gestionado por facultades: su seguimiento por facultad se registra en el sistema
+                        case 'seg_fac': $filaS[] = ((int)($r['gestionado_facultades'] ?? 0) === 1 || $facultadesConValor) ? 'X' : ''; break;
                         default: $filaS[] = $r[$k] ?? '';
                     }
                 }
@@ -142,21 +169,17 @@ class Plantilla144Controller {
         for ($i = 0; $i < self::FILAS_VACIAS; $i++) $filasF[] = [];
 
         $nombre = 'plantilla_plan_accion_' . preg_replace('/[^A-Za-z0-9_-]+/', '_', $formulario['titulo'] ?? 'formulario') . '_' . date('Y-m-d');
-        $columnasExcel = [];
-        foreach ($columnas as $col) {
-            $columnasExcel[] = ['titulo' => $col[0], 'ancho' => $col[1]] + ($col[2] ?? []);
-        }
+        $totalActividades = count($registros);
         ExcelLibro::descargar($nombre, [
             [
                 'nombre'   => self::HOJA_FORMULACION,
-                'columnas' => $columnasExcel,
+                'columnas' => $this->columnasExcel($columnas, 0),
                 'filas'    => $filasF,
             ],
             [
-                'nombre'      => self::HOJA_SEGUIMIENTO,
-                'encabezados' => array_column($this->colsSeguimiento, 0),
-                'anchos'      => array_column($this->colsSeguimiento, 1),
-                'filas'       => $filasS,
+                'nombre'   => self::HOJA_SEGUIMIENTO,
+                'columnas' => $this->columnasExcel($this->colsSeguimiento, $totalActividades),
+                'filas'    => $filasS,
             ],
         ]);
     }
@@ -274,7 +297,10 @@ class Plantilla144Controller {
             }
 
             [$datos, $errores] = $this->validarFormulacion($val, $catalogos, $formulario);
+            $publicado = $id > 0 && (int)$actual['estado_formulacion'] !== 0;
             if ($errores) {
+                // Un publicado no se modifica desde la plantilla: sus datos no se validan ni generan errores
+                if ($publicado) { $resumen['formulacion']['sin_cambios']++; continue; }
                 foreach ($errores as $e) $resumen['errores'][] = $pref . $e;
                 continue;
             }
@@ -591,6 +617,35 @@ class Plantilla144Controller {
             }
         }
         return [$mapa, $filaInicio];
+    }
+
+    // Columnas en el formato que espera ExcelLibro. En "ACTIVIDAD DEL PROYECTO" va el total entre paréntesis.
+    private function columnasExcel(array $columnas, $totalActividades) {
+        $resultado = [];
+        foreach ($columnas as $k => $col) {
+            $titulo = $col[0];
+            if ($k === 'actividad_proyecto' && $totalActividades > 0 && strpos($titulo, '(') === false) $titulo .= ' (' . $totalActividades . ')';
+            $resultado[] = ['titulo' => $titulo, 'ancho' => $col[1]] + ($col[2] ?? []);
+        }
+        return $resultado;
+    }
+
+    // Cumplido del año según el tipo de medición (mismo cálculo que la lista del Módulo 144)
+    private function cumplidoAnual(array $r) {
+        $lb = $this->numero($r['linea_base_meta'] ?? '');
+        $s1 = $this->numero($r['semestre1_seguimiento'] ?? '');
+        $s2 = $this->numero($r['semestre2_seguimiento'] ?? '');
+        if ($s1 === null && $s2 === null) return '';
+        switch ($r['tipo_medicion'] ?? '') {
+            case 'Acumulado': return ($lb ?? 0) + ($s1 ?? 0) + ($s2 ?? 0);
+            case 'Nuevo gestionado durante la vigencia': return ($s1 ?? 0) + ($s2 ?? 0);
+            case 'Promedio':
+                $vals = array_filter([$s1, $s2], function ($v) { return $v !== null; });
+                return array_sum($vals) / count($vals);
+            case 'Último valor reportado': return $s2 ?? $s1;
+            case 'Límite': return $s2 ?? '';
+            default: return '';
+        }
     }
 
     // Columnas de Formulación: las fijas + una por plan institucional + una por facultad
