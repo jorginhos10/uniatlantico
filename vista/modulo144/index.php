@@ -1424,28 +1424,31 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
         $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
         $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
-        $viewerCargoId    = (int)($_SESSION['usuario_cargo_id'] ?? 0);
+        $viewerCargoNombre = $viewer_cargo_nombre ?? '';
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
 
+        // ¿La dependencia del usuario es una de las responsables del indicador?
+        // "responsable_formulacion" guarda los nombres de dependencia separados por ", ".
+        if (!function_exists('m144_esDependenciaResponsable')) {
+            function m144_esDependenciaResponsable($responsables, $cargoNombre) {
+                $cargoNombre = mb_strtolower(trim((string)$cargoNombre), 'UTF-8');
+                if ($cargoNombre === '') return false;
+                $lista = ', ' . mb_strtolower(trim((string)$responsables), 'UTF-8') . ', ';
+                return mb_strpos($lista, ', ' . $cargoNombre . ', ', 0, 'UTF-8') !== false;
+            }
+        }
+
+        // Ven el indicador: admin / sub administrador, quien lo creó y todos los usuarios
+        // de las dependencias responsables (sin importar quién lo haya creado).
         if (!function_exists('m144_filtrarBorradoresVisibles')) {
-            function m144_filtrarBorradoresVisibles($borradores, $campoSemaforo, $campoSolicitud, $semaforoRolNivel, $viewerId, $viewerCargoId, $miRolNormalizado, $puedeVerTodoElSemaforo) {
+            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo) {
                 $visibles = [];
                 foreach ($borradores as $b) {
-                    $creadorId = (int)($b['creado_por'] ?? 0);
-                    $creadorCargoId = (int)($b['creado_por_cargo_id'] ?? 0);
-                    $esCreador = $viewerId > 0 && $viewerId === $creadorId;
-                    if ($puedeVerTodoElSemaforo || $esCreador) {
+                    $esCreador = $viewerId > 0 && $viewerId === (int)($b['creado_por'] ?? 0);
+                    if ($puedeVerTodoElSemaforo || $esCreador
+                        || m144_esDependenciaResponsable($b['responsable_formulacion'] ?? '', $viewerCargoNombre)) {
                         $visibles[] = $b;
-                        continue;
                     }
-                    if (!($creadorCargoId > 0 && $viewerCargoId === $creadorCargoId)) continue;
-                    $creadorRolNorm = m144_normalizarRol($b['creado_por_rol'] ?? '');
-                    $creadorNivel = $semaforoRolNivel[$creadorRolNorm] ?? 0;
-                    $solEstado = (int)($b[$campoSolicitud] ?? 0);
-                    $etapaActual = (int)($b[$campoSemaforo] ?? 0);
-                    if ($solEstado === 1 && $etapaActual < $creadorNivel) $etapaActual = $creadorNivel;
-                    if ($miRolNormalizado === 'lider de meta' && $etapaActual >= 1) { $visibles[] = $b; continue; }
-                    if ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) { $visibles[] = $b; continue; }
                 }
                 return $visibles;
             }
@@ -1455,10 +1458,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $borradoresVisiblesPorModulo = [];
         foreach ($datos_modulos as $_dmKey => $_dmModulo) {
             $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
-                $_dmModulo['borradores'],
-                $_dmModulo['config']['campo_semaforo'],
-                $_dmModulo['config']['campo_solicitud'],
-                $semaforoRolNivel, $viewerId, $viewerCargoId, $miRolNormalizado, $puedeVerTodoElSemaforo
+                $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
             );
         }
         ?>
@@ -1608,7 +1608,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     $campoSemaforo    = $modulo['config']['campo_semaforo'];
                                     $campoSemaforoRechazo = $modulo['config']['campo_semaforo_rechazo'];
                                     $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
-                                    $viewerCargoId    = (int)($_SESSION['usuario_cargo_id'] ?? 0);
                                     // Administrador / Sub Administrador / Súper Admin ven todo el recorrido, en cualquier dependencia
                                     $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
                                     ?>
@@ -1635,18 +1634,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             $etapaActual = $creadorNivel;
                                         }
 
-                                        // ── Visibilidad en cascada por dependencia ──
-                                        $creadorId = (int)($borrador['creado_por'] ?? 0);
-                                        $creadorCargoId = (int)($borrador['creado_por_cargo_id'] ?? 0);
-                                        $esCreadorFila = $viewerId > 0 && $viewerId === $creadorId;
-                                        $mismaDependenciaFila = $creadorCargoId > 0 && $viewerCargoId === $creadorCargoId;
-
-                                        $puedeVerFila = $puedeVerTodoElSemaforo || $esCreadorFila;
-                                        if (!$puedeVerFila && $mismaDependenciaFila) {
-                                            if ($miRolNormalizado === 'lider de meta' && $etapaActual >= 1) $puedeVerFila = true;
-                                            elseif ($miRolNormalizado === 'responsable de linea' && $etapaActual >= 2) $puedeVerFila = true;
-                                        }
-                                        if (!$puedeVerFila) continue; // Ni siquiera se renderiza la fila
+                                        // La visibilidad ya viene filtrada (m144_filtrarBorradoresVisibles): por dependencia responsable
+                                        $esCreadorFila = $viewerId > 0 && $viewerId === (int)($borrador['creado_por'] ?? 0);
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
@@ -1721,8 +1710,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
                                                 </div>
-                                                <?php if (!empty($borrador['creado_por_cargo_nombre'])): ?>
-                                                <div class="semaforo-dependencia"><?php echo htmlspecialchars($borrador['creado_por_cargo_nombre']); ?></div>
+                                                <?php $dependenciaFila = trim($borrador['responsable_formulacion'] ?? '') ?: ($borrador['creado_por_cargo_nombre'] ?? ''); ?>
+                                                <?php if ($dependenciaFila !== ''): ?>
+                                                <div class="semaforo-dependencia"><?php echo htmlspecialchars($dependenciaFila); ?></div>
                                                 <?php endif; ?>
                                             </div>
                                             <div class="col-md-2">

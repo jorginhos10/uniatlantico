@@ -323,6 +323,17 @@ class Modulo144Model {
         }
     }
 
+    public function getCargoNombre($cargo_id) {
+        try {
+            $stmt = $this->db->prepare("SELECT nombre FROM cargos WHERE id = :id");
+            $stmt->execute([':id' => (int)$cargo_id]);
+            return (string)($stmt->fetchColumn() ?: '');
+        } catch (PDOException $e) {
+            error_log("Error getCargoNombre: " . $e->getMessage());
+            return '';
+        }
+    }
+
     public function getPlanesInstitucionales() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");

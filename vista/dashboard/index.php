@@ -140,7 +140,7 @@ if ($pdo) {
                         f.ponderacion_actividades, f.meta_s1, f.meta_s2,
                         f.semestre1_seguimiento, f.semestre2_seguimiento, f.porcentaje_avance,
                         f.estado_formulacion, f.solicitud_estado_formulacion, f.semaforo_etapa_formulacion,
-                        f.creado_por, f.fecha_creacion,
+                        f.creado_por, f.fecha_creacion, f.responsable_formulacion,
                         le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo,
                         u.cargo_id AS creado_por_cargo_id, u.rol AS creado_por_rol
                  FROM formulacion_144 f
@@ -184,11 +184,27 @@ if ($pdo) {
     }
 }
 
-// ── Alcance por rol: admin / sub administrador ven todo; el resto, lo suyo y su dependencia ──
-$rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucargo) {
+// Nombre de la dependencia del usuario ("responsable_formulacion" guarda nombres separados por ", ")
+$ucargoNombre = '';
+if ($pdo && $ucargo > 0) {
+    try {
+        $s = $pdo->prepare("SELECT nombre FROM cargos WHERE id = :id");
+        $s->execute([':id' => $ucargo]);
+        $ucargoNombre = mb_strtolower(trim((string)($s->fetchColumn() ?: '')), 'UTF-8');
+    } catch (PDOException $e) { error_log("Dash cargo: " . $e->getMessage()); }
+}
+function dbEsResponsable($responsables, $cargoNombre) {
+    if ($cargoNombre === '') return false;
+    $lista = ', ' . mb_strtolower(trim((string)$responsables), 'UTF-8') . ', ';
+    return mb_strpos($lista, ', ' . $cargoNombre . ', ', 0, 'UTF-8') !== false;
+}
+
+// ── Alcance por rol: admin / sub administrador ven todo; el resto, lo que creó
+//    y aquello de lo que su dependencia es responsable (sin importar quién lo creó) ──
+$rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucargoNombre) {
     if ($veTodo) return true;
     if ((int)$r['creado_por'] === $uid) return true;
-    return $ucargo > 0 && (int)$r['creado_por_cargo_id'] === $ucargo;
+    return dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre);
 }));
 
 // Catálogo de líneas presentes en el plan (para el filtro)
@@ -298,7 +314,7 @@ foreach ($filas as $r) {
     if ($r['publicado']) continue;
     $item = null;
     if ($miNivel >= 2 && $r['solicitud'] === 1 && $r['etapa'] === $miNivel - 1
-        && ($veTodo || $miNivel === 4 || ((int)$r['creado_por_cargo_id'] === $ucargo && $ucargo > 0))) {
+        && ($veTodo || $miNivel === 4 || dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre))) {
         $item = 'Aprobado por ' . $etapaNombre[$r['etapa']];
     } elseif ($miNivel === 1 && $r['solicitud'] === 2 && (int)$r['creado_por'] === $uid) {
         $item = 'Rechazado: requiere corrección';
