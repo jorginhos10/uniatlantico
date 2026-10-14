@@ -32,6 +32,9 @@ class Modulo144Controller {
         $planes_institucionales = $this->model->getPlanesInstitucionales();
         $id_indicadores = $this->model->getIdIndicadores();
         $viewer_cargo_nombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
+        // Si la dependencia del usuario es una facultad, ve en Seguimiento los indicadores donde su facultad tiene distribución
+        $viewer_facultad_id = $this->model->getFacultadIdPorNombre($viewer_cargo_nombre);
+        $facultades_por_item = $this->model->getFacultadesConDistribucion((int)$formulario['id']);
         $facultades = $this->model->getFacultades();
 
         // Resumen del informe (cumplimiento ponderado por líneas, motores y proyectos) para "Evaluación líneas"
@@ -806,6 +809,53 @@ class Modulo144Controller {
 
         $ok = $this->model->guardarDistribucionFacultad($formulacionId, $facultadId, $observacion, $distribucion);
         echo json_encode(['success' => $ok]);
+    }
+
+    // Seguimiento S1/S2 de una facultad sobre su parte de la distribución.
+    // Lo registran la propia facultad (usuarios cuya dependencia es esa facultad), quien creó el
+    // indicador, los usuarios de la dependencia responsable y los administradores.
+    public function guardarSeguimientoFacultad() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $formulacionId = intval($_POST['formulacion_id'] ?? 0);
+        $facultadId    = intval($_POST['facultad_id'] ?? 0);
+        $num = function ($v) {
+            $v = trim((string)$v);
+            return $v === '' ? null : (float)str_replace(',', '.', $v);
+        };
+        $sem1 = $num($_POST['seguimiento_sem1'] ?? '');
+        $sem2 = $num($_POST['seguimiento_sem2'] ?? '');
+
+        $item = $formulacionId > 0 ? $this->model->getById('seguimiento', $formulacionId) : null;
+        if (!$item || $facultadId <= 0) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        if (!$this->puedeRegistrarSeguimientoFacultad($item, $facultadId)) {
+            echo json_encode(['success' => false, 'message' => 'No puedes registrar el seguimiento de esta facultad']);
+            return;
+        }
+
+        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2);
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
+    }
+
+    private function puedeRegistrarSeguimientoFacultad(array $item, $facultadId) {
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return true;
+        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return true;
+
+        $cargoNombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
+        if ($cargoNombre !== '' && $this->model->getFacultadIdPorNombre($cargoNombre) === (int)$facultadId) return true;
+
+        // Dependencia responsable ("responsable_formulacion" guarda nombres separados por ", ")
+        $lista = ', ' . mb_strtolower(trim((string)($item['responsable_formulacion'] ?? '')), 'UTF-8') . ', ';
+        $cargo = mb_strtolower(trim($cargoNombre), 'UTF-8');
+        return $cargo !== '' && mb_strpos($lista, ', ' . $cargo . ', ', 0, 'UTF-8') !== false;
     }
 
     public function getHistorialSemaforo() {

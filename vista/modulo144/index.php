@@ -1365,11 +1365,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // Ven el indicador: admin / sub administrador, quien lo creó y todos los usuarios
         // de las dependencias responsables (sin importar quién lo haya creado).
         if (!function_exists('m144_filtrarBorradoresVisibles')) {
-            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo) {
+            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $facultadesPorItem = [], $viewerFacultadId = 0) {
                 $visibles = [];
                 foreach ($borradores as $b) {
                     $esCreador = $viewerId > 0 && $viewerId === (int)($b['creado_por'] ?? 0);
-                    if ($puedeVerTodoElSemaforo || $esCreador
+                    $esFacultadConValor = $viewerFacultadId > 0
+                        && in_array($viewerFacultadId, $facultadesPorItem[(int)$b['id']] ?? [], true);
+                    if ($puedeVerTodoElSemaforo || $esCreador || $esFacultadConValor
                         || m144_esDependenciaResponsable($b['responsable_formulacion'] ?? '', $viewerCargoNombre)) {
                         $visibles[] = $b;
                     }
@@ -1384,11 +1386,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $publicadosVisiblesPorModulo = [];
         $canceladosVisiblesPorModulo = [];
         foreach ($datos_modulos as $_dmKey => $_dmModulo) {
+            // Solo en Seguimiento las facultades nombradas en la distribución ven el indicador
+            $_facPorItem = $_dmKey === 'seguimiento' ? ($facultades_por_item ?? []) : [];
+            $_viewerFac  = $_dmKey === 'seguimiento' ? (int)($viewer_facultad_id ?? 0) : 0;
             $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
-                $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
+                $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac
             );
             $publicadosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
-                $_dmModulo['publicados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
+                $_dmModulo['publicados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac
             );
             $canceladosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
                 $_dmModulo['cancelados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
@@ -1584,6 +1589,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             ($semaforoRolNivel[$miRolNormalizado] ?? 0) <= 1
                                             && m144_esDependenciaResponsable($borrador['responsable_formulacion'] ?? '', $viewerCargoNombre)
                                         );
+                                        // Visible solo porque su facultad tiene distribución: registra su seguimiento, pero no aprueba etapas
+                                        $soloPorFacultadFila = !$puedeVerTodoElSemaforo && !$esCreadorFila
+                                            && !m144_esDependenciaResponsable($borrador['responsable_formulacion'] ?? '', $viewerCargoNombre);
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
                                         <div class="row align-items-center g-2">
@@ -1633,7 +1641,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $rechazadaAqui = $etapaNum === $rechazoEtapa;
                                                         $activo = $etapaNum <= $etapaActual;
                                                         $esSiguiente = $etapaNum === $etapaActual + 1;
-                                                        $puedeAprobar = !$noAplica && $esSiguiente && (
+                                                        $puedeAprobar = !$noAplica && !$soloPorFacultadFila && $esSiguiente && (
                                                             m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado
                                                             || (($esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true)) && $etapaNum === 4)
                                                             // El superadministrador puede aprobar cualquier etapa en nombre del rol que corresponde,
@@ -2581,6 +2589,41 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </div>
                         </div>
 
+                        <div class="indicador-section field-group" id="seguimientoFacultadesWrap" style="display:none;">
+                            <h5 class="indicador-title"><i class="fas fa-university me-2"></i>SEGUIMIENTO POR FACULTADES</h5>
+                            <p class="text-muted small mb-2">Cada facultad registra el avance de su parte de la distribución en cada semestre.</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle mb-0" id="tablaSeguimientoFacultades">
+                                    <thead>
+                                        <tr>
+                                            <th>Facultad</th>
+                                            <th style="width:120px;" class="text-end">Distribución</th>
+                                            <th style="width:170px;">Seguimiento semestre 1</th>
+                                            <th style="width:170px;">Seguimiento semestre 2</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($facultades as $fac): ?>
+                                        <tr data-facultad-id="<?php echo (int)$fac['id']; ?>" style="display:none;">
+                                            <td><?php echo htmlspecialchars($fac['nombre']); ?></td>
+                                            <td class="text-end seg-fac-distribucion">0</td>
+                                            <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="0.00"></td>
+                                            <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td class="fw-bold">Total</td>
+                                            <td class="text-end fw-bold" id="segFacTotalDist">0</td>
+                                            <td class="fw-bold" id="segFacTotalS1">0</td>
+                                            <td class="fw-bold" id="segFacTotalS2">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
                             <div class="row">
@@ -3160,6 +3203,89 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         $(document).on('input', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
             autoGuardarDistribucionFacultad($(this).closest('tr'));
+        });
+
+        // ═══ SEGUIMIENTO POR FACULTADES ═══
+        const VIEWER_FACULTAD_ID = <?php echo (int)($viewer_facultad_id ?? 0); ?>;
+
+        function segFacNum(v) {
+            const n = parseFloat(String(v === null || v === undefined ? '' : v).replace(',', '.'));
+            return isNaN(n) ? null : n;
+        }
+
+        function actualizarTotalesSeguimientoFacultades() {
+            let dist = 0, s1 = 0, s2 = 0;
+            $('#tablaSeguimientoFacultades tbody tr:visible').each(function() {
+                dist += segFacNum($(this).find('.seg-fac-distribucion').text()) || 0;
+                s1 += segFacNum($(this).find('.seg-fac-s1').val()) || 0;
+                s2 += segFacNum($(this).find('.seg-fac-s2').val()) || 0;
+            });
+            $('#segFacTotalDist').text(dist.toFixed(2));
+            $('#segFacTotalS1').text(s1.toFixed(2));
+            $('#segFacTotalS2').text(s2.toFixed(2));
+        }
+
+        // Muestra solo las facultades con valor en la distribución del indicador
+        function cargarSeguimientoFacultades(formulacionId) {
+            const filas = $('#tablaSeguimientoFacultades tbody tr');
+            filas.hide().removeClass('table-primary');
+            filas.find('input').val('');
+            filas.find('.seg-fac-distribucion').text('0');
+            $('#seguimientoFacultadesWrap').hide();
+            if (!formulacionId) return;
+
+            $.ajax({
+                url: basePath + '/modulo144/getDistribucionFacultades',
+                type: 'GET',
+                data: { formulacion_id: formulacionId },
+                dataType: 'json',
+                success: function(response) {
+                    if (!response.success) return;
+                    let hay = false;
+                    (response.distribucion || []).forEach(function(d) {
+                        const dist = segFacNum(d.distribucion) || 0;
+                        if (dist <= 0) return;
+                        const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + d.facultad_id + '"]');
+                        if (!fila.length) return;
+                        fila.find('.seg-fac-distribucion').text(dist.toFixed(2));
+                        fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
+                        fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
+                        if (parseInt(d.facultad_id, 10) === VIEWER_FACULTAD_ID) fila.addClass('table-primary');
+                        fila.show();
+                        hay = true;
+                    });
+                    $('#seguimientoFacultadesWrap').toggle(hay);
+                    actualizarTotalesSeguimientoFacultades();
+                }
+            });
+        }
+
+        let seguimientoFacultadTimeout = {};
+        $(document).on('input', '#tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-s2', function() {
+            const fila = $(this).closest('tr');
+            const facultadId = fila.data('facultad-id');
+            const formulacionId = $('#seguimiento_id').val();
+            actualizarTotalesSeguimientoFacultades();
+            if (!formulacionId) return;
+
+            clearTimeout(seguimientoFacultadTimeout[facultadId]);
+            seguimientoFacultadTimeout[facultadId] = setTimeout(function() {
+                $.ajax({
+                    url: basePath + '/modulo144/guardarSeguimientoFacultad',
+                    type: 'POST',
+                    data: {
+                        formulacion_id: formulacionId,
+                        facultad_id: facultadId,
+                        seguimiento_sem1: fila.find('.seg-fac-s1').val(),
+                        seguimiento_sem2: fila.find('.seg-fac-s2').val()
+                    },
+                    dataType: 'json',
+                    success: function(res) {
+                        if (!res.success) Swal.fire('No se guardó', res.message || 'Intenta de nuevo', 'error');
+                    },
+                    error: function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); }
+                });
+            }, 600);
         });
 
         let nombreBorradorProvisional = 'Nuevo Borrador';
@@ -4357,6 +4483,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             calcularCumplimientoSeguimiento();
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
+                            cargarSeguimientoFacultades(b.id);
                             $('#modalSeguimiento').modal('show');
                         }
                     }
@@ -4394,6 +4521,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const modalSel = modulo === 'formulacion' ? '#modalFormulacion' : '#modalSeguimiento';
             setTimeout(function() {
                 $(modalSel + ' input, ' + modalSel + ' select, ' + modalSel + ' textarea').prop('disabled', true);
+                // La facultad del usuario sí puede registrar su seguimiento aunque el resto sea de solo lectura
+                if (modulo === 'seguimiento' && VIEWER_FACULTAD_ID > 0) {
+                    $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + VIEWER_FACULTAD_ID + '"] input').prop('disabled', false);
+                }
             }, 900);
         }
 

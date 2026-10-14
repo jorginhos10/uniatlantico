@@ -789,15 +789,73 @@ class Modulo144Model {
     public function getDistribucionFacultades($formulacionId) {
         try {
             $stmt = $this->db->prepare(
-                "SELECT facultad_id, observacion, distribucion
+                "SELECT facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2
                  FROM formulacion_distribucion_facultad_144
                  WHERE formulacion_id = :fid"
             );
             $stmt->execute([':fid' => $formulacionId]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
-            error_log("Error getDistribucionFacultades: " . $e->getMessage());
+            // Sin la migración de seguimiento por facultad todavía: se devuelve solo la distribución
+            try {
+                $stmt = $this->db->prepare(
+                    "SELECT facultad_id, observacion, distribucion
+                     FROM formulacion_distribucion_facultad_144
+                     WHERE formulacion_id = :fid"
+                );
+                $stmt->execute([':fid' => $formulacionId]);
+                return $stmt->fetchAll();
+            } catch (PDOException $e2) {
+                error_log("Error getDistribucionFacultades: " . $e2->getMessage());
+                return [];
+            }
+        }
+    }
+
+    // Facultades con valor en la distribución de cada indicador del formulario: [formulacion_id => [facultad_id, ...]]
+    public function getFacultadesConDistribucion($formularioId) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT d.formulacion_id, d.facultad_id
+                 FROM formulacion_distribucion_facultad_144 d
+                 JOIN formulacion_144 f ON f.id = d.formulacion_id
+                 WHERE f.formulario_id = :fid AND d.distribucion > 0"
+            );
+            $stmt->execute([':fid' => $formularioId]);
+            $mapa = [];
+            foreach ($stmt->fetchAll() as $r) $mapa[(int)$r['formulacion_id']][] = (int)$r['facultad_id'];
+            return $mapa;
+        } catch (PDOException $e) {
+            error_log("Error getFacultadesConDistribucion: " . $e->getMessage());
             return [];
+        }
+    }
+
+    // La facultad del usuario es la que tiene el mismo nombre que su dependencia (sin acentos ni mayúsculas)
+    public function getFacultadIdPorNombre($nombre) {
+        $norm = function ($s) {
+            $s = mb_strtolower(trim((string)$s), 'UTF-8');
+            return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
+        };
+        $buscado = $norm($nombre);
+        if ($buscado === '') return 0;
+        foreach ($this->getFacultades() as $fac) {
+            if ($norm($fac['nombre']) === $buscado) return (int)$fac['id'];
+        }
+        return 0;
+    }
+
+    public function guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2) {
+        try {
+            $stmt = $this->db->prepare(
+                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, seguimiento_sem1, seguimiento_sem2)
+                 VALUES (:fid, :facid, 0, :s1, :s2)
+                 ON DUPLICATE KEY UPDATE seguimiento_sem1 = VALUES(seguimiento_sem1), seguimiento_sem2 = VALUES(seguimiento_sem2)"
+            );
+            return $stmt->execute([':fid' => $formulacionId, ':facid' => $facultadId, ':s1' => $sem1, ':s2' => $sem2]);
+        } catch (PDOException $e) {
+            error_log("Error guardarSeguimientoFacultad: " . $e->getMessage());
+            return false;
         }
     }
 

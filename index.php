@@ -417,6 +417,9 @@ switch ($action) {
             case 'guardarDistribucionFacultad':
                 $modulo144Controller->guardarDistribucionFacultad();
                 break;
+            case 'guardarSeguimientoFacultad':
+                $modulo144Controller->guardarSeguimientoFacultad();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;
