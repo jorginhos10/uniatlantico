@@ -94,6 +94,16 @@ require_once __DIR__ . '/../complementos/header.php';
       <p>Gestiona espacio, copias de seguridad y sincronización</p>
     </div>
     </a>
+
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/snapshots">
+    <div class="mosaic-item">
+      <div class="item-icon" style="background-color: #5856D6;">
+        <i class="fas fa-camera"></i>
+      </div>
+      <h3>Snapshot</h3>
+      <p>Toma y descarga copias completas de la base de datos en un momento dado</p>
+    </div>
+    </a>
     
     
     <!-- Fila 3 -->

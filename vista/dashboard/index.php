@@ -43,7 +43,7 @@ function dbFmtNum($n) {
 }
 function dbTono($p) {
     if ($p === null) return 'none';
-    return $p >= 90 ? 'ok' : ($p >= 60 ? 'warn' : 'bad');
+    return $p >= 80 ? 'ok' : ($p >= 60 ? 'warn' : 'bad');
 }
 function relTime(string $raw): string {
     $ts  = strtotime($raw);
@@ -278,7 +278,7 @@ if ($plan && $plan['tipo_tiempo'] === 'rango' && !empty($plan['fecha_fin'])) {
 }
 
 $conReporte = count(array_filter($pubs, fn($r) => $r['pct'] !== null));
-$enMeta     = count(array_filter($pubs, fn($r) => $r['pct'] !== null && $r['pct'] >= 90));
+$enMeta     = count(array_filter($pubs, fn($r) => $r['pct'] !== null && $r['pct'] >= 80));
 
 // Avance por línea
 $porLinea = [];
@@ -724,7 +724,7 @@ require_once __DIR__ . '/../complementos/header.php';
         <a class="pa-card pa-kpi" href="#atencion" title="Ver el avance de los indicadores">
             <span class="lbl">En meta</span>
             <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
-            <span class="note">90 % o más de la meta</span>
+            <span class="note">80 % o más de la meta</span>
             <span class="go">Ver detalle →</span>
         </a>
         <div class="pa-card pa-kpi">
@@ -758,7 +758,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <?php if (!$porLinea): ?><div class="pa-empty-box">No hay indicadores en este plan.</div><?php endif; ?>
             </div>
             <div class="pa-legend">
-                <span><i style="background:#34C759"></i>90 % o más</span>
+                <span><i style="background:#34C759"></i>80 % o más</span>
                 <span><i style="background:#007AFF"></i>En progreso</span>
                 <span><i style="width:2px;height:12px;background:#1D1D1F;opacity:.5"></i>Avance esperado hoy</span>
             </div>

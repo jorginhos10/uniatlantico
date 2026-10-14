@@ -903,6 +903,17 @@ switch ($action) {
         }
         break;
 
+    case 'snapshots':
+        require_once 'config/security.php';
+        require_once 'controlador/snapshotController.php';
+        $snapshotController = new SnapshotController();
+        if (($urlParts[1] ?? '') === 'descargar') {
+            $snapshotController->descargar($urlParts[2] ?? 0);
+        } else {
+            $snapshotController->index();
+        }
+        break;
+
     case 'publica':
         require_once 'vista/publica/index.php';
         break;

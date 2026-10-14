@@ -384,7 +384,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <input type="hidden" id="flujo_origen" name="origen_id">
                     <div class="mb-3">
                         <label class="form-label" for="flujo_destino">Enviar a *</label>
-                        <select class="form-select" id="flujo_destino" name="destino_id" required></select>
+                        <input type="hidden" id="flujo_destino" name="destino_id">
+                        <input type="text" class="form-control" id="flujo_destino_texto" list="lista_destinos_flujo"
+                               autocomplete="off" placeholder="Escribe para buscar la dependencia..." required>
+                        <datalist id="lista_destinos_flujo"></datalist>
+                        <div class="invalid-feedback">Elige una dependencia de la lista.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label" for="flujo_aplica">Aplica a</label>
@@ -396,7 +400,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                     <div class="mb-1">
                         <label class="form-label" for="flujo_observacion">Observación</label>
-                        <input type="text" class="form-control" id="flujo_observacion" name="observacion" maxlength="255" placeholder="Opcional">
+                        <input type="text" class="form-control" id="flujo_observacion" name="observacion" maxlength="255"
+                               list="lista_observaciones_flujo" autocomplete="off" placeholder="Opcional">
+                        <datalist id="lista_observaciones_flujo"></datalist>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -515,14 +521,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     // Llena un select con las dependencias activas (y la ya seleccionada, aunque esté inactiva)
-    function llenarSelectDependencias(selector, seleccionado, excluirId) {
-        let html = '<option value="">Seleccione...</option>';
+    // "Enviar a" es un campo con predicción: sugiere las dependencias activas (menos la que envía)
+    // y guarda el id de la que coincida exactamente con lo escrito.
+    function llenarDestinos(seleccionado, excluirId) {
+        let html = '';
         todasLasDeps.forEach(d => {
             if (excluirId && d.id == excluirId) return;
             if (d.activo != 1 && d.id != seleccionado) return;
-            html += `<option value="${d.id}">${escHtml(d.nombre)}${d.activo != 1 ? ' (inactiva)' : ''}</option>`;
+            html += `<option value="${escHtml(d.nombre)}"></option>`;
         });
-        $(selector).html(html).val(seleccionado || '');
+        $('#lista_destinos_flujo').html(html);
+        const dep = todasLasDeps.find(d => d.id == seleccionado);
+        $('#flujo_destino').val(dep ? dep.id : '');
+        $('#flujo_destino_texto').val(dep ? dep.nombre : '').removeClass('is-invalid');
+    }
+
+    function resolverDestino() {
+        const texto = ($('#flujo_destino_texto').val() || '').trim().toLowerCase();
+        const origen = $('#flujo_origen').val();
+        const dep = todasLasDeps.find(d => (d.nombre || '').trim().toLowerCase() === texto && d.id != origen);
+        $('#flujo_destino').val(dep ? dep.id : '');
+        return dep || null;
+    }
+
+    $(document).on('input change', '#flujo_destino_texto', function() {
+        if (resolverDestino()) $(this).removeClass('is-invalid');
+    });
+
+    // Sugerencias de observación: las que ya se han usado en otras conexiones
+    function llenarObservaciones() {
+        const usadas = [...new Set(todosLosFlujos.map(f => (f.observacion || '').trim()).filter(Boolean))];
+        $('#lista_observaciones_flujo').html(usadas.map(o => `<option value="${escHtml(o)}"></option>`).join(''));
     }
 
     // Cantidad de conexiones (envía o aprueba) de una dependencia, para el botón "Conectar"
@@ -534,7 +563,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     // Botón "Conectar" del listado: abre el pop up con esta dependencia como la que envía
     // y muestra arriba sus conexiones actuales
     function conectarDep(depId) {
-        abrirModalFlujo(null, depId);
+        const existente = todosLosFlujos.find(f => f.origen_id == depId);
+        abrirModalFlujo(existente || null, depId);
         const dep = todasLasDeps.find(d => d.id == depId);
         const envia  = todosLosFlujos.filter(f => f.origen_id == depId);
         const recibe = todosLosFlujos.filter(f => f.destino_id == depId);
@@ -557,7 +587,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#flujo_conexiones').hide().empty();
         $('#flujo_id').val(flujo ? flujo.id : '');
         $('#flujo_origen').val(origen || '');
-        llenarSelectDependencias('#flujo_destino', flujo ? flujo.destino_id : '', origen);
+        llenarDestinos(flujo ? flujo.destino_id : '', origen);
+        llenarObservaciones();
         $('#flujo_aplica').val(flujo ? flujo.aplica_a : 'ambos');
         $('#flujo_observacion').val(flujo ? (flujo.observacion || '') : '');
         $('#modalFlujoTitulo').text((flujo ? 'Editar conexión · ' : 'Conectar · ') + (dep ? dep.nombre : (flujo ? flujo.origen_nombre : '')));
@@ -571,6 +602,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     $('#formFlujo').on('submit', function(e) {
         e.preventDefault();
+        if (!resolverDestino()) {
+            $('#flujo_destino_texto').addClass('is-invalid').focus();
+            return;
+        }
         const id = $('#flujo_id').val();
         $.ajax({
             url: basePath + '/dependencias/' + (id ? 'actualizarFlujo' : 'crearFlujo'),

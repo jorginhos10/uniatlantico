@@ -13,7 +13,7 @@ $__rol = $_SESSION['usuario_rol'] ?? '';
 $__uid = $_SESSION['usuario_id'] ?? 0;
 
 // Secciones solo para admin
-$__adminSections = ['/usuarios', '/configuraciones', '/config-formularios', '/config144'];
+$__adminSections = ['/usuarios', '/configuraciones', '/config-formularios', '/config144', '/snapshots'];
 foreach ($__adminSections as $__section) {
     if (strpos($__uri, $__section) !== false && $__rol !== 'admin') {
         $_SESSION['error'] = 'No tienes permisos para acceder a esta sección';
