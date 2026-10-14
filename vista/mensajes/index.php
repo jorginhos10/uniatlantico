@@ -522,6 +522,35 @@ ob_start();
 .tipo-badge.usuario     { background: #e3f0ff; color: var(--msg-blue); }
 .tipo-badge.dependencia { background: #fff3e0; color: #f57c00; }
 .tipo-badge.rol         { background: #f3e8ff; color: #7c3aed; }
+
+/* ── Celular: carpetas arriba en fila y cada mensaje en dos líneas (remitente/fecha, asunto) ── */
+@media (max-width: 768px) {
+    .msg-page { flex-direction: column; height: auto; min-height: calc(100vh - 140px); }
+    .msg-sidebar {
+        width: 100%; min-width: 0; flex-direction: row; align-items: center; gap: 8px;
+        padding: 10px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--msg-border);
+        border-radius: var(--msg-radius) var(--msg-radius) 0 0;
+    }
+    .msg-compose-btn { margin: 0; flex: none; padding: 8px 14px; }
+    .msg-folder { flex: none; margin: 0; padding: 8px 12px; }
+    .msg-main { border-radius: 0 0 var(--msg-radius) var(--msg-radius); }
+    .msg-toolbar { flex-wrap: wrap; padding: 12px 14px; }
+    .msg-search { min-width: 0; flex: 1 1 100%; }
+    .msg-list-header { display: none; }
+    .msg-item {
+        grid-template-columns: 28px 40px minmax(0, 1fr) auto;
+        grid-template-areas: "check avatar from date" "check avatar subject subject";
+        height: auto; padding: 10px 14px; row-gap: 2px;
+    }
+    .msg-check { grid-area: check; }
+    .msg-avatar-cell { grid-area: avatar; }
+    .msg-from { grid-area: from; }
+    .msg-subject-cell { grid-area: subject; }
+    .msg-date { grid-area: date; }
+    .msg-preview { display: none; }
+    .msg-modal, .msg-read-modal .msg-modal { width: 100%; max-width: calc(100vw - 24px); max-height: calc(100vh - 40px); overflow-y: auto; }
+    .msg-to-row { flex-wrap: wrap; }
+}
 </style>
 <?php
 $cssExtra = ob_get_clean();

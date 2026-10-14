@@ -43,6 +43,8 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
         }
     </style>
     <?php echo $cssExtra ?? ''; ?>
+    <!-- Ajustes para celular: va después de los estilos de cada página para poder corregirlos -->
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/responsive.css">
 </head>
 <body>
     <div class="dashboardContainer">

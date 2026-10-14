@@ -1189,6 +1189,29 @@ ob_start();
         .m144-pendiente i { font-size: 10px; }
         .m144-pendiente:hover, .m144-pendiente[aria-expanded="true"] { background: rgba(255,149,0,.24); }
         .m144-pendiente:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
+
+        /* ── Celular ── */
+        @media (max-width: 768px) {
+            .m144-head { padding: 18px 16px !important; }
+            .m144-head .header-title { font-size: 22px; }
+            /* Pestañas largas: se deslizan de lado en vez de partirse en varias líneas */
+            .modulo-tabs-top { flex-wrap: nowrap !important; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+            .modulo-tabs-top::-webkit-scrollbar { display: none; }
+            .modulo-tabs-top .nav-link { white-space: nowrap; font-size: 13px; padding: 10px 12px !important; }
+            .lista-tabs { display: flex !important; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
+            .lista-tabs .nav-link { white-space: nowrap; }
+            .filtro-lista-bar { flex-wrap: wrap; }
+            .filtro-input-wrap { min-width: 0; max-width: none; flex: 1 1 100%; }
+            .filtro-tipo-select { flex: 1 1 auto; }
+            /* Los títulos de columna no aplican cuando cada fila se apila */
+            .lista-header { display: none !important; }
+            .lista-item { padding-left: 14px !important; padding-right: 14px !important; }
+            .lista-item .row > [class*="col-"] { margin-bottom: 6px; }
+            .ev-total { position: static; }
+            .ev-motor { grid-template-columns: minmax(0, 1fr) 64px; }
+            .ev-motor .ev-bar { grid-column: 1 / -1; grid-row: 2; }
+            .modal-dialog { margin: 8px; }
+        }
     </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>

@@ -1,0 +1,57 @@
+/* assets/css/responsive.css
+   Ajustes comunes para celular. Se carga después de los estilos de cada página (header.php). */
+
+/* Un hijo flexible no se encoge por debajo de su contenido sin min-width: 0; sin esto una tabla
+   o una fila ancha empuja toda la página hacia la derecha */
+.mainContent,
+.contentWrapper { min-width: 0; }
+
+/* Tablas de datos: si no caben, se deslizan de lado dentro de su contenedor */
+.table-container,
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+@media (max-width: 768px) {
+    /* Nada se sale del ancho de la pantalla (clip no rompe los elementos "sticky") */
+    .contentWrapper { overflow-x: clip; padding-bottom: 24px; }
+    img, video, canvas, iframe { max-width: 100%; }
+
+    /* Menú inferior: todos los íconos caben; los textos largos se recortan con "…" */
+    .sidebar .navMenu { overflow-x: auto; scrollbar-width: none; }
+    .sidebar .navMenu::-webkit-scrollbar { display: none; }
+    .sidebar .navItem { flex: 1 1 0; min-width: 52px; padding: 6px 2px; text-align: center; }
+    .sidebar .navLink { align-items: center; }
+    .sidebar .navLink span {
+        display: block;
+        max-width: 64px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* El botón de accesibilidad queda por encima del menú inferior en vez de taparlo */
+    .a11y-toggle-btn { bottom: 76px; left: 12px; width: 46px; height: 46px; font-size: 20px; }
+    .a11y-panel { bottom: 130px; left: 12px; max-width: calc(100vw - 24px); max-height: calc(100vh - 200px); }
+
+    /* Panel de notificaciones: ocupa el ancho de la pantalla y no se sale por un lado */
+    .ntf-panel {
+        position: fixed !important;
+        top: 60px !important;
+        left: 8px !important;
+        right: 8px !important;
+        width: auto !important;
+    }
+    .dropdownMenu { right: 0; max-width: calc(100vw - 16px); }
+
+    /* Ventanas emergentes de Bootstrap con margen pequeño y alto limitado */
+    .modal-dialog { margin: 8px; }
+    .modal-dialog-scrollable .modal-content,
+    .modal-content { max-height: calc(100vh - 16px); }
+    .modal-body { overflow-y: auto; }
+
+    /* SweetAlert: textos y botones que caben en pantalla */
+    .swal2-popup { width: calc(100vw - 24px) !important; max-width: 480px; padding: 1.25em 1em !important; }
+}
+
+@media (max-width: 480px) {
+    .sidebar .navLink span { max-width: 52px; font-size: 9.5px; }
+}

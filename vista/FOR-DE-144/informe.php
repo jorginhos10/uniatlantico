@@ -293,11 +293,17 @@ body{
 
 /* ── Responsive ── */
 @media(max-width:768px){
-    .linea-header{grid-template-columns:1fr auto auto;gap:10px}
-    .progress-container{display:none}
-    .header h1{font-size:1.05rem}
+    .dashboard{padding:16px 12px 48px}
+    .header{padding:16px}
+    /* El porcentaje de cada línea sigue visible: la barra baja a una segunda fila */
+    .linea-header{grid-template-columns:1fr auto auto;gap:10px;padding:14px 16px}
+    .progress-container{grid-column:1/-1;grid-row:2;min-width:0}
+    .header h1{font-size:1.05rem;flex-wrap:wrap}
+    .header h1 span{margin-left:0}
+    .header-actions-left .btn-export,.header-actions-right>*{flex:1 1 auto;justify-content:center}
     .global-number{font-size:3rem}
     .micro-grid{grid-template-columns:1fr}
+    .modal-content{max-height:calc(100vh - 24px);overflow-y:auto;padding:20px 16px}
 }
 </style>
 </head>

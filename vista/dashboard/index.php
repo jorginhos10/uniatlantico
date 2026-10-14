@@ -594,6 +594,24 @@ a.pa-stage:hover { background: var(--pa-fill); }
     .pa-line .pa-track { grid-column: 1 / -1; grid-row: 2; }
     .pa-kpi.hero { flex-direction: column; align-items: flex-start; }
     .pa-weights { grid-template-columns: 1fr; }
+
+    /* Celular: tarjetas de resumen de a dos, filtros a todo el ancho y tabla en forma de tarjetas */
+    .pa { gap: 16px; }
+    .pa-card { padding: 18px 16px; }
+    .pa-kpi { flex: 1 1 calc(50% - 8px); padding: 16px; }
+    .pa-kpi .val { font-size: 26px; }
+    .pa-kpi.hero { flex: 1 1 100%; }
+    .pa-kpi.hero .val { font-size: 36px; }
+    .pa-tools { justify-content: flex-start; margin-left: 0; width: 100%; }
+    .pa-select { max-width: 100%; }
+    .pa-table-card .pa-card-head { padding: 0 16px; }
+    .pa-grid { min-width: 0; padding: 0 16px; }
+    .pa-tr.th { display: none; }
+    .pa-tr { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
+    .pa-tr .f { grid-column: 1 / -1; }
+    .pa-tr .r { text-align: left; }
+    .pa-tr [data-l]::before { content: attr(data-l); display: block; font-size: 11px; font-weight: 600; color: var(--pa-sub); }
+    .pa-col { flex-basis: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
     .nov-track, .nov-popup, .nov-popup-ov { transition: none; }
@@ -807,9 +825,9 @@ require_once __DIR__ . '/../complementos/header.php';
                     <a class="f" href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $r['id'])); ?>" title="Abrir en el Módulo 144"><?php echo htmlspecialchars($r['texto']); ?>
                         <small><?php echo htmlspecialchars($r['linea_estrategica'] ?: 'Sin línea'); ?> · ponderación <?php echo dbFmtNum($r['peso']); ?></small></a>
                     <span class="pa-lmp"><?php echo htmlspecialchars($r['lmp']); ?></span>
-                    <span class="r num"><?php echo dbFmtNum($r['meta']); ?></span>
-                    <span class="r num"><?php echo dbFmtNum($r['ejec']); ?></span>
-                    <span class="r num" style="font-weight:700;color:<?php echo $t['ink']; ?>"><?php echo dbFmt($r['pct'], 0); ?> %</span>
+                    <span class="r num" data-l="Meta"><?php echo dbFmtNum($r['meta']); ?></span>
+                    <span class="r num" data-l="Ejecutado"><?php echo dbFmtNum($r['ejec']); ?></span>
+                    <span class="r num" data-l="Avance" style="font-weight:700;color:<?php echo $t['ink']; ?>"><?php echo dbFmt($r['pct'], 0); ?> %</span>
                     <span class="pa-pill" style="background:<?php echo $t['tint']; ?>;color:<?php echo $t['ink']; ?>"><i class="dot" style="background:<?php echo $t['bar']; ?>"></i><?php echo $t['label']; ?></span>
                     <span class="pa-steps" aria-label="Aprobado en <?php echo $r['etapa']; ?> de 4 etapas">
                         <?php foreach (['G', 'L', 'V', 'P'] as $i => $k): ?>

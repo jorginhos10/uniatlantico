@@ -524,6 +524,14 @@ ob_start();
     @media (max-width: 720px) {
         .fl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .fl-head h1 { font-size: 28px; }
+        /* Celular: filtros deslizables y botones de cada formulario a todo el ancho */
+        .fl-seg { display: flex; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+        .fl-seg::-webkit-scrollbar { display: none; }
+        .fl-seg button { white-space: nowrap; flex: none; }
+        .fl-search { flex: 1 1 100%; min-width: 0; }
+        .fl-item { padding: 16px; }
+        .fl-actions { width: 100%; }
+        .fl-actions .fl-btn { flex: 1 1 auto; justify-content: center; }
     }
 </style>
 <?php $cssExtra = ob_get_clean();
