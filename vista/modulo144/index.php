@@ -1455,10 +1455,19 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
         // Ojo: se guarda aparte (no se pisa $datos_modulos[...]['borradores']) porque ese arreglo
         // completo también lo usan, sin filtrar, las pestañas de Facultades y Evaluación Líneas.
+        // Publicados y cancelados siguen la misma regla: cada usuario ve su formulación y su seguimiento.
         $borradoresVisiblesPorModulo = [];
+        $publicadosVisiblesPorModulo = [];
+        $canceladosVisiblesPorModulo = [];
         foreach ($datos_modulos as $_dmKey => $_dmModulo) {
             $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
                 $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
+            );
+            $publicadosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
+                $_dmModulo['publicados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
+            );
+            $canceladosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
+                $_dmModulo['cancelados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
             );
         }
         ?>
@@ -1467,6 +1476,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <ul class="nav nav-tabs modulo-tabs-top mb-4" id="moduloTabsTop" role="tablist">
             <?php $primer_modulo_tab = true; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
+            <?php $modulo['publicados'] = $publicadosVisiblesPorModulo[$key]; $modulo['cancelados'] = $canceladosVisiblesPorModulo[$key]; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link <?php echo $primer_modulo_tab ? 'active' : ''; ?>" data-bs-toggle="tab" data-bs-target="#panelModulo-<?php echo $key; ?>" type="button" role="tab">
                     <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i><?php echo $modulo['config']['nombre']; ?>
@@ -1485,6 +1495,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <div class="tab-content" id="moduloTabsTopContent">
             <?php $primer_modulo = true; ?>
             <?php foreach ($datos_modulos as $key => $modulo): ?>
+            <?php $modulo['publicados'] = $publicadosVisiblesPorModulo[$key]; $modulo['cancelados'] = $canceladosVisiblesPorModulo[$key]; ?>
             <div class="tab-pane fade <?php echo $primer_modulo ? 'show active' : ''; ?>" id="panelModulo-<?php echo $key; ?>" role="tabpanel">
                 <div class="m144-panel">
 
