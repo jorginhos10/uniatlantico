@@ -1124,6 +1124,15 @@ ob_start();
         /* Panel sin banner oscuro */
         .m144-panel { padding: 4px 0 0; }
         .m144-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+        .m144-panel-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+        .m144-btn-tinted { background: rgba(0,122,255,.12) !important; color: #0066CC !important; text-decoration: none; }
+        .m144-btn-tinted:hover { background: rgba(0,122,255,.2) !important; color: #0066CC !important; }
+        .imp-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 4px 0 12px; }
+        .imp-resumen div { background: #F2F2F7; border-radius: 10px; padding: 10px; text-align: center; }
+        .imp-resumen b { display: block; font-size: 1.3rem; }
+        .imp-resumen small { color: #6E6E73; font-size: .75rem; }
+        .imp-errores { max-height: 240px; overflow-y: auto; text-align: left; font-size: .82rem; background: #FFF4F2; border-radius: 10px; padding: 10px 12px; margin: 0; }
+        .imp-errores li { margin: 3px 0 3px 14px; }
         .m144-panel-desc { margin: 0; font-size: 15px; color: #6E6E73; }
 
         /* Filtros */
@@ -1430,11 +1439,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                         <div class="m144-panel-head">
                             <p class="m144-panel-desc"><?php echo $modulo['config']['descripcion']; ?></p>
-                            <?php if ($key === 'formulacion'): ?>
-                            <button type="button" class="m144-btn m144-btn-primary" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
-                                <i class="fas fa-plus"></i>Nuevo indicador
-                            </button>
-                            <?php endif; ?>
+                            <div class="m144-panel-acciones">
+                                <a class="m144-btn m144-btn-tinted" href="<?php echo $basePath; ?>/modulo144/exportarPlantilla?id=<?php echo (int)$formulario['id']; ?>"
+                                   title="Descarga la plantilla de Excel (hojas Formulación y Seguimiento) para llenarla y subirla">
+                                    <i class="fas fa-file-download"></i>Exportar plantilla
+                                </a>
+                                <button type="button" class="m144-btn m144-btn-tinted" onclick="abrirModalImportarPlantilla()"
+                                        title="Sube la plantilla de Excel llena">
+                                    <i class="fas fa-file-upload"></i>Importar
+                                </button>
+                                <?php if ($key === 'formulacion'): ?>
+                                <button type="button" class="m144-btn m144-btn-primary" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
+                                    <i class="fas fa-plus"></i>Nuevo indicador
+                                </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         
                         <!-- FILTRO DE LISTA -->
@@ -2506,6 +2525,33 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     </div>
 
     <!-- MODAL PARA SEGUIMIENTO -->
+    <!-- Modal Importar plantilla -->
+    <div class="modal fade" id="modalImportarPlantilla" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-file-upload me-2"></i>Importar plantilla</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <ol class="small text-muted ps-3">
+                        <li>Pulsa <strong>Exportar plantilla</strong> y abre el Excel. Tiene dos hojas: <strong>Formulación</strong> y <strong>Seguimiento</strong>.</li>
+                        <li><strong>Formulación:</strong> corrige tus indicadores en borrador o agrega nuevos en las filas vacías (columna ID vacía).</li>
+                        <li><strong>Seguimiento:</strong> llena el avance de los indicadores ya publicados. No cambies la columna ID.</li>
+                        <li>Guarda el archivo y súbelo aquí.</li>
+                    </ol>
+                    <input type="file" class="form-control" id="archivoPlantilla" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnImportarPlantilla" onclick="importarPlantilla()">
+                        <i class="fas fa-upload me-1"></i>Importar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -3208,6 +3254,67 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $(document).on('input', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
             autoGuardarDistribucionFacultad($(this).closest('tr'));
         });
+
+        // ═══ IMPORTAR PLANTILLA ═══
+        function abrirModalImportarPlantilla() {
+            $('#archivoPlantilla').val('');
+            $('#modalImportarPlantilla').modal('show');
+        }
+
+        function importarPlantilla() {
+            const archivo = document.getElementById('archivoPlantilla').files[0];
+            if (!archivo) {
+                Swal.fire('Falta el archivo', 'Selecciona la plantilla de Excel (.xlsx) que llenaste.', 'warning');
+                return;
+            }
+            const datos = new FormData();
+            datos.append('formulario_id', formularioId);
+            datos.append('archivo', archivo);
+
+            const boton = $('#btnImportarPlantilla');
+            boton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Importando…');
+
+            $.ajax({
+                url: basePath + '/modulo144/importarPlantilla',
+                type: 'POST',
+                data: datos,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function(res) {
+                    boton.prop('disabled', false).html('<i class="fas fa-upload me-1"></i>Importar');
+                    if (!res.success) {
+                        Swal.fire('No se pudo importar', res.message || 'Revisa el archivo', 'error');
+                        return;
+                    }
+                    $('#modalImportarPlantilla').modal('hide');
+                    const r = res.resumen;
+                    const cambios = r.formulacion.creados + r.formulacion.actualizados + r.seguimiento.actualizados;
+                    let html = '<div class="imp-resumen">'
+                        + '<div><b>' + r.formulacion.creados + '</b><small>Indicadores nuevos</small></div>'
+                        + '<div><b>' + r.formulacion.actualizados + '</b><small>Formulaciones actualizadas</small></div>'
+                        + '<div><b>' + r.seguimiento.actualizados + '</b><small>Seguimientos actualizados</small></div>'
+                        + '</div>';
+                    if (r.errores.length) {
+                        html += '<p class="text-start small mb-1"><strong>' + r.errores.length + ' fila(s) no se importaron:</strong></p><ul class="imp-errores">'
+                             + r.errores.map(function(e) { return '<li>' + evalHtmlEscape(e) + '</li>'; }).join('') + '</ul>';
+                    }
+                    Swal.fire({
+                        icon: r.errores.length ? (cambios ? 'warning' : 'error') : 'success',
+                        title: res.message,
+                        html: html,
+                        width: 640,
+                        confirmButtonText: 'Aceptar'
+                    }).then(function() {
+                        if (cambios) { guardarEstadoAcordeon(); location.reload(); }
+                    });
+                },
+                error: function() {
+                    boton.prop('disabled', false).html('<i class="fas fa-upload me-1"></i>Importar');
+                    Swal.fire('Error', 'Error de conexión con el servidor', 'error');
+                }
+            });
+        }
 
         // ═══ SEGUIMIENTO POR FACULTADES ═══
         const VIEWER_FACULTAD_ID = <?php echo (int)($viewer_facultad_id ?? 0); ?>;

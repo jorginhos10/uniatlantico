@@ -420,6 +420,14 @@ switch ($action) {
             case 'guardarSeguimientoFacultad':
                 $modulo144Controller->guardarSeguimientoFacultad();
                 break;
+            case 'exportarPlantilla':
+                require_once 'controlador/Plantilla144Controller.php';
+                (new Plantilla144Controller())->exportar();
+                break;
+            case 'importarPlantilla':
+                require_once 'controlador/Plantilla144Controller.php';
+                (new Plantilla144Controller())->importar();
+                break;
             case 'eliminar':
                 $modulo144Controller->eliminar();
                 break;

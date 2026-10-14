@@ -446,6 +446,30 @@ class Modulo144Model {
     }
 
     // Suma la ponderacion_actividades de un proyecto excluyendo un id dado
+    // Todos los registros no cancelados del formulario, para la plantilla de importación/exportación
+    public function getRegistrosParaPlantilla($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT f.*, le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo
+                 FROM formulacion_144 f
+                 LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                 LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion != 1
+                 ORDER BY le.codigo ASC, m.codigo ASC, p.codigo ASC, f.id ASC"
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getRegistrosParaPlantilla: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function ultimoIdInsertado() {
+        return (int)$this->db->lastInsertId();
+    }
+
     public function getAcumuladoProyecto($formulario_id, $proyecto, $excluir_id) {
         try {
             $stmt = $this->db->prepare(
