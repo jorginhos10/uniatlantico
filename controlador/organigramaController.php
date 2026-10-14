@@ -41,24 +41,39 @@ class OrganigramaController {
         [$error, $exito] = $_SESSION['organigrama_flash'] ?? ['', ''];
         unset($_SESSION['organigrama_flash']);
 
-        // Agrupa usuarios activos por rol (el valor de "rol" ya es el nombre legible, ej. "Administrador")
+        // Usuarios activos agrupados por su rol (normalizado: sin acentos ni mayúsculas)
         $usuariosPorRol = [];
         foreach ($this->usuarioModel->obtenerTodosUsuarios() as $u) {
             if ((int)$u['activo'] !== 1) continue;
-            $usuariosPorRol[$u['rol']][] = $u;
+            $usuariosPorRol[$this->normalizar($u['rol'])][] = $u;
         }
 
+        // El organigrama se arma con los ROLES: cada nodo es un rol del catálogo y muestra sus usuarios
+        $roles = (new RolesModel())->getAll();
         $nodos = $this->model->getAll();
+        $nombrePorId = [];
         foreach ($nodos as &$nodo) {
-            $nodo['roles'] = $this->decodificarRoles($nodo['rol']);
+            $rolNodo = $this->decodificarRoles($nodo['rol'])[0] ?? '';
+            $rolCatalogo = $this->buscarRol($roles, $rolNodo);
+            $nodo['rol_slug'] = $rolCatalogo['slug'] ?? $rolNodo;
+            $nodo['nombre']   = $rolCatalogo['nombre'] ?? ($rolNodo !== '' ? $rolNodo : $nodo['nombre']);
+            $nodo['usuarios'] = $this->usuariosDelRol($usuariosPorRol, $rolCatalogo, $rolNodo);
+            $nombrePorId[(int)$nodo['id']] = $nodo['nombre'];
         }
         unset($nodo);
+        foreach ($nodos as &$nodo) {
+            $nodo['nombre_padre'] = $nodo['padre_id'] !== null ? ($nombrePorId[(int)$nodo['padre_id']] ?? null) : null;
+        }
+        unset($nodo);
+
+        // Roles que ya están en el organigrama (cada rol aparece una sola vez)
+        $rolesUsados = [];
+        foreach ($nodos as $n) $rolesUsados[$this->normalizar($n['rol_slug'])] = (int)$n['id'];
 
         $padresDisponibles = array_values(array_filter($nodos, function ($n) { return (int)$n['activo'] === 1; }));
         usort($padresDisponibles, function ($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
         $nodosPlanos = $this->construirArbol($nodos);
         $nodosAnidados = $this->construirArbolAnidado($nodos);
-        $roles = (new RolesModel())->getAll();
 
         require_once 'vista/organigrama/index.php';
     }
@@ -66,44 +81,40 @@ class OrganigramaController {
     // Cada acción devuelve [error, éxito], como en new-ua
 
     private function guardar() {
-        $nombre  = trim($_POST['nombre'] ?? '');
         $padreId = intval($_POST['padre_id'] ?? 0);
         $orden   = intval($_POST['orden'] ?? 0);
 
-        if ($nombre === '') {
-            return ['El nombre es obligatorio.', ''];
-        }
+        [$rol, $error] = $this->rolEnviado();
+        if ($error !== '') return [$error, ''];
         if ($padreId > 0 && $this->model->getById($padreId) === null) {
-            return ['El nodo padre seleccionado no existe.', ''];
+            return ['El rol del que depende no existe.', ''];
         }
 
-        $ok = $this->model->crear($nombre, $padreId > 0 ? $padreId : null, $this->rolesEnviados(), $orden);
-        return $ok ? ['', 'Nodo agregado correctamente.'] : ['No se pudo agregar el nodo.', ''];
+        $ok = $this->model->crear($rol['nombre'], $padreId > 0 ? $padreId : null, json_encode([$rol['slug']], JSON_UNESCAPED_UNICODE), $orden);
+        return $ok ? ['', 'Rol "' . $rol['nombre'] . '" agregado al organigrama.'] : ['No se pudo agregar el rol.', ''];
     }
 
     private function actualizar() {
         $id      = intval($_POST['id'] ?? 0);
-        $nombre  = trim($_POST['nombre'] ?? '');
         $padreId = intval($_POST['padre_id'] ?? 0);
         $orden   = intval($_POST['orden'] ?? 0);
 
         if ($id <= 0 || $this->model->getById($id) === null) {
-            return ['El nodo que intentas editar no existe.', ''];
+            return ['El rol que intentas editar no existe en el organigrama.', ''];
         }
-        if ($nombre === '') {
-            return ['El nombre es obligatorio.', ''];
-        }
+        [$rol, $error] = $this->rolEnviado($id);
+        if ($error !== '') return [$error, ''];
         if ($padreId > 0) {
             if ($this->model->getById($padreId) === null) {
-                return ['El nodo padre seleccionado no existe.', ''];
+                return ['El rol del que depende no existe.', ''];
             }
             if ($this->creaCiclo($id, $padreId)) {
-                return ['No puedes asignar como padre a un nodo que está dentro de su propia rama.', ''];
+                return ['No puedes hacer depender un rol de otro que está dentro de su propia rama.', ''];
             }
         }
 
-        $ok = $this->model->actualizar($id, $nombre, $padreId > 0 ? $padreId : null, $this->rolesEnviados(), $orden);
-        return $ok ? ['', 'Nodo actualizado correctamente.'] : ['No se pudo actualizar el nodo.', ''];
+        $ok = $this->model->actualizar($id, $rol['nombre'], $padreId > 0 ? $padreId : null, json_encode([$rol['slug']], JSON_UNESCAPED_UNICODE), $orden);
+        return $ok ? ['', 'Rol "' . $rol['nombre'] . '" actualizado.'] : ['No se pudo actualizar el rol.', ''];
     }
 
     private function cambiarEstado() {
@@ -120,9 +131,9 @@ class OrganigramaController {
             return ['Nodo no válido.', ''];
         }
         if ($this->model->tieneHijos($id)) {
-            return ['No puedes eliminar este nodo porque tiene ramas debajo de él. Elimínalas o reasígnalas primero.', ''];
+            return ['No puedes quitar este rol porque tiene otros roles debajo. Quítalos o reasígnalos primero.', ''];
         }
-        return $this->model->eliminar($id) ? ['', 'Nodo eliminado correctamente.'] : ['No se pudo eliminar el nodo.', ''];
+        return $this->model->eliminar($id) ? ['', 'Rol quitado del organigrama.'] : ['No se pudo quitar el rol.', ''];
     }
 
     private function esAdmin() {
@@ -130,10 +141,53 @@ class OrganigramaController {
         return (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array($rol, ['admin', 'administrador'], true);
     }
 
-    // Roles marcados en el formulario, como JSON para la columna `rol` (null si no hay ninguno)
-    private function rolesEnviados() {
-        $roles = array_values(array_unique(array_filter(array_map('trim', (array)($_POST['roles'] ?? [])), 'strlen')));
-        return $roles ? json_encode($roles, JSON_UNESCAPED_UNICODE) : null;
+    // Rol elegido en el formulario: debe existir en el catálogo y no estar ya en el organigrama
+    // (salvo en el mismo nodo que se edita). Devuelve [rolDelCatálogo, error].
+    private function rolEnviado($exceptoId = 0) {
+        $valor = trim($_POST['rol'] ?? '');
+        if ($valor === '') return [null, 'Selecciona un rol.'];
+        $rol = $this->buscarRol((new RolesModel())->getAll(), $valor);
+        if ($rol === null) return [null, 'El rol seleccionado no existe.'];
+
+        foreach ($this->model->getAll() as $n) {
+            if ((int)$n['id'] === (int)$exceptoId) continue;
+            $rolNodo = $this->decodificarRoles($n['rol'])[0] ?? '';
+            $usado = $this->normalizar($rolNodo);
+            if ($usado !== '' && ($usado === $this->normalizar($rol['slug']) || $usado === $this->normalizar($rol['nombre']))) {
+                return [null, 'El rol "' . $rol['nombre'] . '" ya está en el organigrama.'];
+            }
+        }
+        return [$rol, ''];
+    }
+
+    private function normalizar($s) {
+        $s = mb_strtolower(trim((string)$s), 'UTF-8');
+        return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
+    }
+
+    // Busca un rol del catálogo por su valor guardado o por su nombre legible
+    private function buscarRol(array $roles, $valor) {
+        $v = $this->normalizar($valor);
+        if ($v === '') return null;
+        foreach ($roles as $r) {
+            if ($this->normalizar($r['slug']) === $v || $this->normalizar($r['nombre']) === $v) return $r;
+        }
+        return null;
+    }
+
+    // Usuarios activos del rol (se buscan por el valor guardado y por el nombre legible)
+    private function usuariosDelRol(array $usuariosPorRol, $rolCatalogo, $rolNodo) {
+        $claves = array_unique(array_filter([
+            $this->normalizar($rolCatalogo['slug'] ?? ''),
+            $this->normalizar($rolCatalogo['nombre'] ?? ''),
+            $this->normalizar($rolNodo),
+        ], 'strlen'));
+        $usuarios = [];
+        foreach ($claves as $k) {
+            foreach ($usuariosPorRol[$k] ?? [] as $u) $usuarios[(int)$u['id']] = $u;
+        }
+        usort($usuarios, function ($a, $b) { return strcasecmp($a['nombre'], $b['nombre']); });
+        return array_values($usuarios);
     }
 
     // La columna `rol` guarda una lista JSON; un texto simple se toma como un solo rol

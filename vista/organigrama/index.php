@@ -440,6 +440,32 @@ ob_start();
         background: #86868b;
         flex-shrink: 0;
     }
+    .org-ua .organigrama-usuarios {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.3rem;
+        max-width: 280px;
+        padding: 0.55rem 0.7rem;
+        background: rgba(255, 255, 255, 0.94);
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    .org-ua .organigrama-usuario {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--color-texto);
+        background: var(--color-fondo);
+        border-radius: 999px;
+        padding: 0.15rem 0.55rem;
+        white-space: nowrap;
+    }
+    .org-ua .organigrama-usuario.mas { background: var(--color-primario-suave); color: var(--color-primario-oscuro); }
+    .org-ua .organigrama-sin-usuarios { font-size: 0.7rem; color: var(--color-texto-tenue); font-style: italic; }
+    .org-ua .organigrama-conteo {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 22px; height: 18px; padding: 0 6px; border-radius: 999px;
+        background: rgba(255, 255, 255, 0.22); color: #fff; font-size: 0.7rem; font-weight: 700;
+    }
     .org-ua .organigrama-rol-numero.nivel-1 { background: #2e9e5b; }
     .org-ua .organigrama-rol-numero.nivel-2 { background: #2f6fed; }
     .org-ua .organigrama-rol-numero.nivel-3 { background: #e8892e; }
@@ -511,45 +537,35 @@ function org_normalizar($s) {
     return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
 }
 
-// Usuarios activos cuyo rol coincide (sin acentos/mayúsculas) con el rol del nodo
-function org_buscarUsuariosPorRol($usuariosPorRol, $patron) {
-    foreach ($usuariosPorRol as $rol => $usuarios) {
-        if (org_normalizar($rol) === org_normalizar($patron)) {
-            return $usuarios;
-        }
-    }
-    return [];
-}
+// Cuántos usuarios se listan dentro de cada rol en el mapa (el resto se resume en "+N")
+const ORG_MAX_USUARIOS_MAPA = 8;
 
-// Nombre legible de cada rol (el nodo guarda el valor tal como está en usuarios.rol)
-$nombresRol = [];
-foreach ($roles as $r) {
-    $nombresRol[org_normalizar($r['slug'])] = $r['nombre'];
-}
-
-// Dibuja un nodo y sus hijos. Los nodos inactivos (y su rama) solo los ve el administrador.
-$dibujarNodo = function (array $nodo) use (&$dibujarNodo, $usuariosPorRol, $nombresRol, $esAdminOrganigrama): void {
+// Dibuja un rol y los roles que dependen de él. Los inactivos (y su rama) solo los ve el administrador.
+$dibujarNodo = function (array $nodo) use (&$dibujarNodo, $esAdminOrganigrama): void {
+    $usuarios = $nodo['usuarios'] ?? [];
     echo '<li>';
     echo '<div class="organigrama-caja">';
     echo '<div class="organigrama-cabecera">';
     echo '<span class="organigrama-nombre">' . htmlspecialchars($nodo['nombre']) . '</span>';
+    echo '<span class="organigrama-conteo" title="Usuarios activos con este rol">' . count($usuarios) . '</span>';
     if ((int)$nodo['activo'] !== 1) {
         echo '<span class="organigrama-inactivo">Inactivo</span>';
     }
     echo '</div>';
-    if (!empty($nodo['roles'])) {
-        echo '<div class="organigrama-roles">';
-        foreach ($nodo['roles'] as $i => $rol) {
-            // El número es la cantidad de usuarios activos con ese rol; sus nombres van en el título
-            $usuarios = org_buscarUsuariosPorRol($usuariosPorRol, $rol);
-            $nombres  = $usuarios ? implode(', ', array_column($usuarios, 'nombre')) : 'Sin usuarios asignados';
-            echo '<span class="organigrama-rol-chip" title="' . htmlspecialchars($nombres) . '">';
-            echo '<span class="organigrama-rol-numero nivel-' . min($i + 1, 3) . '">' . count($usuarios) . '</span>';
-            echo htmlspecialchars($nombresRol[org_normalizar($rol)] ?? $rol);
-            echo '</span>';
+    echo '<div class="organigrama-usuarios">';
+    if (!$usuarios) {
+        echo '<span class="organigrama-sin-usuarios">Sin usuarios asignados</span>';
+    } else {
+        foreach (array_slice($usuarios, 0, ORG_MAX_USUARIOS_MAPA) as $u) {
+            echo '<span class="organigrama-usuario">' . htmlspecialchars($u['nombre']) . '</span>';
         }
-        echo '</div>';
+        if (count($usuarios) > ORG_MAX_USUARIOS_MAPA) {
+            $resto = array_column(array_slice($usuarios, ORG_MAX_USUARIOS_MAPA), 'nombre');
+            echo '<span class="organigrama-usuario mas" title="' . htmlspecialchars(implode(', ', $resto)) . '">+'
+                . (count($usuarios) - ORG_MAX_USUARIOS_MAPA) . ' más</span>';
+        }
     }
+    echo '</div>';
     echo '</div>';
 
     $hijos = array_values(array_filter($nodo['hijos'], function ($h) use ($esAdminOrganigrama) {
@@ -576,7 +592,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
         <div class="cabecera-modulo">
             <div>
                 <h1>Organigrama</h1>
-                <p class="texto-atenuado">Árbol de la estructura organizacional (administrador, vicerrectorías, líderes y gestores).</p>
+                <p class="texto-atenuado">Estructura por roles: cada caja es un rol y muestra los usuarios que lo tienen.</p>
             </div>
             <div class="selector-modo-vista">
                 <button type="button" class="selector-modo-vista-boton activo" data-modo-vista="estructura">Estructural</button>
@@ -595,8 +611,16 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
         <div data-vista-jerarquia="estructura">
         <form method="POST" action="<?= htmlspecialchars($accionFormulario) ?>" class="form-necesidad">
             <div class="campo">
-                <label for="nombre">Nombre *</label>
-                <input type="text" id="nombre" name="nombre" maxlength="150" placeholder="Ej. Líder de Metas" required>
+                <label for="rol">Rol *</label>
+                <select id="rol" name="rol" required>
+                    <option value="">Selecciona un rol</option>
+                    <?php foreach ($roles as $rolCatalogo):
+                        $yaUsado = isset($rolesUsados[org_normalizar($rolCatalogo['slug'])]) || isset($rolesUsados[org_normalizar($rolCatalogo['nombre'])]); ?>
+                    <option value="<?= htmlspecialchars($rolCatalogo['slug']) ?>" <?= $yaUsado ? 'disabled' : '' ?>>
+                        <?= htmlspecialchars($rolCatalogo['nombre']) ?><?= $yaUsado ? ' (ya está en el organigrama)' : '' ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
 
             <div class="campo">
@@ -614,19 +638,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                 <input type="number" id="orden" name="orden" value="0" min="0">
             </div>
 
-            <div class="campo campo-ancho">
-                <label>Roles asociados</label>
-                <div id="roles" class="grupo-checkbox-roles">
-                    <?php foreach ($roles as $rolCatalogo): ?>
-                    <label class="campo-checkbox">
-                        <input type="checkbox" name="roles[]" value="<?= htmlspecialchars($rolCatalogo['slug']) ?>">
-                        <?= htmlspecialchars($rolCatalogo['nombre']) ?>
-                    </label>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <button type="submit" class="boton-enviar">Agregar</button>
+            <button type="submit" class="boton-enviar">Agregar rol</button>
         </form>
 
         <div class="tabla-scroll">
@@ -634,19 +646,14 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                 <thead>
                     <tr>
                         <th></th>
-                        <th>Nombre</th>
+                        <th>Rol</th>
                         <th>Depende de</th>
-                        <th>Roles</th>
+                        <th>Usuarios</th>
                         <th>Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($nodosPlanos as $nodo): ?>
-                    <?php
-                    $rolesLegibles = array_map(function ($rol) use ($nombresRol) {
-                        return $nombresRol[org_normalizar($rol)] ?? $rol;
-                    }, $nodo['roles']);
-                    ?>
                     <tr>
                         <td class="celda-fila-menu">
                             <div class="fila-menu">
@@ -659,12 +666,12 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                                         data-nombre="<?= htmlspecialchars($nodo['nombre']) ?>"
                                         data-padre-id="<?= (int) ($nodo['padre_id'] ?? 0) ?>"
                                         data-orden="<?= (int) $nodo['orden'] ?>"
-                                        data-roles="<?= htmlspecialchars(json_encode($nodo['roles'], JSON_UNESCAPED_UNICODE)) ?>"
+                                        data-rol="<?= htmlspecialchars($nodo['rol_slug']) ?>"
                                     >Editar</button>
                                     <form method="POST" action="<?= htmlspecialchars($accionFormulario) ?>" class="form-eliminar-jerarquia">
                                         <input type="hidden" name="accion" value="eliminar">
                                         <input type="hidden" name="id" value="<?= (int) $nodo['id'] ?>">
-                                        <button type="submit" class="fila-menu-eliminar">Eliminar</button>
+                                        <button type="submit" class="fila-menu-eliminar">Quitar</button>
                                     </form>
                                 </div>
                             </div>
@@ -681,7 +688,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                             </div>
                         </td>
                         <td class="texto-atenuado"><?= $nodo['nombre_padre'] !== null ? '↳ ' . htmlspecialchars($nodo['nombre_padre']) : '—' ?></td>
-                        <td class="texto-atenuado"><?= !empty($rolesLegibles) ? htmlspecialchars(implode(', ', $rolesLegibles)) : '—' ?></td>
+                        <td class="texto-atenuado" title="<?= htmlspecialchars(implode(', ', array_column($nodo['usuarios'], 'nombre'))) ?>"><?= count($nodo['usuarios']) ?></td>
                         <td>
                             <form method="POST" action="<?= htmlspecialchars($accionFormulario) ?>" class="form-toggle">
                                 <input type="hidden" name="accion" value="cambiar_estado">
@@ -696,7 +703,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                     <?php endforeach; ?>
                     <?php if (empty($nodosPlanos)): ?>
                     <tr>
-                        <td colspan="5">No hay nodos registrados.</td>
+                        <td colspan="5">Aún no hay roles en el organigrama. Agrega el primero arriba.</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>
@@ -710,7 +717,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
         <h2>Organigrama</h2>
 
         <?php if (empty($raicesVisibles)): ?>
-        <p class="texto-atenuado">No hay nodos registrados.</p>
+        <p class="texto-atenuado">Aún no hay roles en el organigrama.</p>
         <?php else: ?>
         <div class="organigrama-envoltorio"><ul class="organigrama">
             <?php foreach ($raicesVisibles as $raiz) { $dibujarNodo($raiz); } ?>
@@ -722,7 +729,7 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
     <div id="modal-editar-jerarquia" class="modal-fondo">
         <div class="modal-caja">
             <div class="modal-cabecera">
-                <h2>Editar nodo</h2>
+                <h2>Editar rol del organigrama</h2>
                 <button type="button" id="boton-cerrar-modal-editar-jerarquia" class="modal-cerrar" aria-label="Cerrar">&times;</button>
             </div>
 
@@ -731,8 +738,15 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                 <input type="hidden" name="id" id="editar-jerarquia-id" value="">
 
                 <div class="campo">
-                    <label for="editar-jerarquia-nombre">Nombre *</label>
-                    <input type="text" id="editar-jerarquia-nombre" name="nombre" maxlength="150" required>
+                    <label for="editar-jerarquia-rol">Rol *</label>
+                    <select id="editar-jerarquia-rol" name="rol" required>
+                        <?php foreach ($roles as $rolCatalogo): ?>
+                        <option value="<?= htmlspecialchars($rolCatalogo['slug']) ?>"
+                                data-usado-por="<?= (int) ($rolesUsados[org_normalizar($rolCatalogo['slug'])] ?? $rolesUsados[org_normalizar($rolCatalogo['nombre'])] ?? 0) ?>">
+                            <?= htmlspecialchars($rolCatalogo['nombre']) ?>
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
 
                 <div class="campo">
@@ -748,18 +762,6 @@ $raicesVisibles = array_values(array_filter($nodosAnidados, function ($n) use ($
                 <div class="campo">
                     <label for="editar-jerarquia-orden">Orden</label>
                     <input type="number" id="editar-jerarquia-orden" name="orden" min="0">
-                </div>
-
-                <div class="campo campo-ancho">
-                    <label>Roles asociados</label>
-                    <div id="editar-jerarquia-roles" class="grupo-checkbox-roles">
-                        <?php foreach ($roles as $rolCatalogo): ?>
-                        <label class="campo-checkbox">
-                            <input type="checkbox" name="roles[]" value="<?= htmlspecialchars($rolCatalogo['slug']) ?>">
-                            <?= htmlspecialchars($rolCatalogo['nombre']) ?>
-                        </label>
-                        <?php endforeach; ?>
-                    </div>
                 </div>
 
                 <button type="submit" class="boton-enviar">Guardar cambios</button>
@@ -815,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.querySelectorAll('.form-eliminar-jerarquia').forEach(function (formulario) {
         formulario.addEventListener('submit', function (evento) {
-            if (!confirm('¿Eliminar este nodo? Esta acción no se puede deshacer.')) {
+            if (!confirm('¿Quitar este rol del organigrama? Los usuarios no se modifican.')) {
                 evento.preventDefault();
             }
         });
@@ -824,50 +826,28 @@ document.addEventListener('DOMContentLoaded', function () {
     // Modal de edición
     var modalEditar = document.getElementById('modal-editar-jerarquia');
     var campoId = document.getElementById('editar-jerarquia-id');
-    var campoNombre = document.getElementById('editar-jerarquia-nombre');
     var campoPadre = document.getElementById('editar-jerarquia-padre');
     var campoOrden = document.getElementById('editar-jerarquia-orden');
-    var contenedorRoles = document.getElementById('editar-jerarquia-roles');
-
-    function normalizar(texto) {
-        return String(texto).trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-    }
+    var campoRol = document.getElementById('editar-jerarquia-rol');
 
     document.querySelectorAll('.fila-menu-editar').forEach(function (boton) {
         boton.addEventListener('click', function () {
             cerrarTodos(null);
             campoId.value = boton.dataset.id;
-            campoNombre.value = boton.dataset.nombre;
             campoPadre.value = boton.dataset.padreId;
             campoOrden.value = boton.dataset.orden;
 
-            // Un nodo no puede depender de sí mismo
+            // Un rol no puede depender de sí mismo
             Array.from(campoPadre.options).forEach(function (opcion) {
                 opcion.disabled = opcion.value === boton.dataset.id;
             });
 
-            // Marca los roles del nodo; si alguno ya no está en el catálogo, se agrega para no perderlo
-            contenedorRoles.querySelectorAll('[data-rol-extra]').forEach(function (extra) { extra.remove(); });
-            var casillas = Array.from(contenedorRoles.querySelectorAll('input[type="checkbox"]'));
-            casillas.forEach(function (casilla) { casilla.checked = false; });
-            JSON.parse(boton.dataset.roles || '[]').forEach(function (rol) {
-                var casilla = casillas.find(function (c) { return normalizar(c.value) === normalizar(rol); });
-                if (casilla) {
-                    casilla.checked = true;
-                    return;
-                }
-                var etiqueta = document.createElement('label');
-                etiqueta.className = 'campo-checkbox';
-                etiqueta.dataset.rolExtra = '1';
-                var nueva = document.createElement('input');
-                nueva.type = 'checkbox';
-                nueva.name = 'roles[]';
-                nueva.value = rol;
-                nueva.checked = true;
-                etiqueta.appendChild(nueva);
-                etiqueta.appendChild(document.createTextNode(' ' + rol));
-                contenedorRoles.appendChild(etiqueta);
+            // Solo se pueden elegir roles libres o el que ya tiene este nodo
+            Array.from(campoRol.options).forEach(function (opcion) {
+                var usadoPor = opcion.dataset.usadoPor || '0';
+                opcion.disabled = usadoPor !== '0' && usadoPor !== boton.dataset.id;
             });
+            campoRol.value = boton.dataset.rol;
 
             modalEditar.classList.add('abierto');
         });
