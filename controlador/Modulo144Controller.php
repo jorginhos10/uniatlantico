@@ -33,7 +33,11 @@ class Modulo144Controller {
         $id_indicadores = $this->model->getIdIndicadores();
         $viewer_cargo_nombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
         $facultades = $this->model->getFacultades();
-        
+
+        // Resumen del informe (cumplimiento ponderado por líneas, motores y proyectos) para "Evaluación líneas"
+        require_once 'modelo/FORDE144Model.php';
+        $informe_resumen = (new FORDE144Model())->getInformeCompleto((int)$formulario['id']);
+
         $modulos = $this->model->getModulos();
         $datos_modulos = [];
         

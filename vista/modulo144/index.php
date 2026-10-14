@@ -875,151 +875,52 @@ ob_start();
             gap: 5px;
         }
 
-        /* ═══ EVALUACIÓN LÍNEAS — TARJETAS CON SLIDER ═══ */
-        .eval-linea-card {
-            position: relative;
-            border-radius: 16px;
-            padding: 40px 22px 22px;
-            min-height: 320px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: white;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 4px 16px rgba(0,0,0,.12);
-            overflow: hidden;
+        /* ═══ EVALUACIÓN LÍNEAS — RESUMEN DEL INFORME ═══ */
+        .ev-resumen { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 20px; align-items: start; }
+        @media (max-width: 900px) { .ev-resumen { grid-template-columns: 1fr; } }
+        .ev-total {
+            background: #fff; border-radius: 16px; padding: 24px; text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05); position: sticky; top: 90px;
         }
-
-        .eval-linea-motores-list {
-            width: 100%;
-            font-size: 0.82rem;
-            max-height: 170px;
-            overflow: hidden;
-            position: relative;
-            text-align: left;
-            -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
-            mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+        .ev-total-label { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #6E6E73; }
+        .ev-donut { position: relative; width: 168px; height: 168px; margin: 16px auto 10px; }
+        .ev-donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ev-donut-num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .ev-donut-num strong { font-size: 2.1rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+        .ev-donut-num span { font-size: .75rem; color: #6E6E73; margin-top: 4px; }
+        .ev-total-sub { font-size: .82rem; color: #6E6E73; margin-bottom: 16px; }
+        .ev-total-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+        .ev-total-stats div { background: #F5F5F7; border-radius: 10px; padding: 10px 6px; }
+        .ev-total-stats b { display: block; font-size: 1.15rem; }
+        .ev-total-stats small { font-size: .72rem; color: #6E6E73; }
+        .ev-btn-informe {
+            display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px;
+            background: #007AFF; color: #fff !important; font-weight: 600; font-size: .88rem; text-decoration: none;
         }
-
-        .eval-linea-motores-track {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .eval-linea-motores-track.eval-marquee {
-            animation: eval-motores-scroll linear infinite;
-            will-change: transform;
-            transform: translateZ(0);
-        }
-
-        @keyframes eval-motores-scroll {
-            from { transform: translateY(0); }
-            to   { transform: translateY(-50%); }
-        }
-
-        .eval-linea-motores-track li {
-            padding: 5px 4px;
-            border-bottom: 1px solid rgba(255,255,255,.15);
-        }
-
-        .eval-linea-ratio {
-            font-size: 2.4rem;
-            font-weight: 800;
-            line-height: 1.1;
-        }
-
-        .eval-linea-badge {
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.68rem;
-            font-weight: 700;
-            padding: 2px 10px;
-            border-radius: 20px;
-            background: rgba(255,255,255,.22);
-            letter-spacing: .4px;
-        }
-
-        .eval-nav {
-            position: absolute;
-            top: 10px;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            border: none;
-            background: rgba(255,255,255,.18);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background .2s ease;
-            font-size: 0.8rem;
-            z-index: 2;
-        }
-
-        .eval-nav:hover {
-            background: rgba(255,255,255,.35);
-        }
-
-        .eval-nav-left  { left: 10px; }
-        .eval-nav-right { right: 10px; }
-
-        .eval-linea-content {
-            margin-top: 16px;
-            width: 100%;
-        }
-
-        .eval-linea-nombre {
-            font-size: 1.05rem;
-            font-weight: 700;
-            line-height: 1.35;
-            word-break: break-word;
-            transition: color .2s ease;
-        }
-
-        .eval-linea-nombre.sin-seguimiento {
-            color: #FF6B6B;
-        }
-
-        .eval-linea-slide-label {
-            font-size: 0.68rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-            opacity: .75;
-            margin-bottom: 4px;
-        }
-
-        .eval-linea-dots {
-            display: flex;
-            gap: 5px;
-            justify-content: center;
-            margin-top: 14px;
-        }
-
-        .eval-linea-dots .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: rgba(255,255,255,.35);
-        }
-
-        .eval-linea-dots .dot.active {
-            background: white;
-        }
-
-        .eval-linea-empty {
-            font-size: 0.78rem;
-            opacity: .7;
-            font-style: italic;
-        }
+        .ev-btn-informe:hover { background: #0066CC; }
+        .ev-lineas { display: flex; flex-direction: column; gap: 12px; }
+        .ev-linea { background: #fff; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05); overflow: hidden; border-left: 5px solid var(--ev-color); }
+        .ev-linea > summary { list-style: none; cursor: pointer; padding: 16px 18px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(120px, 220px) 74px 18px; gap: 16px; align-items: center; }
+        .ev-linea > summary::-webkit-details-marker { display: none; }
+        @media (max-width: 700px) { .ev-linea > summary { grid-template-columns: minmax(0, 1fr) 64px 16px; } .ev-linea > summary .ev-bar { grid-column: 1 / -1; grid-row: 2; } }
+        .ev-linea-titulo { font-weight: 700; font-size: .95rem; line-height: 1.3; }
+        .ev-linea-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .ev-chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #F2F2F7; color: #3A3A3C; }
+        .ev-chip.codigo { background: var(--ev-color); color: #fff; }
+        .ev-chip.peso { background: rgba(0,122,255,.1); color: #0058b0; }
+        .ev-bar { height: 8px; border-radius: 999px; background: #EEEEF2; overflow: hidden; }
+        .ev-bar span { display: block; height: 100%; border-radius: 999px; }
+        .ev-pct { text-align: right; font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+        .ev-chevron { color: #AEAEB2; transition: transform .2s; }
+        .ev-linea[open] .ev-chevron { transform: rotate(180deg); }
+        .ev-motores { border-top: 1px solid #F0F0F3; padding: 6px 18px 14px; }
+        .ev-motor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(100px, 200px) 64px; gap: 14px; align-items: center; padding: 9px 0; border-bottom: 1px solid #F5F5F7; font-size: .86rem; }
+        .ev-motor:last-child { border-bottom: 0; }
+        .ev-motor .ev-bar { height: 6px; }
+        .ev-motor .ev-pct { font-size: .9rem; font-weight: 700; }
+        .ev-motor small { display: block; color: #6E6E73; font-size: .74rem; margin-top: 2px; }
+        .ev-vacio { color: #6E6E73; font-size: .85rem; padding: 10px 0; }
+        .ev-nota { font-size: .76rem; color: #6E6E73; margin-top: 14px; line-height: 1.5; }
 
         .gestionado-indicador {
             display: inline-block;
@@ -2000,77 +1901,106 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <i class="fas fa-chart-pie fa-2x me-3"></i>
                     <div>
                         <span class="modulo-panel-title">EVALUACIÓN LÍNEAS</span><br>
-                        <small>Evaluación de líneas estratégicas por proyecto</small>
+                        <small>Resumen del informe: cumplimiento ponderado por línea y motor</small>
                     </div>
                 </div>
                 <div class="p-4">
-                        <?php if (!empty($lineas_estrategicas)): ?>
-                        <div class="row g-3">
-                            <?php foreach ($lineas_estrategicas as $li => $linea):
-                                $proyectos_linea = [];
-                                $motores_linea = [];
-                                $filas_linea = array_merge(
-                                    $datos_modulos['formulacion']['borradores'] ?? [],
-                                    $datos_modulos['formulacion']['publicados'] ?? []
-                                );
-                                foreach ($filas_linea as $row) {
-                                    if (($row['linea_codigo'] ?? null) !== $linea['codigo']) continue;
-                                    $motorNombre = trim($row['motor_desarrollo'] ?? '');
-                                    if ($motorNombre !== '') {
-                                        $motores_linea[$motorNombre] = $row['motor_codigo'] ?? '';
-                                    }
-                                    $pnombre = trim($row['proyecto'] ?? '');
-                                    if ($pnombre === '') continue;
-                                    $tiene_seg = !empty($row['fecha_seguimiento']) || !empty($row['porcentaje_avance']) || !empty($row['indicador']);
-                                    $proyectos_linea[$pnombre] = ($proyectos_linea[$pnombre] ?? false) || $tiene_seg;
-                                }
-                                $motores_json = [];
-                                foreach ($motores_linea as $mNombre => $mCodigo) {
-                                    $motores_json[] = ['codigo' => $mCodigo, 'nombre' => $mNombre];
-                                }
-                                $totalProyectos = count($proyectos_linea);
-                                $proyectosConSeg = count(array_filter($proyectos_linea));
-                                $colorIdx  = $li % 10;
-                                $colorBase = $eval_colores[$colorIdx];
-                                $colorDark = eval_darken($colorBase, 0.28);
-                                $lineaLabel = trim(($linea['codigo'] ?? '') . ' - ' . $linea['nombre'], ' -');
-                            ?>
-                            <div class="col-6 col-md-4 col-lg-3">
-                                <div class="eval-linea-card"
-                                     style="background: linear-gradient(135deg, <?php echo $colorBase; ?> 0%, <?php echo $colorDark; ?> 100%);"
-                                     data-idx="0"
-                                     data-linea="<?php echo htmlspecialchars($lineaLabel); ?>"
-                                     data-motores='<?php echo htmlspecialchars(json_encode($motores_json), ENT_QUOTES); ?>'
-                                     data-seg-count="<?php echo $proyectosConSeg; ?>"
-                                     data-seg-total="<?php echo $totalProyectos; ?>">
-                                    <button type="button" class="eval-nav eval-nav-left" onclick="evalLineaNav(this,-1)" aria-label="Anterior">
-                                        <i class="fas fa-chevron-left"></i>
-                                    </button>
-                                    <button type="button" class="eval-nav eval-nav-right" onclick="evalLineaNav(this,1)" aria-label="Siguiente">
-                                        <i class="fas fa-chevron-right"></i>
-                                    </button>
-                                    <div class="eval-linea-badge"><?php echo htmlspecialchars($linea['codigo']); ?></div>
-                                    <div class="eval-linea-content">
-                                        <div class="eval-linea-slide-label">Línea</div>
-                                        <div class="eval-linea-nombre"><?php echo htmlspecialchars($linea['nombre']); ?></div>
-                                    </div>
-                                    <div class="eval-linea-dots"></div>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                        <?php else: ?>
-                        <div class="desarrollo-section">
-                            <div class="desarrollo-icon">
-                                <i class="fas fa-chart-pie"></i>
-                            </div>
-                            <div class="desarrollo-title">SIN LÍNEAS ESTRATÉGICAS</div>
-                            <div class="desarrollo-subtitle">
-                                No hay líneas estratégicas registradas en el catálogo
-                            </div>
-                        </div>
-                        <?php endif; ?>
+                    <?php
+                    $evInforme = $informe_resumen ?? ['global_cumplimiento' => 0, 'lineas' => []];
+                    $evLineas  = $evInforme['lineas'] ?? [];
+                    $evGlobal  = (float)($evInforme['global_cumplimiento'] ?? 0);
+                    // Verde 80 o más, naranja 60 a 79, rojo menos de 60 (mismos cortes del informe)
+                    $evTono = function ($p) { return $p >= 80 ? '#34C759' : ($p >= 60 ? '#FF9500' : '#FF3B30'); };
+                    $evMotores = 0; $evProyectos = 0; $evProyConReporte = 0;
+                    foreach ($evLineas as $evL) {
+                        $evMotores += count($evL['motores']);
+                        foreach ($evL['motores'] as $evM) {
+                            foreach ($evM['proyectos'] as $evP) {
+                                $evProyectos++;
+                                if ((int)$evP['total'] > 0) $evProyConReporte++;
+                            }
+                        }
+                    }
+                    $evCirc = 2 * M_PI * 70;
+                    ?>
+                    <?php if (empty($evLineas)): ?>
+                    <div class="desarrollo-section">
+                        <div class="desarrollo-icon"><i class="fas fa-chart-pie"></i></div>
+                        <div class="desarrollo-title">SIN DATOS PARA EVALUAR</div>
+                        <div class="desarrollo-subtitle">Este formulario aún no tiene indicadores ni distribución de líneas configurada.</div>
                     </div>
+                    <?php else: ?>
+                    <div class="ev-resumen">
+                        <aside class="ev-total">
+                            <div class="ev-total-label">Cumplimiento integral del plan</div>
+                            <div class="ev-donut" role="img" aria-label="Cumplimiento integral <?php echo number_format($evGlobal, 2); ?> %">
+                                <svg viewBox="0 0 160 160">
+                                    <circle cx="80" cy="80" r="70" fill="none" stroke="#EEEEF2" stroke-width="14"/>
+                                    <circle cx="80" cy="80" r="70" fill="none" stroke="<?php echo $evTono($evGlobal); ?>" stroke-width="14" stroke-linecap="round"
+                                            stroke-dasharray="<?php echo round($evCirc, 2); ?>" stroke-dashoffset="<?php echo round($evCirc * (1 - min($evGlobal, 100) / 100), 2); ?>"/>
+                                </svg>
+                                <div class="ev-donut-num"><strong><?php echo number_format($evGlobal, 2); ?>%</strong><span>ponderado</span></div>
+                            </div>
+                            <div class="ev-total-sub"><?php echo htmlspecialchars($formulario['titulo'] ?? ''); ?><?php echo !empty($formulario['anio']) ? ' · ' . (int)$formulario['anio'] : ''; ?></div>
+                            <div class="ev-total-stats">
+                                <div><b><?php echo count($evLineas); ?></b><small>Líneas</small></div>
+                                <div><b><?php echo $evMotores; ?></b><small>Motores</small></div>
+                                <div><b><?php echo $evProyectos; ?></b><small>Proyectos</small></div>
+                                <div><b><?php echo $evProyConReporte; ?>/<?php echo $evProyectos; ?></b><small>Con indicadores</small></div>
+                            </div>
+                            <a class="ev-btn-informe" href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=informePage&id=<?php echo (int)$formulario['id']; ?>">
+                                <i class="fas fa-chart-bar"></i> Ver informe completo
+                            </a>
+                        </aside>
+
+                        <div>
+                            <div class="ev-lineas">
+                                <?php foreach ($evLineas as $li => $evL):
+                                    $evColor = $eval_colores[$li % count($eval_colores)];
+                                    $evPct = (float)$evL['cumplimiento']; ?>
+                                <details class="ev-linea" style="--ev-color: <?php echo $evColor; ?>">
+                                    <summary>
+                                        <div>
+                                            <div class="ev-linea-titulo"><?php echo htmlspecialchars($evL['nombre'] ?? $evL['titulo']); ?></div>
+                                            <div class="ev-linea-meta">
+                                                <span class="ev-chip codigo"><?php echo htmlspecialchars($evL['codigo']); ?></span>
+                                                <?php if ($evL['peso'] !== null): ?><span class="ev-chip peso">Peso <?php echo number_format((float)$evL['peso'], 2); ?>%</span><?php endif; ?>
+                                                <span class="ev-chip"><?php echo count($evL['motores']); ?> motor<?php echo count($evL['motores']) === 1 ? '' : 'es'; ?></span>
+                                            </div>
+                                        </div>
+                                        <div class="ev-bar"><span style="width: <?php echo min($evPct, 100); ?>%; background: <?php echo $evTono($evPct); ?>"></span></div>
+                                        <div class="ev-pct" style="color: <?php echo $evTono($evPct); ?>"><?php echo number_format($evPct, 2); ?>%</div>
+                                        <i class="fas fa-chevron-down ev-chevron"></i>
+                                    </summary>
+                                    <div class="ev-motores">
+                                        <?php foreach ($evL['motores'] as $evM):
+                                            $evMp = (float)$evM['cumplimiento'];
+                                            $evConReporte = count(array_filter($evM['proyectos'], function ($p) { return (int)$p['total'] > 0; })); ?>
+                                        <div class="ev-motor">
+                                            <div>
+                                                <?php echo htmlspecialchars($evM['nombre']); ?>
+                                                <small>
+                                                    <?php echo $evM['peso'] !== null ? 'Peso ' . number_format((float)$evM['peso'], 2) . '% · ' : ''; ?>
+                                                    <?php echo $evConReporte; ?>/<?php echo count($evM['proyectos']); ?> proyectos con indicadores
+                                                </small>
+                                            </div>
+                                            <div class="ev-bar"><span style="width: <?php echo min($evMp, 100); ?>%; background: <?php echo $evTono($evMp); ?>"></span></div>
+                                            <div class="ev-pct" style="color: <?php echo $evTono($evMp); ?>"><?php echo number_format($evMp, 2); ?>%</div>
+                                        </div>
+                                        <?php endforeach; ?>
+                                        <?php if (empty($evL['motores'])): ?><div class="ev-vacio">Sin motores con indicadores en esta línea.</div><?php endif; ?>
+                                    </div>
+                                </details>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="ev-nota">
+                                Clic en una línea para ver sus motores. El cumplimiento se pondera con la distribución de Configuraciones del año
+                                (líneas, motores y proyectos); un elemento con peso pero sin indicadores cuenta como 0 %.
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
                 </div>
         </div>
         <!-- /Pestañas principales -->
@@ -3217,88 +3147,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#tituloFormulacionSpan').text(nombre);
         }
 
-        // ═══ EVALUACIÓN LÍNEAS — SLIDER DE TARJETAS ═══
         function evalHtmlEscape(str) {
             if (str === null || str === undefined) return '';
             return String(str).replace(/[&<>"']/g, function(c) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
             });
         }
-
-        const EVAL_LINEA_TOTAL_SLIDES = 3; // 0: línea, 1: motores, 2: proyectos con seguimiento
-
-        function evalLineaMotores(card) {
-            try { return JSON.parse(card.getAttribute('data-motores') || '[]'); }
-            catch (e) { return []; }
-        }
-
-        const EVAL_MARQUEE_SPEED_PX_POR_SEG = 28;
-
-        function evalLineaSetupMarquee(container, itemsHtml) {
-            const track = container.querySelector('.eval-linea-motores-track');
-            if (!track) return;
-            requestAnimationFrame(function() {
-                const contentHeight = track.scrollHeight;
-                const containerHeight = container.clientHeight;
-                if (contentHeight <= containerHeight) return; // Cabe completo, no hace falta scroll
-                track.innerHTML += itemsHtml; // Duplica el contenido para el loop continuo
-                const duration = (contentHeight / EVAL_MARQUEE_SPEED_PX_POR_SEG).toFixed(1);
-                track.style.animationDuration = duration + 's';
-                void track.offsetHeight; // Fuerza reflow para que el navegador registre el estado inicial
-                requestAnimationFrame(function() {
-                    track.classList.add('eval-marquee');
-                });
-            });
-        }
-
-        function evalLineaRenderDots(card, idx, total) {
-            const dotsWrap = card.querySelector('.eval-linea-dots');
-            if (!dotsWrap) return;
-            let html = '';
-            for (let i = 0; i < total; i++) {
-                html += '<span class="dot' + (i === idx ? ' active' : '') + '"></span>';
-            }
-            dotsWrap.innerHTML = html;
-        }
-
-        function evalLineaRenderSlide(card, idx) {
-            const contenido = card.querySelector('.eval-linea-content');
-            if (idx === 0) {
-                contenido.innerHTML = '<div class="eval-linea-slide-label">Línea</div><div class="eval-linea-nombre">' + evalHtmlEscape(card.getAttribute('data-linea')) + '</div>';
-            } else if (idx === 1) {
-                const motores = evalLineaMotores(card);
-                if (motores.length) {
-                    const itemsHtml = motores.map(function(m) {
-                        const label = (m.codigo ? m.codigo + ' - ' : '') + m.nombre;
-                        return '<li>' + evalHtmlEscape(label) + '</li>';
-                    }).join('');
-                    contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div>'
-                        + '<div class="eval-linea-motores-list"><ul class="eval-linea-motores-track">' + itemsHtml + '</ul></div>';
-                    evalLineaSetupMarquee(contenido.querySelector('.eval-linea-motores-list'), itemsHtml);
-                } else {
-                    contenido.innerHTML = '<div class="eval-linea-slide-label">Motores</div><div class="eval-linea-empty">Sin motores registrados</div>';
-                }
-            } else {
-                const count = card.getAttribute('data-seg-count') || '0';
-                const total = card.getAttribute('data-seg-total') || '0';
-                contenido.innerHTML = '<div class="eval-linea-slide-label">Proyectos con seguimiento</div><div class="eval-linea-ratio">' + count + '/' + total + '</div>';
-            }
-            evalLineaRenderDots(card, idx, EVAL_LINEA_TOTAL_SLIDES);
-        }
-
-        function evalLineaNav(btn, dir) {
-            const card = btn.closest('.eval-linea-card');
-            let idx = parseInt(card.getAttribute('data-idx') || '0', 10);
-            idx = (idx + dir + EVAL_LINEA_TOTAL_SLIDES) % EVAL_LINEA_TOTAL_SLIDES;
-            card.setAttribute('data-idx', idx);
-            evalLineaRenderSlide(card, idx);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.eval-linea-card').forEach(function(card) {
-                evalLineaRenderDots(card, 0, EVAL_LINEA_TOTAL_SLIDES);
-            });
-        });
 
         function gestionVigenciaOptions(valorActual) {
             let html = '<option value="">Seleccione vigencia</option>';
