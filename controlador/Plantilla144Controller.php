@@ -399,8 +399,9 @@ class Plantilla144Controller {
 
             $datos = [];
             $errores = [];
-            // Semestres bloqueados en Editar formulario → Campos (los administradores no se ven afectados)
-            $bloqueo = $this->esAdmin() ? ['sem1' => false, 'sem2' => false] : $this->model->getBloqueosSemestres((int)($actual['formulario_id'] ?? 0));
+            // Semestres bloqueados en Editar formulario → Campos
+            $bloqueo = $this->model->getBloqueosSemestres((int)($actual['formulario_id'] ?? 0));
+            if ($bloqueo['excepto_admin'] && $this->esAdmin()) $bloqueo = ['sem1' => false, 'sem2' => false];
             foreach ($editables as $k) {
                 if (!isset($mapa[$k])) continue;
                 if ($k === 'semestre1_seguimiento' && $bloqueo['sem1']) continue;

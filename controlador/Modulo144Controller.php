@@ -1234,10 +1234,11 @@ class Modulo144Controller {
         readfile($ruta);
     }
 
-    // Semestres cuyas casillas de seguimiento están bloqueadas para el usuario actual (los administradores no se ven afectados)
+    // Semestres cuyas casillas de seguimiento están bloqueadas (aplica a todos; se desbloquean en Editar formulario → Campos)
     private function semestresBloqueados(array $item) {
-        if ($this->esAdminSeguimiento()) return ['sem1' => false, 'sem2' => false];
-        return $this->model->getBloqueosSemestres((int)($item['formulario_id'] ?? 0));
+        $b = $this->model->getBloqueosSemestres((int)($item['formulario_id'] ?? 0));
+        if ($b['excepto_admin'] && $this->esAdminSeguimiento()) return ['sem1' => false, 'sem2' => false, 'excepto_admin' => true];
+        return $b;
     }
 }
 ?>

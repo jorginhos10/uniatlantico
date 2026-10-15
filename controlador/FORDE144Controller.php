@@ -360,7 +360,7 @@ class FORDE144Controller {
             return;
         }
         $b = $this->model->getBloqueosSemestres($formulario_id);
-        echo json_encode(['success' => true, 'sem1' => $b['sem1'], 'sem2' => $b['sem2']]);
+        echo json_encode(['success' => true, 'sem1' => $b['sem1'], 'sem2' => $b['sem2'], 'excepto_admin' => $b['excepto_admin']]);
     }
 
     /**
@@ -379,7 +379,7 @@ class FORDE144Controller {
         $formulario_id = intval($_POST['formulario_id'] ?? 0);
         $semestre = intval($_POST['semestre'] ?? 0);
         $bloqueado = !empty($_POST['bloqueado']) && $_POST['bloqueado'] !== '0';
-        if ($formulario_id <= 0 || !in_array($semestre, [1, 2], true)) {
+        if ($formulario_id <= 0 || !in_array($semestre, [0, 1, 2], true)) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }

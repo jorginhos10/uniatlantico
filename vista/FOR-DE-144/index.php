@@ -942,7 +942,7 @@ $fl_etiquetas = [
                         <label class="form-label">Casillas de seguimiento</label>
                         <p style="font-size:13px;color:var(--ios-label2);margin-top:-4px;">
                             Bloquea o desbloquea las casillas de seguimiento y de seguimiento por facultades de cada semestre.
-                            Los administradores pueden seguir editándolas.
+                            El bloqueo aplica a todos los usuarios; activa "Excepto administradores" para que ellos sigan editando.
                         </p>
                         <div class="campos-toggle-lista">
                             <div class="campos-toggle">
@@ -962,6 +962,15 @@ $fl_etiquetas = [
                                 <div class="form-check form-switch">
                                     <input class="form-check-input bloqueo-semestre" type="checkbox" role="switch" id="bloqueoSem2" data-semestre="2" checked aria-label="Semestre 2 desbloqueado">
                                 </div>
+                            </div>
+                        </div>
+                        <div class="campos-toggle" style="margin-top:10px;">
+                            <div>
+                                <div class="campos-toggle-titulo">Excepto administradores</div>
+                                <div class="campos-toggle-ayuda" id="bloqueoExceptoAyuda">Cargando…</div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="bloqueoExceptoAdmin" aria-label="Excepto administradores">
                             </div>
                         </div>
                         <div id="bloqueoMsg" style="font-size:12px;margin-top:10px;min-height:18px;color:var(--ios-label2);"></div>
@@ -1424,15 +1433,22 @@ $fl_etiquetas = [
             : 'Desbloqueado: las casillas de seguimiento de este semestre se pueden editar.');
     }
 
+    function pintarExceptoAdmin(activo) {
+        $('#bloqueoExceptoAdmin').prop('checked', !!activo).prop('disabled', false);
+        $('#bloqueoExceptoAyuda').text(activo
+            ? 'Activado: los administradores pueden editar aunque el semestre esté bloqueado.'
+            : 'Desactivado: el bloqueo también aplica a los administradores.');
+    }
+
     function cargarBloqueos(formularioId) {
-        $('.bloqueo-semestre').prop('disabled', true);
+        $('.bloqueo-semestre, #bloqueoExceptoAdmin').prop('disabled', true);
         $('#bloqueoMsg').text('');
         $.ajax({
             url: basePath + '/FOR-DE-144?action=getBloqueos&formulario_id=' + formularioId,
             type: 'GET',
             dataType: 'json',
             success: function (r) {
-                if (r.success) { pintarBloqueo(1, !!r.sem1); pintarBloqueo(2, !!r.sem2); }
+                if (r.success) { pintarBloqueo(1, !!r.sem1); pintarBloqueo(2, !!r.sem2); pintarExceptoAdmin(!!r.excepto_admin); }
                 else { $('#bloqueoMsg').text(r.message || 'No se pudo cargar el estado').css('color', 'var(--ios-red)'); }
             },
             error: function () { $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)'); }
@@ -1460,6 +1476,31 @@ $fl_etiquetas = [
             },
             error: function () {
                 pintarBloqueo(semestre, !bloqueado);
+                $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)');
+            }
+        });
+    });
+
+    $(document).on('change', '#bloqueoExceptoAdmin', function () {
+        const caja = $(this);
+        const activo = caja.is(':checked');
+        caja.prop('disabled', true);
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=guardarBloqueo',
+            type: 'POST',
+            data: { formulario_id: $('#formularioIdEditar').val(), semestre: 0, bloqueado: activo ? 1 : 0 },
+            dataType: 'json',
+            success: function (r) {
+                if (r.success) {
+                    pintarExceptoAdmin(activo);
+                    $('#bloqueoMsg').text(activo ? 'Los administradores quedan exceptuados del bloqueo' : 'El bloqueo aplica también a los administradores').css('color', 'var(--ios-green)');
+                } else {
+                    pintarExceptoAdmin(!activo);
+                    $('#bloqueoMsg').text(r.message || 'No se pudo guardar').css('color', 'var(--ios-red)');
+                }
+            },
+            error: function () {
+                pintarExceptoAdmin(!activo);
                 $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)');
             }
         });

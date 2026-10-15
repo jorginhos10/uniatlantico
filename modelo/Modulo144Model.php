@@ -1373,7 +1373,7 @@ class Modulo144Model {
         static $listo = false;
         if ($listo) return;
         try {
-            foreach (['bloqueo_sem1', 'bloqueo_sem2'] as $col) {
+            foreach (['bloqueo_sem1', 'bloqueo_sem2', 'bloqueo_excepto_admin'] as $col) {
                 if ($this->db->query("SHOW COLUMNS FROM formularios LIKE '" . $col . "'")->rowCount() === 0) {
                     $this->db->exec("ALTER TABLE formularios ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
                 }
@@ -1387,12 +1387,13 @@ class Modulo144Model {
     public function getBloqueosSemestres($formularioId) {
         $this->asegurarColumnasBloqueoSemestres();
         try {
-            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2 FROM formularios WHERE id = :id");
+            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2, bloqueo_excepto_admin FROM formularios WHERE id = :id");
             $stmt->execute([':id' => (int)$formularioId]);
             $r = $stmt->fetch();
-            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1];
+            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1,
+                    'excepto_admin' => (int)($r['bloqueo_excepto_admin'] ?? 0) === 1];
         } catch (PDOException $e) {
-            return ['sem1' => false, 'sem2' => false];
+            return ['sem1' => false, 'sem2' => false, 'excepto_admin' => false];
         }
     }
 }

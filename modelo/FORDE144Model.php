@@ -473,7 +473,7 @@ class FORDE144Model {
         static $listo = false;
         if ($listo) return;
         try {
-            foreach (['bloqueo_sem1', 'bloqueo_sem2'] as $col) {
+            foreach (['bloqueo_sem1', 'bloqueo_sem2', 'bloqueo_excepto_admin'] as $col) {
                 $q = $this->db->query("SHOW COLUMNS FROM " . $this->table . " LIKE '" . $col . "'");
                 if ($q->rowCount() === 0) {
                     $this->db->exec("ALTER TABLE " . $this->table . " ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
@@ -488,19 +488,21 @@ class FORDE144Model {
     public function getBloqueosSemestres($formulario_id) {
         $this->asegurarColumnasBloqueo();
         try {
-            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2 FROM " . $this->table . " WHERE id = :id");
+            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2, bloqueo_excepto_admin FROM " . $this->table . " WHERE id = :id");
             $stmt->execute([':id' => (int)$formulario_id]);
             $r = $stmt->fetch();
-            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1];
+            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1,
+                    'excepto_admin' => (int)($r['bloqueo_excepto_admin'] ?? 0) === 1];
         } catch (PDOException $e) {
             error_log('Error getBloqueosSemestres: ' . $e->getMessage());
-            return ['sem1' => false, 'sem2' => false];
+            return ['sem1' => false, 'sem2' => false, 'excepto_admin' => false];
         }
     }
 
     public function setBloqueoSemestre($formulario_id, $semestre, $bloqueado) {
         $this->asegurarColumnasBloqueo();
-        $col = (int)$semestre === 2 ? 'bloqueo_sem2' : 'bloqueo_sem1';
+        // semestre 0 = opción "Excepto administradores"
+        $col = (int)$semestre === 0 ? 'bloqueo_excepto_admin' : ((int)$semestre === 2 ? 'bloqueo_sem2' : 'bloqueo_sem1');
         try {
             $stmt = $this->db->prepare("UPDATE " . $this->table . " SET {$col} = :v WHERE id = :id");
             return $stmt->execute([':v' => $bloqueado ? 1 : 0, ':id' => (int)$formulario_id]);

@@ -5237,9 +5237,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         // ═══ PUBLICAR BORRADORES (solo administrador) ═══
         const ES_ADMIN_PLAN = <?php echo !empty($esAdminPlan) ? 'true' : 'false'; ?>;
-        // Semestres bloqueados en Editar formulario → Campos (los administradores no se ven afectados)
-        const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && empty($esAdminPlan)) ? 'true' : 'false'; ?>;
-        const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && empty($esAdminPlan)) ? 'true' : 'false'; ?>;
+        // Semestres bloqueados en Editar formulario → Campos (aplica a todos los usuarios)
+        <?php
+            // "Excepto administradores": superadmin, administrador y sub administrador no quedan bloqueados
+            $exceptoAdminBloqueo = !empty($formulario['bloqueo_excepto_admin']) && (
+                (int)($_SESSION['usuario_id'] ?? 0) === 1
+                || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador', 'sub administrador'], true)
+            );
+        ?>
+        const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
+        const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
 
         function aplicarBloqueoSemestres() {
             if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #tablaSeguimientoFacultades .seg-fac-s1').prop('disabled', true);
@@ -5247,7 +5254,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (BLOQUEO_SEM1 && BLOQUEO_SEM2) $('#tablaSeguimientoFacultades .seg-fac-descripcion').prop('disabled', true);
             const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
             $('#segBloqueoAviso').toggle(bloqueados.length > 0)
-                .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador.');
+                .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador de este formulario.');
         }
 
         // ids vacío = todos los borradores completos del formulario
