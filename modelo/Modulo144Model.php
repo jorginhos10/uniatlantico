@@ -80,7 +80,7 @@ class Modulo144Model {
             'fecha_publicacion' => 'fecha_publicacion_seguimiento',
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
-                                   'semestre1_seguimiento', 'semestre2_seguimiento',
+                                   'semestre1_seguimiento', 'semestre2_seguimiento', 'descripcion_sem1', 'descripcion_sem2',
                                    'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'],
             'campos_vista' => [
                 'INDICADOR' => 'indicador',
@@ -134,6 +134,7 @@ class Modulo144Model {
 
     public function verificarFormulario($id) {
         $this->asegurarColumnasBloqueoSemestres();
+        $this->asegurarColumnasDescripcionSemestres();
         try {
             $stmt = $this->db->prepare("SELECT *, 
                                         CASE WHEN tipo_tiempo = 'libre' THEN NULL ELSE fecha_fin END as fecha_cierre,
@@ -614,6 +615,7 @@ class Modulo144Model {
     }
 
     public function getById($modulo, $id) {
+        $this->asegurarColumnasDescripcionSemestres();
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
             $stmt = $this->db->prepare("SELECT f.*,
@@ -935,7 +937,9 @@ class Modulo144Model {
     public function getDistribucionFacultades($formulacionId) {
         // Se prueba de la versión más completa a la más simple, por si aún no se ejecutó toda la
         // migración de seguimiento por facultad (así lo que ya existe se sigue cargando)
+        $this->asegurarColumnasDescripcionSemestres();
         $columnas = [
+            'facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion, seguimiento_descripcion2',
             'facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion',
             'facultad_id, observacion, distribucion, seguimiento_sem1, seguimiento_sem2',
             'facultad_id, observacion, distribucion',
@@ -1000,15 +1004,18 @@ class Modulo144Model {
         return 0;
     }
 
-    public function guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion = null) {
+    // $descripcion = descripción del semestre 1; $descripcion2 = descripción del semestre 2
+    public function guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion = null, $descripcion2 = null) {
+        $this->asegurarColumnasDescripcionSemestres();
         try {
             $stmt = $this->db->prepare(
-                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion)
-                 VALUES (:fid, :facid, 0, :s1, :s2, :descr)
+                "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, seguimiento_sem1, seguimiento_sem2, seguimiento_descripcion, seguimiento_descripcion2)
+                 VALUES (:fid, :facid, 0, :s1, :s2, :descr, :descr2)
                  ON DUPLICATE KEY UPDATE seguimiento_sem1 = VALUES(seguimiento_sem1), seguimiento_sem2 = VALUES(seguimiento_sem2),
-                                         seguimiento_descripcion = VALUES(seguimiento_descripcion)"
+                                         seguimiento_descripcion = VALUES(seguimiento_descripcion),
+                                         seguimiento_descripcion2 = VALUES(seguimiento_descripcion2)"
             );
-            return $stmt->execute([':fid' => $formulacionId, ':facid' => $facultadId, ':s1' => $sem1, ':s2' => $sem2, ':descr' => $descripcion]);
+            return $stmt->execute([':fid' => $formulacionId, ':facid' => $facultadId, ':s1' => $sem1, ':s2' => $sem2, ':descr' => $descripcion, ':descr2' => $descripcion2]);
         } catch (PDOException $e) {
             error_log("Error guardarSeguimientoFacultad: " . $e->getMessage());
             return false;
@@ -1284,15 +1291,19 @@ class Modulo144Model {
             fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_evidencia_item (formulacion_id, facultad_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // Cada semestre tiene sus propias evidencias (las ya cargadas quedan en el semestre 1)
+        if ($this->db->query("SHOW COLUMNS FROM evidencias_144 LIKE 'semestre'")->rowCount() === 0) {
+            $this->db->exec("ALTER TABLE evidencias_144 ADD COLUMN semestre TINYINT NOT NULL DEFAULT 1 AFTER facultad_id");
+        }
         $listo = true;
     }
 
-    public function getEvidencias($formulacionId, $facultadId = 0) {
+    public function getEvidencias($formulacionId, $facultadId = 0, $semestre = 1) {
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("SELECT id, nombre_original, ruta, tamano, fecha_creacion
-                                        FROM evidencias_144 WHERE formulacion_id = :f AND facultad_id = :fac ORDER BY id");
-            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId]);
+            $stmt = $this->db->prepare("SELECT id, nombre_original, ruta, tamano, fecha_creacion, semestre
+                                        FROM evidencias_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :sem ORDER BY id");
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre]);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log('Error getEvidencias: ' . $e->getMessage());
@@ -1300,16 +1311,17 @@ class Modulo144Model {
         }
     }
 
-    // ['general' => n, 'facultades' => [facultad_id => n]]
+    // ['general' => [semestre => n], 'facultades' => [facultad_id => [semestre => n]]]
     public function getResumenEvidencias($formulacionId) {
-        $res = ['general' => 0, 'facultades' => []];
+        $res = ['general' => [1 => 0, 2 => 0], 'facultades' => []];
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("SELECT facultad_id, COUNT(*) AS n FROM evidencias_144 WHERE formulacion_id = :f GROUP BY facultad_id");
+            $stmt = $this->db->prepare("SELECT facultad_id, semestre, COUNT(*) AS n FROM evidencias_144 WHERE formulacion_id = :f GROUP BY facultad_id, semestre");
             $stmt->execute([':f' => (int)$formulacionId]);
             foreach ($stmt->fetchAll() as $r) {
-                if ((int)$r['facultad_id'] === 0) $res['general'] = (int)$r['n'];
-                else $res['facultades'][(int)$r['facultad_id']] = (int)$r['n'];
+                $sem = (int)$r['semestre'] === 2 ? 2 : 1;
+                if ((int)$r['facultad_id'] === 0) $res['general'][$sem] = (int)$r['n'];
+                else $res['facultades'][(int)$r['facultad_id']][$sem] = (int)$r['n'];
             }
         } catch (PDOException $e) {
             error_log('Error getResumenEvidencias: ' . $e->getMessage());
@@ -1317,16 +1329,16 @@ class Modulo144Model {
         return $res;
     }
 
-    public function contarEvidencias($formulacionId, $facultadId = 0) {
-        return count($this->getEvidencias($formulacionId, $facultadId));
+    public function contarEvidencias($formulacionId, $facultadId = 0, $semestre = 1) {
+        return count($this->getEvidencias($formulacionId, $facultadId, $semestre));
     }
 
-    public function guardarEvidencia($formulacionId, $facultadId, $nombreOriginal, $ruta, $tamano, $usuarioId) {
+    public function guardarEvidencia($formulacionId, $facultadId, $nombreOriginal, $ruta, $tamano, $usuarioId, $semestre = 1) {
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("INSERT INTO evidencias_144 (formulacion_id, facultad_id, nombre_original, ruta, tamano, usuario_id)
-                                        VALUES (:f, :fac, :n, :r, :t, :u)");
-            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':n' => $nombreOriginal,
+            $stmt = $this->db->prepare("INSERT INTO evidencias_144 (formulacion_id, facultad_id, semestre, nombre_original, ruta, tamano, usuario_id)
+                                        VALUES (:f, :fac, :sem, :n, :r, :t, :u)");
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre, ':n' => $nombreOriginal,
                             ':r' => $ruta, ':t' => (int)$tamano, ':u' => $usuarioId ?: null]);
             return (int)$this->db->lastInsertId();
         } catch (PDOException $e) {
@@ -1394,6 +1406,27 @@ class Modulo144Model {
                     'excepto_admin' => (int)($r['bloqueo_excepto_admin'] ?? 0) === 1];
         } catch (PDOException $e) {
             return ['sem1' => false, 'sem2' => false, 'excepto_admin' => false];
+        }
+    }
+
+    // Descripción por semestre: del indicador (formulacion_144) y de cada facultad (distribución). Las columnas se crean solas.
+    public function asegurarColumnasDescripcionSemestres() {
+        static $listo = false;
+        if ($listo) return;
+        try {
+            $cols = [
+                ['formulacion_144', 'descripcion_sem1', 'TEXT NULL'],
+                ['formulacion_144', 'descripcion_sem2', 'TEXT NULL'],
+                ['formulacion_distribucion_facultad_144', 'seguimiento_descripcion2', 'TEXT NULL'],
+            ];
+            foreach ($cols as [$tabla, $col, $def]) {
+                if ($this->db->query("SHOW COLUMNS FROM {$tabla} LIKE '{$col}'")->rowCount() === 0) {
+                    $this->db->exec("ALTER TABLE {$tabla} ADD COLUMN {$col} {$def}");
+                }
+            }
+            $listo = true;
+        } catch (PDOException $e) {
+            error_log('Error asegurarColumnasDescripcionSemestres: ' . $e->getMessage());
         }
     }
 }

@@ -453,8 +453,8 @@ class Modulo144Controller {
             // Semestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
             if ($modulo === 'seguimiento' && $itemActual) {
                 $bl = $this->semestresBloqueados($itemActual);
-                if ($bl['sem1']) unset($_POST['semestre1_seguimiento']);
-                if ($bl['sem2']) unset($_POST['semestre2_seguimiento']);
+                if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['descripcion_sem1']);
+                if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['descripcion_sem2']);
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
@@ -917,6 +917,8 @@ class Modulo144Controller {
         $sem2 = $num($_POST['seguimiento_sem2'] ?? '');
         $descripcion = trim((string)($_POST['seguimiento_descripcion'] ?? ''));
         $descripcion = $descripcion === '' ? null : $descripcion;
+        $descripcion2 = trim((string)($_POST['seguimiento_descripcion2'] ?? ''));
+        $descripcion2 = $descripcion2 === '' ? null : $descripcion2;
 
         $item = $formulacionId > 0 ? $this->model->getById('seguimiento', $formulacionId) : null;
         if (!$item || $facultadId <= 0) {
@@ -935,12 +937,17 @@ class Modulo144Controller {
             foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
                 if ((int)$d['facultad_id'] === $facultadId) { $actualFac = $d; break; }
             }
-            if ($bl['sem1']) $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
-            if ($bl['sem2']) $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
-            if ($bl['sem1'] && $bl['sem2']) $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
+            if ($bl['sem1']) {
+                $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
+                $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
+            }
+            if ($bl['sem2']) {
+                $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
+                $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
+            }
         }
 
-        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion);
+        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion, $descripcion2);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
     }
 
@@ -1092,7 +1099,10 @@ class Modulo144Controller {
 
     // Quién puede cargar/quitar: evidencias del indicador → administradores, creador y dependencia responsable;
     // evidencias de una facultad → quien puede registrar el seguimiento de esa facultad.
-    private function puedeEditarEvidencias(array $item, $facultadId) {
+    private function puedeEditarEvidencias(array $item, $facultadId, $semestre = 1) {
+        // Un semestre bloqueado (Editar formulario → Campos) tampoco admite cambios en sus evidencias
+        $bl = $this->semestresBloqueados($item);
+        if (!empty($bl[(int)$semestre === 2 ? 'sem2' : 'sem1'])) return false;
         if ($facultadId > 0) return $this->puedeRegistrarSeguimientoFacultad($item, $facultadId);
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         return $this->esAdminSeguimiento() || ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) || $this->esResponsableDelItem($item);
@@ -1111,14 +1121,18 @@ class Modulo144Controller {
         return $texto !== '' ? substr($texto, 0, 60) : 'SIN-NOMBRE';
     }
 
-    // Carpeta relativa a la raíz: evidencias/AÑO/ID[/FACULTAD]
-    private function carpetaEvidencias(array $item, $facultadId) {
+    // Carpeta relativa a la raíz: evidencias/AÑO/ID[/FACULTAD]/semestre-N
+    private function carpetaEvidencias(array $item, $facultadId, $semestre = 1) {
         $anio = preg_replace('/\D/', '', (string)($item['anio'] ?? ''));
         $ruta = 'evidencias/' . ($anio !== '' ? $anio : 'sin-anio') . '/' . (int)$item['id'];
         if ($facultadId > 0) {
             $ruta .= '/' . $this->slugEvidencia($this->model->getNombreFacultad($facultadId) ?: ('facultad-' . (int)$facultadId));
         }
-        return $ruta;
+        return $ruta . '/semestre-' . ((int)$semestre === 2 ? 2 : 1);
+    }
+
+    private function semestreEvidencias($origen) {
+        return (int)($origen['semestre'] ?? 1) === 2 ? 2 : 1;
     }
 
     private function cargarItemEvidencias(&$formulacionId, &$facultadId, $origen) {
@@ -1146,15 +1160,17 @@ class Modulo144Controller {
         $item = $this->cargarItemEvidencias($fid, $fac, $_GET);
         if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
         if (!$this->puedeVerEvidencias($item, $fac)) { echo json_encode(['success' => false, 'message' => 'No tienes acceso a estas evidencias']); return; }
+        $sem = $this->semestreEvidencias($_GET);
         $archivos = array_map(function ($e) {
             return ['id' => (int)$e['id'], 'nombre' => $e['nombre_original'], 'tamano' => (int)$e['tamano'], 'fecha' => $e['fecha_creacion']];
-        }, $this->model->getEvidencias($fid, $fac));
+        }, $this->model->getEvidencias($fid, $fac, $sem));
         echo json_encode([
             'success' => true,
             'archivos' => $archivos,
             'maximo' => self::EVIDENCIAS_MAX,
-            'puede_editar' => $this->puedeEditarEvidencias($item, $fac),
-            'carpeta' => $this->carpetaEvidencias($item, $fac) . '/',
+            'semestre' => $sem,
+            'puede_editar' => $this->puedeEditarEvidencias($item, $fac, $sem),
+            'carpeta' => $this->carpetaEvidencias($item, $fac, $sem) . '/',
         ]);
     }
 
@@ -1164,7 +1180,8 @@ class Modulo144Controller {
         $fid = $fac = 0;
         $item = $this->cargarItemEvidencias($fid, $fac, $_POST);
         if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
-        if (!$this->puedeEditarEvidencias($item, $fac)) { echo json_encode(['success' => false, 'message' => 'No puedes cargar evidencias aquí']); return; }
+        $sem = $this->semestreEvidencias($_POST);
+        if (!$this->puedeEditarEvidencias($item, $fac, $sem)) { echo json_encode(['success' => false, 'message' => 'No puedes cargar evidencias aquí (¿el semestre está bloqueado?)']); return; }
 
         $f = $_FILES['archivo'] ?? null;
         if (!$f || $f['error'] !== UPLOAD_ERR_OK) {
@@ -1180,13 +1197,13 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Tipo de archivo no permitido (PDF, imágenes, Word, Excel, PowerPoint, TXT o CSV)']);
             return;
         }
-        if ($this->model->contarEvidencias($fid, $fac) >= self::EVIDENCIAS_MAX) {
+        if ($this->model->contarEvidencias($fid, $fac, $sem) >= self::EVIDENCIAS_MAX) {
             echo json_encode(['success' => false, 'message' => 'Solo puedes cargar ' . self::EVIDENCIAS_MAX . ' evidencias. Quita una para agregar otra']);
             return;
         }
 
         $raiz = dirname(__DIR__);
-        $carpeta = $this->carpetaEvidencias($item, $fac);
+        $carpeta = $this->carpetaEvidencias($item, $fac, $sem);
         $dir = $raiz . '/' . $carpeta;
         if (!is_dir($dir) && !@mkdir($dir, 0775, true)) { echo json_encode(['success' => false, 'message' => 'No se pudo crear la carpeta de evidencias']); return; }
         // La carpeta no se sirve directamente: todo pasa por verEvidencia
@@ -1197,7 +1214,7 @@ class Modulo144Controller {
 
         $guardado = bin2hex(random_bytes(8)) . '.' . $ext;
         if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $guardado)) { echo json_encode(['success' => false, 'message' => 'No se pudo guardar el archivo']); return; }
-        $id = $this->model->guardarEvidencia($fid, $fac, mb_substr($nombre, 0, 255, 'UTF-8'), $carpeta . '/' . $guardado, $f['size'], $_SESSION['usuario_id'] ?? 0);
+        $id = $this->model->guardarEvidencia($fid, $fac, mb_substr($nombre, 0, 255, 'UTF-8'), $carpeta . '/' . $guardado, $f['size'], $_SESSION['usuario_id'] ?? 0, $sem);
         if ($id <= 0) { @unlink($dir . '/' . $guardado); echo json_encode(['success' => false, 'message' => 'No se pudo registrar el archivo']); return; }
         echo json_encode(['success' => true, 'id' => $id]);
     }
@@ -1208,7 +1225,7 @@ class Modulo144Controller {
         $ev = $this->model->getEvidencia((int)($_POST['id'] ?? 0));
         $item = $ev ? $this->model->getById('seguimiento', (int)$ev['formulacion_id']) : null;
         if (!$ev || !$item) { echo json_encode(['success' => false, 'message' => 'Evidencia no encontrada']); return; }
-        if (!$this->puedeEditarEvidencias($item, (int)$ev['facultad_id'])) { echo json_encode(['success' => false, 'message' => 'No puedes quitar esta evidencia']); return; }
+        if (!$this->puedeEditarEvidencias($item, (int)$ev['facultad_id'], (int)($ev['semestre'] ?? 1))) { echo json_encode(['success' => false, 'message' => 'No puedes quitar esta evidencia (¿el semestre está bloqueado?)']); return; }
         $ok = $this->model->eliminarEvidencia((int)$ev['id']);
         if ($ok) @unlink(dirname(__DIR__) . '/' . $ev['ruta']);
         echo json_encode(['success' => $ok]);
