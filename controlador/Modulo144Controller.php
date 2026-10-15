@@ -1051,5 +1051,168 @@ class Modulo144Controller {
         );
         echo json_encode(['success' => $result]);
     }
+
+    // ───────────────────────── Evidencias (archivos del seguimiento) ─────────────────────────
+    // Se guardan en evidencias/AÑO/ID_INDICADOR[/FACULTAD]/ en la raíz del proyecto. La carpeta no es pública
+    // (.htaccess); los archivos se consultan por verEvidencia, que comprueba permisos.
+    const EVIDENCIAS_MAX = 5;
+    const EVIDENCIAS_MAX_BYTES = 10485760; // 10 MB
+    private static $evidenciasTipos = [
+        'pdf' => 'application/pdf', 'png' => 'image/png', 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif', 'webp' => 'image/webp', 'txt' => 'text/plain', 'csv' => 'text/csv',
+        'doc' => 'application/msword', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls' => 'application/vnd.ms-excel', 'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt' => 'application/vnd.ms-powerpoint', 'pptx' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ];
+
+    private function esAdminSeguimiento() {
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        return $uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true);
+    }
+
+    // Quién puede cargar/quitar: evidencias del indicador → administradores, creador y dependencia responsable;
+    // evidencias de una facultad → quien puede registrar el seguimiento de esa facultad.
+    private function puedeEditarEvidencias(array $item, $facultadId) {
+        if ($facultadId > 0) return $this->puedeRegistrarSeguimientoFacultad($item, $facultadId);
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        return $this->esAdminSeguimiento() || ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) || $this->esResponsableDelItem($item);
+    }
+
+    // Quién puede consultar: cualquiera con acceso al indicador; las evidencias de otra facultad solo su facultad
+    private function puedeVerEvidencias(array $item, $facultadId) {
+        if ($facultadId <= 0) return true;
+        $propias = $this->facultadesRestringidas($item);
+        return !$propias || in_array((int)$facultadId, $propias, true);
+    }
+
+    private function slugEvidencia($texto) {
+        $texto = strtr((string)$texto, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'n','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'N','ü'=>'u','Ü'=>'U']);
+        $texto = strtoupper(trim(preg_replace('/[^A-Za-z0-9]+/', '-', $texto), '-'));
+        return $texto !== '' ? substr($texto, 0, 60) : 'SIN-NOMBRE';
+    }
+
+    // Carpeta relativa a la raíz: evidencias/AÑO/ID[/FACULTAD]
+    private function carpetaEvidencias(array $item, $facultadId) {
+        $anio = preg_replace('/\D/', '', (string)($item['anio'] ?? ''));
+        $ruta = 'evidencias/' . ($anio !== '' ? $anio : 'sin-anio') . '/' . (int)$item['id'];
+        if ($facultadId > 0) {
+            $ruta .= '/' . $this->slugEvidencia($this->model->getNombreFacultad($facultadId) ?: ('facultad-' . (int)$facultadId));
+        }
+        return $ruta;
+    }
+
+    private function cargarItemEvidencias(&$formulacionId, &$facultadId, $origen) {
+        $formulacionId = (int)($origen['formulacion_id'] ?? 0);
+        $facultadId = (int)($origen['facultad_id'] ?? 0);
+        return $formulacionId > 0 ? $this->model->getById('seguimiento', $formulacionId) : null;
+    }
+
+    public function resumenEvidencias() {
+        header('Content-Type: application/json');
+        $fid = $fac = 0;
+        $item = $this->cargarItemEvidencias($fid, $fac, $_GET);
+        if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+        $res = $this->model->getResumenEvidencias($fid);
+        $propias = $this->facultadesRestringidas($item);
+        if ($propias) {
+            $res['facultades'] = array_intersect_key($res['facultades'], array_flip($propias));
+        }
+        echo json_encode(['success' => true, 'general' => $res['general'], 'facultades' => (object)$res['facultades']]);
+    }
+
+    public function listarEvidencias() {
+        header('Content-Type: application/json');
+        $fid = $fac = 0;
+        $item = $this->cargarItemEvidencias($fid, $fac, $_GET);
+        if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+        if (!$this->puedeVerEvidencias($item, $fac)) { echo json_encode(['success' => false, 'message' => 'No tienes acceso a estas evidencias']); return; }
+        $archivos = array_map(function ($e) {
+            return ['id' => (int)$e['id'], 'nombre' => $e['nombre_original'], 'tamano' => (int)$e['tamano'], 'fecha' => $e['fecha_creacion']];
+        }, $this->model->getEvidencias($fid, $fac));
+        echo json_encode([
+            'success' => true,
+            'archivos' => $archivos,
+            'maximo' => self::EVIDENCIAS_MAX,
+            'puede_editar' => $this->puedeEditarEvidencias($item, $fac),
+            'carpeta' => $this->carpetaEvidencias($item, $fac) . '/',
+        ]);
+    }
+
+    public function subirEvidencia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $fid = $fac = 0;
+        $item = $this->cargarItemEvidencias($fid, $fac, $_POST);
+        if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+        if (!$this->puedeEditarEvidencias($item, $fac)) { echo json_encode(['success' => false, 'message' => 'No puedes cargar evidencias aquí']); return; }
+
+        $f = $_FILES['archivo'] ?? null;
+        if (!$f || $f['error'] !== UPLOAD_ERR_OK) {
+            $msg = ($f && in_array($f['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true))
+                ? 'El archivo supera el tamaño permitido' : 'No se pudo recibir el archivo';
+            echo json_encode(['success' => false, 'message' => $msg]);
+            return;
+        }
+        if ($f['size'] > self::EVIDENCIAS_MAX_BYTES) { echo json_encode(['success' => false, 'message' => 'Cada archivo puede pesar máximo 10 MB']); return; }
+        $nombre = trim(basename(str_replace('\\', '/', (string)$f['name'])));
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        if (!isset(self::$evidenciasTipos[$ext])) {
+            echo json_encode(['success' => false, 'message' => 'Tipo de archivo no permitido (PDF, imágenes, Word, Excel, PowerPoint, TXT o CSV)']);
+            return;
+        }
+        if ($this->model->contarEvidencias($fid, $fac) >= self::EVIDENCIAS_MAX) {
+            echo json_encode(['success' => false, 'message' => 'Solo puedes cargar ' . self::EVIDENCIAS_MAX . ' evidencias. Quita una para agregar otra']);
+            return;
+        }
+
+        $raiz = dirname(__DIR__);
+        $carpeta = $this->carpetaEvidencias($item, $fac);
+        $dir = $raiz . '/' . $carpeta;
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true)) { echo json_encode(['success' => false, 'message' => 'No se pudo crear la carpeta de evidencias']); return; }
+        // La carpeta no se sirve directamente: todo pasa por verEvidencia
+        $ht = $raiz . '/evidencias/.htaccess';
+        if (!is_file($ht)) {
+            @file_put_contents($ht, "<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\nDeny from all\n</IfModule>\n");
+        }
+
+        $guardado = bin2hex(random_bytes(8)) . '.' . $ext;
+        if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $guardado)) { echo json_encode(['success' => false, 'message' => 'No se pudo guardar el archivo']); return; }
+        $id = $this->model->guardarEvidencia($fid, $fac, mb_substr($nombre, 0, 255, 'UTF-8'), $carpeta . '/' . $guardado, $f['size'], $_SESSION['usuario_id'] ?? 0);
+        if ($id <= 0) { @unlink($dir . '/' . $guardado); echo json_encode(['success' => false, 'message' => 'No se pudo registrar el archivo']); return; }
+        echo json_encode(['success' => true, 'id' => $id]);
+    }
+
+    public function eliminarEvidencia() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $ev = $this->model->getEvidencia((int)($_POST['id'] ?? 0));
+        $item = $ev ? $this->model->getById('seguimiento', (int)$ev['formulacion_id']) : null;
+        if (!$ev || !$item) { echo json_encode(['success' => false, 'message' => 'Evidencia no encontrada']); return; }
+        if (!$this->puedeEditarEvidencias($item, (int)$ev['facultad_id'])) { echo json_encode(['success' => false, 'message' => 'No puedes quitar esta evidencia']); return; }
+        $ok = $this->model->eliminarEvidencia((int)$ev['id']);
+        if ($ok) @unlink(dirname(__DIR__) . '/' . $ev['ruta']);
+        echo json_encode(['success' => $ok]);
+    }
+
+    // Entrega el archivo (enlace de la ventana de evidencias) tras comprobar el acceso
+    public function verEvidencia() {
+        $ev = $this->model->getEvidencia((int)($_GET['id'] ?? 0));
+        $item = $ev ? $this->model->getById('seguimiento', (int)$ev['formulacion_id']) : null;
+        $ruta = $ev ? dirname(__DIR__) . '/' . $ev['ruta'] : '';
+        if (!$ev || !$item || !$this->puedeVerEvidencias($item, (int)$ev['facultad_id']) || !is_file($ruta)) {
+            http_response_code(404);
+            echo 'Archivo no disponible';
+            return;
+        }
+        $ext = strtolower(pathinfo($ruta, PATHINFO_EXTENSION));
+        $mime = self::$evidenciasTipos[$ext] ?? 'application/octet-stream';
+        $enLinea = in_array($ext, ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'txt'], true);
+        header('Content-Type: ' . $mime);
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Length: ' . filesize($ruta));
+        header('Content-Disposition: ' . ($enLinea ? 'inline' : 'attachment') . "; filename*=UTF-8''" . rawurlencode($ev['nombre_original']));
+        readfile($ruta);
+    }
 }
 ?>

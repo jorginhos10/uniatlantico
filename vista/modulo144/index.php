@@ -773,6 +773,43 @@ ob_start();
         #modalFormulacion .form-label { font-size: 0.78rem; margin-bottom: 0.25rem; }
         #modalFormulacion .form-check-label, #modalFormulacion .form-check-label strong { font-size: 0.8rem; }
 
+        /* MODAL DE SEGUIMIENTO: pantalla completa y compacto, como Formulación */
+        #modalSeguimiento .modal-dialog { margin: 0 !important; width: 100vw; max-width: none; height: 100%; }
+        #modalSeguimiento .modal-content { height: 100%; max-height: none !important; border: 0; border-radius: 0 !important; }
+        #modalSeguimiento .modal-content > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        #modalSeguimiento .modal-body-scroll { flex: 1 1 auto; max-height: none; min-height: 0; padding: 16px 28px 24px; }
+        #modalSeguimiento .modal-header { padding: 0.4rem 1rem; min-height: 0; border: 0; }
+        #modalSeguimiento .modal-title { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+        #modalSeguimiento .btn-close { padding: 0.3rem; margin: 0; background-size: 0.7rem; }
+        #modalSeguimiento .modal-footer { padding: 0.35rem 1rem; }
+        #modalSeguimiento .modal-footer .btn { padding: 0.2rem 0.8rem; font-size: 0.8rem; }
+        #modalSeguimiento .form-label { font-size: 0.78rem; margin-bottom: 0.25rem; }
+        .seg-ctx { background: #F5F5F7; border: 1px solid #E5E5EA; border-radius: 10px; margin-bottom: 16px; }
+        .seg-ctx > summary { cursor: pointer; padding: 9px 14px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
+        .seg-ctx > summary small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+        .seg-card { display: grid; grid-template-columns: minmax(0, 1fr) 150px; gap: 16px; align-items: center; border: 1px solid #E5E5EA; border-radius: 12px; padding: 14px; background: #FAFAFC; }
+        .seg-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .seg-tile { background: #fff; border: 1px solid #E5E5EA; border-radius: 10px; padding: 10px 12px; min-width: 0; }
+        .seg-tile .form-label { margin-bottom: 2px; }
+        .seg-num { font-size: 24px; font-weight: 800; min-height: 38px; display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+        .seg-input { font-size: 22px; font-weight: 800; min-height: 38px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
+        .seg-tile-total { background: #E8F5E9; border-color: transparent; }
+        .seg-tile-total .seg-num { color: #2E7D32; }
+        @media (max-width: 700px) { .seg-card { grid-template-columns: minmax(0, 1fr); } #modalSeguimiento .modal-body-scroll { padding: 12px 14px 20px; } }
+        .seg-ev-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
+        .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #34C759; background: #E8F5E9; color: #1F8A4C; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
+        .seg-ev-btn:hover { border-style: solid; }
+        .seg-ev-btn .ev-n { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: #1F8A4C; color: #fff; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+        #modalEvidencias .ev-lista li { display: flex; align-items: center; gap: 10px; border: 1px solid #E5E5EA; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; background: #FAFAFC; min-width: 0; }
+        #modalEvidencias .ev-ext { flex: none; width: 36px; height: 36px; border-radius: 8px; background: #E6F0FA; color: #1D71B8; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; text-transform: uppercase; text-decoration: none; }
+        #modalEvidencias .ev-nombre { min-width: 0; flex: 1; }
+        #modalEvidencias .ev-nombre a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: #1D71B8; text-decoration: underline; }
+        #modalEvidencias .ev-nombre small { color: #6E6E73; }
+        #modalEvidencias .ev-quitar { flex: none; border: 0; background: none; color: #6E6E73; font-size: 18px; width: 28px; height: 28px; border-radius: 6px; }
+        #modalEvidencias .ev-quitar:hover { background: #FFF4E0; color: #B45309; }
+        #modalEvidencias .ev-vacio { border: 2px dashed #E5E5EA; border-radius: 10px; padding: 18px; }
+        #modalEvidencias .ev-ruta { font-family: ui-monospace, Consolas, monospace; font-size: 12px; background: #F2F4F8; border: 1px solid #E5E5EA; border-radius: 6px; padding: 6px 9px; word-break: break-all; color: #6E6E73; }
+
         /* Buscador de proyectos (código L-M-P o nombre) */
         .m144-buscar { position: relative; }
         .m144-buscar > .fa-search { position: absolute; left: 13px; top: 21px; transform: translateY(-50%); color: #86868b; pointer-events: none; }
@@ -2627,7 +2664,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     </div>
 
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header" style="background: #34C759;">
                     <h5 class="modal-title" id="tituloSeguimiento" ondblclick="editarTituloModal('seguimiento')">
@@ -2638,35 +2675,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <form id="formSeguimiento">
                     <input type="hidden" name="modulo" value="seguimiento">
                     <input type="hidden" id="seguimiento_id" name="id">
-                    
+
                     <div class="modal-body-scroll">
-                        <div class="row mb-4">
-                            <div class="col-12">
-                                <div class="alert alert-success">
-                                    <i class="fas fa-info-circle me-2"></i>
-                                    <strong>Información Previa:</strong> Esta información proviene del formulario de formulación y no es editable.
-                                </div>
+                        <!-- Información previa (solo lectura, viene de Formulación) -->
+                        <details class="seg-ctx" open>
+                            <summary>Información previa <small>(viene de Formulación, no se edita)</small></summary>
+                            <div class="row g-3 px-3 pb-3">
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">PLAN BASE</label><div class="bg-light-view" id="seguimiento_id_indicador_view">-</div></div>
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">FRECUENCIA DE MEDICIÓN</label><div class="bg-light-view" id="seguimiento_frecuencia_medicion_view">-</div></div>
+                                <div class="col-12 col-md-12 col-xxl-6"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view" style="min-height:64px;">-</div></div>
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">UNIDAD DE MEDIDA</label><div class="bg-light-view" id="seguimiento_unidad_medida_view">-</div></div>
+                                <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">TIPO DE MEDICIÓN</label><div class="bg-light-view" id="seguimiento_tipo_medicion_view">-</div></div>
                             </div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">LÍNEA ESTRATÉGICA</label><div class="bg-light-view" id="seguimiento_linea_view">-</div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">MOTOR DE DESARROLLO</label><div class="bg-light-view" id="seguimiento_motor_view">-</div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">PROYECTO</label><div class="bg-light-view" id="seguimiento_proyecto_view">-</div></div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-9 mb-3 mb-md-0"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view">-</div></div>
-                            <div class="col-md-3"><label class="form-label text-muted">ID INDICADOR</label><div class="bg-light-view" id="seguimiento_id_indicador_view">-</div></div>
-                        </div>
-
-                        <div class="row mb-4">
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">13.3 FRECUENCIA DE MEDICIÓN</label><div class="bg-light-view" id="seguimiento_frecuencia_medicion_view">-</div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">13.4 UNIDAD DE MEDIDA</label><div class="bg-light-view" id="seguimiento_unidad_medida_view">-</div></div>
-                            <div class="col-md-4 mb-3"><label class="form-label text-muted">13.5 AÑO</label><div class="bg-light-view" id="seguimiento_tipo_medicion_view">-</div></div>
-                        </div>
+                        </details>
 
                         <!-- Campos ocultos requeridos por el JS existente (autoguardado, etc.) -->
+                        <span id="seguimiento_proyecto_view" class="d-none"></span>
                         <span id="seguimiento_objetivo_view" class="d-none"></span>
                         <span id="seguimiento_estrategia_view" class="d-none"></span>
                         <span id="seguimiento_meta_resultado_view" class="d-none"></span>
@@ -2684,18 +2710,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>SEGUIMIENTO</h5>
-                            <div class="row">
-                                <div class="col-md-2 mb-3 mb-md-0" id="seguimiento_linea_base_wrap" style="display:none;">
-                                    <label class="form-label">LÍNEA BASE</label>
-                                    <div class="bg-light-view" id="seguimiento_linea_base_view">-</div>
+                            <div class="seg-card">
+                                <div class="seg-tiles">
+                                    <div class="seg-tile" id="seguimiento_linea_base_wrap" style="display:none;">
+                                        <label class="form-label text-muted">LÍNEA BASE</label>
+                                        <div class="seg-num" id="seguimiento_linea_base_view">-</div>
+                                    </div>
+                                    <div class="seg-tile">
+                                        <label class="form-label" for="seguimiento_semestre1">SEMESTRE 1</label>
+                                        <input type="number" class="form-control seg-input" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
+                                    </div>
+                                    <div class="seg-tile">
+                                        <label class="form-label" for="seguimiento_semestre2">SEMESTRE 2</label>
+                                        <input type="number" class="form-control seg-input" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
+                                    </div>
+                                    <div class="seg-tile seg-tile-total">
+                                        <label class="form-label text-muted">TOTAL (META DEL AÑO)</label>
+                                        <div class="seg-num" id="seguimiento_anio_view">-</div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 1</label><input type="number" class="form-control" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">SEGUIMIENTO SEMESTRE 2</label><input type="number" class="form-control" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()"></div>
-                                <div class="col-md-2 mb-3 mb-md-0 ms-md-auto">
-                                    <label class="form-label text-muted">TOTAL</label>
-                                    <div class="bg-light-view" id="seguimiento_anio_view" style="background-color:#e8f5e9; font-weight:bold; color:#2e7d32;">-</div>
-                                </div>
-                                <div class="col-md-2 mb-3 mb-md-0 text-center">
+                                <div class="text-center">
                                     <label class="form-label text-muted d-block" style="font-size:0.75rem;">PORCENTAJE DE CUMPLIMIENTO</label>
                                     <div class="cumplimiento-ring-wrap">
                                         <svg width="84" height="84" viewBox="0 0 90 90">
@@ -2707,6 +2741,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div class="cumplimiento-ring-value" id="seguimiento_cumplimiento_text">0%</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="indicador-section field-group">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                                <h5 class="indicador-title mb-0"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
+                                <span class="seg-ev-label">Evidencias
+                                    <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0)" title="Evidencias del indicador (hasta 5 archivos)" aria-label="Evidencias del indicador">
+                                        <i class="fas fa-plus"></i><span class="ev-n" id="segEvGeneralN">0</span>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="row">
+                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
                             </div>
                         </div>
 
@@ -2722,6 +2773,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <th style="width:140px;">Seguimiento semestre 1</th>
                                             <th style="width:140px;">Seguimiento semestre 2</th>
                                             <th style="min-width:220px;">Descripción</th>
+                                            <th style="width:100px;" class="text-center">Evidencias</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -2732,6 +2784,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="0.00"></td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
                                             <td><input type="text" class="form-control form-control-sm seg-fac-descripcion" maxlength="1000" placeholder="Descripción del avance..."></td>
+                                            <td class="text-center">
+                                                <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>)" title="Evidencias de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias de <?php echo htmlspecialchars($fac['nombre']); ?>">
+                                                    <i class="fas fa-plus"></i><span class="ev-n">0</span>
+                                                </button>
+                                            </td>
                                         </tr>
                                         <?php endforeach; ?>
                                     </tbody>
@@ -2742,27 +2799,46 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td class="fw-bold" id="segFacTotalS1">0</td>
                                             <td class="fw-bold" id="segFacTotalS2">0</td>
                                             <td></td>
+                                            <td></td>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
                         </div>
-
-                        <div class="indicador-section field-group">
-                            <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
-                            <div class="row">
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-md-3 mb-3 mb-md-0"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-md-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="3" oninput="autoGuardarSeguimiento()"></textarea></div>
-                            </div>
-                        </div>
                     </div>
-                    
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA EMERGENTE: evidencias (hasta 5 archivos, con enlaces para consultarlos) -->
+    <div class="modal fade" id="modalEvidencias" tabindex="-1" aria-labelledby="evTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#34C759; color:#fff;">
+                    <h5 class="modal-title" id="evTitulo">Evidencias</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="fw-bold" id="evQuien"></div>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 my-2" id="evSubir">
+                        <button type="button" class="btn btn-success btn-sm" id="evBtnElegir"><i class="fas fa-plus me-1"></i>Seleccionar archivos</button>
+                        <span class="badge bg-light text-dark border" id="evContador">0 de 5</span>
+                        <input type="file" id="evInput" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+                    </div>
+                    <p class="text-muted small mb-2" id="evReglas">PDF, imágenes, Word, Excel, PowerPoint, TXT o CSV · máx. 10 MB cada uno.</p>
+                    <div class="alert alert-warning py-2 small" id="evError" style="display:none;"></div>
+                    <ul class="ev-lista list-unstyled mb-2" id="evLista"></ul>
+                    <p class="ev-vacio text-center text-muted mb-2" id="evVacio">Aún no hay archivos cargados.</p>
+                    <div class="ev-ruta" id="evRuta"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Listo</button>
+                </div>
             </div>
         </div>
     </div>
@@ -3675,6 +3751,117 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 });
             }, 600);
         });
+
+        // ── Evidencias del seguimiento: hasta 5 archivos por indicador y por facultad ──
+        let evFacultadActual = 0;
+
+        function evAplicarResumen(r) {
+            $('#segEvGeneralN').text(r.general || 0);
+            $('#tablaSeguimientoFacultades tbody tr').each(function() {
+                $(this).find('.ev-n').text((r.facultades || {})[$(this).data('facultad-id')] || 0);
+            });
+        }
+
+        function cargarResumenEvidencias(formulacionId) {
+            evAplicarResumen({ general: 0, facultades: {} });
+            if (!formulacionId) return;
+            $.getJSON(basePath + '/modulo144/resumenEvidencias', { formulacion_id: formulacionId }, function(r) {
+                if (r.success) evAplicarResumen(r);
+            });
+        }
+
+        function evFormatoTamano(n) {
+            return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+        }
+
+        function evMostrarError(msg) {
+            $('#evError').text(msg || '').toggle(!!msg);
+        }
+
+        function evPintar(r) {
+            const archivos = r.archivos || [];
+            const lista = $('#evLista').empty();
+            archivos.forEach(function(a) {
+                const url = basePath + '/modulo144/verEvidencia?id=' + a.id;
+                const ext = (a.nombre.split('.').pop() || '').slice(0, 4);
+                const quitar = r.puede_editar
+                    ? '<button type="button" class="ev-quitar" data-id="' + a.id + '" aria-label="Quitar archivo" title="Quitar">&times;</button>' : '';
+                lista.append(
+                    '<li><a class="ev-ext" href="' + url + '" target="_blank" rel="noopener">' + evalHtmlEscape(ext) + '</a>' +
+                    '<span class="ev-nombre"><a href="' + url + '" target="_blank" rel="noopener" title="Abrir ' + evalHtmlEscape(a.nombre) + ' en una pestaña nueva">' + evalHtmlEscape(a.nombre) + '</a>' +
+                    '<small>' + evFormatoTamano(a.tamano) + ' · Abrir en pestaña nueva</small></span>' + quitar + '</li>'
+                );
+            });
+            $('#evVacio').toggle(archivos.length === 0);
+            $('#evContador').text(archivos.length + ' de ' + (r.maximo || 5));
+            $('#evSubir, #evReglas').toggle(!!r.puede_editar);
+            $('#evBtnElegir').prop('disabled', archivos.length >= (r.maximo || 5));
+            $('#evRuta').text(r.carpeta || '');
+            $('#modalEvidencias').data('estado', r);
+            if (!evFacultadActual) $('#segEvGeneralN').text(archivos.length);
+            else $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"] .ev-n').text(archivos.length);
+        }
+
+        function evRecargar() {
+            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: $('#seguimiento_id').val(), facultad_id: evFacultadActual }, function(r) {
+                if (!r.success) { evMostrarError(r.message || 'No se pudieron cargar las evidencias'); return; }
+                evPintar(r);
+            }).fail(function() { evMostrarError('Error de conexión con el servidor'); });
+        }
+
+        function abrirEvidencias(facultadId) {
+            if (!$('#seguimiento_id').val()) return;
+            evFacultadActual = parseInt(facultadId, 10) || 0;
+            const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"]');
+            $('#evTitulo').text(evFacultadActual ? 'Evidencias · ' + fila.find('td:first').text().trim() : 'Evidencias del indicador');
+            $('#evQuien').text($('#tituloSeguimientoSpan').text());
+            evMostrarError('');
+            $('#evLista').empty();
+            $('#evVacio').show();
+            $('#modalEvidencias').modal('show');
+            evRecargar();
+        }
+
+        $(document).on('click', '#evBtnElegir', function() { $('#evInput').trigger('click'); });
+
+        $(document).on('change', '#evInput', function() {
+            const archivos = Array.from(this.files || []);
+            this.value = '';
+            if (!archivos.length) return;
+            evMostrarError('');
+            const errores = [];
+            let i = 0;
+            (function siguiente() {
+                if (i >= archivos.length) { if (errores.length) evMostrarError(errores.join(' · ')); evRecargar(); return; }
+                const f = archivos[i++];
+                const datos = new FormData();
+                datos.append('formulacion_id', $('#seguimiento_id').val());
+                datos.append('facultad_id', evFacultadActual);
+                datos.append('archivo', f);
+                $.ajax({ url: basePath + '/modulo144/subirEvidencia', type: 'POST', data: datos, processData: false, contentType: false, dataType: 'json' })
+                    .done(function(r) { if (!r.success) errores.push(f.name + ': ' + (r.message || 'no se pudo cargar')); })
+                    .fail(function() { errores.push(f.name + ': error de conexión'); })
+                    .always(siguiente);
+            })();
+        });
+
+        $(document).on('click', '#evLista .ev-quitar', function() {
+            const id = $(this).data('id');
+            Swal.fire({
+                title: '¿Quitar este archivo?', text: 'Se eliminará de las evidencias.', icon: 'warning',
+                showCancelButton: true, confirmButtonColor: '#E74C3C', confirmButtonText: 'Sí, quitar', cancelButtonText: 'Cancelar'
+            }).then(function(res) {
+                if (!res.isConfirmed) return;
+                $.post(basePath + '/modulo144/eliminarEvidencia', { id: id }, function(r) {
+                    if (!r.success) evMostrarError(r.message || 'No se pudo quitar el archivo');
+                    evRecargar();
+                }, 'json');
+            });
+        });
+
+        // La ventana de evidencias se abre sobre el seguimiento: sin esto queda detrás de su fondo y se pierde el scroll
+        $('#modalEvidencias').on('shown.bs.modal', function() { $('.modal-backdrop').last().css('z-index', 1060); $(this).css('z-index', 1065); });
+        $('#modalEvidencias').on('hidden.bs.modal', function() { if ($('.modal.show').length) $('body').addClass('modal-open'); });
 
         let nombreBorradorProvisional = 'Nuevo Borrador';
 
@@ -4874,6 +5061,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
                             cargarSeguimientoFacultades(b.id);
+                            cargarResumenEvidencias(b.id);
                             $('#modalSeguimiento').modal('show');
                         }
                     }

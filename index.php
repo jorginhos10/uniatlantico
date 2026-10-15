@@ -423,6 +423,21 @@ switch ($action) {
             case 'guardarSeguimientoFacultad':
                 $modulo144Controller->guardarSeguimientoFacultad();
                 break;
+            case 'resumenEvidencias':
+                $modulo144Controller->resumenEvidencias();
+                break;
+            case 'listarEvidencias':
+                $modulo144Controller->listarEvidencias();
+                break;
+            case 'subirEvidencia':
+                $modulo144Controller->subirEvidencia();
+                break;
+            case 'eliminarEvidencia':
+                $modulo144Controller->eliminarEvidencia();
+                break;
+            case 'verEvidencia':
+                $modulo144Controller->verEvidencia();
+                break;
             case 'exportarPlantilla':
                 require_once 'controlador/Plantilla144Controller.php';
                 (new Plantilla144Controller())->exportar();

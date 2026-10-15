@@ -1253,5 +1253,105 @@ class Modulo144Model {
             return false;
         }
     }
+
+    // ───────────────────────── Evidencias (archivos del seguimiento) ─────────────────────────
+    // facultad_id = 0 → evidencias del indicador; > 0 → evidencias de esa facultad.
+    private function asegurarTablaEvidencias() {
+        static $listo = false;
+        if ($listo) return;
+        $this->db->exec("CREATE TABLE IF NOT EXISTS evidencias_144 (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            formulacion_id INT NOT NULL,
+            facultad_id INT NOT NULL DEFAULT 0,
+            nombre_original VARCHAR(255) NOT NULL,
+            ruta VARCHAR(500) NOT NULL,
+            tamano INT NOT NULL DEFAULT 0,
+            usuario_id INT NULL,
+            fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_evidencia_item (formulacion_id, facultad_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $listo = true;
+    }
+
+    public function getEvidencias($formulacionId, $facultadId = 0) {
+        try {
+            $this->asegurarTablaEvidencias();
+            $stmt = $this->db->prepare("SELECT id, nombre_original, ruta, tamano, fecha_creacion
+                                        FROM evidencias_144 WHERE formulacion_id = :f AND facultad_id = :fac ORDER BY id");
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log('Error getEvidencias: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // ['general' => n, 'facultades' => [facultad_id => n]]
+    public function getResumenEvidencias($formulacionId) {
+        $res = ['general' => 0, 'facultades' => []];
+        try {
+            $this->asegurarTablaEvidencias();
+            $stmt = $this->db->prepare("SELECT facultad_id, COUNT(*) AS n FROM evidencias_144 WHERE formulacion_id = :f GROUP BY facultad_id");
+            $stmt->execute([':f' => (int)$formulacionId]);
+            foreach ($stmt->fetchAll() as $r) {
+                if ((int)$r['facultad_id'] === 0) $res['general'] = (int)$r['n'];
+                else $res['facultades'][(int)$r['facultad_id']] = (int)$r['n'];
+            }
+        } catch (PDOException $e) {
+            error_log('Error getResumenEvidencias: ' . $e->getMessage());
+        }
+        return $res;
+    }
+
+    public function contarEvidencias($formulacionId, $facultadId = 0) {
+        return count($this->getEvidencias($formulacionId, $facultadId));
+    }
+
+    public function guardarEvidencia($formulacionId, $facultadId, $nombreOriginal, $ruta, $tamano, $usuarioId) {
+        try {
+            $this->asegurarTablaEvidencias();
+            $stmt = $this->db->prepare("INSERT INTO evidencias_144 (formulacion_id, facultad_id, nombre_original, ruta, tamano, usuario_id)
+                                        VALUES (:f, :fac, :n, :r, :t, :u)");
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':n' => $nombreOriginal,
+                            ':r' => $ruta, ':t' => (int)$tamano, ':u' => $usuarioId ?: null]);
+            return (int)$this->db->lastInsertId();
+        } catch (PDOException $e) {
+            error_log('Error guardarEvidencia: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    public function getEvidencia($id) {
+        try {
+            $this->asegurarTablaEvidencias();
+            $stmt = $this->db->prepare("SELECT * FROM evidencias_144 WHERE id = :id");
+            $stmt->execute([':id' => (int)$id]);
+            return $stmt->fetch() ?: null;
+        } catch (PDOException $e) {
+            error_log('Error getEvidencia: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    public function eliminarEvidencia($id) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM evidencias_144 WHERE id = :id");
+            return $stmt->execute([':id' => (int)$id]);
+        } catch (PDOException $e) {
+            error_log('Error eliminarEvidencia: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function getNombreFacultad($facultadId) {
+        try {
+            $stmt = $this->db->prepare("SELECT nombre FROM facultades WHERE id = :id");
+            $stmt->execute([':id' => (int)$facultadId]);
+            $n = $stmt->fetchColumn();
+            return $n === false ? null : $n;
+        } catch (PDOException $e) {
+            return null;
+        }
+    }
 }
 ?>
