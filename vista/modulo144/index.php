@@ -2124,7 +2124,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="mb-3">
                             <label class="form-label">Nombre del Borrador (provisional)</label>
                             <input type="text" class="form-control" name="nombre_borrador" id="nuevo_nombre" required placeholder="Ej: Versión 1.0">
-                            <small class="text-muted">Se reemplazará automáticamente por el contenido de "13.2 Fórmula de la Medición" al diligenciarlo.</small>
+                            <small class="text-muted">Se reemplazará automáticamente por el contenido de "13. Fórmula de la Medición" al diligenciarlo.</small>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -2322,8 +2322,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     </div>
 
                                     <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">2. OBJETIVO</label>
-                                        <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="6" readonly></textarea>
+                                        <label class="form-label">2. MOTOR DE DESARROLLO</label>
+                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
+                                            <option value="">Seleccione un motor de desarrollo</option>
+                                        </select>
                                     </div>
 
                                     <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
@@ -2334,65 +2336,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     </div>
 
                                     <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">4. MOTOR DE DESARROLLO</label>
-                                        <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
-                                            <option value="">Seleccione un motor de desarrollo</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">5. PROYECTO</label>
-                                        <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(true); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
-                                            <option value="">Seleccione un proyecto</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">6. META DE RESULTADO</label>
-                                        <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="5" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" readonly placeholder="0.00" style="background-color: #e9ecef; cursor: not-allowed;">
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">8. ACTIVIDAD DEL PROYECTO (205)</label>
-                                        <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
-                                            <span class="input-group-text">%</span>
-                                            <span class="input-group-text px-3" id="acumulado_actividades_badge" 
-                                                  title="Total acumulado para este proyecto (incluyendo este registro)"
-                                                  style="font-size:0.82rem; font-weight:600; min-width:110px; justify-content:center; background:#f8f9fa; color:#6c757d; border-left: 2px solid #dee2e6;">
-                                                Acum: — / 100%
-                                            </span>
-                                        </div>
-                                        <div id="acumulado_actividades_msg" class="mt-1" style="font-size:0.8rem; display:none;"></div>
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">10. RESPONSABLE</label>
-                                        <select class="form-select" name="responsable_formulacion_multi[]" id="formulacion_responsable" multiple="multiple">
-                                            <?php foreach ($cargos as $cargo): ?>
-                                            <option value="<?php echo htmlspecialchars($cargo['nombre']); ?>">
-                                                <?php echo htmlspecialchars($cargo['nombre']); ?>
-                                            </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <input type="hidden" name="responsable_formulacion" id="formulacion_responsable_hidden">
-                                    </div>
-
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">11. ID INDICADOR</label>
+                                        <label class="form-label">4. PLAN BASE</label>
                                         <select class="form-select" name="id_indicador" id="formulacion_id_indicador" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione...</option>
                                             <?php foreach ($id_indicadores as $idIndicador): ?>
@@ -2403,12 +2347,61 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3 d-flex align-items-end">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this); toggleDistribucionFacultadesTabla(this.checked)">
-                                            <label class="form-check-label" for="formulacion_gestionado_facultades">
-                                                <strong>12. MARQUE: ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
-                                            </label>
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <label class="form-label">5. OBJETIVO</label>
+                                        <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <label class="form-label">6. META DE RESULTADO</label>
+                                        <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <label class="form-label">7. ACTIVIDAD DEL PROYECTO (205)</label>
+                                        <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="5" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">8. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
+                                                <span class="input-group-text">%</span>
+                                                <span class="input-group-text px-3" id="acumulado_actividades_badge" 
+                                                      title="Total acumulado para este proyecto (incluyendo este registro)"
+                                                      style="font-size:0.82rem; font-weight:600; min-width:110px; justify-content:center; background:#f8f9fa; color:#6c757d; border-left: 2px solid #dee2e6;">
+                                                    Acum: — / 100%
+                                                </span>
+                                            </div>
+                                            <div id="acumulado_actividades_msg" class="mt-1" style="font-size:0.8rem; display:none;"></div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">9. RESPONSABLE</label>
+                                            <select class="form-select" name="responsable_formulacion_multi[]" id="formulacion_responsable" multiple="multiple">
+                                                <?php foreach ($cargos as $cargo): ?>
+                                                <option value="<?php echo htmlspecialchars($cargo['nombre']); ?>">
+                                                    <?php echo htmlspecialchars($cargo['nombre']); ?>
+                                                </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <input type="hidden" name="responsable_formulacion" id="formulacion_responsable_hidden">
+                                        </div>
+                                    </div>
+
+                                    <div class="d-none" aria-hidden="true">
+                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
+                                            <label class="form-label">5. PROYECTO</label>
+                                            <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(true); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
+                                                <option value="">Seleccione un proyecto</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
+                                            <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" readonly placeholder="0.00" style="background-color: #e9ecef; cursor: not-allowed;">
+                                                <span class="input-group-text">%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2421,19 +2414,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <h5 class="indicador-title">INFORMACIÓN DEL INDICADOR</h5>
                                     </div>
                                     
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">13.1 NOMBRE DEL INDICADOR</label>
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <label class="form-label">10. NOMBRE DEL INDICADOR</label>
                                         <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="sincronizarNombreBorrador(); autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Ingrese el nombre del indicador">
                                     </div>
-                                    
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                        <label class="form-label">13.2 FÓRMULA DE LA MEDICIÓN</label>
-                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
-                                    </div>
-                                    
-                                    
-                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                            <label class="form-label">13.3 FRECUENCIA DE MEDICIÓN</label>
+
+                                        <div class="col-12 col-md-6 col-xxl-3 mb-3">
+                                            <label class="form-label">11. FRECUENCIA DE MEDICIÓN</label>
                                             <select class="form-select" name="frecuencia_medicion" id="formulacion_frecuencia_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione frecuencia</option>
                                                 <option value="Mensual">Mensual</option>
@@ -2443,31 +2430,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <option value="Anual">Anual</option>
                                             </select>
                                         </div>
-                                        
-                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                            <label class="form-label">13.4 UNIDAD DE MEDIDA</label>
+
+                                        <div class="col-12 col-md-6 col-xxl-3 mb-3">
+                                            <label class="form-label">12. UNIDAD DE MEDIDA</label>
                                             <select class="form-select" name="unidad_medida" id="formulacion_unidad_medida" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione unidad</option>
                                                 <option value="Unidad">Unidad</option>
                                                 <option value="Porcentaje">Porcentaje</option>
                                             </select>
                                         </div>
-                                        
-                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
-                                            <label class="form-label">13.5 AÑO</label>
-                                            <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()">
-                                                <option value="">Seleccione tipo</option>
-                                                <option value="Acumulado">Acumulado</option>
-                                                <option value="Nuevo gestionado durante la vigencia">Nuevo gestionado durante la vigencia</option>
-                                                <option value="Promedio">Promedio</option>
-                                                <option value="Último valor reportado">Último valor reportado</option>
-                                                <option value="Límite">Límite</option>
-                                            </select>
-                                        </div>
-                                    
-                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-9 mb-3">
+
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
+                                        <label class="form-label">13. FÓRMULA DE LA MEDICIÓN</label>
+                                        <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 col-xxl-6 mb-3">
                                         <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
-                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="5" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
+                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
                                     </div>
                                     
                                     <div class="col-12 mt-4">
@@ -2475,13 +2455,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <h5 class="meta-title">METAS PROPUESTAS</h5>
                                             
                                             <div class="row">
-                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-1">
-                                                    <label class="form-label">14.1 LÍNEA BASE</label>
+                                                <div class="col-12 col-md-6 col-xl mb-3 order-1">
+                                                    <label class="form-label">14. TIPO DE MEDICIÓN</label>
+                                                    <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()">
+                                                        <option value="">Seleccione tipo</option>
+                                                        <option value="Acumulado">Acumulado</option>
+                                                        <option value="Nuevo gestionado durante la vigencia">Nuevo gestionado durante la vigencia</option>
+                                                        <option value="Promedio">Promedio</option>
+                                                        <option value="Último valor reportado">Último valor reportado</option>
+                                                        <option value="Límite">Límite</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-12 col-md-6 col-xl mb-3 order-2">
+                                                    <label class="form-label">15. LÍNEA BASE</label>
                                                     <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Valor de línea base">
                                                 </div>
                                                 
-                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-4">
-                                                    <label class="form-label">14.4 META AÑO</label>
+                                                <div class="col-12 col-md-6 col-xl mb-3 order-5">
+                                                    <label class="form-label">META AÑO</label>
                                                     <input type="text" class="form-control" name="anio_base_meta" id="formulacion_anio_base_meta" readonly placeholder="Valor anual" style="background-color: #e8f5e9; font-weight: bold; color: #2e7d32;">
                                                 </div>
                                                 
@@ -2489,16 +2481,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
                                                 </div>
                                                 
-                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-2">
-                                                    <label class="form-label">14.2 SEMESTRE 1</label>
+                                                <div class="col-12 col-md-6 col-xl mb-3 order-3">
+                                                    <label class="form-label">16. SEMESTRE 1</label>
                                                     <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 1">
                                                 </div>
                                                 
-                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-3">
-                                                    <label class="form-label">14.3 SEMESTRE 2</label>
+                                                <div class="col-12 col-md-6 col-xl mb-3 order-4">
+                                                    <label class="form-label">17. SEMESTRE 2</label>
                                                     <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 2">
                                                 </div>
                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 mt-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this); toggleDistribucionFacultadesTabla(this.checked)">
+                                            <label class="form-check-label" for="formulacion_gestionado_facultades">
+                                                <strong>ARTICULADO POR FACULTAD: MARQUE ✓ SI EL INDICADOR SERÁ GESTIONADO DESDE LAS FACULTADES</strong>
+                                            </label>
                                         </div>
                                     </div>
 
