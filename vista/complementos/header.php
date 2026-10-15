@@ -43,6 +43,8 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
         }
     </style>
     <?php echo $cssExtra ?? ''; ?>
+    <!-- Tema (paleta, botones e íconos al estilo de new-ua): va después de los estilos de cada página -->
+    <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/tema.css?v=<?php echo @filemtime(__DIR__ . '/../../assets/css/tema.css') ?: '1'; ?>">
     <!-- Ajustes para celular: va después de los estilos de cada página para poder corregirlos -->
     <link rel="stylesheet" href="<?php echo $baseUrl; ?>/assets/css/responsive.css">
 </head>
@@ -64,11 +66,17 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
             <?php endif; ?>
             <!-- Nuevo Header -->
             <header class="mainHeader">
-                <!-- Logo a la izquierda -->
+                <!-- Ícono y título de la página (como new-ua) -->
+                <?php
+                require_once __DIR__ . '/iconos.php';
+                $tituloEncabezado = trim(explode(' — ', (string)($titulo ?? ''))[0]);
+                if ($tituloEncabezado === '' || stripos($tituloEncabezado, 'chefcontrol') !== false) $tituloEncabezado = 'Universidad del Atlántico';
+                ?>
                 <div class="headerLeft">
                     <div class="logoHeader">
-                        <i class="fas fa-university"></i>
-                        <span>UNIVERSIDAD DEL ATLANTICO</span>
+                        <span class="icono-pagina"><?php echo icono(icono_de_pagina($paginaActual ?? ''), 18); ?></span>
+                        <span class="titulo-pagina"><?php echo htmlspecialchars($tituloEncabezado); ?></span>
+                        <span class="titulo-institucion">Universidad del Atlántico</span>
                     </div>
                 </div>
 
@@ -79,7 +87,7 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
                     <!-- ── Campanita de notificaciones ── -->
                     <div class="ntf-wrap" id="ntfWrap">
                         <button class="ntf-btn" id="ntfBtn" title="Notificaciones">
-                            <i class="fas fa-bell ntf-icon"></i>
+                            <?php echo icono('campana', 19, 'ntf-icon'); ?>
                             <span class="ntf-badge" id="ntfBadge">0</span>
                         </button>
                         <div class="ntf-panel" id="ntfPanel">
@@ -110,26 +118,26 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
                                     <span class="userName"><?php echo $_SESSION['usuario_nombre']; ?></span>
                                     <span class="userRole"><?php echo ucfirst($_SESSION['usuario_rol']); ?></span>
                                 </div>
-                                <i class="fas fa-chevron-down dropdownArrow"></i>
+                                <?php echo icono('abajo', 14, 'dropdownArrow'); ?>
                             </button>
                             
                             <div class="dropdownMenu">
                                 <a href="<?php echo $basePath; ?>/perfil" class="dropdownItem">
-                                    <i class="fas fa-user"></i>
+                                    <?php echo icono('perfil', 16); ?>
                                     <span>Mi Perfil</span>
                                 </a>
                                 <a href="<?php echo $basePath; ?>/configuracion" class="dropdownItem">
-                                    <i class="fas fa-cog"></i>
+                                    <?php echo icono('configuracion', 16); ?>
                                     <span>Configuración</span>
                                 </a>
                                 <div class="dropdownDivider"></div>
                                 <button class="dropdownItem" onclick="abrirAcercaDe()" type="button">
-                                    <i class="fas fa-info-circle"></i>
+                                    <?php echo icono('info', 16); ?>
                                     <span>Acerca de nosotros</span>
                                 </button>
                                 <div class="dropdownDivider"></div>
                                 <a href="<?php echo $basePath; ?>/logout" class="dropdownItem">
-                                    <i class="fas fa-sign-out-alt"></i>
+                                    <?php echo icono('salir', 16); ?>
                                     <span>Cerrar Sesión</span>
                                 </a>
                             </div>

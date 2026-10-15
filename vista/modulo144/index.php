@@ -10,7 +10,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
     $fecha_cierre = $formulario['fecha_cierre'];
 }
 
-$titulo       = 'PLAN DE ACCION — ' . htmlspecialchars($formulario['titulo'] ?? '');
+$titulo       = 'Plan de Acción — ' . htmlspecialchars($formulario['titulo'] ?? '');
 $paginaActual = 'modulo144';
 
 $eval_colores = ['#9C27B0', '#FF9500', '#007AFF', '#34C759', '#FF3B30', '#673AB7', '#FF6230', '#32ADE6', '#3F51B5', '#FF2D55'];
@@ -2638,7 +2638,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                         <div class="indicador-section field-group" id="seguimientoFacultadesWrap" style="display:none;">
                             <h5 class="indicador-title"><i class="fas fa-university me-2"></i>SEGUIMIENTO POR FACULTADES</h5>
-                            <p class="text-muted small mb-2">Cada facultad registra el avance de su parte de la distribución en cada semestre.</p>
+                            <p class="text-muted small mb-2" id="segFacAyuda">Cada facultad registra el avance de su parte de la distribución en cada semestre.</p>
                             <div class="table-responsive">
                                 <table class="table table-sm align-middle mb-0" id="tablaSeguimientoFacultades">
                                     <thead>
@@ -3367,6 +3367,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         hay = true;
                     });
                     $('#seguimientoFacultadesWrap').toggle(hay);
+                    // Usuario de facultad: solo ve su propia fila (el servidor no envía las demás)
+                    const soloPropia = parseInt(response.solo_facultad || 0, 10) > 0;
+                    $('#segFacAyuda').text(soloPropia
+                        ? 'Registra el avance de tu facultad sobre su parte de la distribución en cada semestre.'
+                        : 'Cada facultad registra el avance de su parte de la distribución en cada semestre.');
+                    $('#tablaSeguimientoFacultades tfoot').toggle(!soloPropia);
                     actualizarTotalesSeguimientoFacultades();
                 }
             });

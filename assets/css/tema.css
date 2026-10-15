@@ -1,0 +1,353 @@
+/* assets/css/tema.css
+   Tema visual compartido con new-ua: paleta, tipografía, menú lateral, encabezado, botones, insignias,
+   tarjetas y formularios. Se carga después de los estilos propios de cada página, así que sus reglas
+   (y las variables de :root) prevalecen sobre las de cada vista. */
+
+/* ═══════════════ PALETA (la misma de new-ua) ═══════════════ */
+:root {
+    --color-primario: #0071e3;
+    --color-primario-oscuro: #0058b0;
+    --color-primario-suave: #e8f2ff;
+    --color-texto: #1d1d1f;
+    --color-texto-secundario: #424245;
+    --color-texto-tenue: #86868b;
+    --color-fondo: #f5f5f7;
+    --color-borde: #d2d2d7;
+    --color-borde-hover: #aeaeb2;
+    --color-superficie: #ffffff;
+    --color-sidebar-texto: #a1a1a6;
+    --color-exito-fondo: #e3f8e9;
+    --color-exito-texto: #1f8a3d;
+    --color-error-fondo: #ffebe9;
+    --color-error-texto: #d70015;
+    --color-gris-fondo: #f0f0f2;
+    --color-gris-texto: #6e6e73;
+    --color-naranja-fondo: #fff2e0;
+    --color-naranja-texto: #c96500;
+    --radio: 10px;
+    --radio-chico: 6px;
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 6px rgba(0, 0, 0, 0.05);
+    --transicion: 0.15s ease;
+
+    /* Variables que ya usan las pantallas del sistema, alineadas con la paleta */
+    --ios-blue: #0071e3;
+    --ios-green: #34c759;
+    --ios-red: #d70015;
+    --ios-orange: #c96500;
+    --ios-bg: #f5f5f7;
+    --ios-label: #1d1d1f;
+    --ios-label2: #6e6e73;
+    --apple-blue: #0071e3;
+    --apple-text: #1d1d1f;
+    --apple-text-secondary: #424245;
+    --apple-text-tertiary: #86868b;
+    --apple-bg: #f5f5f7;
+    --pa-blue: #0071e3;
+    --pa-blue-ink: #0058b0;
+}
+
+/* ═══════════════ BASE ═══════════════ */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--color-fondo);
+    color: var(--color-texto);
+    position: relative;
+}
+
+/* Fondo con la foto del campus, igual que new-ua: sólido arriba y la foto difuminada al final */
+body::before {
+    content: "";
+    position: fixed;
+    inset: -20px;
+    background-image: url("../media/src/fondo.webp");
+    background-size: cover;
+    background-position: center 30%;
+    filter: blur(18px) saturate(130%);
+    z-index: -2;
+    pointer-events: none;
+}
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(180deg, var(--color-fondo) 0%, var(--color-fondo) 70%, rgba(245, 245, 247, 0) 95%);
+    z-index: -1;
+    pointer-events: none;
+}
+.contentWrapper { background: transparent; }
+
+a { color: var(--color-primario); }
+.icono { flex-shrink: 0; vertical-align: middle; }
+
+/* ═══════════════ MENÚ LATERAL ═══════════════ */
+.sidebar {
+    background: linear-gradient(180deg, rgba(40, 40, 44, 0.86), rgba(20, 20, 22, 0.88));
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04), 8px 0 30px rgba(0, 0, 0, 0.12);
+}
+.sidebar .navItem {
+    border-left: 0;
+    border-radius: var(--radio-chico);
+    padding: 10px 14px;
+    transition: background var(--transicion), color var(--transicion);
+}
+.sidebar .navItem:hover { background: rgba(255, 255, 255, 0.08); }
+.sidebar .navItem.active {
+    background: rgba(10, 132, 255, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.sidebar .navLink { color: #d2d2d7; font-size: 0.88rem; }
+.sidebar .navLink .icono { width: 20px; height: 20px; color: #d2d2d7; transition: color var(--transicion); }
+.sidebar .navItem:hover .navLink .icono,
+.sidebar .navItem:hover .navLink span { color: #fff; }
+.sidebar .navItem.active .navLink,
+.sidebar .navItem.active .navLink span,
+.sidebar .navItem.active .navLink .icono { color: #fff; font-weight: 600; }
+.sidebar .navLink span { color: #d2d2d7; }
+
+/* ═══════════════ ENCABEZADO ═══════════════ */
+.mainHeader {
+    background: var(--color-superficie);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--color-borde);
+    height: 60px;
+    padding: 0 2rem;
+}
+.headerLeft .logoHeader { gap: 0.65rem; font-size: 1rem; min-width: 0; }
+.icono-pagina {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--color-primario), #5ac8fa);
+    color: #fff;
+    flex-shrink: 0;
+}
+.titulo-pagina {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-texto);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.titulo-institucion {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-texto-tenue);
+    padding-left: 0.65rem;
+    margin-left: 0.1rem;
+    border-left: 1px solid var(--color-borde);
+    white-space: nowrap;
+}
+.ntf-btn .icono { color: var(--color-texto-secundario); }
+.ntf-badge {
+    background: var(--color-error-texto) !important;
+    font-size: 0.62rem !important;
+    font-weight: 700 !important;
+}
+.userDropdownBtn { padding: 0.3rem 0.5rem; border-radius: 999px; }
+.userDropdownBtn:hover { background: var(--color-fondo); }
+.userAvatar { width: 30px; height: 30px; border: 0; background: var(--color-primario); }
+.userName { font-size: 0.88rem; font-weight: 600; color: var(--color-texto); }
+.userRole { font-size: 0.75rem; color: var(--color-texto-tenue); }
+.dropdownArrow { color: var(--color-texto-tenue); }
+.dropdownMenu {
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+.dropdownItem { font-size: 0.88rem; color: var(--color-texto-secundario); border-radius: var(--radio-chico); }
+.dropdownItem .icono { color: var(--color-texto-tenue); }
+.dropdownItem:hover { background: var(--color-fondo); color: var(--color-texto); }
+
+/* ═══════════════ CABECERAS DE PÁGINA ═══════════════
+   Las cabeceras de colores (naranja, morado, azul…) pasan al estilo de new-ua: tarjeta blanca,
+   título oscuro y el ícono en un recuadro azul degradado. */
+.dep-header, .fac-header, .rol-header, .cat-header, .alm-header, .snap-header, .nov-header {
+    background: var(--color-superficie) !important;
+    color: var(--color-texto) !important;
+    border-radius: var(--radio) !important;
+    box-shadow: var(--sombra) !important;
+    padding: 1.4rem 1.75rem !important;
+}
+.dep-header h1, .fac-header h1, .rol-header h1, .cat-header h1, .alm-header h1, .snap-header h1, .nov-header h1 {
+    color: var(--color-texto) !important;
+    font-size: 1.3rem !important;
+}
+.dep-header p, .fac-header p, .rol-header p, .cat-header p, .alm-header p, .snap-header p, .nov-header p {
+    color: var(--color-texto-tenue) !important;
+    opacity: 1 !important;
+}
+[class*="-header-icon"] {
+    background: linear-gradient(135deg, var(--color-primario), #5ac8fa) !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+/* Botones de las cabeceras: secundarios con borde azul y el último como acción principal */
+.dep-header .btn-nueva, .fac-header .btn-nueva, .rol-header .btn-nueva, .cat-header .btn-nueva,
+.alm-header .btn-nueva, .nov-header .btn-nueva, .snap-volver {
+    background: transparent !important;
+    color: var(--color-primario) !important;
+    border: 1px solid var(--color-primario) !important;
+    border-radius: var(--radio-chico) !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    padding: 0.5rem 0.95rem !important;
+    box-shadow: none !important;
+}
+.dep-header .btn-nueva:last-child, .fac-header .btn-nueva:last-child, .rol-header .btn-nueva:last-child,
+.cat-header .btn-nueva:last-child, .alm-header .btn-nueva:last-child, .nov-header .btn-nueva:last-child {
+    background: var(--color-primario) !important;
+    color: #fff !important;
+}
+.dep-header .btn-nueva:hover, .fac-header .btn-nueva:hover, .rol-header .btn-nueva:hover, .cat-header .btn-nueva:hover,
+.alm-header .btn-nueva:hover, .nov-header .btn-nueva:hover, .snap-volver:hover {
+    background: var(--color-primario-suave) !important;
+    transform: none !important;
+}
+.dep-header .btn-nueva:last-child:hover, .fac-header .btn-nueva:last-child:hover, .rol-header .btn-nueva:last-child:hover,
+.cat-header .btn-nueva:last-child:hover, .alm-header .btn-nueva:last-child:hover, .nov-header .btn-nueva:last-child:hover {
+    background: var(--color-primario-oscuro) !important;
+}
+
+/* ═══════════════ BOTONES ═══════════════ */
+.btn { border-radius: var(--radio-chico); font-weight: 600; font-size: 0.88rem; transition: background var(--transicion), color var(--transicion), opacity var(--transicion); }
+.btn-primary, .btn-ios-primary, .btn-add, .org-btn, .snap-btn, .btn-add-flujo, .fl-btn-primary, .m144-btn-primary {
+    background: var(--color-primario) !important;
+    border-color: var(--color-primario) !important;
+    color: #fff !important;
+    border-radius: var(--radio-chico) !important;
+}
+.btn-primary:hover, .btn-ios-primary:hover, .btn-add:hover, .org-btn:hover, .snap-btn:hover, .btn-add-flujo:hover,
+.fl-btn-primary:hover, .m144-btn-primary:hover {
+    background: var(--color-primario-oscuro) !important;
+    border-color: var(--color-primario-oscuro) !important;
+    opacity: 1 !important;
+    transform: none !important;
+}
+/* Secundario: borde azul, fondo transparente (boton-secundario de new-ua) */
+.btn-ios-secondary, .btn-outline-primary {
+    background: transparent !important;
+    color: var(--color-primario) !important;
+    border: 1px solid var(--color-primario) !important;
+    border-radius: var(--radio-chico) !important;
+}
+.btn-ios-secondary:hover, .btn-outline-primary:hover { background: var(--color-primario-suave) !important; color: var(--color-primario) !important; }
+.btn-secondary, .btn-light {
+    background: var(--color-gris-fondo) !important;
+    border-color: var(--color-gris-fondo) !important;
+    color: var(--color-gris-texto) !important;
+}
+.btn-secondary:hover, .btn-light:hover { background: #e5e5ea !important; color: var(--color-texto) !important; }
+.btn-ios-danger { background: var(--color-error-texto) !important; color: #fff !important; border-radius: var(--radio-chico) !important; }
+
+/* Botones de acción en píldora por color, como .boton-accion de new-ua:
+   ver = gris · editar = azul · enviar/aprobar = verde · eliminar/rechazar = rojo */
+.btn-success, .btn-action.btn-toggle-off {
+    background: var(--color-exito-fondo) !important;
+    border-color: var(--color-exito-fondo) !important;
+    color: var(--color-exito-texto) !important;
+}
+.btn-danger, .btn-delete, .btn-action.btn-toggle-on, .btn-action-sm.btn-delete {
+    background: var(--color-error-fondo) !important;
+    border-color: var(--color-error-fondo) !important;
+    color: var(--color-error-texto) !important;
+}
+.btn-warning, .btn-edit, .btn-action-sm.btn-edit, .btn-conectar {
+    background: var(--color-primario-suave) !important;
+    border-color: var(--color-primario-suave) !important;
+    color: var(--color-primario-oscuro) !important;
+}
+.btn-info {
+    background: var(--color-gris-fondo) !important;
+    border-color: var(--color-gris-fondo) !important;
+    color: var(--color-gris-texto) !important;
+}
+.btn-success:hover, .btn-danger:hover, .btn-warning:hover, .btn-info:hover,
+.btn-edit:hover, .btn-delete:hover, .btn-conectar:hover, .btn-action:hover, .btn-action-sm:hover {
+    opacity: 0.75 !important;
+    transform: none !important;
+    filter: none !important;
+}
+.btn-action, .btn-action-sm { border-radius: 8px !important; font-weight: 600; }
+
+/* SweetAlert con los botones del tema (los colores que fija cada llamada se respetan) */
+.swal2-popup { border-radius: var(--radio) !important; font-family: inherit !important; }
+.swal2-styled.swal2-confirm { border-radius: var(--radio-chico) !important; font-weight: 600 !important; }
+.swal2-styled.swal2-confirm:not([style*="background"]) { background: var(--color-primario) !important; }
+.swal2-styled.swal2-cancel { border-radius: var(--radio-chico) !important; font-weight: 600 !important; background: var(--color-gris-fondo) !important; color: var(--color-gris-texto) !important; }
+
+/* ═══════════════ INSIGNIAS ═══════════════ */
+.badge-estado, .badge-aplica { border-radius: 999px; font-size: 0.72rem; font-weight: 600; }
+.badge-activo, .badge-estado.activo {
+    background: var(--color-exito-fondo) !important;
+    color: var(--color-exito-texto) !important;
+    border-color: transparent !important;
+}
+.badge-inactivo, .badge-estado.inactivo {
+    background: var(--color-gris-fondo) !important;
+    color: var(--color-gris-texto) !important;
+    border-color: transparent !important;
+}
+.badge-count { background: var(--color-primario) !important; }
+
+/* ═══════════════ TARJETAS, TABLAS Y FORMULARIOS ═══════════════ */
+.table-card, .stat-card, .mosaic-item, .snap-card, .lista-container, .org-card {
+    border-radius: var(--radio) !important;
+    box-shadow: var(--sombra) !important;
+}
+.dep-table thead th, .data-table thead th, .table thead th, .usuarios-table th, .snap-table th {
+    color: var(--color-texto-tenue) !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.form-control, .form-select, .search-input {
+    border: 1px solid var(--color-borde) !important;
+    border-radius: var(--radio-chico) !important;
+    background-color: #fff !important;
+    color: var(--color-texto);
+    font-size: 0.9rem;
+    transition: border-color var(--transicion), box-shadow var(--transicion);
+}
+.form-control:hover, .form-select:hover, .search-input:hover { border-color: var(--color-borde-hover) !important; }
+.form-control:focus, .form-select:focus, .search-input:focus {
+    border-color: var(--color-primario) !important;
+    box-shadow: 0 0 0 3px var(--color-primario-suave) !important;
+    outline: none;
+}
+.form-label { font-size: 0.82rem; font-weight: 600; color: var(--color-texto-secundario); }
+.modal-content { border-radius: var(--radio) !important; border: 0; }
+.modal-header { border-bottom: 1px solid var(--color-borde); }
+
+/* ═══════════════ CELULAR ═══════════════ */
+@media (max-width: 768px) {
+    .mainHeader { padding: 0 1rem; height: 56px; }
+    .titulo-institucion { display: none; }
+    .sidebar .navItem.active { box-shadow: none; }
+    /* El título cede espacio para que la campana y el usuario siempre se vean */
+    .headerLeft { flex: 1 1 auto; min-width: 0; }
+    .headerRight { flex-shrink: 0; }
+    /* Cabeceras de página: el texto arriba y los botones abajo, a todo el ancho */
+    .dep-header, .fac-header, .rol-header, .cat-header, .alm-header, .snap-header, .nov-header {
+        flex-wrap: wrap; padding: 1.1rem 1.1rem !important;
+    }
+    .dep-header > div:last-child, .fac-header > div:last-child, .rol-header > div:last-child,
+    .cat-header > div:last-child, .alm-header > div:last-child, .nov-header > div:last-child { width: 100%; }
+    .dep-header .btn-nueva, .fac-header .btn-nueva, .rol-header .btn-nueva,
+    .cat-header .btn-nueva, .alm-header .btn-nueva, .nov-header .btn-nueva { flex: 1 1 auto; justify-content: center; }
+}
+
+@media (max-width: 480px) {
+    /* header.css oculta todos los textos del logo en pantallas pequeñas: se dejan el ícono y el título */
+    .logoHeader .icono-pagina { display: flex; }
+    .logoHeader .titulo-pagina { display: block; max-width: 48vw; font-size: 0.95rem; }
+}

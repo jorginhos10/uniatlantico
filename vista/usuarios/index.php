@@ -3,7 +3,7 @@
 
 require_once __DIR__ . '/../../config/security.php';
 
-$titulo = 'Gestión de Usuarios - CHEFCONTROL';
+$titulo = 'Usuarios';
 $tituloHeader = 'Gestión de Usuarios';
 $subtituloHeader = 'Administra los usuarios del sistema';
 $paginaActual = 'usuarios';

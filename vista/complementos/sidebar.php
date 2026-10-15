@@ -49,6 +49,7 @@ define('PERMISO_CONFIG_ID',    5);   // configurar_sistema
 define('PERMISO_USUARIOS_ID',  6);   // gestionar_usuarios
 define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
 ?>
+<?php require_once __DIR__ . '/iconos.php'; ?>
 <nav class="sidebar">
     <div class="logo">
         <img class="img-sidebar" src="<?php echo $baseUrl; ?>/assets/media/src/logo.png" alt="Logo ChefControl">
@@ -61,7 +62,7 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             <?php if (tienePermisoPorId(PERMISO_DASHBOARD_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
                 <li class="navItem <?php echo ($paginaActual ?? '') === 'dashboard' ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/dashboard" class="navLink" data-tooltip="Dashboard">
-                        <i class="fas fa-home"></i>
+                        <?php echo icono('dashboard'); ?>
                         <span>Dashboard</span>
                     </a>
                 </li>
@@ -71,7 +72,7 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             <?php if (tienePermisoPorId(PERMISO_USUARIOS_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
                 <li class="navItem <?php echo ($paginaActual ?? '') === 'usuarios' ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/usuarios" class="navLink" data-tooltip="Usuarios">
-                        <i class="fas fa-users"></i>
+                        <?php echo icono('usuarios'); ?>
                         <span>Usuarios</span>
                     </a>
                 </li>
@@ -79,9 +80,9 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             
             <!-- Formato FOR-DE-144 - Permiso ID: 2 -->
             <?php if (tienePermisoPorId(PERMISO_FOR144_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo ($paginaActual ?? '') === 'for-de-144' || ($paginaActual ?? '') === 'formatos' ? 'active' : ''; ?>">
+                <li class="navItem <?php echo in_array(strtolower($paginaActual ?? ''), ['for-de-144', 'formatos', 'modulo144', 'formulacion144'], true) ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/FOR-DE-144" class="navLink" data-tooltip="Plan de Acción">
-                        <i class="fas fa-book"></i>
+                        <?php echo icono('plan'); ?>
                         <span>Plan de Acción</span>
                     </a>
                 </li>
@@ -90,7 +91,7 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             <!-- Mensajes (disponible para todos los usuarios logueados) -->
             <li class="navItem <?php echo ($paginaActual ?? '') === 'mensajes' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/mensajes" class="navLink" data-tooltip="Mensajes">
-                    <i class="fas fa-envelope"></i>
+                    <?php echo icono('mensajes'); ?>
                     <span>Mensajes</span>
                 </a>
             </li>
@@ -98,16 +99,16 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             <!-- Organigrama (disponible para todos los usuarios logueados) -->
             <li class="navItem <?php echo ($paginaActual ?? '') === 'organigrama' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/organigrama" class="navLink" data-tooltip="Organigrama">
-                    <i class="fas fa-sitemap"></i>
+                    <?php echo icono('organigrama'); ?>
                     <span>Organigrama</span>
                 </a>
             </li>
 
             <!-- Configuración - Permiso ID: 5 (configurar_sistema) -->
             <?php if (tienePermisoPorId(PERMISO_CONFIG_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo ($paginaActual ?? '') === 'configuraciones' ? 'active' : ''; ?>">
+                <li class="navItem <?php echo (strpos($paginaActual ?? '', 'configuraciones') === 0 || in_array($paginaActual ?? '', ['dependencias', 'catalogos144', 'facultades', 'almacenamiento', 'roles', 'snapshots'], true)) ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/configuraciones" class="navLink" data-tooltip="Configuración">
-                        <i class="fas fa-cog"></i>
+                        <?php echo icono('configuracion'); ?>
                         <span>Configuraciones</span>
                     </a>
                 </li>
@@ -117,13 +118,13 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             <!-- Menú para usuarios no logueados -->
             <li class="navItem <?php echo ($paginaActual ?? '') === 'publica' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/publica" class="navLink" data-tooltip="Inicio">
-                    <i class="fas fa-globe"></i>
+                    <?php echo icono('inicio'); ?>
                     <span>Inicio</span>
                 </a>
             </li>
             <li class="navItem <?php echo ($paginaActual ?? '') === 'login' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/login" class="navLink" data-tooltip="Iniciar Sesión">
-                    <i class="fas fa-sign-in-alt"></i>
+                    <?php echo icono('entrar'); ?>
                     <span>Iniciar Sesión</span>
                 </a>
             </li>

@@ -792,7 +792,34 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'ID no válido']);
             return;
         }
-        echo json_encode(['success' => true, 'distribucion' => $this->model->getDistribucionFacultades($formulacionId)]);
+        $distribucion = $this->model->getDistribucionFacultades($formulacionId);
+
+        // Un usuario de facultad que no es administrador, ni creó el indicador, ni pertenece a la
+        // dependencia responsable, solo recibe la fila de su propia facultad
+        $facultadPropia = $this->facultadRestringida($this->model->getById('formulacion', $formulacionId) ?: []);
+        if ($facultadPropia > 0) {
+            $distribucion = array_values(array_filter($distribucion, function ($d) use ($facultadPropia) {
+                return (int)$d['facultad_id'] === $facultadPropia;
+            }));
+        }
+        echo json_encode(['success' => true, 'distribucion' => $distribucion, 'solo_facultad' => $facultadPropia]);
+    }
+
+    // Id de la facultad del usuario si solo debe ver/registrar su propia fila; 0 si puede ver todas
+    private function facultadRestringida(array $item) {
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return 0;
+        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return 0;
+
+        $cargoNombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
+        $facultadId = $cargoNombre !== '' ? $this->model->getFacultadIdPorNombre($cargoNombre) : 0;
+        if ($facultadId <= 0) return 0;
+
+        $lista = ', ' . mb_strtolower(trim((string)($item['responsable_formulacion'] ?? '')), 'UTF-8') . ', ';
+        $cargo = mb_strtolower(trim($cargoNombre), 'UTF-8');
+        if (mb_strpos($lista, ', ' . $cargo . ', ', 0, 'UTF-8') !== false) return 0;
+        return $facultadId;
     }
 
     public function guardarDistribucionFacultad() {

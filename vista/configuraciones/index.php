@@ -3,7 +3,7 @@
 
 require_once __DIR__ . '/../../config/security.php';
 
-$titulo = 'Gestión de Proveedores - CHEFCONTROL';
+$titulo = 'Configuraciones';
 $paginaActual = 'configuraciones/proveedores';
 
 $baseUrl = Config::getBaseUrl();
