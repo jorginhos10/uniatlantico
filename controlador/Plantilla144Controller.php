@@ -273,6 +273,8 @@ class Plantilla144Controller {
             $resumen['errores'][] = 'Hoja Formulación: no se encontró la columna N°. Usa la plantilla exportada.';
             return;
         }
+        // Archivo en formato institucional (FOR-DE-144 Consolidado): el N° es un consecutivo, no un ID del sistema
+        $this->importacionInstitucional = $this->filaTitulosBase > 0;
         $columnasPlan = array_filter(array_keys($mapa), function ($k) { return strpos($k, 'plan:') === 0; });
         $columnasFac  = array_filter(array_keys($mapa), function ($k) { return strpos($k, 'fac:') === 0; });
 
@@ -299,7 +301,7 @@ class Plantilla144Controller {
             foreach (array_keys($mapa) as $k) {
                 if ($k !== 'id' && !in_array($k, $this->soloLectura, true) && $celda($k) !== null && $celda($k) !== '') { $tieneDatos = true; break; }
             }
-            $id = (int)$celda('id');
+            $id = $this->importacionInstitucional ? 0 : (int)$celda('id');
             if (!$tieneDatos && $id <= 0) continue;
 
             $pref = "Formulación, fila {$excelFila}: ";
@@ -369,7 +371,12 @@ class Plantilla144Controller {
         }
     }
 
+    // true cuando la hoja Formulación venía en el formato institucional del consolidado (sin IDs del sistema)
+    private $importacionInstitucional = false;
+
     private function importarSeguimiento(array $filas, array $registros, array &$resumen) {
+        // La hoja Seguimiento del consolidado tiene otro formato y no trae IDs del sistema: no se importa
+        if ($this->importacionInstitucional) return;
         [$mapa, $filaInicio] = $this->mapaEncabezados($filas, $this->colsSeguimiento);
         if (!isset($mapa['id'])) {
             $resumen['errores'][] = 'Hoja Seguimiento: no se encontró la columna ID. Usa la plantilla exportada.';
@@ -626,18 +633,33 @@ class Plantilla144Controller {
     // Columna de cada clave según el texto del encabezado (sin importar orden, mayúsculas, tildes ni el
     // texto entre paréntesis). El encabezado puede ocupar una fila o dos (grupo arriba, título abajo).
     // Devuelve [mapa clave => columna, número de la primera fila de datos].
+    // Fila (0 = primera) donde está el título del N° en la última hoja leída; > 0 = formato institucional con membrete
+    private $filaTitulosBase = 0;
+
     private function mapaEncabezados(array $filas, array $columnas) {
         $porTexto = [];
         foreach ($columnas as $k => $col) $porTexto[$this->normalizarEncabezado($col[0])] = $k;
 
+        // La fila de títulos es la primera de las 20 primeras que trae el título del N° / ID. En la plantilla
+        // exportada es la fila 0; en el formato institucional (consolidado) va debajo del membrete.
+        $base = 0;
+        $tituloId = $this->normalizarEncabezado($columnas['id'][0] ?? 'N°');
+        foreach ($filas as $numFila => $fila) {
+            if ($numFila >= 20) break;
+            foreach ($fila as $texto) {
+                if ($this->normalizarEncabezado($texto) === $tituloId) { $base = (int)$numFila; break 2; }
+            }
+        }
+        $this->filaTitulosBase = $base;
+
         $mapa = [];
-        $filaInicio = 1;
-        foreach ([1, 0] as $numFila) { // primero la fila de abajo (títulos bajo un grupo)
+        $filaInicio = $base + 1;
+        foreach ([$base + 1, $base] as $numFila) { // primero la fila de abajo (títulos bajo un grupo)
             foreach ($filas[$numFila] ?? [] as $col => $texto) {
                 $k = $porTexto[$this->normalizarEncabezado($texto)] ?? null;
                 if ($k === null || isset($mapa[$k]) || in_array($col, $mapa, true)) continue;
                 $mapa[$k] = $col;
-                if ($numFila === 1) $filaInicio = 2;
+                if ($numFila === $base + 1) $filaInicio = $base + 2;
             }
         }
         return [$mapa, $filaInicio];
