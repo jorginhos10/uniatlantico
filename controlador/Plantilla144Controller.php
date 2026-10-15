@@ -108,6 +108,16 @@ class Plantilla144Controller {
         $registros = array_values(array_filter($this->model->getRegistrosParaPlantilla((int)$formulario['id']), [$this, 'puedeEditar']));
         $columnas = $this->columnasFormulacion($catalogos, count($registros));
 
+        // El objetivo es el de la línea estratégica: si un registro lo trae vacío, se completa desde el catálogo
+        $objetivoPorLinea = [];
+        foreach ($catalogos['lineas'] as $l) $objetivoPorLinea[$this->normalizar($l['nombre'])] = (string)($l['objetivo'] ?? '');
+        foreach ($registros as &$reg) {
+            if (trim((string)($reg['objetivo'] ?? '')) === '') {
+                $reg['objetivo'] = $objetivoPorLinea[$this->normalizar($reg['linea_estrategica'] ?? '')] ?? '';
+            }
+        }
+        unset($reg);
+
         $filasF = [];
         $filasS = [];
         foreach ($registros as $r) {

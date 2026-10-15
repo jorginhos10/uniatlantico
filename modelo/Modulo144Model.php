@@ -659,6 +659,19 @@ class Modulo144Model {
                 }
             }
             
+            // El objetivo depende de la línea estratégica: si se guarda una línea sin objetivo, se toma del catálogo
+            if ($modulo === 'formulacion' && !empty($data['linea_estrategica']) && trim((string)($data['objetivo'] ?? '')) === '') {
+                $q = $this->db->prepare("SELECT objetivo FROM lineas_estrategicas WHERE nombre = :n AND activo = 1 LIMIT 1");
+                $q->execute([':n' => $data['linea_estrategica']]);
+                $obj = $q->fetchColumn();
+                if ($obj !== false && trim((string)$obj) !== '') {
+                    $sets = array_values(array_filter($sets, function ($x) { return strpos($x, 'objetivo = ') !== 0; }));
+                    unset($params[':objetivo']);
+                    $sets[] = "objetivo = :objetivo";
+                    $params[':objetivo'] = $obj;
+                }
+            }
+
             if (isset($data['nombre_borrador'])) {
                 $sets[] = "nombre_borrador = :nombre_borrador";
                 $params[':nombre_borrador'] = $data['nombre_borrador'];
