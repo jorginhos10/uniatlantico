@@ -795,6 +795,11 @@ ob_start();
         .seg-input { font-size: 22px; font-weight: 800; min-height: 38px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
         .seg-tile-total { background: #E4EEF8; border-color: transparent; }
         .seg-tile-total .seg-num { color: #143163; }
+        .seg-sems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+        .seg-sem { background: #fff; border: 1px solid #E5E5EA; border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+        .seg-sem-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+        #tablaSeguimientoFacultades thead th { vertical-align: middle; font-size: 12px; }
+        @media (max-width: 800px) { .seg-sems { grid-template-columns: minmax(0, 1fr); } }
         @media (max-width: 700px) { .seg-card { grid-template-columns: minmax(0, 1fr); } #modalSeguimiento .modal-body-scroll { padding: 12px 14px 20px; } }
         .seg-ev-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
         .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #1D71B8; background: #E4EEF8; color: #1D71B8; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
@@ -2720,14 +2725,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <label class="form-label text-muted">LÍNEA BASE</label>
                                         <div class="seg-num" id="seguimiento_linea_base_view">-</div>
                                     </div>
-                                    <div class="seg-tile">
-                                        <label class="form-label" for="seguimiento_semestre1">SEMESTRE 1</label>
-                                        <input type="number" class="form-control seg-input" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
-                                    </div>
-                                    <div class="seg-tile">
-                                        <label class="form-label" for="seguimiento_semestre2">SEMESTRE 2</label>
-                                        <input type="number" class="form-control seg-input" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
-                                    </div>
                                     <div class="seg-tile seg-tile-total">
                                         <label class="form-label text-muted">TOTAL (META DEL AÑO)</label>
                                         <div class="seg-num" id="seguimiento_anio_view">-</div>
@@ -2746,17 +2743,39 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="seg-sems">
+                                <div class="seg-sem">
+                                    <div class="seg-sem-head">
+                                        <label class="form-label mb-0" for="seguimiento_semestre1">SEMESTRE 1</label>
+                                        <span class="seg-ev-label">Evidencias
+                                            <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, 1)" title="Evidencias del semestre 1 (hasta 5 archivos)" aria-label="Evidencias del semestre 1">
+                                                <i class="fas fa-plus"></i><span class="ev-n" id="segEvGenN1">0</span>
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <input type="number" class="form-control seg-input" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
+                                    <label class="form-label mb-0" for="seguimiento_descripcion_sem1">DESCRIPCIÓN DEL SEMESTRE 1</label>
+                                    <textarea class="form-control" name="descripcion_sem1" id="seguimiento_descripcion_sem1" rows="3" oninput="autoGuardarSeguimiento()" placeholder="Describe el avance del semestre 1..."></textarea>
+                                </div>
+                                <div class="seg-sem">
+                                    <div class="seg-sem-head">
+                                        <label class="form-label mb-0" for="seguimiento_semestre2">SEMESTRE 2</label>
+                                        <span class="seg-ev-label">Evidencias
+                                            <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, 2)" title="Evidencias del semestre 2 (hasta 5 archivos)" aria-label="Evidencias del semestre 2">
+                                                <i class="fas fa-plus"></i><span class="ev-n" id="segEvGenN2">0</span>
+                                            </button>
+                                        </span>
+                                    </div>
+                                    <input type="number" class="form-control seg-input" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
+                                    <label class="form-label mb-0" for="seguimiento_descripcion_sem2">DESCRIPCIÓN DEL SEMESTRE 2</label>
+                                    <textarea class="form-control" name="descripcion_sem2" id="seguimiento_descripcion_sem2" rows="3" oninput="autoGuardarSeguimiento()" placeholder="Describe el avance del semestre 2..."></textarea>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="indicador-section field-group">
-                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
-                                <h5 class="indicador-title mb-0"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
-                                <span class="seg-ev-label">Evidencias
-                                    <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0)" title="Evidencias del indicador (hasta 5 archivos)" aria-label="Evidencias del indicador">
-                                        <i class="fas fa-plus"></i><span class="ev-n" id="segEvGeneralN">0</span>
-                                    </button>
-                                </span>
-                            </div>
+                            <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
                             <div class="row">
                                 <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
                                 <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
@@ -2772,12 +2791,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <table class="table table-sm align-middle mb-0" id="tablaSeguimientoFacultades">
                                     <thead>
                                         <tr>
-                                            <th>Facultad</th>
-                                            <th style="width:120px;" class="text-end">Distribución</th>
-                                            <th style="width:140px;">Seguimiento semestre 1</th>
-                                            <th style="width:140px;">Seguimiento semestre 2</th>
-                                            <th style="min-width:220px;">Descripción</th>
-                                            <th style="width:100px;" class="text-center">Evidencias</th>
+                                            <th rowspan="2">Facultad</th>
+                                            <th rowspan="2" style="width:110px;" class="text-end">Distribución</th>
+                                            <th colspan="3" class="text-center">Semestre 1</th>
+                                            <th colspan="3" class="text-center">Semestre 2</th>
+                                        </tr>
+                                        <tr>
+                                            <th style="width:120px;">Seguimiento</th>
+                                            <th style="min-width:200px;">Descripción</th>
+                                            <th style="width:90px;" class="text-center">Evidencias</th>
+                                            <th style="width:120px;">Seguimiento</th>
+                                            <th style="min-width:200px;">Descripción</th>
+                                            <th style="width:90px;" class="text-center">Evidencias</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -2786,11 +2811,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td><?php echo htmlspecialchars($fac['nombre']); ?></td>
                                             <td class="text-end seg-fac-distribucion">0</td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="0.00"></td>
-                                            <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
-                                            <td><input type="text" class="form-control form-control-sm seg-fac-descripcion" maxlength="1000" placeholder="Descripción del avance..."></td>
+                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc1" maxlength="1000" placeholder="Descripción del semestre 1..."></td>
                                             <td class="text-center">
-                                                <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>)" title="Evidencias de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias de <?php echo htmlspecialchars($fac['nombre']); ?>">
-                                                    <i class="fas fa-plus"></i><span class="ev-n">0</span>
+                                                <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 1)" title="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?>">
+                                                    <i class="fas fa-plus"></i><span class="ev-n" data-sem="1">0</span>
+                                                </button>
+                                            </td>
+                                            <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
+                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc2" maxlength="1000" placeholder="Descripción del semestre 2..."></td>
+                                            <td class="text-center">
+                                                <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 2)" title="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?>">
+                                                    <i class="fas fa-plus"></i><span class="ev-n" data-sem="2">0</span>
                                                 </button>
                                             </td>
                                         </tr>
@@ -2801,6 +2832,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td class="fw-bold">Total</td>
                                             <td class="text-end fw-bold" id="segFacTotalDist">0</td>
                                             <td class="fw-bold" id="segFacTotalS1">0</td>
+                                            <td></td>
+                                            <td></td>
                                             <td class="fw-bold" id="segFacTotalS2">0</td>
                                             <td></td>
                                             <td></td>
@@ -3710,7 +3743,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         fila.find('.seg-fac-distribucion').text(dist.toFixed(2));
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
-                        fila.find('.seg-fac-descripcion').val(d.seguimiento_descripcion || '');
+                        fila.find('.seg-fac-desc1').val(d.seguimiento_descripcion || '');
+                        fila.find('.seg-fac-desc2').val(d.seguimiento_descripcion2 || '');
                         if (VIEWER_FACULTADES.includes(parseInt(d.facultad_id, 10))) fila.addClass('table-primary');
                         fila.show();
                         hay = true;
@@ -3729,7 +3763,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         let seguimientoFacultadTimeout = {};
-        $(document).on('input', '#tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-descripcion', function() {
+        $(document).on('input', '#tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc1, #tablaSeguimientoFacultades .seg-fac-desc2', function() {
             const fila = $(this).closest('tr');
             const facultadId = fila.data('facultad-id');
             const formulacionId = $('#seguimiento_id').val();
@@ -3746,7 +3780,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         facultad_id: facultadId,
                         seguimiento_sem1: fila.find('.seg-fac-s1').val(),
                         seguimiento_sem2: fila.find('.seg-fac-s2').val(),
-                        seguimiento_descripcion: fila.find('.seg-fac-descripcion').val()
+                        seguimiento_descripcion: fila.find('.seg-fac-desc1').val(),
+                        seguimiento_descripcion2: fila.find('.seg-fac-desc2').val()
                     },
                     dataType: 'json',
                     success: function(res) {
@@ -3757,18 +3792,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }, 600);
         });
 
-        // ── Evidencias del seguimiento: hasta 5 archivos por indicador y por facultad ──
+        // ── Evidencias del seguimiento: hasta 5 archivos por semestre, por indicador y por facultad ──
         let evFacultadActual = 0;
+        let evSemestreActual = 1;
 
         function evAplicarResumen(r) {
-            $('#segEvGeneralN').text(r.general || 0);
+            const g = r.general || {};
+            $('#segEvGenN1').text(g[1] || 0);
+            $('#segEvGenN2').text(g[2] || 0);
             $('#tablaSeguimientoFacultades tbody tr').each(function() {
-                $(this).find('.ev-n').text((r.facultades || {})[$(this).data('facultad-id')] || 0);
+                const f = (r.facultades || {})[$(this).data('facultad-id')] || {};
+                $(this).find('.ev-n[data-sem="1"]').text(f[1] || 0);
+                $(this).find('.ev-n[data-sem="2"]').text(f[2] || 0);
             });
         }
 
         function cargarResumenEvidencias(formulacionId) {
-            evAplicarResumen({ general: 0, facultades: {} });
+            evAplicarResumen({ general: {}, facultades: {} });
             if (!formulacionId) return;
             $.getJSON(basePath + '/modulo144/resumenEvidencias', { formulacion_id: formulacionId }, function(r) {
                 if (r.success) evAplicarResumen(r);
@@ -3803,22 +3843,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#evBtnElegir').prop('disabled', archivos.length >= (r.maximo || 5));
             $('#evRuta').text(r.carpeta || '');
             $('#modalEvidencias').data('estado', r);
-            if (!evFacultadActual) $('#segEvGeneralN').text(archivos.length);
-            else $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"] .ev-n').text(archivos.length);
+            if (!evFacultadActual) $('#segEvGenN' + evSemestreActual).text(archivos.length);
+            else $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"] .ev-n[data-sem="' + evSemestreActual + '"]').text(archivos.length);
         }
 
         function evRecargar() {
-            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: $('#seguimiento_id').val(), facultad_id: evFacultadActual }, function(r) {
+            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: $('#seguimiento_id').val(), facultad_id: evFacultadActual, semestre: evSemestreActual }, function(r) {
                 if (!r.success) { evMostrarError(r.message || 'No se pudieron cargar las evidencias'); return; }
                 evPintar(r);
             }).fail(function() { evMostrarError('Error de conexión con el servidor'); });
         }
 
-        function abrirEvidencias(facultadId) {
+        // facultadId 0 = evidencias del indicador; semestre 1 o 2
+        function abrirEvidencias(facultadId, semestre) {
             if (!$('#seguimiento_id').val()) return;
             evFacultadActual = parseInt(facultadId, 10) || 0;
+            evSemestreActual = parseInt(semestre, 10) === 2 ? 2 : 1;
             const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"]');
-            $('#evTitulo').text(evFacultadActual ? 'Evidencias · ' + fila.find('td:first').text().trim() : 'Evidencias del indicador');
+            $('#evTitulo').text('Evidencias · Semestre ' + evSemestreActual + (evFacultadActual ? ' · ' + fila.find('td:first').text().trim() : ''));
             $('#evQuien').text($('#tituloSeguimientoSpan').text());
             evMostrarError('');
             $('#evLista').empty();
@@ -3842,6 +3884,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const datos = new FormData();
                 datos.append('formulacion_id', $('#seguimiento_id').val());
                 datos.append('facultad_id', evFacultadActual);
+                datos.append('semestre', evSemestreActual);
                 datos.append('archivo', f);
                 $.ajax({ url: basePath + '/modulo144/subirEvidencia', type: 'POST', data: datos, processData: false, contentType: false, dataType: 'json' })
                     .done(function(r) { if (!r.success) errores.push(f.name + ': ' + (r.message || 'no se pudo cargar')); })
@@ -4726,6 +4769,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     fecha_seguimiento: $('#seguimiento_fecha').val(),
                     semestre1_seguimiento: $('#seguimiento_semestre1').val(),
                     semestre2_seguimiento: $('#seguimiento_semestre2').val(),
+                    descripcion_sem1: $('#seguimiento_descripcion_sem1').val(),
+                    descripcion_sem2: $('#seguimiento_descripcion_sem2').val(),
                     meta_programada: $('#seguimiento_meta_programada').val(),
                     meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
                     porcentaje_avance: $('#seguimiento_porcentaje').val(),
@@ -5051,6 +5096,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_indicador').val(b.indicador);
                             $('#seguimiento_fecha').val(b.fecha_seguimiento);
                             $('#seguimiento_semestre1').val(b.semestre1_seguimiento);
+                            $('#seguimiento_descripcion_sem1').val(b.descripcion_sem1 || '');
+                            $('#seguimiento_descripcion_sem2').val(b.descripcion_sem2 || '');
                             $('#seguimiento_semestre2').val(b.semestre2_seguimiento);
                             $('#seguimiento_meta_programada').val(b.meta_programada);
                             $('#seguimiento_meta_ejecutada').val(b.meta_ejecutada);
@@ -5249,9 +5296,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
 
         function aplicarBloqueoSemestres() {
-            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #tablaSeguimientoFacultades .seg-fac-s1').prop('disabled', true);
-            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #tablaSeguimientoFacultades .seg-fac-s2').prop('disabled', true);
-            if (BLOQUEO_SEM1 && BLOQUEO_SEM2) $('#tablaSeguimientoFacultades .seg-fac-descripcion').prop('disabled', true);
+            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_descripcion_sem1, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
+            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #seguimiento_descripcion_sem2, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
             const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
             $('#segBloqueoAviso').toggle(bloqueados.length > 0)
                 .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador de este formulario.');
