@@ -110,7 +110,10 @@ class Plantilla144Controller {
 
         // El objetivo es el de la línea estratégica: si un registro lo trae vacío, se completa desde el catálogo
         $objetivoPorLinea = [];
-        foreach ($catalogos['lineas'] as $l) $objetivoPorLinea[$this->normalizar($l['nombre'])] = (string)($l['objetivo'] ?? '');
+        foreach ($catalogos['lineas'] as $l) {
+            $n = $this->normalizar($l['nombre']);
+            if (trim((string)($l['objetivo'] ?? '')) !== '' || !isset($objetivoPorLinea[$n])) $objetivoPorLinea[$n] = (string)($l['objetivo'] ?? '');
+        }
         foreach ($registros as &$reg) {
             if (trim((string)($reg['objetivo'] ?? '')) === '') {
                 $reg['objetivo'] = $objetivoPorLinea[$this->normalizar($reg['linea_estrategica'] ?? '')] ?? '';
@@ -433,7 +436,14 @@ class Plantilla144Controller {
                 if (!$linea) $errores[] = "la línea estratégica \"{$vLinea}\" no existe en el catálogo.";
                 else {
                     $datos['linea_estrategica'] = $linea['nombre'];
-                    $datos['objetivo'] = $linea['objetivo'] ?? '';
+                    $objetivo = trim((string)($linea['objetivo'] ?? ''));
+                    if ($objetivo === '') {
+                        // Línea repetida en el catálogo: se toma el objetivo de la que sí lo tiene
+                        foreach ($cat['lineas'] as $otra) {
+                            if ($this->normalizar($otra['nombre']) === $this->normalizar($linea['nombre']) && trim((string)($otra['objetivo'] ?? '')) !== '') { $objetivo = trim($otra['objetivo']); break; }
+                        }
+                    }
+                    $datos['objetivo'] = $objetivo;
                 }
             }
         }
