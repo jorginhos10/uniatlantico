@@ -96,17 +96,9 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </a>
             </li>
 
-            <!-- Organigrama (disponible para todos los usuarios logueados) -->
-            <li class="navItem <?php echo ($paginaActual ?? '') === 'organigrama' ? 'active' : ''; ?>">
-                <a href="<?php echo $basePath; ?>/organigrama" class="navLink" data-tooltip="Organigrama">
-                    <?php echo icono('organigrama'); ?>
-                    <span>Organigrama</span>
-                </a>
-            </li>
-
             <!-- Configuración - Permiso ID: 5 (configurar_sistema) -->
             <?php if (tienePermisoPorId(PERMISO_CONFIG_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo (strpos($paginaActual ?? '', 'configuraciones') === 0 || in_array($paginaActual ?? '', ['dependencias', 'catalogos144', 'facultades', 'almacenamiento', 'roles', 'snapshots'], true)) ? 'active' : ''; ?>">
+                <li class="navItem <?php echo (strpos($paginaActual ?? '', 'configuraciones') === 0 || in_array($paginaActual ?? '', ['dependencias', 'catalogos144', 'facultades', 'almacenamiento', 'roles', 'snapshots', 'organigrama'], true)) ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/configuraciones" class="navLink" data-tooltip="Configuración">
                         <?php echo icono('configuracion'); ?>
                         <span>Configuraciones</span>

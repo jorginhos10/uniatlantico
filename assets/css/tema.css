@@ -80,8 +80,9 @@ a { color: var(--color-primario); }
 .icono { flex-shrink: 0; vertical-align: middle; }
 
 /* ═══════════════ MENÚ LATERAL ═══════════════ */
+/* Mismos valores que .barra-lateral de new-ua: vidrio gris translúcido sobre el fondo y la foto */
 .sidebar {
-    background: linear-gradient(180deg, rgba(40, 40, 44, 0.86), rgba(20, 20, 22, 0.88));
+    background: linear-gradient(180deg, rgba(40, 40, 44, 0.65), rgba(20, 20, 22, 0.65));
     backdrop-filter: blur(30px) saturate(180%);
     -webkit-backdrop-filter: blur(30px) saturate(180%);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
@@ -106,6 +107,7 @@ a { color: var(--color-primario); }
 .sidebar .navItem.active .navLink span,
 .sidebar .navItem.active .navLink .icono { color: #fff; font-weight: 600; }
 .sidebar .navLink span { color: #d2d2d7; }
+.sidebar .logo { border-bottom-color: rgba(255, 255, 255, 0.08); }
 
 /* ═══════════════ ENCABEZADO ═══════════════ */
 .mainHeader {

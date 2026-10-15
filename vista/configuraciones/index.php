@@ -95,6 +95,16 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
     </a>
 
+    <a style="text-decoration:none;" href="<?php echo $basePath; ?>/organigrama">
+    <div class="mosaic-item">
+      <div class="item-icon" style="background-color: #0071e3;">
+        <i class="fas fa-sitemap"></i>
+      </div>
+      <h3>Organigrama</h3>
+      <p>Estructura por roles: quién depende de quién y qué usuarios tiene cada rol</p>
+    </div>
+    </a>
+
     <a style="text-decoration:none;" href="<?php echo $basePath; ?>/snapshots">
     <div class="mosaic-item">
       <div class="item-icon" style="background-color: #5856D6;">
