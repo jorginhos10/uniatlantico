@@ -294,6 +294,25 @@ class Modulo144Model {
         }
     }
 
+    // Todos los proyectos activos con su línea y motor, para el buscador del modal de Formulación
+    public function getCatalogoProyectos() {
+        try {
+            $stmt = $this->db->prepare("SELECT p.id, p.codigo, p.nombre, p.linea_id, p.motor_id,
+                                        l.codigo AS linea_codigo, l.nombre AS linea_nombre,
+                                        m.codigo AS motor_codigo, m.nombre AS motor_nombre
+                                        FROM proyectos p
+                                        INNER JOIN lineas_estrategicas l ON p.linea_id = l.id AND l.activo = 1
+                                        INNER JOIN motores m ON p.motor_id = m.id AND m.activo = 1
+                                        WHERE p.activo = 1
+                                        ORDER BY l.codigo, m.codigo, p.codigo");
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log("Error getCatalogoProyectos: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getProyectos() {
         try {
             $stmt = $this->db->prepare("SELECT p.id, p.linea_id, p.motor_id, p.codigo, p.nombre,

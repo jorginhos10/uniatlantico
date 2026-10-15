@@ -30,6 +30,7 @@ class Modulo144Controller {
         $lineas_estrategicas = $this->model->getLineasEstrategicas();
         $cargos = $this->model->getCargos();
         $planes_institucionales = $this->model->getPlanesInstitucionales();
+        $catalogo_proyectos = $this->model->getCatalogoProyectos();
         $id_indicadores = $this->model->getIdIndicadores();
         $viewer_cargo_nombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
         // Todas las dependencias de las que el usuario es responsable (principal + "Responsable de")

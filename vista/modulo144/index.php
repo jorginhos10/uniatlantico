@@ -758,6 +758,39 @@ ob_start();
             padding: 20px;
         }
 
+        /* ═══ MODAL DE FORMULACIÓN: pantalla completa, barra azul y botón compactos ═══ */
+        #modalFormulacion .modal-dialog { margin: 0 !important; width: 100vw; max-width: none; height: 100%; }
+        #modalFormulacion .modal-content { height: 100%; max-height: none !important; border: 0; border-radius: 0 !important; }
+        #modalFormulacion .modal-content > form { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+        #modalFormulacion .modal-body-scroll { flex: 1 1 auto; max-height: none; min-height: 0; padding: 16px 28px 24px; }
+        #modalFormulacion .modal-header { padding: 0.4rem 1rem; min-height: 0; border: 0; }
+        #modalFormulacion .modal-title { font-size: 0.95rem; font-weight: 600; line-height: 1.3; }
+        #modalFormulacion .btn-close { padding: 0.3rem; margin: 0; background-size: 0.7rem; }
+        #modalFormulacion #formulacionTabs { padding-top: 0.35rem !important; }
+        #modalFormulacion #formulacionTabs .nav-link { padding: 0.4rem 1rem; font-size: 0.82rem; }
+        #modalFormulacion .modal-footer { padding: 0.35rem 1rem; }
+        #modalFormulacion .modal-footer .btn { padding: 0.2rem 0.8rem; font-size: 0.8rem; }
+        #modalFormulacion .form-label { font-size: 0.78rem; margin-bottom: 0.25rem; }
+        #modalFormulacion .form-check-label, #modalFormulacion .form-check-label strong { font-size: 0.8rem; }
+
+        /* Buscador de proyectos (código L-M-P o nombre) */
+        .m144-buscar { position: relative; }
+        .m144-buscar > .fa-search { position: absolute; left: 13px; top: 21px; transform: translateY(-50%); color: #86868b; pointer-events: none; }
+        .m144-buscar > input { height: 42px; padding-left: 38px; padding-right: 36px; font-size: 0.95rem; border: 2px solid #0071e3 !important; }
+        .m144-buscar-limpiar { position: absolute; right: 8px; top: 7px; width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: #86868b; font-size: 1.3rem; line-height: 1; cursor: pointer; }
+        .m144-buscar-limpiar:hover { background: #f0f0f2; color: #1d1d1f; }
+        .m144-buscar-lista { position: absolute; z-index: 40; left: 0; right: 0; top: calc(100% + 4px); max-height: 360px; overflow-y: auto; background: #fff; border: 1px solid #d2d2d7; border-radius: 10px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.18); }
+        .m144-opcion { display: flex; gap: 12px; align-items: flex-start; padding: 8px 14px; cursor: pointer; border-bottom: 1px solid #f0f0f3; }
+        .m144-opcion:last-child { border-bottom: 0; }
+        .m144-opcion.activa, .m144-opcion:hover { background: #e8f2ff; }
+        .m144-opcion-codigo { flex: none; min-width: 92px; text-align: center; font-weight: 700; font-size: 0.76rem; color: #0058b0; background: #e8f2ff; border-radius: 6px; padding: 3px 8px; white-space: nowrap; }
+        .m144-opcion.activa .m144-opcion-codigo, .m144-opcion:hover .m144-opcion-codigo { background: #fff; }
+        .m144-opcion-nombre { font-weight: 600; font-size: 0.88rem; color: #1d1d1f; }
+        .m144-opcion-sub { font-size: 0.75rem; color: #6e6e73; margin-top: 1px; }
+        .m144-buscar-vacio { padding: 14px; font-size: 0.85rem; color: #6e6e73; text-align: center; }
+        .m144-buscar-nota { padding: 6px 14px; font-size: 0.74rem; color: #86868b; background: #fafafa; text-align: center; }
+
+
         .desarrollo-section {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 12px;
@@ -2225,7 +2258,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     <!-- MODAL PARA FORMULACIÓN -->
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
                 <div class="modal-header" style="background: #007AFF;">
                     <h5 class="modal-title" id="tituloFormulacion" ondblclick="editarTituloModal('formulacion')">
@@ -2260,7 +2293,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <!-- PESTAÑA 1: FORMULACIÓN -->
                             <div class="tab-pane fade show active" id="formulacion" role="tabpanel" aria-labelledby="tab-formulacion">
                                 <div class="row">
-                                    <div class="col-md-12 mb-3">
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label" for="buscarProyecto">BUSCAR PROYECTO
+                                            <small class="text-muted fw-normal ms-1">escribe el código (ej. L5-M1-P1) o parte del nombre: completa línea, objetivo, motor y proyecto</small>
+                                        </label>
+                                        <div class="m144-buscar" id="buscarProyectoWrap">
+                                            <i class="fas fa-search"></i>
+                                            <input type="text" class="form-control" id="buscarProyecto" autocomplete="off" role="combobox"
+                                                   aria-expanded="false" aria-controls="buscarProyectoLista" aria-autocomplete="list"
+                                                   placeholder="Ej: L5-M1-P1  ·  Mejoramiento y efectividad de procesos administrativos y académicos">
+                                            <button type="button" class="m144-buscar-limpiar" id="buscarProyectoLimpiar" aria-label="Limpiar búsqueda" hidden>&times;</button>
+                                            <div class="m144-buscar-lista" id="buscarProyectoLista" role="listbox" hidden></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">1. LÍNEA ESTRATÉGICA</label>
                                         <select class="form-select" name="linea_estrategica" id="formulacion_linea" onchange="cargarObjetivoYestrategias(); cargarMotoresPorLinea(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione línea estratégica</option>
@@ -2274,38 +2321,38 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">2. OBJETIVO</label>
-                                        <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="3" readonly></textarea>
+                                        <textarea class="form-control" name="objetivo" id="formulacion_objetivo" rows="6" readonly></textarea>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">3. ESTRATEGIA</label>
                                         <select class="form-select" name="estrategia" id="formulacion_estrategia" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione una estrategia</option>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">4. MOTOR DE DESARROLLO</label>
                                         <select class="form-select" name="motor_desarrollo" id="formulacion_motor" onchange="cargarProyectosPorMotor(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un motor de desarrollo</option>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">5. PROYECTO</label>
                                         <select class="form-select" name="proyecto" id="formulacion_proyecto" onchange="calcularAcumuladoActividades(true); cargarPonderacionProyecto(); autoGuardarFormulacion(); validarPestanas(); actualizarLmpBadgeEnLista();">
                                             <option value="">Seleccione un proyecto</option>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">6. META DE RESULTADO</label>
-                                        <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="2" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
+                                        <textarea class="form-control" name="meta_resultado" id="formulacion_meta" rows="5" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la meta de resultado..."></textarea>
                                     </div>
 
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">7. PONDERACIÓN DE LOS PROYECTOS</label>
                                         <div class="input-group">
                                             <input type="number" class="form-control" name="ponderacion_proyectos" id="formulacion_ponderacion_proyectos" step="0.01" min="0" max="100" readonly placeholder="0.00" style="background-color: #e9ecef; cursor: not-allowed;">
@@ -2313,12 +2360,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </div>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">8. ACTIVIDAD DEL PROYECTO (205)</label>
                                         <textarea class="form-control" name="actividad_proyecto" id="formulacion_actividad" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa la actividad del proyecto..."></textarea>
                                     </div>
 
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">9. PONDERACIÓN DE LAS ACTIVIDADES POR PROYECTO</label>
                                         <div class="input-group">
                                             <input type="number" class="form-control" name="ponderacion_actividades" id="formulacion_ponderacion_actividades" step="0.01" min="0" max="100" oninput="calcularAcumuladoActividades(); autoGuardarFormulacion(); validarPestanas()" placeholder="0.00">
@@ -2332,7 +2379,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <div id="acumulado_actividades_msg" class="mt-1" style="font-size:0.8rem; display:none;"></div>
                                     </div>
 
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">10. RESPONSABLE</label>
                                         <select class="form-select" name="responsable_formulacion_multi[]" id="formulacion_responsable" multiple="multiple">
                                             <?php foreach ($cargos as $cargo): ?>
@@ -2344,7 +2391,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <input type="hidden" name="responsable_formulacion" id="formulacion_responsable_hidden">
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">11. ID INDICADOR</label>
                                         <select class="form-select" name="id_indicador" id="formulacion_id_indicador" onchange="autoGuardarFormulacion(); validarPestanas()">
                                             <option value="">Seleccione...</option>
@@ -2356,7 +2403,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </select>
                                     </div>
 
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3 d-flex align-items-end">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" name="gestionado_facultades" id="formulacion_gestionado_facultades" value="1" onchange="gestionarCheckboxFacultades(this); toggleDistribucionFacultadesTabla(this.checked)">
                                             <label class="form-check-label" for="formulacion_gestionado_facultades">
@@ -2374,18 +2421,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <h5 class="indicador-title">INFORMACIÓN DEL INDICADOR</h5>
                                     </div>
                                     
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">13.1 NOMBRE DEL INDICADOR</label>
                                         <input type="text" class="form-control" name="nombre_indicador" id="formulacion_nombre_indicador" oninput="sincronizarNombreBorrador(); autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Ingrese el nombre del indicador">
                                     </div>
                                     
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                         <label class="form-label">13.2 FÓRMULA DE LA MEDICIÓN</label>
                                         <textarea class="form-control" name="formula_medicion" id="formulacion_formula_medicion" rows="3" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Ej: (Número de estudiantes graduados / Total de estudiantes matriculados) * 100"></textarea>
                                     </div>
                                     
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
+                                    
+                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                             <label class="form-label">13.3 FRECUENCIA DE MEDICIÓN</label>
                                             <select class="form-select" name="frecuencia_medicion" id="formulacion_frecuencia_medicion" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione frecuencia</option>
@@ -2397,7 +2444,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </select>
                                         </div>
                                         
-                                        <div class="col-md-4 mb-3">
+                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                             <label class="form-label">13.4 UNIDAD DE MEDIDA</label>
                                             <select class="form-select" name="unidad_medida" id="formulacion_unidad_medida" onchange="autoGuardarFormulacion(); validarPestanas()">
                                                 <option value="">Seleccione unidad</option>
@@ -2406,7 +2453,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </select>
                                         </div>
                                         
-                                        <div class="col-md-4 mb-3">
+                                        <div class="col-12 col-md-6 col-lg-4 col-xxl-3 mb-3">
                                             <label class="form-label">13.5 AÑO</label>
                                             <select class="form-select" name="tipo_medicion" id="formulacion_tipo_medicion" onchange="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()">
                                                 <option value="">Seleccione tipo</option>
@@ -2417,11 +2464,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <option value="Límite">Límite</option>
                                             </select>
                                         </div>
-                                    </div>
                                     
-                                    <div class="col-12 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-4 col-xxl-9 mb-3">
                                         <label class="form-label">DESCRIPCIÓN DEL INDICADOR</label>
-                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="4" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
+                                        <textarea class="form-control" name="descripcion_indicador" id="formulacion_descripcion_indicador" rows="5" oninput="autoGuardarFormulacion(); validarPestanas()" placeholder="Describa detalladamente el indicador..."></textarea>
                                     </div>
                                     
                                     <div class="col-12 mt-4">
@@ -2429,26 +2475,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <h5 class="meta-title">METAS PROPUESTAS</h5>
                                             
                                             <div class="row">
-                                                <div class="col-md-6 mb-3">
+                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-1">
                                                     <label class="form-label">14.1 LÍNEA BASE</label>
                                                     <input type="text" class="form-control" name="linea_base_meta" id="formulacion_linea_base_meta" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Valor de línea base">
                                                 </div>
                                                 
-                                                <div class="col-md-6 mb-3">
+                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-4">
                                                     <label class="form-label">14.4 META AÑO</label>
                                                     <input type="text" class="form-control" name="anio_base_meta" id="formulacion_anio_base_meta" readonly placeholder="Valor anual" style="background-color: #e8f5e9; font-weight: bold; color: #2e7d32;">
                                                 </div>
                                                 
-                                                <div class="col-12">
+                                                <div class="col-12 d-none">
                                                     <h6 class="mb-3" style="color: var(--color-primary);">METAS ANUALES</h6>
                                                 </div>
                                                 
-                                                <div class="col-md-6 mb-3">
+                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-2">
                                                     <label class="form-label">14.2 SEMESTRE 1</label>
                                                     <input type="text" class="form-control" name="meta_s1" id="formulacion_meta_s1" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 1">
                                                 </div>
                                                 
-                                                <div class="col-md-6 mb-3">
+                                                <div class="col-12 col-md-6 col-xl-3 mb-3 order-3">
                                                     <label class="form-label">14.3 SEMESTRE 2</label>
                                                     <input type="text" class="form-control" name="meta_s2" id="formulacion_meta_s2" oninput="autoGuardarFormulacion(); validarPestanas(); calcularValorAnual()" placeholder="Meta Semestre 2">
                                                 </div>
@@ -2531,7 +2577,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                     
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </form>
             </div>
@@ -3268,6 +3314,191 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $(document).on('input', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
             autoGuardarDistribucionFacultad($(this).closest('tr'));
         });
+
+        // ═══ BUSCADOR DE PROYECTOS (código L-M-P o nombre) ═══
+        // Al elegir un proyecto se completan línea, objetivo, motor y proyecto del formulario.
+        const CATALOGO_PROYECTOS = <?php echo json_encode(array_values($catalogo_proyectos ?? []), JSON_UNESCAPED_UNICODE); ?>;
+        const MAX_RESULTADOS_BUSQUEDA = 60;
+        let catalogoSeleccionToken = 0;
+
+        function normBusqueda(t) {
+            return String(t == null ? '' : t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        }
+
+        // Índice de búsqueda: código en varias formas + nombres de proyecto, motor y línea
+        CATALOGO_PROYECTOS.forEach(function(p) {
+            const l = p.linea_codigo || '', m = p.motor_codigo || '', c = p.codigo || '';
+            p._etiqueta = [l, m, c].filter(Boolean).join(' - ');
+            p._compacto = normBusqueda(l + m + c);
+            p._texto = normBusqueda([l + '-' + m + '-' + c, l + ' ' + m + ' ' + c, p._etiqueta, c, p.nombre, p.linea_nombre, p.motor_nombre].join(' '));
+        });
+
+        function buscarProyectosCatalogo(consulta) {
+            const q = normBusqueda(consulta).trim();
+            if (!q) return CATALOGO_PROYECTOS.slice();
+            const tokens = q.split(/\s+/).filter(Boolean);
+            const compacto = q.replace(/[\s\-–·.]+/g, '');
+            const coinciden = CATALOGO_PROYECTOS.filter(function(p) {
+                return tokens.every(function(t) { return p._texto.indexOf(t) !== -1; });
+            });
+            // El código exacto va primero, luego los que empiezan por lo escrito
+            const puntaje = function(p) { return p._compacto === compacto ? 0 : (compacto.length >= 2 && p._compacto.indexOf(compacto) === 0 ? 1 : 2); };
+            return coinciden.sort(function(a, b) { return puntaje(a) - puntaje(b); });
+        }
+
+        function etiquetaProyectoBuscador(p) { return p._etiqueta + '  ·  ' + p.nombre; }
+
+        (function iniciarBuscadorProyecto() {
+            const input = document.getElementById('buscarProyecto');
+            const lista = document.getElementById('buscarProyectoLista');
+            const limpiar = document.getElementById('buscarProyectoLimpiar');
+            if (!input || !lista) return;
+            let resultados = [], activo = -1;
+
+            function abrir(mostrar) {
+                lista.hidden = !mostrar;
+                input.setAttribute('aria-expanded', mostrar ? 'true' : 'false');
+            }
+            function marcarActivo(i) {
+                const items = lista.querySelectorAll('.m144-opcion');
+                items.forEach(function(el, k) { el.classList.toggle('activa', k === i); });
+                activo = i;
+                if (items[i]) items[i].scrollIntoView({ block: 'nearest' });
+            }
+            function pintar() {
+                resultados = buscarProyectosCatalogo(input.value);
+                limpiar.hidden = !input.value;
+                if (!resultados.length) {
+                    lista.innerHTML = '<div class="m144-buscar-vacio">Ningún proyecto coincide con "' + evalHtmlEscape(input.value) + '"</div>';
+                    activo = -1;
+                    abrir(true);
+                    return;
+                }
+                const visibles = resultados.slice(0, MAX_RESULTADOS_BUSQUEDA);
+                lista.innerHTML = visibles.map(function(p, i) {
+                    return '<div class="m144-opcion" role="option" data-i="' + i + '">'
+                        + '<span class="m144-opcion-codigo">' + evalHtmlEscape(p._etiqueta) + '</span>'
+                        + '<span><div class="m144-opcion-nombre">' + evalHtmlEscape(p.nombre) + '</div>'
+                        + '<div class="m144-opcion-sub">' + evalHtmlEscape((p.linea_nombre || '') + '  ›  ' + (p.motor_nombre || '')) + '</div></span></div>';
+                }).join('') + (resultados.length > visibles.length
+                    ? '<div class="m144-buscar-nota">Mostrando ' + visibles.length + ' de ' + resultados.length + ' proyectos: escribe más para acotar</div>' : '');
+                activo = -1;
+                abrir(true);
+            }
+            function elegir(i) {
+                const p = resultados[i];
+                if (!p) return;
+                input.value = etiquetaProyectoBuscador(p);
+                limpiar.hidden = false;
+                abrir(false);
+                aplicarProyectoCatalogo(p);
+            }
+
+            input.addEventListener('focus', pintar);
+            input.addEventListener('input', pintar);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowDown') { e.preventDefault(); if (lista.hidden) pintar(); marcarActivo(Math.min(activo + 1, Math.min(resultados.length, MAX_RESULTADOS_BUSQUEDA) - 1)); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); marcarActivo(Math.max(activo - 1, 0)); }
+                else if (e.key === 'Enter') { if (!lista.hidden) { e.preventDefault(); elegir(activo >= 0 ? activo : 0); } }
+                else if (e.key === 'Escape') { if (!lista.hidden) { e.stopPropagation(); abrir(false); } }
+            });
+            // mousedown (no click) para que el input no pierda el foco antes de elegir
+            lista.addEventListener('mousedown', function(e) {
+                const op = e.target.closest('.m144-opcion');
+                if (!op) return;
+                e.preventDefault();
+                elegir(parseInt(op.getAttribute('data-i'), 10));
+            });
+            limpiar.addEventListener('click', function() { input.value = ''; limpiar.hidden = true; input.focus(); pintar(); });
+            document.addEventListener('mousedown', function(e) {
+                if (!document.getElementById('buscarProyectoWrap').contains(e.target)) abrir(false);
+            });
+        })();
+
+        // Deja el buscador vacío (al cerrar el modal) o con el proyecto del borrador (al editar)
+        function limpiarBuscadorProyecto() {
+            const input = document.getElementById('buscarProyecto');
+            if (input) input.value = '';
+            const lim = document.getElementById('buscarProyectoLimpiar');
+            if (lim) lim.hidden = true;
+            const lista = document.getElementById('buscarProyectoLista');
+            if (lista) lista.hidden = true;
+        }
+        function sincronizarBuscadorProyecto(b) {
+            limpiarBuscadorProyecto();
+            if (!b || !b.proyecto) return;
+            const p = CATALOGO_PROYECTOS.find(function(x) {
+                return x.nombre === b.proyecto && x.linea_nombre === b.linea_estrategica && x.motor_nombre === b.motor_desarrollo;
+            });
+            if (p) {
+                document.getElementById('buscarProyecto').value = etiquetaProyectoBuscador(p);
+                document.getElementById('buscarProyectoLimpiar').hidden = false;
+            }
+        }
+
+        function llenarSelectMotores(motores) {
+            const sel = document.getElementById('formulacion_motor');
+            sel.innerHTML = '<option value="">Seleccione un motor de desarrollo</option>';
+            (motores || []).forEach(function(motor) {
+                const option = document.createElement('option');
+                option.value = motor.nombre;
+                option.setAttribute('data-motor-id', motor.id);
+                option.textContent = (motor.codigo ? motor.codigo + ' - ' : '') + motor.nombre;
+                sel.appendChild(option);
+            });
+        }
+        function llenarSelectProyectos(proyectos) {
+            const sel = document.getElementById('formulacion_proyecto');
+            sel.innerHTML = '<option value="">Seleccione un proyecto</option>';
+            (proyectos || []).forEach(function(proyecto) {
+                const option = document.createElement('option');
+                option.value = proyecto.nombre;
+                option.setAttribute('data-proyecto-id', proyecto.id);
+                option.textContent = proyecto.codigo + ' - ' + proyecto.nombre;
+                sel.appendChild(option);
+            });
+        }
+
+        // Completa línea → objetivo → motor → proyecto a partir del proyecto elegido en el buscador
+        function aplicarProyectoCatalogo(p) {
+            formulacionEditadaPorUsuario = true; // es una acción del usuario: habilita el autoguardado
+            const token = ++catalogoSeleccionToken;
+            const sesion = formulacionSesion;
+            const vigente = function() { return token === catalogoSeleccionToken && sesion === formulacionSesion; };
+
+            const selLinea = document.getElementById('formulacion_linea');
+            const selMotor = document.getElementById('formulacion_motor');
+            const selProyecto = document.getElementById('formulacion_proyecto');
+
+            const lineaCambia = selLinea.value !== p.linea_nombre;
+            selLinea.value = p.linea_nombre;
+            if (selLinea.value !== p.linea_nombre) {
+                Swal.fire('Línea no disponible', 'La línea de este proyecto no está habilitada en el formulario.', 'warning');
+                return;
+            }
+            if (lineaCambia) {
+                cargarObjetivoYestrategias(); // objetivo de la línea y sus estrategias (la estrategia la elige el usuario)
+            } else {
+                document.getElementById('formulacion_objetivo').value = selLinea.options[selLinea.selectedIndex].getAttribute('data-objetivo') || '';
+            }
+
+            selMotor.innerHTML = '<option value="">Cargando motores...</option>';
+            selProyecto.innerHTML = '<option value="">Seleccione un motor primero</option>';
+            $.getJSON(basePath + '/modulo144/getMotoresPorLinea', { linea_id: p.linea_id }).done(function(resMotores) {
+                if (!vigente()) return;
+                llenarSelectMotores(resMotores.success ? resMotores.motores : []);
+                selMotor.value = p.motor_nombre;
+                selProyecto.innerHTML = '<option value="">Cargando proyectos...</option>';
+                $.getJSON(basePath + '/modulo144/getProyectosPorLineaYMotor', { linea_id: p.linea_id, motor_id: p.motor_id }).done(function(resProyectos) {
+                    if (!vigente()) return;
+                    llenarSelectProyectos(resProyectos.success ? resProyectos.proyectos : []);
+                    selProyecto.value = p.nombre;
+                    // El "change" del proyecto calcula la ponderación, el acumulado y guarda el borrador
+                    selProyecto.dispatchEvent(new Event('change', { bubbles: true }));
+                    validarPestanas();
+                }).fail(function() { if (vigente()) selProyecto.innerHTML = '<option value="">Error al cargar proyectos</option>'; });
+            }).fail(function() { if (vigente()) selMotor.innerHTML = '<option value="">Error al cargar motores</option>'; });
+        }
 
         // ═══ IMPORTAR PLANTILLA ═══
         function abrirModalImportarPlantilla() {
@@ -4449,6 +4680,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#tituloFormulacionSpan').text(b.nombre_borrador);
                             nombreBorradorProvisional = (b.nombre_indicador && b.nombre_indicador.trim() !== '') ? 'Nuevo Borrador' : (b.nombre_borrador || 'Nuevo Borrador');
                             $('#formulacion_linea').val(b.linea_estrategica);
+                            sincronizarBuscadorProyecto(b);
                             $('#formulacion_objetivo').val(b.objetivo);
                             $('#formulacion_tipo_medicion').val(b.tipo_medicion);
                             
@@ -5046,6 +5278,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             // Al cerrar: enviar lo pendiente y cortar cualquier carga/guardado tardío de esta apertura
             $('#modalFormulacion').on('hide.bs.modal', function() {
                 flushAutoGuardarFormulacion();
+                limpiarBuscadorProyecto();
                 formulacionSesion++;
                 formulacionEditadaPorUsuario = false;
                 $('#formulacion_id').val('');
