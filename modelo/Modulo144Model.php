@@ -133,6 +133,7 @@ class Modulo144Model {
     }
 
     public function verificarFormulario($id) {
+        $this->asegurarColumnasBloqueoSemestres();
         try {
             $stmt = $this->db->prepare("SELECT *, 
                                         CASE WHEN tipo_tiempo = 'libre' THEN NULL ELSE fecha_fin END as fecha_cierre,
@@ -1364,6 +1365,34 @@ class Modulo144Model {
             return $n === false ? null : $n;
         } catch (PDOException $e) {
             return null;
+        }
+    }
+
+    // Bloqueo de casillas de seguimiento por semestre (se configura en Editar formulario → Campos)
+    public function asegurarColumnasBloqueoSemestres() {
+        static $listo = false;
+        if ($listo) return;
+        try {
+            foreach (['bloqueo_sem1', 'bloqueo_sem2'] as $col) {
+                if ($this->db->query("SHOW COLUMNS FROM formularios LIKE '" . $col . "'")->rowCount() === 0) {
+                    $this->db->exec("ALTER TABLE formularios ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
+                }
+            }
+            $listo = true;
+        } catch (PDOException $e) {
+            error_log('Error asegurarColumnasBloqueoSemestres: ' . $e->getMessage());
+        }
+    }
+
+    public function getBloqueosSemestres($formularioId) {
+        $this->asegurarColumnasBloqueoSemestres();
+        try {
+            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2 FROM formularios WHERE id = :id");
+            $stmt->execute([':id' => (int)$formularioId]);
+            $r = $stmt->fetch();
+            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1];
+        } catch (PDOException $e) {
+            return ['sem1' => false, 'sem2' => false];
         }
     }
 }

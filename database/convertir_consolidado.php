@@ -27,6 +27,33 @@ $origenCol = [
 ];
 const PRIMERA_COL_PLANES = 27;
 
+// Responsable del consolidado → dependencia del catálogo del sistema (tabla cargos)
+$dependencias = [
+    'Director Consultorio Jurídico y Centro de Conciliación' => 'Consultorio Jurídico y Centro de Conciliación',
+    'Director de Comunicaciones' => 'Dirección de Comunicaciones',
+    'Director de Regionalización nivel Sede' => 'Dirección de Regionalización nivel sede',
+    'Director del Museo de Antropología' => 'Museo de Antropología',
+    'Jefe Departamento de Desarrollo Humano' => 'Dpto. de Desarrollo Humano',
+    'Jefe de Oficina de Egresados' => 'Oficina de Egresados',
+    'Jefe de Oficina de Gestión Tecnológica e Información' => 'Oficina de Gest. Tec. e Información',
+    'Jefe de Oficina de Planeación' => 'Oficina de Planeación',
+    'Jefe de Oficina de Relaciones Interinstitucionales e Internacionales' => 'Oficina de Rel. Interinst. e Internacionales',
+    'Jefe del Departamento Calidad Academica' => 'Dpto. Calidad Académica',
+    'Jefe del Departamento Extensión y Proyección Social' => 'Dpto. de Extens. y Proy. Social',
+    'Jefe del Departamento de Admisiones y Registro' => 'Dpto. de Admisiones y Registro',
+    'Jefe del Departamento de Biblioteca' => 'Departamento de Biblioteca',
+    'Jefe del Departamento de Educación Virtual, Medios Educativos y Audiovisuales' => 'Dpto. de Edu. Virt. Medios Educ y Audiov',
+    'Jefe del Departamento de Fomento y Apoyo a la Investigación' => 'Dpto. de Fomento y Apoyo a la Investigación',
+    'Jefe del Departamento de Gestión Financiera' => 'Dpto. de Gestión Financiera',
+    'Jefe del Departamento de Gestión de Talento Humano' => 'Dpto. de Gestión de Talento Humano',
+    'Jefe del Departamento de Infraestructura Física y Servicios Generales' => 'Dpto. de Inf Física y Servicios Generales',
+    'Jefe del Departamento de Postgrado' => 'Dpto. de Postgrados',
+    'Secretario General' => 'Secretaría General',
+    'Vicerrector De Docencia' => 'Vicerrectoría de Docencia',
+    'Vicerrector de Bienestar Universitario' => 'Vice de Bienestar Universitario',
+];
+$sinEquivalencia = [];
+
 $libro = ExcelLibro::leer($origen);
 $hoja = null;
 foreach ($libro as $nombre => $filas) {
@@ -71,7 +98,12 @@ foreach ($datos as $fila) {
     foreach ($columnas as $k => $col) {
         if ($k === 'id') { $f[] = ''; continue; }                                     // N° en blanco = indicador nuevo
         $idx = strpos($k, 'plan:') === 0 ? (int)substr($k, 5) : ($origenCol[$k] ?? null);
-        $f[] = $idx === null ? '' : trim((string)($fila[$idx] ?? ''));
+        $v = $idx === null ? '' : trim((string)($fila[$idx] ?? ''));
+        if ($k === 'responsable_formulacion' && $v !== '') {
+            if (isset($dependencias[$v])) $v = $dependencias[$v];
+            else $sinEquivalencia[$v] = true;
+        }
+        $f[] = $v;
     }
     $filas[] = $f;
 }
@@ -80,4 +112,5 @@ ob_start();
 ExcelLibro::descargar('x', [['nombre' => 'Formulación', 'columnas' => array_values($columnas), 'filas' => $filas]]);
 $bin = ob_get_clean();
 file_put_contents($salida, $bin);
+foreach (array_keys($sinEquivalencia) as $r) echo "Sin equivalencia de dependencia: $r\n";
 echo "Indicadores: " . count($filas) . "\nPlanes institucionales (columnas): " . count($planes) . "\nArchivo: $salida\n";

@@ -466,5 +466,48 @@ class FORDE144Model {
             return false;
         }
     }
+
+    // ───────── Bloqueo de las casillas de seguimiento por semestre (pestaña "Campos") ─────────
+    // bloqueo_sem1 / bloqueo_sem2: 1 = casillas de ese semestre bloqueadas; 0 = desbloqueadas. Las columnas se crean solas.
+    public function asegurarColumnasBloqueo() {
+        static $listo = false;
+        if ($listo) return;
+        try {
+            foreach (['bloqueo_sem1', 'bloqueo_sem2'] as $col) {
+                $q = $this->db->query("SHOW COLUMNS FROM " . $this->table . " LIKE '" . $col . "'");
+                if ($q->rowCount() === 0) {
+                    $this->db->exec("ALTER TABLE " . $this->table . " ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
+                }
+            }
+            $listo = true;
+        } catch (PDOException $e) {
+            error_log('Error asegurarColumnasBloqueo: ' . $e->getMessage());
+        }
+    }
+
+    public function getBloqueosSemestres($formulario_id) {
+        $this->asegurarColumnasBloqueo();
+        try {
+            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2 FROM " . $this->table . " WHERE id = :id");
+            $stmt->execute([':id' => (int)$formulario_id]);
+            $r = $stmt->fetch();
+            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1];
+        } catch (PDOException $e) {
+            error_log('Error getBloqueosSemestres: ' . $e->getMessage());
+            return ['sem1' => false, 'sem2' => false];
+        }
+    }
+
+    public function setBloqueoSemestre($formulario_id, $semestre, $bloqueado) {
+        $this->asegurarColumnasBloqueo();
+        $col = (int)$semestre === 2 ? 'bloqueo_sem2' : 'bloqueo_sem1';
+        try {
+            $stmt = $this->db->prepare("UPDATE " . $this->table . " SET {$col} = :v WHERE id = :id");
+            return $stmt->execute([':v' => $bloqueado ? 1 : 0, ':id' => (int)$formulario_id]);
+        } catch (PDOException $e) {
+            error_log('Error setBloqueoSemestre: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?>

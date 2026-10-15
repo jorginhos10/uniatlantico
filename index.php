@@ -311,6 +311,14 @@ switch ($action) {
                 $forde144Controller->agregarAdministrador();
                 break;
 
+            case 'getBloqueos':
+                $forde144Controller->getBloqueos();
+                break;
+
+            case 'guardarBloqueo':
+                $forde144Controller->guardarBloqueo();
+                break;
+
             case 'eliminarAdministrador':
                 $forde144Controller->eliminarAdministrador();
                 break;

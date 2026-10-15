@@ -450,6 +450,13 @@ class Modulo144Controller {
                 }
             }
 
+            // Semestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
+            if ($modulo === 'seguimiento' && $itemActual) {
+                $bl = $this->semestresBloqueados($itemActual);
+                if ($bl['sem1']) unset($_POST['semestre1_seguimiento']);
+                if ($bl['sem2']) unset($_POST['semestre2_seguimiento']);
+            }
+
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
             echo json_encode([
                 'success' => $resultado,
@@ -921,6 +928,18 @@ class Modulo144Controller {
             return;
         }
 
+        // Semestres bloqueados: se conserva el valor que ya tenía la facultad
+        $bl = $this->semestresBloqueados($item);
+        if ($bl['sem1'] || $bl['sem2']) {
+            $actualFac = null;
+            foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
+                if ((int)$d['facultad_id'] === $facultadId) { $actualFac = $d; break; }
+            }
+            if ($bl['sem1']) $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
+            if ($bl['sem2']) $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
+            if ($bl['sem1'] && $bl['sem2']) $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
+        }
+
         $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
     }
@@ -1213,6 +1232,12 @@ class Modulo144Controller {
         header('Content-Length: ' . filesize($ruta));
         header('Content-Disposition: ' . ($enLinea ? 'inline' : 'attachment') . "; filename*=UTF-8''" . rawurlencode($ev['nombre_original']));
         readfile($ruta);
+    }
+
+    // Semestres cuyas casillas de seguimiento están bloqueadas para el usuario actual (los administradores no se ven afectados)
+    private function semestresBloqueados(array $item) {
+        if ($this->esAdminSeguimiento()) return ['sem1' => false, 'sem2' => false];
+        return $this->model->getBloqueosSemestres((int)($item['formulario_id'] ?? 0));
     }
 }
 ?>

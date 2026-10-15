@@ -399,8 +399,12 @@ class Plantilla144Controller {
 
             $datos = [];
             $errores = [];
+            // Semestres bloqueados en Editar formulario → Campos (los administradores no se ven afectados)
+            $bloqueo = $this->esAdmin() ? ['sem1' => false, 'sem2' => false] : $this->model->getBloqueosSemestres((int)($actual['formulario_id'] ?? 0));
             foreach ($editables as $k) {
                 if (!isset($mapa[$k])) continue;
+                if ($k === 'semestre1_seguimiento' && $bloqueo['sem1']) continue;
+                if ($k === 'semestre2_seguimiento' && $bloqueo['sem2']) continue;
                 $v = trim((string)($fila[$mapa[$k]] ?? ''));
                 if (in_array($k, ['semestre1_seguimiento', 'semestre2_seguimiento'], true)) {
                     $n = $this->numero($v);
@@ -469,7 +473,13 @@ class Plantilla144Controller {
         if ($vProy !== null && $vProy !== '') {
             if (!$motor) $errores[] = 'para indicar el proyecto primero debe ir el motor de desarrollo.';
             else {
-                $proyecto = $this->buscar($this->model->getProyectosPorLineaYMotor($linea['id'], $motor['id']), $vProy, ['nombre', 'codigo']);
+                $proyectosMotor = $this->model->getProyectosPorLineaYMotor($linea['id'], $motor['id']);
+                $proyecto = $this->buscar($proyectosMotor, $vProy, ['nombre', 'codigo']);
+                if (!$proyecto && preg_match('/^\s*([A-Za-z]{1,3}\d+)\s*[-–.]/u', $vProy, $mc)) {
+                    foreach ($proyectosMotor as $pm) {
+                        if ($this->normalizar($pm['codigo'] ?? '') === $this->normalizar($mc[1])) { $proyecto = $pm; break; }
+                    }
+                }
                 if (!$proyecto) $errores[] = "el proyecto \"{$vProy}\" no pertenece al motor {$motor['codigo']}.";
                 else {
                     $datos['proyecto'] = $proyecto['nombre'];
@@ -486,7 +496,13 @@ class Plantilla144Controller {
         if ($vEstr !== null) {
             if ($vEstr === '') $datos['estrategia'] = '';
             elseif ($linea) {
-                $estr = $this->buscar($this->model->getEstrategiasPorLinea($linea['id']), $vEstr, ['descripcion']);
+                $estrategiasLinea = $this->model->getEstrategiasPorLinea($linea['id']);
+                $estr = $this->buscar($estrategiasLinea, $vEstr, ['descripcion']);
+                if (!$estr && preg_match('/^\s*(\d+)\s*[.)-]/u', $vEstr, $mn)) {
+                    foreach ($estrategiasLinea as $e) {
+                        if (preg_match('/^\s*(\d+)\s*[.)-]/u', (string)$e['descripcion'], $me) && $me[1] === $mn[1] && ($this->similitud($vEstr, $e['descripcion']) >= 0.35 || $this->mismoInicio($vEstr, $e['descripcion'], 3))) { $estr = $e; break; }
+                    }
+                }
                 if (!$estr) $errores[] = "la estrategia \"" . mb_strimwidth($vEstr, 0, 60, '…') . "\" no pertenece a la línea {$linea['codigo']}.";
                 else $datos['estrategia'] = $estr['descripcion'];
             } else {
@@ -779,7 +795,38 @@ class Plantilla144Controller {
                 if ($n !== '' && ($n === $v || $n === $sinCodigo)) return $item;
             }
         }
+        // Segunda pasada: sin puntuación ni espacios
+        $cv = $this->compacto($valor);
+        $cs = $this->compacto(preg_replace('/^\s*[A-Za-z]{1,3}\d+\s*[-–.]\s*/u', '', $valor));
+        foreach ($lista as $item) {
+            foreach ($campos as $c) {
+                $n = $this->compacto($item[$c] ?? '');
+                if ($n !== '' && ($n === $cv || $n === $cs)) return $item;
+            }
+        }
         return null;
+    }
+
+    private function compacto($s) {
+        return preg_replace('/[^a-z0-9]/', '', $this->normalizar($s));
+    }
+
+    // ¿Las primeras N palabras (sin el número de la estrategia) son las mismas?
+    private function mismoInicio($a, $b, $n) {
+        $pal = function ($t) use ($n) {
+            $t = preg_replace('/^s*d+s*[.)-]?s*/u', '', $this->normalizar($t));
+            return array_slice(array_values(array_filter(preg_split('/[^a-z0-9]+/', $t))), 0, $n);
+        };
+        $x = $pal($a); $y = $pal($b);
+        return count($x) === $n && $x === $y;
+    }
+
+    // Parecido (0 a 1) entre dos textos según las palabras de más de 3 letras que comparten
+    private function similitud($a, $b) {
+        $pa = array_unique(array_filter(preg_split('/[^a-z0-9]+/', $this->normalizar($a)), function ($w) { return strlen($w) > 3; }));
+        $pb = array_unique(array_filter(preg_split('/[^a-z0-9]+/', $this->normalizar($b)), function ($w) { return strlen($w) > 3; }));
+        if (!$pa || !$pb) return 0;
+        return count(array_intersect($pa, $pb)) / count(array_unique(array_merge($pa, $pb)));
     }
 
     private function buscarTexto(array $opciones, $valor) {

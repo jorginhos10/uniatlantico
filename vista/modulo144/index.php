@@ -2680,6 +2680,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <input type="hidden" id="seguimiento_id" name="id">
 
                     <div class="modal-body-scroll">
+                        <div class="alert alert-warning py-2 small" id="segBloqueoAviso" style="display:none;"><i class="fas fa-lock me-2"></i><span></span></div>
                         <!-- Información previa (solo lectura, viene de Formulación) -->
                         <details class="seg-ctx" open>
                             <summary>Información previa <small>(viene de Formulación, no se edita)</small></summary>
@@ -3722,6 +3723,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         : 'Cada facultad registra el avance de su parte de la distribución en cada semestre.');
                     $('#tablaSeguimientoFacultades tfoot').toggle(!soloPropia);
                     actualizarTotalesSeguimientoFacultades();
+                    aplicarBloqueoSemestres();
                 }
             });
         }
@@ -5063,6 +5065,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             calcularCumplimientoSeguimiento();
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
+                            aplicarBloqueoSemestres();
                             cargarSeguimientoFacultades(b.id);
                             cargarResumenEvidencias(b.id);
                             $('#modalSeguimiento').modal('show');
@@ -5107,6 +5110,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     VIEWER_FACULTADES.forEach(function(facId) {
                         $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + facId + '"] input').prop('disabled', false);
                     });
+                    aplicarBloqueoSemestres();
                 }
             }, 900);
         }
@@ -5233,6 +5237,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         // ═══ PUBLICAR BORRADORES (solo administrador) ═══
         const ES_ADMIN_PLAN = <?php echo !empty($esAdminPlan) ? 'true' : 'false'; ?>;
+        // Semestres bloqueados en Editar formulario → Campos (los administradores no se ven afectados)
+        const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && empty($esAdminPlan)) ? 'true' : 'false'; ?>;
+        const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && empty($esAdminPlan)) ? 'true' : 'false'; ?>;
+
+        function aplicarBloqueoSemestres() {
+            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #tablaSeguimientoFacultades .seg-fac-s1').prop('disabled', true);
+            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #tablaSeguimientoFacultades .seg-fac-s2').prop('disabled', true);
+            if (BLOQUEO_SEM1 && BLOQUEO_SEM2) $('#tablaSeguimientoFacultades .seg-fac-descripcion').prop('disabled', true);
+            const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
+            $('#segBloqueoAviso').toggle(bloqueados.length > 0)
+                .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador.');
+        }
 
         // ids vacío = todos los borradores completos del formulario
         function enviarPublicacion(ids) {

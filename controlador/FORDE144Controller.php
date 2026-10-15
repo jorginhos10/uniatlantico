@@ -344,5 +344,47 @@ class FORDE144Controller {
         $usuarios = $usuarioModel->buscarUsuarios($termino);
         echo json_encode(['success' => true, 'usuarios' => $usuarios]);
     }
+
+    /**
+     * Estado del bloqueo de las casillas de seguimiento por semestre (pestaña Campos)
+     */
+    public function getBloqueos() {
+        header('Content-Type: application/json');
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para ver esta información']);
+            return;
+        }
+        $formulario_id = intval($_GET['formulario_id'] ?? 0);
+        if ($formulario_id <= 0) {
+            echo json_encode(['success' => false, 'message' => 'ID no válido']);
+            return;
+        }
+        $b = $this->model->getBloqueosSemestres($formulario_id);
+        echo json_encode(['success' => true, 'sem1' => $b['sem1'], 'sem2' => $b['sem2']]);
+    }
+
+    /**
+     * Bloquea o desbloquea las casillas de seguimiento (y de seguimiento por facultades) de un semestre
+     */
+    public function guardarBloqueo() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        if (!$this->puedeHacer('configurar')) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para cambiar esta configuración']);
+            return;
+        }
+        $formulario_id = intval($_POST['formulario_id'] ?? 0);
+        $semestre = intval($_POST['semestre'] ?? 0);
+        $bloqueado = !empty($_POST['bloqueado']) && $_POST['bloqueado'] !== '0';
+        if ($formulario_id <= 0 || !in_array($semestre, [1, 2], true)) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        $ok = $this->model->setBloqueoSemestre($formulario_id, $semestre, $bloqueado);
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado' : 'No se pudo guardar']);
+    }
 }
 ?>

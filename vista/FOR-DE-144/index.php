@@ -533,6 +533,12 @@ ob_start();
         .fl-actions { width: 100%; }
         .fl-actions .fl-btn { flex: 1 1 auto; justify-content: center; }
     }
+    .campos-toggle-lista { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+    .campos-toggle { display:flex; align-items:center; justify-content:space-between; gap:16px; background:var(--ios-fill2); border-radius:var(--r-sm); padding:12px 14px; }
+    .campos-toggle-titulo { font-size:14px; font-weight:600; color:var(--ios-label); }
+    .campos-toggle-ayuda { font-size:12px; color:var(--ios-label2); margin-top:2px; }
+    .campos-toggle .form-switch { margin:0; padding-left:2.6em; min-height:1.6rem; }
+    .campos-toggle .form-check-input { width:2.6em; height:1.4em; cursor:pointer; }
 </style>
 <?php $cssExtra = ob_get_clean();
 require_once __DIR__ . '/../complementos/header.php'; ?>
@@ -847,6 +853,9 @@ $fl_etiquetas = [
                     <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabEditarGeneral" type="button" role="tab">General</button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabEditarCampos" type="button" role="tab">Campos</button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabEditarAvanzado" type="button" role="tab">Avanzado</button>
                 </li>
             </ul>
@@ -926,6 +935,40 @@ $fl_etiquetas = [
                             <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Actualizar</button>
                         </div>
                     </form>
+                </div>
+
+                <div class="tab-pane fade" id="tabEditarCampos" role="tabpanel">
+                    <div class="modal-body">
+                        <label class="form-label">Casillas de seguimiento</label>
+                        <p style="font-size:13px;color:var(--ios-label2);margin-top:-4px;">
+                            Bloquea o desbloquea las casillas de seguimiento y de seguimiento por facultades de cada semestre.
+                            Los administradores pueden seguir editándolas.
+                        </p>
+                        <div class="campos-toggle-lista">
+                            <div class="campos-toggle">
+                                <div>
+                                    <div class="campos-toggle-titulo">Semestre 1</div>
+                                    <div class="campos-toggle-ayuda" id="bloqueoSem1Ayuda">Cargando…</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input bloqueo-semestre" type="checkbox" role="switch" id="bloqueoSem1" data-semestre="1" checked aria-label="Semestre 1 desbloqueado">
+                                </div>
+                            </div>
+                            <div class="campos-toggle">
+                                <div>
+                                    <div class="campos-toggle-titulo">Semestre 2</div>
+                                    <div class="campos-toggle-ayuda" id="bloqueoSem2Ayuda">Cargando…</div>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input bloqueo-semestre" type="checkbox" role="switch" id="bloqueoSem2" data-semestre="2" checked aria-label="Semestre 2 desbloqueado">
+                                </div>
+                            </div>
+                        </div>
+                        <div id="bloqueoMsg" style="font-size:12px;margin-top:10px;min-height:18px;color:var(--ios-label2);"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" id="tabEditarAvanzado" role="tabpanel">
@@ -1359,6 +1402,7 @@ $fl_etiquetas = [
                     }
 
                     cargarAdministradores(f.id);
+                    cargarBloqueos(f.id);
                     $('#modalEditar').modal('show');
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: r.message || 'Error al cargar el formulario' });
@@ -1370,6 +1414,56 @@ $fl_etiquetas = [
             }
         });
     }
+
+    /* ══════════════ CAMPOS (pestaña Campos): bloqueo de casillas por semestre ══════════════ */
+
+    function pintarBloqueo(semestre, bloqueado) {
+        $('#bloqueoSem' + semestre).prop('checked', !bloqueado).prop('disabled', false);
+        $('#bloqueoSem' + semestre + 'Ayuda').text(bloqueado
+            ? 'Bloqueado: las casillas de seguimiento de este semestre no se pueden editar.'
+            : 'Desbloqueado: las casillas de seguimiento de este semestre se pueden editar.');
+    }
+
+    function cargarBloqueos(formularioId) {
+        $('.bloqueo-semestre').prop('disabled', true);
+        $('#bloqueoMsg').text('');
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=getBloqueos&formulario_id=' + formularioId,
+            type: 'GET',
+            dataType: 'json',
+            success: function (r) {
+                if (r.success) { pintarBloqueo(1, !!r.sem1); pintarBloqueo(2, !!r.sem2); }
+                else { $('#bloqueoMsg').text(r.message || 'No se pudo cargar el estado').css('color', 'var(--ios-red)'); }
+            },
+            error: function () { $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)'); }
+        });
+    }
+
+    $(document).on('change', '.bloqueo-semestre', function () {
+        const caja = $(this);
+        const semestre = parseInt(caja.data('semestre'), 10);
+        const bloqueado = !caja.is(':checked');
+        caja.prop('disabled', true);
+        $.ajax({
+            url: basePath + '/FOR-DE-144?action=guardarBloqueo',
+            type: 'POST',
+            data: { formulario_id: $('#formularioIdEditar').val(), semestre: semestre, bloqueado: bloqueado ? 1 : 0 },
+            dataType: 'json',
+            success: function (r) {
+                if (r.success) {
+                    pintarBloqueo(semestre, bloqueado);
+                    $('#bloqueoMsg').text('Semestre ' + semestre + (bloqueado ? ' bloqueado' : ' desbloqueado')).css('color', 'var(--ios-green)');
+                } else {
+                    pintarBloqueo(semestre, !bloqueado);
+                    $('#bloqueoMsg').text(r.message || 'No se pudo guardar').css('color', 'var(--ios-red)');
+                }
+            },
+            error: function () {
+                pintarBloqueo(semestre, !bloqueado);
+                $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)');
+            }
+        });
+    });
 
     /* ══════════════ ADMINISTRADORES (pestaña Avanzado) ══════════════ */
 
