@@ -1158,6 +1158,16 @@ ob_start();
         .m144-panel { padding: 4px 0 0; }
         .m144-panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
         .m144-panel-acciones { display: flex; flex-wrap: wrap; gap: 8px; }
+        .m144-menu-acciones { border: 0; border-radius: 12px; padding: 6px; min-width: 240px; box-shadow: 0 8px 28px rgba(0,0,0,.16); }
+        .m144-menu-acciones .dropdown-item { border-radius: 8px; font-size: 13px; font-weight: 600; padding: 8px 12px; display: flex; align-items: center; }
+        .m144-menu-acciones .dropdown-header { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+        /* Plazo en una franja compacta */
+        .countdown-container { display: flex !important; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 16px; padding: 10px 14px !important; margin-top: 12px !important; }
+        .countdown-container > div:first-child { margin: 0 !important; }
+        .countdown-container .countdown-timer { gap: 8px !important; margin: 0 !important; }
+        .countdown-container .countdown-box { padding: 4px 12px !important; min-width: 0 !important; display: flex; flex-direction: row; align-items: baseline; gap: 4px; }
+        .countdown-container .countdown-number { font-size: 18px !important; }
+        .countdown-container .countdown-label { font-size: 10px !important; }
         .m144-btn-tinted { background: rgba(0,122,255,.12) !important; color: #0066CC !important; text-decoration: none; }
         .m144-btn-tinted:hover { background: rgba(0,122,255,.2) !important; color: #0066CC !important; }
         .imp-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 4px 0 12px; }
@@ -1479,14 +1489,32 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="m144-panel-head">
                             <p class="m144-panel-desc"><?php echo $modulo['config']['descripcion']; ?></p>
                             <div class="m144-panel-acciones">
-                                <a class="m144-btn m144-btn-tinted" href="<?php echo $basePath; ?>/modulo144/exportarPlantilla?id=<?php echo (int)$formulario['id']; ?>"
-                                   title="Descarga la plantilla de Excel (hojas Formulación y Seguimiento) para llenarla y subirla">
-                                    <i class="fas fa-file-download"></i>Exportar plantilla
-                                </a>
-                                <button type="button" class="m144-btn m144-btn-tinted" onclick="abrirModalImportarPlantilla()"
-                                        title="Sube la plantilla de Excel llena">
-                                    <i class="fas fa-file-upload"></i>Importar
-                                </button>
+                                <?php $puedePublicarLote = $key === 'formulacion' && $esAdminPlan && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
+                                <?php $puedeDevolverTodos = (int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0; ?>
+                                <div class="dropdown">
+                                    <button type="button" class="m144-btn m144-btn-tinted dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="fas fa-ellipsis-h"></i>Más acciones
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end m144-menu-acciones">
+                                        <li><a class="dropdown-item" href="<?php echo $basePath; ?>/modulo144/exportarPlantilla?id=<?php echo (int)$formulario['id']; ?>"
+                                               title="Descarga la plantilla de Excel (hojas Formulación y Seguimiento) para llenarla y subirla">
+                                            <i class="fas fa-file-download me-2"></i>Exportar plantilla</a></li>
+                                        <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla()" title="Sube la plantilla de Excel llena">
+                                            <i class="fas fa-file-upload me-2"></i>Importar plantilla</button></li>
+                                        <?php if ($puedePublicarLote || $puedeDevolverTodos): ?>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><h6 class="dropdown-header">Solo administrador</h6></li>
+                                        <?php endif; ?>
+                                        <?php if ($puedePublicarLote): ?>
+                                        <li><button type="button" class="dropdown-item text-success" onclick="publicarBorradores(<?php echo count($borradoresVisiblesPorModulo[$key]); ?>)" title="Publica todos los borradores completos sin pasar por el semáforo">
+                                            <i class="fas fa-bullhorn me-2"></i>Publicar borradores</button></li>
+                                        <?php endif; ?>
+                                        <?php if ($puedeDevolverTodos): ?>
+                                        <li><button type="button" class="dropdown-item text-danger" onclick="devolverTodosABorrador('<?php echo $key; ?>', <?php echo count($modulo['publicados']); ?>)" title="Devuelve todos los publicados de este módulo a borrador">
+                                            <i class="fas fa-undo me-2"></i>Devolver todos a borrador</button></li>
+                                        <?php endif; ?>
+                                    </ul>
+                                </div>
                                 <?php if ($key === 'formulacion'): ?>
                                 <button type="button" class="m144-btn m144-btn-primary" onclick="abrirModalNuevoBorrador('<?php echo $key; ?>')">
                                     <i class="fas fa-plus"></i>Nuevo indicador
@@ -1552,22 +1580,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <i class="fas fa-times-circle me-1"></i>Cancelados <span class="badge bg-danger ms-1"><?php echo count($modulo['cancelados']); ?></span>
                                 </button>
                             </li>
-                            <?php $puedePublicarLote = $key === 'formulacion' && $esAdminPlan && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
-                            <?php if ($puedePublicarLote): ?>
-                            <li class="nav-item ms-auto" role="presentation">
-                                <button type="button" class="nav-link text-success" onclick="publicarBorradores(<?php echo count($borradoresVisiblesPorModulo[$key]); ?>)" title="Publica todos los borradores completos sin pasar por las etapas de aprobación">
-                                    <i class="fas fa-bullhorn me-1"></i>Publicar borradores
-                                </button>
-                            </li>
-                            <?php endif; ?>
-                            <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0): ?>
-                            <li class="nav-item<?php echo $puedePublicarLote ? '' : ' ms-auto'; ?>" role="presentation">
-                                <button type="button" class="nav-link text-danger" onclick="devolverTodosABorrador('<?php echo $key; ?>', <?php echo count($modulo['publicados']); ?>)" title="Devuelve todos los publicados de este módulo a borrador">
-                                    <i class="fas fa-undo me-1"></i>Devolver todos a borrador
-                                </button>
-                            </li>
-                            <?php endif; ?>
-                        </ul>
+</ul>
 
                         <div class="tab-content">
                         <!-- BORRADORES -->
