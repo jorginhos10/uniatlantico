@@ -1817,6 +1817,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                             <li><h6 class="dropdown-header">Espera a <?php echo htmlspecialchars($etapaPendiente); ?></h6></li>
                                                             <li><button type="button" class="dropdown-item" onclick="verBorradorSoloLectura('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i class="fas fa-eye"></i>Ver</button></li>
                                                             <li><button type="button" class="dropdown-item m144-ok" onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"><i class="fas fa-<?php echo $esEtapaFinalAdmin ? 'globe' : 'check'; ?>"></i><?php echo $esEtapaFinalAdmin ? 'Aceptar y publicar' : 'Aceptar'; ?></button></li>
+                                                            <?php if ($key === 'formulacion' && !empty($esAdminPlan)): ?>
+                                                            <li><button type="button" class="dropdown-item m144-ok" onclick="publicarIndicador(<?php echo (int)$borrador['id']; ?>)" title="Publica este indicador sin pasar por las etapas de aprobación"><i class="fas fa-globe"></i>Publicar</button></li>
+                                                            <?php endif; ?>
                                                             <li><hr class="dropdown-divider"></li>
                                                             <li><button type="button" class="dropdown-item m144-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"><i class="fas fa-times"></i>Rechazar</button></li>
                                                         </ul>
@@ -5276,6 +5279,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }).then(function(result) {
                 if (!result.isConfirmed) return;
                 enviarPublicacion([]).done(mostrarResultadoPublicacion)
+                    .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+            });
+        }
+
+        // Publica un solo indicador (administrador), sin pasar por las etapas de aprobación
+        function publicarIndicador(id) {
+            Swal.fire({
+                title: '¿Publicar este indicador?',
+                html: 'Se publicará <strong>sin pasar por las etapas de aprobación</strong> que le faltan. Desde ese momento aparecerá en <strong>Seguimiento</strong>.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#34C759',
+                confirmButtonText: 'Sí, publicar',
+                cancelButtonText: 'Cancelar'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                enviarPublicacion([id]).done(mostrarResultadoPublicacion)
                     .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
             });
         }
