@@ -185,18 +185,29 @@ if ($pdo) {
 }
 
 // Nombre de la dependencia del usuario ("responsable_formulacion" guarda nombres separados por ", ")
-$ucargoNombre = '';
-if ($pdo && $ucargo > 0) {
+// Todas las dependencias del usuario: la principal y las asociadas en "Responsable de" (Usuarios)
+$ucargoNombre = [];
+if ($pdo) {
     try {
-        $s = $pdo->prepare("SELECT nombre FROM cargos WHERE id = :id");
-        $s->execute([':id' => $ucargo]);
-        $ucargoNombre = mb_strtolower(trim((string)($s->fetchColumn() ?: '')), 'UTF-8');
+        if ($ucargo > 0) {
+            $s = $pdo->prepare("SELECT nombre FROM cargos WHERE id = :id");
+            $s->execute([':id' => $ucargo]);
+            $ucargoNombre[] = (string)($s->fetchColumn() ?: '');
+        }
     } catch (PDOException $e) { error_log("Dash cargo: " . $e->getMessage()); }
+    try {
+        $s = $pdo->prepare("SELECT c.nombre FROM usuario_dependencias ud JOIN cargos c ON c.id = ud.cargo_id WHERE ud.usuario_id = :u");
+        $s->execute([':u' => $uid]);
+        foreach ($s->fetchAll(PDO::FETCH_COLUMN) as $n) $ucargoNombre[] = (string)$n;
+    } catch (PDOException $e) { /* sin la migración todavía: solo la dependencia principal */ }
 }
+$ucargoNombre = array_values(array_filter(array_map(function ($n) { return mb_strtolower(trim($n), 'UTF-8'); }, $ucargoNombre), 'strlen'));
 function dbEsResponsable($responsables, $cargoNombre) {
-    if ($cargoNombre === '') return false;
     $lista = ', ' . mb_strtolower(trim((string)$responsables), 'UTF-8') . ', ';
-    return mb_strpos($lista, ', ' . $cargoNombre . ', ', 0, 'UTF-8') !== false;
+    foreach ((array)$cargoNombre as $nombre) {
+        if ($nombre !== '' && mb_strpos($lista, ', ' . $nombre . ', ', 0, 'UTF-8') !== false) return true;
+    }
+    return false;
 }
 
 // ── Alcance por rol: admin / sub administrador ven todo; el resto, lo que creó

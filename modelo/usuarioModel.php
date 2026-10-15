@@ -134,7 +134,8 @@ class UsuarioModel {
                 return false;
             }
 
-            $this->asignarPermisosPorDefecto((int)$this->db->lastInsertId());
+            $this->ultimoIdCreado = (int)$this->db->lastInsertId();
+            $this->asignarPermisosPorDefecto($this->ultimoIdCreado);
             return true;
         } catch (PDOException $e) {
             error_log("Error creando usuario: " . $e->getMessage());
@@ -228,13 +229,49 @@ class UsuarioModel {
         }
     }
 
+    // Id del último usuario creado con crearUsuario()
+    public $ultimoIdCreado = 0;
+
+    // ── Dependencias de las que el usuario es responsable (además de su dependencia principal) ──
+
+    public function obtenerDependenciasUsuario($usuarioId) {
+        try {
+            $stmt = $this->db->prepare("SELECT cargo_id FROM usuario_dependencias WHERE usuario_id = :id");
+            $stmt->execute([':id' => (int)$usuarioId]);
+            return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        } catch (PDOException $e) {
+            // Sin la migración todavía: el usuario no tiene dependencias adicionales
+            return [];
+        }
+    }
+
+    public function guardarDependenciasUsuario($usuarioId, array $cargoIds) {
+        $cargoIds = array_values(array_unique(array_filter(array_map('intval', $cargoIds))));
+        try {
+            $this->db->beginTransaction();
+            $this->db->prepare("DELETE FROM usuario_dependencias WHERE usuario_id = :id")->execute([':id' => (int)$usuarioId]);
+            $ins = $this->db->prepare("INSERT INTO usuario_dependencias (usuario_id, cargo_id) VALUES (:u, :c)");
+            foreach ($cargoIds as $c) $ins->execute([':u' => (int)$usuarioId, ':c' => $c]);
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log("Error guardarDependenciasUsuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function eliminarUsuario($id) {
         $sql = "DELETE FROM usuarios WHERE id = :id";
         
         try {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $id);
-            return $stmt->execute();
+            if (!$stmt->execute()) return false;
+            try {
+                $this->db->prepare("DELETE FROM usuario_dependencias WHERE usuario_id = :id")->execute([':id' => (int)$id]);
+            } catch (PDOException $e) { /* sin la migración no hay nada que borrar */ }
+            return true;
         } catch (PDOException $e) {
             error_log("Error eliminando usuario: " . $e->getMessage());
             return false;

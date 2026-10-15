@@ -1357,29 +1357,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
         $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
         $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
-        $viewerCargoNombre = $viewer_cargo_nombre ?? '';
+        // Dependencias del usuario: la principal y las de "Responsable de" (en Usuarios)
+        $viewerCargoNombre = $viewer_dependencias ?? ($viewer_cargo_nombre ?? '');
+        // Solo un administrador publica en bloque los borradores cargados por plantilla
+        $esAdminPlan = (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
 
         // ¿La dependencia del usuario es una de las responsables del indicador?
         // "responsable_formulacion" guarda los nombres de dependencia separados por ", ".
         if (!function_exists('m144_esDependenciaResponsable')) {
+            // $cargoNombre puede ser un nombre o una lista de nombres (todas las dependencias del usuario)
             function m144_esDependenciaResponsable($responsables, $cargoNombre) {
-                $cargoNombre = mb_strtolower(trim((string)$cargoNombre), 'UTF-8');
-                if ($cargoNombre === '') return false;
                 $lista = ', ' . mb_strtolower(trim((string)$responsables), 'UTF-8') . ', ';
-                return mb_strpos($lista, ', ' . $cargoNombre . ', ', 0, 'UTF-8') !== false;
+                foreach ((array)$cargoNombre as $nombre) {
+                    $nombre = mb_strtolower(trim((string)$nombre), 'UTF-8');
+                    if ($nombre !== '' && mb_strpos($lista, ', ' . $nombre . ', ', 0, 'UTF-8') !== false) return true;
+                }
+                return false;
             }
         }
 
         // Ven el indicador: admin / sub administrador, quien lo creó y todos los usuarios
         // de las dependencias responsables (sin importar quién lo haya creado).
         if (!function_exists('m144_filtrarBorradoresVisibles')) {
-            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $facultadesPorItem = [], $viewerFacultadId = 0) {
+            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $facultadesPorItem = [], $viewerFacultades = []) {
                 $visibles = [];
                 foreach ($borradores as $b) {
                     $esCreador = $viewerId > 0 && $viewerId === (int)($b['creado_por'] ?? 0);
-                    $esFacultadConValor = $viewerFacultadId > 0
-                        && in_array($viewerFacultadId, $facultadesPorItem[(int)$b['id']] ?? [], true);
+                    // Alguna facultad del usuario tiene valor (distribución > 0) en este indicador
+                    $esFacultadConValor = $viewerFacultades && array_intersect($viewerFacultades, $facultadesPorItem[(int)$b['id']] ?? []);
                     if ($puedeVerTodoElSemaforo || $esCreador || $esFacultadConValor
                         || m144_esDependenciaResponsable($b['responsable_formulacion'] ?? '', $viewerCargoNombre)) {
                         $visibles[] = $b;
@@ -1397,7 +1403,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         foreach ($datos_modulos as $_dmKey => $_dmModulo) {
             // Solo en Seguimiento las facultades nombradas en la distribución ven el indicador
             $_facPorItem = $_dmKey === 'seguimiento' ? ($facultades_por_item ?? []) : [];
-            $_viewerFac  = $_dmKey === 'seguimiento' ? (int)($viewer_facultad_id ?? 0) : 0;
+            $_viewerFac  = $_dmKey === 'seguimiento' ? ($viewer_facultades ?? []) : [];
             $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
                 $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac
             );
@@ -1513,8 +1519,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <i class="fas fa-times-circle me-1"></i>Cancelados <span class="badge bg-danger ms-1"><?php echo count($modulo['cancelados']); ?></span>
                                 </button>
                             </li>
-                            <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0): ?>
+                            <?php $puedePublicarLote = $key === 'formulacion' && $esAdminPlan && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
+                            <?php if ($puedePublicarLote): ?>
                             <li class="nav-item ms-auto" role="presentation">
+                                <button type="button" class="nav-link text-success" onclick="publicarBorradores(<?php echo count($borradoresVisiblesPorModulo[$key]); ?>)" title="Publica todos los borradores completos sin pasar por las etapas de aprobación">
+                                    <i class="fas fa-bullhorn me-1"></i>Publicar borradores
+                                </button>
+                            </li>
+                            <?php endif; ?>
+                            <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0): ?>
+                            <li class="nav-item<?php echo $puedePublicarLote ? '' : ' ms-auto'; ?>" role="presentation">
                                 <button type="button" class="nav-link text-danger" onclick="devolverTodosABorrador('<?php echo $key; ?>', <?php echo count($modulo['publicados']); ?>)" title="Devuelve todos los publicados de este módulo a borrador">
                                     <i class="fas fa-undo me-1"></i>Devolver todos a borrador
                                 </button>
@@ -3299,13 +3313,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         html += '<p class="text-start small mb-1"><strong>' + r.errores.length + ' fila(s) no se importaron:</strong></p><ul class="imp-errores">'
                              + r.errores.map(function(e) { return '<li>' + evalHtmlEscape(e) + '</li>'; }).join('') + '</ul>';
                     }
+                    const idsCreados = r.ids_creados || [];
+                    const ofrecerPublicar = ES_ADMIN_PLAN && idsCreados.length > 0;
                     Swal.fire({
                         icon: r.errores.length ? (cambios ? 'warning' : 'error') : 'success',
                         title: res.message,
                         html: html,
                         width: 640,
-                        confirmButtonText: 'Aceptar'
-                    }).then(function() {
+                        confirmButtonText: 'Aceptar',
+                        showDenyButton: ofrecerPublicar,
+                        denyButtonText: 'Publicar los ' + idsCreados.length + ' importados',
+                        denyButtonColor: '#34C759'
+                    }).then(function(result) {
+                        if (result.isDenied) {
+                            enviarPublicacion(idsCreados).always(function() { guardarEstadoAcordeon(); }).done(mostrarResultadoPublicacion)
+                                .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error').then(function() { location.reload(); }); });
+                            return;
+                        }
                         if (cambios) { guardarEstadoAcordeon(); location.reload(); }
                     });
                 },
@@ -3317,7 +3341,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // ═══ SEGUIMIENTO POR FACULTADES ═══
-        const VIEWER_FACULTAD_ID = <?php echo (int)($viewer_facultad_id ?? 0); ?>;
+        const VIEWER_FACULTADES = <?php echo json_encode(array_map('intval', $viewer_facultades ?? [])); ?>;
 
         function segFacNum(v) {
             const n = parseFloat(String(v === null || v === undefined ? '' : v).replace(',', '.'));
@@ -3362,13 +3386,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
                         fila.find('.seg-fac-descripcion').val(d.seguimiento_descripcion || '');
-                        if (parseInt(d.facultad_id, 10) === VIEWER_FACULTAD_ID) fila.addClass('table-primary');
+                        if (VIEWER_FACULTADES.includes(parseInt(d.facultad_id, 10))) fila.addClass('table-primary');
                         fila.show();
                         hay = true;
                     });
                     $('#seguimientoFacultadesWrap').toggle(hay);
                     // Usuario de facultad: solo ve su propia fila (el servidor no envía las demás)
-                    const soloPropia = parseInt(response.solo_facultad || 0, 10) > 0;
+                    const soloPropia = (response.solo_facultades || []).length > 0;
                     $('#segFacAyuda').text(soloPropia
                         ? 'Registra el avance de tu facultad sobre su parte de la distribución en cada semestre.'
                         : 'Cada facultad registra el avance de su parte de la distribución en cada semestre.');
@@ -4642,8 +4666,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             setTimeout(function() {
                 $(modalSel + ' input, ' + modalSel + ' select, ' + modalSel + ' textarea').prop('disabled', true);
                 // La facultad del usuario sí puede registrar su seguimiento aunque el resto sea de solo lectura
-                if (modulo === 'seguimiento' && VIEWER_FACULTAD_ID > 0) {
-                    $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + VIEWER_FACULTAD_ID + '"] input').prop('disabled', false);
+                if (modulo === 'seguimiento' && VIEWER_FACULTADES.length > 0) {
+                    VIEWER_FACULTADES.forEach(function(facId) {
+                        $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + facId + '"] input').prop('disabled', false);
+                    });
                 }
             }, 900);
         }
@@ -4765,6 +4791,58 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         }
                     });
                 }
+            });
+        }
+
+        // ═══ PUBLICAR BORRADORES (solo administrador) ═══
+        const ES_ADMIN_PLAN = <?php echo !empty($esAdminPlan) ? 'true' : 'false'; ?>;
+
+        // ids vacío = todos los borradores completos del formulario
+        function enviarPublicacion(ids) {
+            return $.ajax({
+                url: basePath + '/modulo144/publicarBorradores',
+                type: 'POST',
+                dataType: 'json',
+                data: { formulario_id: formularioId, ids: ids || [] }
+            });
+        }
+
+        function mostrarResultadoPublicacion(res) {
+            if (!res.success) {
+                Swal.fire('No se pudo publicar', res.message || 'Intenta de nuevo', 'error');
+                return;
+            }
+            const omitidos = res.omitidos || [];
+            let html = '<div class="imp-resumen"><div><b>' + (res.publicados || []).length + '</b><small>Publicados</small></div>'
+                     + '<div><b>' + omitidos.length + '</b><small>Sin publicar</small></div></div>';
+            if (omitidos.length) {
+                html += '<p class="text-start small mb-1"><strong>Estos borradores están incompletos y siguen en borrador:</strong></p><ul class="imp-errores">'
+                     + omitidos.map(function(o) { return '<li>#' + o.id + ' · ' + evalHtmlEscape(o.nombre || '') + ' — ' + evalHtmlEscape(o.motivo) + '</li>'; }).join('') + '</ul>';
+            }
+            Swal.fire({
+                icon: omitidos.length ? ((res.publicados || []).length ? 'warning' : 'error') : 'success',
+                title: res.message, html: html, width: 640, confirmButtonText: 'Aceptar'
+            }).then(function() { guardarEstadoAcordeon(); location.reload(); });
+        }
+
+        function publicarBorradores(total) {
+            Swal.fire({
+                title: '¿Publicar los borradores?',
+                html: 'Se publicarán los borradores completos de <strong>Formulación</strong> (' + total + ' en la lista) <strong>sin pasar por las etapas de aprobación</strong>. '
+                    + 'Desde ese momento cada responsable los verá en <strong>Seguimiento</strong>. Los que estén incompletos se quedan en borrador y se te indicará cuál dato falta.'
+                    + '<br><br>Escribe <strong>PUBLICAR</strong> para confirmar.',
+                icon: 'question',
+                input: 'text',
+                inputPlaceholder: 'PUBLICAR',
+                inputValidator: function(v) { if ((v || '').trim().toUpperCase() !== 'PUBLICAR') return 'Escribe PUBLICAR para confirmar'; },
+                showCancelButton: true,
+                confirmButtonColor: '#34C759',
+                confirmButtonText: 'Sí, publicar',
+                cancelButtonText: 'Cancelar'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                enviarPublicacion([]).done(mostrarResultadoPublicacion)
+                    .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
             });
         }
 

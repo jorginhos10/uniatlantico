@@ -334,6 +334,24 @@ class Modulo144Model {
         }
     }
 
+    // Nombres de las dependencias del usuario: la principal (usuarios.cargo_id) y las asociadas en
+    // "Responsable de" (usuario_dependencias). Con ellas se decide de qué indicadores es responsable.
+    public function getNombresDependenciasUsuario($usuarioId, $cargoId) {
+        $nombres = [];
+        $principal = $this->getCargoNombre($cargoId);
+        if ($principal !== '') $nombres[] = $principal;
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT c.nombre FROM usuario_dependencias ud JOIN cargos c ON c.id = ud.cargo_id WHERE ud.usuario_id = :u"
+            );
+            $stmt->execute([':u' => (int)$usuarioId]);
+            foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $n) $nombres[] = $n;
+        } catch (PDOException $e) {
+            // Sin la migración todavía: solo la dependencia principal
+        }
+        return array_values(array_unique(array_filter(array_map('trim', $nombres), 'strlen')));
+    }
+
     public function getPlanesInstitucionales() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");
@@ -704,6 +722,77 @@ class Modulo144Model {
         }
     }
 
+    // Publica en bloque los borradores de FORMULACIÓN del formulario (o solo los $ids dados), sin pasar por las
+    // 4 etapas del semáforo: lo hace el administrador al cargar el plan por plantilla. Un borrador incompleto
+    // (sin línea, motor, proyecto, indicador, tipo de medición o responsable) no se publica y se devuelve en
+    // "omitidos" con el motivo. Devuelve ['publicados' => [ids], 'omitidos' => [[id, nombre, motivo]]] o false.
+    public function publicarBorradores($formulario_id, array $ids = null, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
+        try {
+            $c = $this->modulos['formulacion'];
+            $sql = "SELECT id, nombre_borrador, linea_estrategica, motor_desarrollo, proyecto, nombre_indicador, formula_medicion,
+                           tipo_medicion, responsable_formulacion
+                    FROM {$c['tabla']}
+                    WHERE formulario_id = :fid AND {$c['campo_estado']} = 0";
+            $params = [':fid' => $formulario_id];
+            if ($ids !== null) {
+                $ids = array_values(array_filter(array_map('intval', $ids)));
+                if (!$ids) return ['publicados' => [], 'omitidos' => []];
+                $marcas = [];
+                foreach ($ids as $i => $id) { $marcas[] = ":id{$i}"; $params[":id{$i}"] = $id; }
+                $sql .= " AND id IN (" . implode(',', $marcas) . ")";
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            $borradores = $stmt->fetchAll();
+
+            $publicar = [];
+            $omitidos = [];
+            foreach ($borradores as $b) {
+                $faltan = [];
+                if (trim((string)$b['linea_estrategica']) === '') $faltan[] = 'línea estratégica';
+                if (trim((string)$b['motor_desarrollo']) === '') $faltan[] = 'motor de desarrollo';
+                if (trim((string)$b['proyecto']) === '') $faltan[] = 'proyecto';
+                if (trim((string)$b['nombre_indicador']) === '' && trim((string)$b['formula_medicion']) === '') $faltan[] = 'nombre o fórmula del indicador';
+                if (trim((string)$b['tipo_medicion']) === '') $faltan[] = 'tipo de medición';
+                if (trim((string)$b['responsable_formulacion']) === '') $faltan[] = 'responsable';
+                if ($faltan) {
+                    $nombre = trim((string)$b['nombre_indicador']) !== '' ? $b['nombre_indicador'] : $b['nombre_borrador'];
+                    $omitidos[] = ['id' => (int)$b['id'], 'nombre' => $nombre, 'motivo' => 'Falta: ' . implode(', ', $faltan)];
+                } else {
+                    $publicar[] = (int)$b['id'];
+                }
+            }
+
+            $this->db->beginTransaction();
+            $upd = $this->db->prepare(
+                "UPDATE {$c['tabla']}
+                 SET {$c['campo_estado']} = 2,
+                     {$c['fecha_publicacion']} = NOW(),
+                     {$c['campo_solicitud']} = 1,
+                     {$c['campo_semaforo']} = 4,
+                     {$c['campo_semaforo_rechazo']} = 0,
+                     fecha_actualizacion = NOW()
+                 WHERE id = :id AND {$c['campo_estado']} = 0"
+            );
+            $publicados = [];
+            foreach ($publicar as $id) {
+                $upd->execute([':id' => $id]);
+                if ($upd->rowCount() > 0) $publicados[] = $id;
+            }
+            $this->db->commit();
+
+            foreach ($publicados as $id) {
+                $this->registrarHistorialSemaforo('formulacion', $id, 4, 'aprobado', $usuarioId, $usuarioNombre, $rol,
+                    'Publicado por el administrador (carga del plan)');
+            }
+            return ['publicados' => $publicados, 'omitidos' => $omitidos];
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log("Error publicarBorradores: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador = null) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];
@@ -854,6 +943,17 @@ class Modulo144Model {
     }
 
     // La facultad del usuario es la que tiene el mismo nombre que su dependencia (sin acentos ni mayúsculas)
+    // Ids de las facultades del usuario: las que tienen el mismo nombre que cualquiera de sus dependencias
+    // (la principal y las asociadas en "Responsable de"), sin importar mayúsculas ni tildes.
+    public function getFacultadesDelUsuario($usuarioId, $cargoId) {
+        $ids = [];
+        foreach ($this->getNombresDependenciasUsuario($usuarioId, $cargoId) as $nombre) {
+            $id = $this->getFacultadIdPorNombre($nombre);
+            if ($id > 0) $ids[] = $id;
+        }
+        return array_values(array_unique($ids));
+    }
+
     public function getFacultadIdPorNombre($nombre) {
         $norm = function ($s) {
             $s = mb_strtolower(trim((string)$s), 'UTF-8');

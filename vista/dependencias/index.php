@@ -156,12 +156,6 @@ ob_start();
     }
     .btn-action:hover { opacity: .82; transform: translateY(-1px); }
     .btn-edit       { background: rgba(255,149,0,.12); color: var(--ios-orange); }
-    .btn-conectar   { background: rgba(0,122,255,.1); color: var(--ios-blue); font-weight: 600; }
-    .conexiones-count { display: inline-block; margin-left: 5px; min-width: 18px; padding: 0 5px; border-radius: 9px; background: var(--ios-blue); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
-    .flujo-conexiones { background: var(--ios-bg); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; font-size: 13px; }
-    .flujo-conexiones-titulo { font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--ios-label2); margin-bottom: 6px; }
-    .flujo-conexiones ul { margin: 0; padding-left: 18px; }
-    .flujo-conexiones li { margin: 2px 0; }
     .btn-delete     { background: rgba(255,59,48,.1);  color: var(--ios-red); }
     .btn-toggle-on  { background: rgba(255,59,48,.1);  color: var(--ios-red); }
     .btn-toggle-off { background: rgba(52,199,89,.12); color: #1a7a3a; }
@@ -194,23 +188,6 @@ ob_start();
     .btn-ios-primary   { background: var(--ios-orange); color: white; }
     .btn-ios-secondary { background: var(--ios-bg); color: var(--ios-orange); border: 1.5px solid var(--ios-sep); }
     .btn-ios-danger    { background: var(--ios-red); color: white; }
-    /* Pestañas Listado / Flujo de información */
-    .dep-tabs { display: inline-flex; gap: 4px; background: var(--ios-surface); padding: 4px; border-radius: 14px; box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 16px; flex-wrap: wrap; }
-    .dep-tab { border: none; background: transparent; padding: 9px 18px; border-radius: 10px; font-size: 14px; font-weight: 600; color: var(--ios-label2); font-family: var(--font); cursor: pointer; transition: background .15s, color .15s; }
-    .dep-tab.active { background: var(--ios-orange); color: #fff; }
-    .dep-tab-panel[hidden] { display: none; }
-    .btn-add-flujo { border: none; background: var(--ios-orange); color: #fff; border-radius: 10px; padding: 8px 14px; font-size: 14px; font-weight: 600; font-family: var(--font); cursor: pointer; }
-    .btn-add-flujo:hover { opacity: .87; }
-    .flujo-flecha { color: var(--ios-orange); font-size: 13px; text-align: center; width: 40px; }
-    .flujo-dep { font-weight: 600; }
-    .flujo-rol { display: block; font-size: 11px; font-weight: 500; color: var(--ios-label2); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 2px; }
-    .badge-aplica { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; background: rgba(0,122,255,.1); color: #0058b0; white-space: nowrap; }
-    .badge-aplica.formulacion { background: rgba(175,82,222,.12); color: #7d3aa6; }
-    .badge-aplica.seguimiento { background: rgba(52,199,89,.14); color: #1a7a3a; }
-    .flujo-obs { color: var(--ios-label2); font-size: 13px; }
-    .flujo-ayuda { padding: 12px 20px; font-size: 13px; color: var(--ios-label2); border-bottom: 1px solid var(--ios-sep); background: rgba(255,149,0,.05); }
-    .form-select { border: 1.5px solid var(--ios-sep); border-radius: 12px; padding: 11px 14px; font-family: var(--font); font-size: 15px; background-color: var(--ios-bg); }
-    .form-select:focus { border-color: var(--ios-orange); box-shadow: 0 0 0 3px rgba(255,149,0,.15); }
     @media (max-width: 768px) { .stats-row { grid-template-columns: 1fr 1fr; } .search-input { width: 100%; } }
     @media (max-width: 480px) { .stats-row { grid-template-columns: 1fr; } .dep-header { flex-direction: column; align-items: flex-start; } }
 </style>
@@ -252,12 +229,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
     </div>
 
-    <div class="dep-tabs" role="tablist">
-        <button type="button" class="dep-tab active" data-dep-tab="listado"><i class="fas fa-list me-1"></i> Listado</button>
-        <button type="button" class="dep-tab" data-dep-tab="flujo"><i class="fas fa-project-diagram me-1"></i> Flujo de información</button>
-    </div>
-
-    <div class="dep-tab-panel" data-dep-panel="listado">
     <div class="table-card">
         <div class="table-card-header">
             <div class="table-card-title">
@@ -288,49 +259,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </tbody>
             </table>
         </div>
-    </div>
-    </div>
-
-    <!-- ===================== FLUJO DE INFORMACIÓN ===================== -->
-    <div class="dep-tab-panel" data-dep-panel="flujo" hidden>
-    <div class="table-card">
-        <div class="table-card-header">
-            <div class="table-card-title">
-                <i class="fas fa-project-diagram" style="color:var(--ios-orange);"></i>
-                Flujo de información
-                <span class="badge-count" id="badge-count-flujo">0</span>
-            </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <input type="text" class="search-input" id="searchFlujo" placeholder="Buscar dependencia...">
-            </div>
-        </div>
-        <div class="flujo-ayuda">
-            <i class="fas fa-info-circle me-1" style="color:var(--ios-orange);"></i>
-            Cada fila indica a qué dependencia <strong>envía</strong> una dependencia su formulación y/o seguimiento. Para agregar una, usa <strong>Conectar</strong> en el listado.
-        </div>
-        <div class="table-responsive">
-            <table class="dep-table">
-                <thead>
-                    <tr>
-                        <th>Dependencia</th>
-                        <th></th>
-                        <th>Envía a</th>
-                        <th>Aplica a</th>
-                        <th>Observación</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaFlujoBody">
-                    <tr class="empty-row">
-                        <td colspan="6">
-                            <div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div>
-                            <div>Cargando...</div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
     </div>
 
 </div>
@@ -363,51 +291,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <button type="submit" class="btn-ios btn-ios-primary" id="btnGuardar">
                         <i class="fas fa-save me-1"></i> Guardar
                     </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Relación del flujo -->
-<div class="modal fade" id="modalFlujo" tabindex="-1" data-bs-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalFlujoTitulo">Nueva relación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formFlujo">
-                <input type="hidden" id="flujo_id" name="id">
-                <div class="modal-body">
-                    <div class="flujo-conexiones" id="flujo_conexiones" style="display:none;"></div>
-                    <input type="hidden" id="flujo_origen" name="origen_id">
-                    <div class="mb-3">
-                        <label class="form-label" for="flujo_destino">Enviar a *</label>
-                        <input type="hidden" id="flujo_destino" name="destino_id">
-                        <input type="text" class="form-control" id="flujo_destino_texto" list="lista_destinos_flujo"
-                               autocomplete="off" placeholder="Escribe para buscar la dependencia..." required>
-                        <datalist id="lista_destinos_flujo"></datalist>
-                        <div class="invalid-feedback">Elige una dependencia de la lista.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label" for="flujo_aplica">Aplica a</label>
-                        <select class="form-select" id="flujo_aplica" name="aplica_a">
-                            <option value="ambos">Formulación y seguimiento</option>
-                            <option value="formulacion">Solo formulación</option>
-                            <option value="seguimiento">Solo seguimiento</option>
-                        </select>
-                    </div>
-                    <div class="mb-1">
-                        <label class="form-label" for="flujo_observacion">Observación</label>
-                        <input type="text" class="form-control" id="flujo_observacion" name="observacion" maxlength="255"
-                               list="lista_observaciones_flujo" autocomplete="off" placeholder="Opcional">
-                        <datalist id="lista_observaciones_flujo"></datalist>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-ios btn-ios-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn-ios btn-ios-primary"><i class="fas fa-save me-1"></i> Guardar</button>
                 </div>
             </form>
         </div>
@@ -448,201 +331,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     $(document).ready(function() {
         cargarDependencias();
-        cargarFlujos();
         $('#searchInput').on('input', function() { filtrar($(this).val().toLowerCase()); });
-        $('#searchFlujo').on('input', function() { renderFlujos(); });
-
-        // Pestañas (se recuerda la última abierta)
-        $('[data-dep-tab]').on('click', function() { mostrarTab($(this).data('dep-tab')); });
-        let tabGuardada = null;
-        try { tabGuardada = sessionStorage.getItem('dependencias_tab'); } catch (e) {}
-        if (tabGuardada === 'flujo') mostrarTab('flujo');
     });
-
-    function mostrarTab(tab) {
-        $('[data-dep-tab]').each(function() { $(this).toggleClass('active', $(this).data('dep-tab') === tab); });
-        $('[data-dep-panel]').each(function() { this.hidden = $(this).data('dep-panel') !== tab; });
-        try { sessionStorage.setItem('dependencias_tab', tab); } catch (e) {}
-    }
-
-    // ===================== FLUJO DE INFORMACIÓN =====================
-    let todosLosFlujos = [];
-    const APLICA_TEXTO = { ambos: 'Formulación y seguimiento', formulacion: 'Formulación', seguimiento: 'Seguimiento' };
-
-    function cargarFlujos() {
-        $.ajax({
-            url: basePath + '/dependencias/listarFlujos',
-            type: 'GET', dataType: 'json',
-            success: function(res) {
-                if (res.success) {
-                    todosLosFlujos = res.flujos;
-                    renderFlujos();
-                    // Actualiza el contador del botón "Conectar" en el listado
-                    if (todasLasDeps.length) filtrar(($('#searchInput').val() || '').toLowerCase());
-                }
-                else { errorFlujos(); }
-            },
-            error: errorFlujos
-        });
-    }
-
-    function errorFlujos() {
-        $('#tablaFlujoBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar el flujo de información</div></td></tr>');
-    }
-
-    function renderFlujos() {
-        const q = ($('#searchFlujo').val() || '').toLowerCase().trim();
-        const lista = q ? todosLosFlujos.filter(f =>
-            (f.origen_nombre || '').toLowerCase().includes(q) || (f.destino_nombre || '').toLowerCase().includes(q)
-        ) : todosLosFlujos;
-
-        $('#badge-count-flujo').text(todosLosFlujos.length);
-        if (!lista.length) {
-            $('#tablaFlujoBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-project-diagram"></i></div><div>' +
-                (q ? 'Ninguna relación coincide con la búsqueda' : 'Aún no hay relaciones. Agrega la primera con "Nueva relación".') + '</div></td></tr>');
-            return;
-        }
-
-        let html = '';
-        lista.forEach(f => {
-            html += `<tr>
-                <td><span class="flujo-dep">${escHtml(f.origen_nombre)}</span></td>
-                <td class="flujo-flecha"><i class="fas fa-arrow-right"></i></td>
-                <td><span class="flujo-dep">${escHtml(f.destino_nombre)}</span></td>
-                <td><span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || escHtml(f.aplica_a)}</span></td>
-                <td class="flujo-obs">${f.observacion ? escHtml(f.observacion) : '—'}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn-action btn-edit" onclick="editarFlujo(${f.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button class="btn-action btn-delete" onclick="eliminarFlujo(${f.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`;
-        });
-        $('#tablaFlujoBody').html(html);
-    }
-
-    // Llena un select con las dependencias activas (y la ya seleccionada, aunque esté inactiva)
-    // "Enviar a" es un campo con predicción: sugiere las dependencias activas (menos la que envía)
-    // y guarda el id de la que coincida exactamente con lo escrito.
-    function llenarDestinos(seleccionado, excluirId) {
-        let html = '';
-        todasLasDeps.forEach(d => {
-            if (excluirId && d.id == excluirId) return;
-            if (d.activo != 1 && d.id != seleccionado) return;
-            html += `<option value="${escHtml(d.nombre)}"></option>`;
-        });
-        $('#lista_destinos_flujo').html(html);
-        const dep = todasLasDeps.find(d => d.id == seleccionado);
-        $('#flujo_destino').val(dep ? dep.id : '');
-        $('#flujo_destino_texto').val(dep ? dep.nombre : '').removeClass('is-invalid');
-    }
-
-    function resolverDestino() {
-        const texto = ($('#flujo_destino_texto').val() || '').trim().toLowerCase();
-        const origen = $('#flujo_origen').val();
-        const dep = todasLasDeps.find(d => (d.nombre || '').trim().toLowerCase() === texto && d.id != origen);
-        $('#flujo_destino').val(dep ? dep.id : '');
-        return dep || null;
-    }
-
-    $(document).on('input change', '#flujo_destino_texto', function() {
-        if (resolverDestino()) $(this).removeClass('is-invalid');
-    });
-
-    // Sugerencias de observación: las que ya se han usado en otras conexiones
-    function llenarObservaciones() {
-        const usadas = [...new Set(todosLosFlujos.map(f => (f.observacion || '').trim()).filter(Boolean))];
-        $('#lista_observaciones_flujo').html(usadas.map(o => `<option value="${escHtml(o)}"></option>`).join(''));
-    }
-
-    // Cantidad de conexiones (envía o aprueba) de una dependencia, para el botón "Conectar"
-    function badgeConexiones(depId) {
-        const n = todosLosFlujos.filter(f => f.origen_id == depId || f.destino_id == depId).length;
-        return n ? `<span class="conexiones-count" title="${n} conexión(es)">${n}</span>` : '';
-    }
-
-    // Botón "Conectar" del listado: abre el pop up con esta dependencia como la que envía
-    // y muestra arriba sus conexiones actuales
-    function conectarDep(depId) {
-        const existente = todosLosFlujos.find(f => f.origen_id == depId);
-        abrirModalFlujo(existente || null, depId);
-        const dep = todasLasDeps.find(d => d.id == depId);
-        const envia  = todosLosFlujos.filter(f => f.origen_id == depId);
-        const recibe = todosLosFlujos.filter(f => f.destino_id == depId);
-        if (!envia.length && !recibe.length) return;
-
-        let html = `<div class="flujo-conexiones-titulo">Conexiones actuales de ${escHtml(dep ? dep.nombre : '')}</div><ul>`;
-        envia.forEach(f => {
-            html += `<li>Envía a <strong>${escHtml(f.destino_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
-        });
-        recibe.forEach(f => {
-            html += `<li>Recibe de <strong>${escHtml(f.origen_nombre)}</strong> <span class="badge-aplica ${f.aplica_a}">${APLICA_TEXTO[f.aplica_a] || ''}</span></li>`;
-        });
-        $('#flujo_conexiones').html(html + '</ul>').show();
-    }
-
-    // La dependencia que envía es fija (la de la fila del listado o la de la relación que se edita)
-    function abrirModalFlujo(flujo, origenId) {
-        const origen = flujo ? flujo.origen_id : origenId;
-        const dep = todasLasDeps.find(d => d.id == origen);
-        $('#flujo_conexiones').hide().empty();
-        $('#flujo_id').val(flujo ? flujo.id : '');
-        $('#flujo_origen').val(origen || '');
-        llenarDestinos(flujo ? flujo.destino_id : '', origen);
-        llenarObservaciones();
-        $('#flujo_aplica').val(flujo ? flujo.aplica_a : 'ambos');
-        $('#flujo_observacion').val(flujo ? (flujo.observacion || '') : '');
-        $('#modalFlujoTitulo').text((flujo ? 'Editar conexión · ' : 'Conectar · ') + (dep ? dep.nombre : (flujo ? flujo.origen_nombre : '')));
-        $('#modalFlujo').modal('show');
-    }
-
-    function editarFlujo(id) {
-        const flujo = todosLosFlujos.find(f => f.id == id);
-        if (flujo) abrirModalFlujo(flujo);
-    }
-
-    $('#formFlujo').on('submit', function(e) {
-        e.preventDefault();
-        if (!resolverDestino()) {
-            $('#flujo_destino_texto').addClass('is-invalid').focus();
-            return;
-        }
-        const id = $('#flujo_id').val();
-        $.ajax({
-            url: basePath + '/dependencias/' + (id ? 'actualizarFlujo' : 'crearFlujo'),
-            type: 'POST', data: $(this).serialize(), dataType: 'json',
-            success: function(res) {
-                if (res.success) {
-                    $('#modalFlujo').modal('hide');
-                    Swal.fire({ icon: 'success', title: res.message, timer: 1400, showConfirmButton: false, toast: true, position: 'top-end' });
-                    cargarFlujos();
-                } else { Swal.fire('Error', res.message, 'error'); }
-            },
-            error: function() { Swal.fire('Error', 'No se pudo guardar la relación', 'error'); }
-        });
-    });
-
-    function eliminarFlujo(id) {
-        const flujo = todosLosFlujos.find(f => f.id == id);
-        Swal.fire({
-            icon: 'warning',
-            title: '¿Eliminar relación?',
-            html: flujo ? `<strong>${escHtml(flujo.origen_nombre)}</strong> → <strong>${escHtml(flujo.destino_nombre)}</strong>` : '',
-            showCancelButton: true,
-            confirmButtonText: 'Eliminar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#FF3B30'
-        }).then(r => {
-            if (!r.isConfirmed) return;
-            $.ajax({
-                url: basePath + '/dependencias/eliminarFlujo',
-                type: 'POST', data: { id: id }, dataType: 'json',
-                success: function(res) {
-                    if (res.success) { cargarFlujos(); }
-                    else { Swal.fire('Error', res.message, 'error'); }
-                }
-            });
-        });
-    }
 
     function cargarDependencias() {
         $.ajax({
@@ -684,8 +374,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <td><strong>${escHtml(d.nombre)}</strong></td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
                 <td style="color:var(--ios-label2);font-size:13px;">${fecha}</td>
-                <td style="white-space:nowrap;">
-                    <button class="btn-action btn-conectar" onclick="conectarDep(${d.id})" title="Conectar con otra dependencia"><i class="fas fa-link me-1"></i>Conectar${badgeConexiones(d.id)}</button>
+                <td>
                     <button class="btn-action btn-edit"   onclick="editarDep(${d.id})" title="Editar"><i class="fas fa-edit"></i></button>
                     <button class="btn-action ${toggleClass}" onclick="cambiarEstado(${d.id}, ${d.activo == 1 ? 0 : 1})"><i class="fas ${toggleIcon}"></i></button>
                     <button class="btn-action btn-delete" onclick="pedirEliminar(${d.id}, '${escHtml(d.nombre)}')" title="Eliminar"><i class="fas fa-trash"></i></button>
@@ -788,7 +477,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (res.success) {
                     Swal.fire({ icon: 'success', title: '¡Eliminado!', text: res.message, timer: 1800, showConfirmButton: false });
                     cargarDependencias();
-                    cargarFlujos(); // sus relaciones del flujo también se borran
                 } else { Swal.fire('Error', res.message, 'error'); }
             },
             error: function() { $('#modalEliminar').modal('hide'); Swal.fire('Error', 'Error al eliminar', 'error'); }

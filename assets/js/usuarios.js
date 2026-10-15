@@ -289,6 +289,16 @@ class UsuariosManager {
                                     </select>
                                 </div>
 
+                                <div class="form-group">
+                                    <label class="form-label">Responsable de (dependencias)</label>
+                                    <div class="usr-deps" id="modalDependencias">
+                                        <input type="text" class="usr-deps-buscar" placeholder="Buscar dependencia..." autocomplete="off">
+                                        <div class="usr-deps-lista"></div>
+                                        <div class="usr-deps-resumen">Ninguna seleccionada</div>
+                                    </div>
+                                    <small class="usr-deps-ayuda">Además de su dependencia principal, verá y gestionará en el Plan de Acción los indicadores de estas dependencias.</small>
+                                </div>
+
                                 <div class="switch-container">
                                     <label class="switch-label">Estado:</label>
                                     <label class="switch">
@@ -318,6 +328,8 @@ class UsuariosManager {
             `;
             
             document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            this.prepararListaDependencias('modalDependencias');
 
             // Poblar select de cargos en modal crear
             const createCargoSelect = document.getElementById('modalCargo');
@@ -420,6 +432,16 @@ class UsuariosManager {
                                     </select>
                                 </div>
 
+                                <div class="form-group">
+                                    <label class="form-label">Responsable de (dependencias)</label>
+                                    <div class="usr-deps" id="editDependencias">
+                                        <input type="text" class="usr-deps-buscar" placeholder="Buscar dependencia..." autocomplete="off">
+                                        <div class="usr-deps-lista"></div>
+                                        <div class="usr-deps-resumen">Ninguna seleccionada</div>
+                                    </div>
+                                    <small class="usr-deps-ayuda">Además de su dependencia principal, verá y gestionará en el Plan de Acción los indicadores de estas dependencias.</small>
+                                </div>
+
                                 <div class="switch-container">
                                     <label class="switch-label">Estado:</label>
                                     <label class="switch">
@@ -461,6 +483,8 @@ class UsuariosManager {
                     editRolSelect.appendChild(opt);
                 });
             }
+
+            this.prepararListaDependencias('editDependencias');
 
             // Poblar select de cargos desde datos PHP
             const cargoSelect = document.getElementById('editCargo');
@@ -706,6 +730,9 @@ class UsuariosManager {
             cargoSelect.value = userData.cargo_id || '';
         }
 
+        // Dependencias de las que es responsable
+        this.marcarDependencias('editDependencias', userData.dependencias || []);
+
         // Configurar switch de estado
         const activoCheckbox = document.getElementById('editActivo');
         if (activoCheckbox) {
@@ -752,6 +779,42 @@ class UsuariosManager {
     }
     
     // Método para enviar formulario
+    // Lista con casillas y buscador para "Responsable de (dependencias)"
+    prepararListaDependencias(idContenedor) {
+        const contenedor = document.getElementById(idContenedor);
+        if (!contenedor || !window.CARGOS_LIST) return;
+        const lista = contenedor.querySelector('.usr-deps-lista');
+        const esc = (t) => String(t ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        lista.innerHTML = window.CARGOS_LIST.map(c =>
+            `<label class="usr-deps-item"><input type="checkbox" value="${esc(c.id)}"> <span>${esc(c.nombre)}</span></label>`
+        ).join('');
+
+        const actualizarResumen = () => {
+            const marcadas = Array.from(lista.querySelectorAll('input:checked')).map(i => i.nextElementSibling.textContent.trim());
+            contenedor.querySelector('.usr-deps-resumen').textContent = marcadas.length
+                ? `${marcadas.length} seleccionada(s): ${marcadas.join(', ')}`
+                : 'Ninguna seleccionada';
+        };
+        lista.addEventListener('change', actualizarResumen);
+        contenedor.querySelector('.usr-deps-buscar').addEventListener('input', (e) => {
+            const q = e.target.value.trim().toLowerCase();
+            lista.querySelectorAll('.usr-deps-item').forEach(item => {
+                item.style.display = !q || item.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        });
+        contenedor._actualizarResumen = actualizarResumen;
+    }
+
+    marcarDependencias(idContenedor, ids) {
+        const contenedor = document.getElementById(idContenedor);
+        if (!contenedor) return;
+        const marcadas = (ids || []).map(String);
+        contenedor.querySelectorAll('.usr-deps-lista input[type="checkbox"]').forEach(c => { c.checked = marcadas.includes(c.value); });
+        const buscar = contenedor.querySelector('.usr-deps-buscar');
+        if (buscar) { buscar.value = ''; buscar.dispatchEvent(new Event('input')); }
+        if (contenedor._actualizarResumen) contenedor._actualizarResumen();
+    }
+
     async submitModalForm(type = 'crear') {
         const formId = type === 'crear' ? 'formAgregarUsuario' : 'formEditarUsuario';
         const form = document.getElementById(formId);
@@ -792,6 +855,11 @@ class UsuariosManager {
             formData.forEach((value, key) => {
                 data[key] = value;
             });
+            // Las casillas de "Responsable de" se envían como lista de ids
+            const contenedorDeps = document.getElementById(type === 'crear' ? 'modalDependencias' : 'editDependencias');
+            if (contenedorDeps) {
+                data.dependencias = Array.from(contenedorDeps.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
+            }
             
             const response = await fetch(url, {
                 method: 'POST',
@@ -952,6 +1020,7 @@ class UsuariosManager {
             
             // Asegurar que el checkbox de activo esté checked por defecto en crear
             if (type === 'crear') {
+                this.marcarDependencias('modalDependencias', []);
                 const activoCheckbox = document.getElementById('modalActivo');
                 if (activoCheckbox) {
                     activoCheckbox.checked = true;

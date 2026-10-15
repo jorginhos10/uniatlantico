@@ -399,6 +399,9 @@ switch ($action) {
             case 'devolverTodosABorrador':
                 $modulo144Controller->devolverTodosABorrador();
                 break;
+            case 'publicarBorradores':
+                $modulo144Controller->publicarBorradores();
+                break;
             case 'cambiarSolicitudEstado':
                 $modulo144Controller->cambiarSolicitudEstado();
                 break;
@@ -817,18 +820,6 @@ switch ($action) {
                 break;
             case 'cambiarEstado':
                 $dependenciasController->cambiarEstado();
-                break;
-            case 'listarFlujos':
-                $dependenciasController->listarFlujos();
-                break;
-            case 'crearFlujo':
-                $dependenciasController->crearFlujo();
-                break;
-            case 'actualizarFlujo':
-                $dependenciasController->actualizarFlujo();
-                break;
-            case 'eliminarFlujo':
-                $dependenciasController->eliminarFlujo();
                 break;
             case 'index':
             default:

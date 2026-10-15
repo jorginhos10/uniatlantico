@@ -272,6 +272,7 @@ class UsuarioController {
 
         // Crear usuario
         if ($this->usuarioModel->crearUsuario($datos)) {
+            $this->usuarioModel->guardarDependenciasUsuario($this->usuarioModel->ultimoIdCreado, $this->dependenciasEnviadas($_POST));
             echo json_encode([
                 'success' => true,
                 'message' => 'Usuario creado exitosamente'
@@ -298,6 +299,7 @@ class UsuarioController {
         $usuario = $this->usuarioModel->obtenerUsuarioPorId($id);
         
         if ($usuario) {
+            $usuario['dependencias'] = $this->usuarioModel->obtenerDependenciasUsuario($id);
             echo json_encode([
                 'success' => true,
                 'data' => $usuario
@@ -422,6 +424,9 @@ class UsuarioController {
 
         // Actualizar usuario
         if ($this->usuarioModel->actualizarUsuario($id, $datos)) {
+            if (array_key_exists('dependencias', $input)) {
+                $this->usuarioModel->guardarDependenciasUsuario($id, $this->dependenciasEnviadas($input));
+            }
             echo json_encode([
                 'success' => true,
                 'message' => 'Usuario actualizado exitosamente'
@@ -433,6 +438,14 @@ class UsuarioController {
             ]);
         }
         exit;
+    }
+
+    // Dependencias marcadas en "Responsable de" (solo las que existen en el catálogo)
+    private function dependenciasEnviadas(array $input) {
+        $enviadas = $input['dependencias'] ?? [];
+        if (!is_array($enviadas)) $enviadas = $enviadas === '' ? [] : explode(',', (string)$enviadas);
+        $validas = array_map('intval', array_column($this->usuarioModel->obtenerCargos(), 'id'));
+        return array_values(array_intersect(array_map('intval', $enviadas), $validas));
     }
 
     public function eliminar() {

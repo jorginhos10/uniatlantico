@@ -231,6 +231,7 @@ class Plantilla144Controller {
         @set_time_limit(300);
         $resumen = [
             'formulacion' => ['creados' => 0, 'actualizados' => 0, 'sin_cambios' => 0],
+            'ids_creados' => [], // ids de los indicadores nuevos (borrador), para poder publicarlos después
             'seguimiento' => ['actualizados' => 0, 'sin_cambios' => 0],
             'errores'     => [],
         ];
@@ -341,6 +342,7 @@ class Plantilla144Controller {
                 if ($distNueva !== null) $this->guardarDistribucion($nuevoId, $distNueva);
                 $registros[$nuevoId] = ['id' => $nuevoId, 'estado_formulacion' => 0, 'creado_por' => $_SESSION['usuario_id'] ?? 0] + $datos;
                 $resumen['formulacion']['creados']++;
+                $resumen['ids_creados'][] = (int)$nuevoId;
             } else {
                 if ($this->sinCambios($registros[$id], $datos) && !$distCambia) { $resumen['formulacion']['sin_cambios']++; continue; }
                 if ($this->model->actualizar('formulacion', $id, $datos)) {
@@ -555,16 +557,18 @@ class Plantilla144Controller {
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         if ($uid > 0 && $uid === (int)($r['creado_por'] ?? 0)) return true;
 
-        static $nivel = null, $cargo = null;
+        static $nivel = null, $dependencias = null;
         if ($nivel === null) {
             $niveles = ['gestor de metas' => 1, 'gestor de metas de responsable de linea' => 1, 'lider de meta' => 2,
                         'gestor de metas de sub-admin' => 2, 'responsable de linea' => 3, 'sub administrador' => 4];
             $nivel = $niveles[$this->normalizar($_SESSION['usuario_rol'] ?? '')] ?? 0;
-            $cargo = $this->normalizar($this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0));
+            // Dependencia principal y las asociadas en "Responsable de"
+            $dependencias = array_map([$this, 'normalizar'],
+                $this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0));
         }
-        if ($nivel > 1 || $cargo === '') return false;
+        if ($nivel > 1 || !$dependencias) return false;
         foreach ($this->separarResponsables($r['responsable_formulacion'] ?? '') as $resp) {
-            if ($this->normalizar($resp) === $cargo) return true;
+            if (in_array($this->normalizar($resp), $dependencias, true)) return true;
         }
         return false;
     }

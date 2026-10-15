@@ -32,8 +32,11 @@ class Modulo144Controller {
         $planes_institucionales = $this->model->getPlanesInstitucionales();
         $id_indicadores = $this->model->getIdIndicadores();
         $viewer_cargo_nombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
+        // Todas las dependencias de las que el usuario es responsable (principal + "Responsable de")
+        $viewer_dependencias = $this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
         // Si la dependencia del usuario es una facultad, ve en Seguimiento los indicadores donde su facultad tiene distribución
-        $viewer_facultad_id = $this->model->getFacultadIdPorNombre($viewer_cargo_nombre);
+        // Facultades del usuario (por su dependencia principal o por cualquiera de las asociadas en "Responsable de")
+        $viewer_facultades = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
         $facultades_por_item = $this->model->getFacultadesConDistribucion((int)$formulario['id']);
         $facultades = $this->model->getFacultades();
 
@@ -417,6 +420,14 @@ class Modulo144Controller {
 
             if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
+            // Quien ve el indicador solo por la distribución de su facultad registra únicamente su casilla de
+            // "Seguimiento por facultades" (guardarSeguimientoFacultad), no el indicador general
+            $itemActual = $this->model->getById($modulo, $id);
+            if ($itemActual && $this->facultadesRestringidas($itemActual)) {
+                echo json_encode(['success' => false, 'message' => 'Tu facultad solo registra su seguimiento en la tabla "Seguimiento por facultades"']);
+                return;
+            }
+
             // Validación server-side: ponderación acumulada no puede superar 100%
             if ($modulo === 'formulacion' && isset($_POST['ponderacion_actividades']) && $_POST['ponderacion_actividades'] !== '') {
                 $proyecto      = $_POST['proyecto']              ?? '';
@@ -581,6 +592,41 @@ class Modulo144Controller {
 
     // Devuelve a borrador todos los publicados de un módulo (formulación o seguimiento) del formulario.
     // Igual que devolver uno solo: exclusivo del superadministrador (id=1).
+    // Publica en bloque los borradores de formulación (cargados por plantilla): solo administradores.
+    // Con "ids[]" publica solo esos; sin ellos, todos los borradores completos del formulario.
+    public function publicarBorradores() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        if ($uid !== 1 && !in_array($rol, ['admin', 'administrador'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede publicar los borradores']);
+            return;
+        }
+        $formularioId = intval($_POST['formulario_id'] ?? 0);
+        if ($formularioId <= 0 || !$this->model->verificarFormulario($formularioId)) {
+            echo json_encode(['success' => false, 'message' => 'Formulario no válido']);
+            return;
+        }
+        $ids = isset($_POST['ids']) ? (array)$_POST['ids'] : null;
+
+        $resultado = $this->model->publicarBorradores($formularioId, $ids, $uid, $_SESSION['usuario_nombre'] ?? '—', $_SESSION['usuario_rol'] ?? null);
+        if ($resultado === false) {
+            echo json_encode(['success' => false, 'message' => 'Error al publicar los borradores']);
+            return;
+        }
+        $n = count($resultado['publicados']);
+        echo json_encode([
+            'success'    => true,
+            'message'    => $n === 0 ? 'No se publicó ningún borrador' : ($n === 1 ? '1 indicador publicado' : "$n indicadores publicados"),
+            'publicados' => $resultado['publicados'],
+            'omitidos'   => $resultado['omitidos'],
+        ]);
+    }
+
     public function devolverTodosABorrador() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -795,31 +841,37 @@ class Modulo144Controller {
         $distribucion = $this->model->getDistribucionFacultades($formulacionId);
 
         // Un usuario de facultad que no es administrador, ni creó el indicador, ni pertenece a la
-        // dependencia responsable, solo recibe la fila de su propia facultad
-        $facultadPropia = $this->facultadRestringida($this->model->getById('formulacion', $formulacionId) ?: []);
-        if ($facultadPropia > 0) {
-            $distribucion = array_values(array_filter($distribucion, function ($d) use ($facultadPropia) {
-                return (int)$d['facultad_id'] === $facultadPropia;
+        // dependencia responsable, solo recibe las filas de su(s) propia(s) facultad(es)
+        $facultadesPropias = $this->facultadesRestringidas($this->model->getById('formulacion', $formulacionId) ?: []);
+        if ($facultadesPropias) {
+            $distribucion = array_values(array_filter($distribucion, function ($d) use ($facultadesPropias) {
+                return in_array((int)$d['facultad_id'], $facultadesPropias, true);
             }));
         }
-        echo json_encode(['success' => true, 'distribucion' => $distribucion, 'solo_facultad' => $facultadPropia]);
+        echo json_encode(['success' => true, 'distribucion' => $distribucion, 'solo_facultades' => $facultadesPropias]);
     }
 
-    // Id de la facultad del usuario si solo debe ver/registrar su propia fila; 0 si puede ver todas
-    private function facultadRestringida(array $item) {
+    // Ids de las facultades del usuario si solo debe ver/registrar su propia fila; [] si puede ver todas
+    private function facultadesRestringidas(array $item) {
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
-        if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return 0;
-        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return 0;
+        if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return [];
+        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return [];
 
-        $cargoNombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
-        $facultadId = $cargoNombre !== '' ? $this->model->getFacultadIdPorNombre($cargoNombre) : 0;
-        if ($facultadId <= 0) return 0;
+        $propias = $this->model->getFacultadesDelUsuario($uid, $_SESSION['usuario_cargo_id'] ?? 0);
+        if (!$propias) return [];
 
+        if ($this->esResponsableDelItem($item)) return [];
+        return $propias;
+    }
+
+    // ¿Alguna de las dependencias del usuario (principal o "Responsable de") es responsable del indicador?
+    private function esResponsableDelItem(array $item) {
         $lista = ', ' . mb_strtolower(trim((string)($item['responsable_formulacion'] ?? '')), 'UTF-8') . ', ';
-        $cargo = mb_strtolower(trim($cargoNombre), 'UTF-8');
-        if (mb_strpos($lista, ', ' . $cargo . ', ', 0, 'UTF-8') !== false) return 0;
-        return $facultadId;
+        foreach ($this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0) as $dep) {
+            if (mb_strpos($lista, ', ' . mb_strtolower(trim($dep), 'UTF-8') . ', ', 0, 'UTF-8') !== false) return true;
+        }
+        return false;
     }
 
     public function guardarDistribucionFacultad() {
@@ -878,13 +930,11 @@ class Modulo144Controller {
         if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return true;
         if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return true;
 
-        $cargoNombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
-        if ($cargoNombre !== '' && $this->model->getFacultadIdPorNombre($cargoNombre) === (int)$facultadId) return true;
+        // La facultad es una de las del usuario (dependencia principal o asociada en "Responsable de")
+        if (in_array((int)$facultadId, $this->model->getFacultadesDelUsuario($uid, $_SESSION['usuario_cargo_id'] ?? 0), true)) return true;
 
-        // Dependencia responsable ("responsable_formulacion" guarda nombres separados por ", ")
-        $lista = ', ' . mb_strtolower(trim((string)($item['responsable_formulacion'] ?? '')), 'UTF-8') . ', ';
-        $cargo = mb_strtolower(trim($cargoNombre), 'UTF-8');
-        return $cargo !== '' && mb_strpos($lista, ', ' . $cargo . ', ', 0, 'UTF-8') !== false;
+        // Dependencia responsable (principal o asociada en "Responsable de")
+        return $this->esResponsableDelItem($item);
     }
 
     public function getHistorialSemaforo() {
