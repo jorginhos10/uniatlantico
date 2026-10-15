@@ -13,7 +13,7 @@ if (($formulario['tipo_tiempo'] ?? '') === 'rango' && !empty($formulario['fecha_
 $titulo       = 'Plan de Acción — ' . htmlspecialchars($formulario['titulo'] ?? '');
 $paginaActual = 'modulo144';
 
-$eval_colores = ['#9C27B0', '#FF9500', '#007AFF', '#34C759', '#FF3B30', '#673AB7', '#FF6230', '#32ADE6', '#3F51B5', '#FF2D55'];
+$eval_colores = ['#9C27B0', '#FF9500', '#1D71B8', '#34C759', '#FF3B30', '#673AB7', '#FF6230', '#32ADE6', '#3F51B5', '#FF2D55'];
 function eval_darken($hex, $percent) {
     $hex = ltrim($hex, '#');
     $r = max(0, min(255, hexdec(substr($hex, 0, 2)) * (1 - $percent)));
@@ -35,7 +35,7 @@ ob_start();
         }
         .select2-container--default.select2-container--focus .select2-selection--multiple {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
+            box-shadow: 0 0 0 3px rgba(29,113,184,.15);
         }
         .select2-container--default .select2-selection--multiple .select2-selection__choice {
             background-color: #1D71B8;
@@ -80,12 +80,12 @@ ob_start();
     
     <style>
         :root {
-            --color-primary: #007AFF;
+            --color-primary: #1D71B8;
             --color-primary-light: #0A84FF;
             --color-success: #34C759;
             --color-warning: #FF9500;
             --color-danger: #FF3B30;
-            --color-info: #007AFF;
+            --color-info: #1D71B8;
             --color-bg: #F2F2F7;
             --color-white: #FFFFFF;
             --color-tab-incomplete: #8E8E93;
@@ -94,7 +94,7 @@ ob_start();
 
         .facultad-color-0 { border-left-color: #9C27B0; }
         .facultad-color-1 { border-left-color: #FF9500; }
-        .facultad-color-2 { border-left-color: #007AFF; }
+        .facultad-color-2 { border-left-color: #1D71B8; }
         .facultad-color-3 { border-left-color: #34C759; }
         .facultad-color-4 { border-left-color: #FF3B30; }
         .facultad-color-5 { border-left-color: #673AB7; }
@@ -105,7 +105,7 @@ ob_start();
 
         .badge-facultad-0 { background-color: #9C27B0; }
         .badge-facultad-1 { background-color: #FF9500; }
-        .badge-facultad-2 { background-color: #007AFF; }
+        .badge-facultad-2 { background-color: #1D71B8; }
         .badge-facultad-3 { background-color: #34C759; }
         .badge-facultad-4 { background-color: #FF3B30; }
         .badge-facultad-5 { background-color: #673AB7; }
@@ -132,12 +132,12 @@ ob_start();
             width: 52px;
             height: 52px;
             border-radius: 14px;
-            background: linear-gradient(135deg, #007AFF 0%, #5856D6 100%);
+            background: linear-gradient(135deg, #1D71B8 0%, #5856D6 100%);
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            box-shadow: 0 4px 14px rgba(0,122,255,.32);
+            box-shadow: 0 4px 14px rgba(29,113,184,.32);
             color: white;
             font-size: 22px;
         }
@@ -147,7 +147,7 @@ ob_start();
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: .6px;
-            color: #007AFF;
+            color: #1D71B8;
             margin-bottom: 2px;
         }
 
@@ -177,11 +177,11 @@ ob_start();
 
         /* ═══ COUNTDOWN ═══ */
         .countdown-container {
-            background: rgba(0,122,255,.04);
+            background: rgba(29,113,184,.04);
             border-radius: 12px;
             padding: 14px 18px;
             margin-top: 14px;
-            border: 1px solid rgba(0,122,255,.12);
+            border: 1px solid rgba(29,113,184,.12);
         }
 
         .countdown-timer {
@@ -205,7 +205,7 @@ ob_start();
             font-weight: 800;
             line-height: 1;
             margin-bottom: 4px;
-            color: #007AFF;
+            color: #1D71B8;
         }
 
         .countdown-label {
@@ -477,7 +477,7 @@ ob_start();
         .estado-cancelado  { background: rgba(255,59,48,.1);    color: #C0392B; }
         .estado-expirado   { background: rgba(255,59,48,.1);    color: #C0392B; }
         .estado-vigente    { background: rgba(52,199,89,.12);   color: #1A7A35; }
-        .estado-sin-fechas { background: rgba(0,122,255,.1);    color: #007AFF; }
+        .estado-sin-fechas { background: rgba(29,113,184,.1);    color: #1D71B8; }
         .estado-no-iniciado { background: rgba(255,149,0,.12);  color: #8B5E00; }
         
         .modal-content {
@@ -531,7 +531,7 @@ ob_start();
         
         .form-control:focus, .form-select:focus {
             border-color: var(--color-primary);
-            box-shadow: 0 0 0 3px rgba(0,122,255,.15);
+            box-shadow: 0 0 0 3px rgba(29,113,184,.15);
         }
         
         .form-control[readonly] {
@@ -619,7 +619,7 @@ ob_start();
         
         .nav-tabs .nav-link:hover {
             border-bottom-color: var(--color-primary-light);
-            background-color: rgba(0, 122, 255, 0.05);
+            background-color: rgba(29,113,184, 0.05);
         }
         
         .nav-tabs .nav-link.active {
@@ -664,8 +664,8 @@ ob_start();
         }
 
         .modulo-tabs-top .nav-link:hover {
-            border-bottom-color: rgba(0,122,255,.4);
-            background-color: rgba(0,122,255,.05);
+            border-bottom-color: rgba(29,113,184,.4);
+            background-color: rgba(29,113,184,.05);
         }
 
         .modulo-tabs-top .nav-link.active {
@@ -793,13 +793,13 @@ ob_start();
         .seg-tile .form-label { margin-bottom: 2px; }
         .seg-num { font-size: 24px; font-weight: 800; min-height: 38px; display: flex; align-items: center; font-variant-numeric: tabular-nums; }
         .seg-input { font-size: 22px; font-weight: 800; min-height: 38px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
-        .seg-tile-total { background: #E8F5E9; border-color: transparent; }
-        .seg-tile-total .seg-num { color: #2E7D32; }
+        .seg-tile-total { background: #E4EEF8; border-color: transparent; }
+        .seg-tile-total .seg-num { color: #143163; }
         @media (max-width: 700px) { .seg-card { grid-template-columns: minmax(0, 1fr); } #modalSeguimiento .modal-body-scroll { padding: 12px 14px 20px; } }
         .seg-ev-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
-        .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #34C759; background: #E8F5E9; color: #1F8A4C; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
+        .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #1D71B8; background: #E4EEF8; color: #1D71B8; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
         .seg-ev-btn:hover { border-style: solid; }
-        .seg-ev-btn .ev-n { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: #1F8A4C; color: #fff; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+        .seg-ev-btn .ev-n { min-width: 24px; height: 24px; padding: 0 7px; border-radius: 99px; background: #1D71B8; color: #fff; font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
         #modalEvidencias .ev-lista li { display: flex; align-items: center; gap: 10px; border: 1px solid #E5E5EA; border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; background: #FAFAFC; min-width: 0; }
         #modalEvidencias .ev-ext { flex: none; width: 36px; height: 36px; border-radius: 8px; background: #E6F0FA; color: #1D71B8; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; text-transform: uppercase; text-decoration: none; }
         #modalEvidencias .ev-nombre { min-width: 0; flex: 1; }
@@ -965,7 +965,7 @@ ob_start();
         .ev-total-stats small { font-size: .72rem; color: #6E6E73; }
         .ev-btn-informe {
             display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 10px;
-            background: #007AFF; color: #fff !important; font-weight: 600; font-size: .88rem; text-decoration: none;
+            background: #1D71B8; color: #fff !important; font-weight: 600; font-size: .88rem; text-decoration: none;
         }
         .ev-btn-informe:hover { background: #0066CC; }
         .ev-lineas { display: flex; flex-direction: column; gap: 12px; }
@@ -977,7 +977,7 @@ ob_start();
         .ev-linea-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
         .ev-chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .72rem; font-weight: 600; background: #F2F2F7; color: #3A3A3C; }
         .ev-chip.codigo { background: var(--ev-color); color: #fff; }
-        .ev-chip.peso { background: rgba(0,122,255,.1); color: #0058b0; }
+        .ev-chip.peso { background: rgba(29,113,184,.1); color: #0058b0; }
         .ev-bar { height: 8px; border-radius: 999px; background: #EEEEF2; overflow: hidden; }
         .ev-bar span { display: block; height: 100%; border-radius: 999px; }
         .ev-pct { text-align: right; font-weight: 800; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
@@ -1014,7 +1014,7 @@ ob_start();
             border-radius: 12px;
             font-size: 0.7rem;
             font-weight: 600;
-            background-color: #007AFF;
+            background-color: #1D71B8;
             color: white;
             margin-left: 8px;
         }
@@ -1069,7 +1069,7 @@ ob_start();
 
         .semaforo-circle.clickable {
             cursor: pointer;
-            box-shadow: 0 0 0 2px rgba(0,122,255,.45);
+            box-shadow: 0 0 0 2px rgba(29,113,184,.45);
         }
 
         .semaforo-circle.clickable:hover {
@@ -1156,11 +1156,11 @@ ob_start();
             border-bottom: 1px solid rgba(0,0,0,0.04);
         }
         .filtro-sugerencias .sug-item:last-child { border-bottom: none; }
-        .filtro-sugerencias .sug-item:hover { background: rgba(0,122,255,0.08); }
+        .filtro-sugerencias .sug-item:hover { background: rgba(29,113,184,0.08); }
         .filtro-resultado-badge {
             font-size: 0.75rem; padding: 2px 9px; border-radius: 10px;
-            background: rgba(0,122,255,0.09); color: #007aff;
-            border: 1px solid rgba(0,122,255,0.18);
+            background: rgba(29,113,184,0.09); color: #1D71B8;
+            border: 1px solid rgba(29,113,184,0.18);
         }
 
         /* ══════════════ Rediseño claro estilo Apple ══════════════ */
@@ -1178,18 +1178,18 @@ ob_start();
         .m144-btn i { font-size: 13px; }
         .m144-btn-gray { background: #E9E9EE; color: #1D1D1F; }
         .m144-btn-gray:hover { background: #E0E0E5; color: #1D1D1F; }
-        .m144-btn-primary { background: #007AFF; color: #fff; }
+        .m144-btn-primary { background: #1D71B8; color: #fff; }
         .m144-btn-primary:hover { background: #0068D9; color: #fff; }
-        .m144-btn:focus-visible, .m144-more:focus-visible, .m144-estado:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
+        .m144-btn:focus-visible, .m144-more:focus-visible, .m144-estado:focus-visible { outline: 3px solid rgba(29,113,184,.45); outline-offset: 2px; }
 
         /* Pestañas principales: una fila, subrayado azul y conteo */
         .modulo-tabs-top { border-bottom: 1px solid #E0E0E5 !important; gap: 4px; flex-wrap: wrap; }
         .modulo-tabs-top .nav-link { border: 0 !important; border-bottom: 2px solid transparent !important; background: transparent !important;
                                      color: #3A3A3C !important; font-weight: 600; text-transform: none; padding: 12px 14px; margin-bottom: -1px; }
-        .modulo-tabs-top .nav-link.active { color: #0066CC !important; border-bottom-color: #007AFF !important; }
+        .modulo-tabs-top .nav-link.active { color: #0066CC !important; border-bottom-color: #1D71B8 !important; }
         .modulo-tabs-top .nav-link:hover { color: #1D1D1F !important; }
         .m144-tab-count { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #E9E9EE; color: #6E6E73; }
-        .modulo-tabs-top .nav-link.active .m144-tab-count { background: rgba(0,122,255,.12); color: #0066CC; }
+        .modulo-tabs-top .nav-link.active .m144-tab-count { background: rgba(29,113,184,.12); color: #0066CC; }
 
         /* Panel sin banner oscuro */
         .m144-panel { padding: 4px 0 0; }
@@ -1205,8 +1205,8 @@ ob_start();
         .countdown-container .countdown-box { padding: 4px 12px !important; min-width: 0 !important; display: flex; flex-direction: row; align-items: baseline; gap: 4px; }
         .countdown-container .countdown-number { font-size: 18px !important; }
         .countdown-container .countdown-label { font-size: 10px !important; }
-        .m144-btn-tinted { background: rgba(0,122,255,.12) !important; color: #0066CC !important; text-decoration: none; }
-        .m144-btn-tinted:hover { background: rgba(0,122,255,.2) !important; color: #0066CC !important; }
+        .m144-btn-tinted { background: rgba(29,113,184,.12) !important; color: #0066CC !important; text-decoration: none; }
+        .m144-btn-tinted:hover { background: rgba(29,113,184,.2) !important; color: #0066CC !important; }
         .imp-resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin: 4px 0 12px; }
         .imp-resumen div { background: #F2F2F7; border-radius: 10px; padding: 10px; text-align: center; }
         .imp-resumen b { display: block; font-size: 1.3rem; }
@@ -1260,7 +1260,7 @@ ob_start();
         .lista-item-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .lista-item-actions .btn { width: 38px; height: 38px; padding: 0; border: 0 !important; border-radius: 10px !important;
                                    display: inline-grid; place-items: center; box-shadow: none !important; }
-        .lista-item-actions .btn-warning, .lista-item-actions .btn-info { background: rgba(0,122,255,.12) !important; color: #0066CC !important; }
+        .lista-item-actions .btn-warning, .lista-item-actions .btn-info { background: rgba(29,113,184,.12) !important; color: #0066CC !important; }
         .lista-item-actions .btn-success { background: rgba(52,199,89,.16) !important; color: #248A3D !important; }
         .lista-item-actions .btn-danger { background: rgba(255,59,48,.10) !important; color: #D70015 !important; }
         .lista-item-actions .btn:hover { filter: brightness(.96); }
@@ -1277,7 +1277,7 @@ ob_start();
                           padding: 5px 12px; border-radius: 999px; background: rgba(255,149,0,.14); color: #B25000; }
         .m144-pendiente i { font-size: 10px; }
         .m144-pendiente:hover, .m144-pendiente[aria-expanded="true"] { background: rgba(255,149,0,.24); }
-        .m144-pendiente:focus-visible { outline: 3px solid rgba(0,122,255,.45); outline-offset: 2px; }
+        .m144-pendiente:focus-visible { outline: 3px solid rgba(29,113,184,.45); outline-offset: 2px; }
 
         /* ── Celular ── */
         @media (max-width: 768px) {
@@ -1347,7 +1347,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <?php if ($estado_fechas['valido'] && $fecha_cierre): ?>
             <div class="countdown-container">
                 <div style="text-align:center;font-size:12px;font-weight:600;color:#6e6e73;margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">
-                    <i class="fas fa-hourglass-half me-1" style="color:#007AFF;"></i>Tiempo restante
+                    <i class="fas fa-hourglass-half me-1" style="color:#1D71B8;"></i>Tiempo restante
                 </div>
                 <div class="countdown-timer" id="countdown-timer">
                     <div class="countdown-box"><div class="countdown-number" id="days">00</div><div class="countdown-label">Días</div></div>
@@ -2163,7 +2163,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalNuevoBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: #007AFF;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nuevo Borrador</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -2189,7 +2189,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalNuevoBorradorFacultad" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: #007AFF;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Nueva Formulación - <span id="facultadNombreModal"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -2215,7 +2215,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalDuplicarBorrador" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background: #007AFF;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title"><i class="fas fa-copy me-2"></i>Duplicar Formulación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -2240,7 +2240,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalGestionSemestral" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #FF9500;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title">
                         <i class="fas fa-calendar-alt me-2"></i>GESTIÓN SEMESTRAL - <span id="gestionTituloSpan"></span>
                     </h5>
@@ -2310,7 +2310,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalFormulacion" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
-                <div class="modal-header" style="background: #007AFF;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title" id="tituloFormulacion" ondblclick="editarTituloModal('formulacion')">
                         <i class="fas fa-clipboard-list me-2"></i>FORMULACIÓN 144 - <span id="tituloFormulacionSpan"></span>
                     </h5>
@@ -2666,7 +2666,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalSeguimiento" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-fullscreen">
             <div class="modal-content">
-                <div class="modal-header" style="background: #34C759;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title" id="tituloSeguimiento" ondblclick="editarTituloModal('seguimiento')">
                         <i class="fas fa-chart-line me-2"></i>SEGUIMIENTO 144 - <span id="tituloSeguimientoSpan"></span>
                     </h5>
@@ -2819,14 +2819,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalEvidencias" tabindex="-1" aria-labelledby="evTitulo" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header" style="background:#34C759; color:#fff;">
+                <div class="modal-header" style="background:#143163; color:#fff;">
                     <h5 class="modal-title" id="evTitulo">Evidencias</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <div class="fw-bold" id="evQuien"></div>
                     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 my-2" id="evSubir">
-                        <button type="button" class="btn btn-success btn-sm" id="evBtnElegir"><i class="fas fa-plus me-1"></i>Seleccionar archivos</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="evBtnElegir"><i class="fas fa-plus me-1"></i>Seleccionar archivos</button>
                         <span class="badge bg-light text-dark border" id="evContador">0 de 5</span>
                         <input type="file" id="evInput" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
                     </div>
@@ -2837,7 +2837,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <div class="ev-ruta" id="evRuta"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-success" data-bs-dismiss="modal">Listo</button>
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Listo</button>
                 </div>
             </div>
         </div>
@@ -2846,7 +2846,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalVerFormulario" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header" style="background: #007AFF;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title"><i class="fas fa-eye me-2"></i>Ver Formulación - <span id="ver_titulo"></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -2862,7 +2862,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="modal fade" id="modalEditarFacultadItem" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header" style="background: #9C27B0;">
+                <div class="modal-header" style="background: #143163;">
                     <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Editar</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -4701,7 +4701,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             icon: 'warning',
                             title: 'Ponderación excedida',
                             text: response.message,
-                            confirmButtonColor: '#007AFF'
+                            confirmButtonColor: '#1D71B8'
                         });
                     }
                 }
@@ -5871,8 +5871,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 setTimeout(function() {
                     item.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     item.style.transition = 'box-shadow .3s, background-color .3s';
-                    item.style.boxShadow = '0 0 0 3px rgba(0,122,255,.55)';
-                    item.style.backgroundColor = 'rgba(0,122,255,.06)';
+                    item.style.boxShadow = '0 0 0 3px rgba(29,113,184,.55)';
+                    item.style.backgroundColor = 'rgba(29,113,184,.06)';
                     setTimeout(function() { item.style.boxShadow = ''; item.style.backgroundColor = ''; }, 3500);
                 }, 350);
             }, 400);

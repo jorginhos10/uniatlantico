@@ -3,15 +3,24 @@
    tarjetas y formularios. Se carga después de los estilos propios de cada página, así que sus reglas
    (y las variables de :root) prevalecen sobre las de cada vista. */
 
-/* ═══════════════ PALETA (la misma de new-ua) ═══════════════ */
+/* ═══════════════ PALETA INSTITUCIONAL (Manual de Identidad Visual, Universidad del Atlántico) ═══════════════
+   Azul institucional #143163 = protagonista (estructura y acciones principales).
+   Naranja #D85819 = solo acento (elemento y pestaña activos, marcas).
+   Secundarios: azul #1D71B8, amarillo #F9B233, ámbar #FF9910 y gris #706F6F. */
 :root {
-    --color-primario: #0071e3;
-    --color-primario-oscuro: #0058b0;
-    --color-primario-suave: #e8f2ff;
+    --color-primario: #143163;
+    --color-primario-oscuro: #0d2147;
+    --color-primario-suave: #e7ecf5;
+    --color-acento: #D85819;
+    --color-azul-medio: #1D71B8;
+    --color-amarillo: #F9B233;
+    --color-amarillo-texto: #8a5a00;
+    --color-amarillo-fondo: #fdf1d6;
+    --color-gris-institucional: #706F6F;
     --color-texto: #1d1d1f;
     --color-texto-secundario: #424245;
     --color-texto-tenue: #86868b;
-    --color-fondo: #f5f5f7;
+    --color-fondo: #f3f5f9;
     --color-borde: #d2d2d7;
     --color-borde-hover: #aeaeb2;
     --color-superficie: #ffffff;
@@ -30,20 +39,20 @@
     --transicion: 0.15s ease;
 
     /* Variables que ya usan las pantallas del sistema, alineadas con la paleta */
-    --ios-blue: #0071e3;
+    --ios-blue: #1D71B8;
     --ios-green: #34c759;
     --ios-red: #d70015;
     --ios-orange: #c96500;
     --ios-bg: #f5f5f7;
     --ios-label: #1d1d1f;
     --ios-label2: #6e6e73;
-    --apple-blue: #0071e3;
+    --apple-blue: #1D71B8;
     --apple-text: #1d1d1f;
     --apple-text-secondary: #424245;
     --apple-text-tertiary: #86868b;
     --apple-bg: #f5f5f7;
-    --pa-blue: #0071e3;
-    --pa-blue-ink: #0058b0;
+    --pa-blue: #1D71B8;
+    --pa-blue-ink: #143163;
 }
 
 /* ═══════════════ BASE ═══════════════ */
@@ -70,7 +79,7 @@ body::after {
     content: "";
     position: fixed;
     inset: 0;
-    background: linear-gradient(180deg, var(--color-fondo) 0%, var(--color-fondo) 70%, rgba(245, 245, 247, 0) 95%);
+    background: linear-gradient(180deg, var(--color-fondo) 0%, var(--color-fondo) 70%, rgba(243, 245, 249, 0) 95%);
     z-index: -1;
     pointer-events: none;
 }
@@ -82,9 +91,7 @@ a { color: var(--color-primario); }
 /* ═══════════════ MENÚ LATERAL ═══════════════ */
 /* Mismos valores que .barra-lateral de new-ua: vidrio gris translúcido sobre el fondo y la foto */
 .sidebar {
-    background: linear-gradient(180deg, rgba(40, 40, 44, 0.65), rgba(20, 20, 22, 0.65));
-    backdrop-filter: blur(30px) saturate(180%);
-    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    background: linear-gradient(180deg, #143163 0%, #0d2147 100%);
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.04), 8px 0 30px rgba(0, 0, 0, 0.12);
 }
@@ -96,10 +103,10 @@ a { color: var(--color-primario); }
 }
 .sidebar .navItem:hover { background: rgba(255, 255, 255, 0.08); }
 .sidebar .navItem.active {
-    background: rgba(10, 132, 255, 0.55);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 4px 0 0 var(--color-acento);
 }
-.sidebar .navLink { color: #d2d2d7; font-size: 0.88rem; }
+.sidebar .navLink { color: #d6dcea; font-size: 0.88rem; }
 .sidebar .navLink .icono { width: 20px; height: 20px; color: #d2d2d7; transition: color var(--transicion); }
 .sidebar .navItem:hover .navLink .icono,
 .sidebar .navItem:hover .navLink span { color: #fff; }
@@ -126,7 +133,7 @@ a { color: var(--color-primario); }
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: linear-gradient(135deg, var(--color-primario), #5ac8fa);
+    background: linear-gradient(135deg, var(--color-primario), var(--color-azul-medio));
     color: #fff;
     flex-shrink: 0;
 }
@@ -187,7 +194,7 @@ a { color: var(--color-primario); }
     opacity: 1 !important;
 }
 [class*="-header-icon"] {
-    background: linear-gradient(135deg, var(--color-primario), #5ac8fa) !important;
+    background: linear-gradient(135deg, var(--color-primario), var(--color-azul-medio)) !important;
     color: #fff !important;
     border-radius: 12px !important;
     box-shadow: none !important;
