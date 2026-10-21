@@ -1012,6 +1012,28 @@ ob_start();
         .ev-motor .ev-pct { font-size: .9rem; font-weight: 700; }
         .ev-motor small { display: block; color: #6E6E73; font-size: .74rem; margin-top: 2px; }
         .ev-vacio { color: #6E6E73; font-size: .85rem; padding: 10px 0; }
+        .ev-subtabs { gap: 6px; }
+        .ev-subtabs .nav-link { border-radius: 999px; font-weight: 600; font-size: .88rem; color: #143163; background: #E7ECF5; padding: .45rem 1.1rem; }
+        .ev-subtabs .nav-link.active { background: #143163; color: #fff; }
+        .cn-intro { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+        .cn-titulo { font-size: 1.15rem; font-weight: 700; color: #143163; }
+        .cn-sub { font-size: .85rem; color: #6E6E73; margin-top: 2px; }
+        .cn-filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .cn-filtros input, .cn-filtros select { border: 1px solid #D2D2D7; border-radius: 9px; padding: 8px 12px; min-height: 38px; font-size: .88rem; background: #fff; min-width: 0; }
+        .cn-filtros input { width: 260px; max-width: 100%; }
+        .cn-contador { font-size: .8rem; font-weight: 700; color: #143163; background: #E7ECF5; border-radius: 99px; padding: 5px 12px; }
+        .cn-tabla-wrap { overflow-x: auto; border: 1px solid #E5E5EA; border-radius: 12px; background: #fff; }
+        .cn-tabla { border-collapse: collapse; width: 100%; min-width: 980px; font-size: .88rem; }
+        .cn-tabla th, .cn-tabla td { padding: 10px 12px; border-bottom: 1px solid #EEEEF2; text-align: left; vertical-align: middle; }
+        .cn-tabla thead th { background: #E7ECF5; color: #5b6479; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; position: sticky; top: 0; }
+        .cn-tabla tbody tr:last-child td { border-bottom: 0; }
+        .cn-tabla .cn-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .cn-nombre { font-weight: 600; max-width: 380px; }
+        .cn-anio { font-weight: 800; color: #143163; }
+        .cn-lmp { display: inline-block; background: #E4EEF8; color: #1D71B8; font-weight: 700; font-size: .75rem; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
+        .cn-estado { font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
+        .cn-estado.ok { background: #E3F4EA; color: #1F8A4C; }
+        .cn-vacio { text-align: center; color: #6E6E73; padding: 24px; }
         .ev-nota { font-size: .76rem; color: #6E6E73; margin-top: 14px; line-height: 1.5; }
 
         .gestionado-indicador {
@@ -1526,7 +1548,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <li class="nav-item" role="presentation">
                 <button class="nav-link <?php echo $primer_modulo_tab ? 'active' : ''; ?>" data-bs-toggle="tab" data-bs-target="#panelModulo-<?php echo $key; ?>" type="button" role="tab">
                     <i class="fas <?php echo $modulo['config']['icono']; ?> me-2"></i><?php echo $modulo['config']['nombre']; ?>
-                    <span class="m144-tab-count" title="Borradores: <?php echo count($borradoresVisiblesPorModulo[$key]); ?> · Publicados: <?php echo count($modulo['publicados']); ?> · Cancelados: <?php echo count($modulo['cancelados']); ?>"><?php echo count($borradoresVisiblesPorModulo[$key]) + count($modulo['publicados']); ?></span>
+                    <span class="m144-tab-count" title="Borradores: <?php echo count($borradoresVisiblesPorModulo[$key]); ?> · Aprobados: <?php echo count($modulo['publicados']); ?> · Cancelados: <?php echo count($modulo['cancelados']); ?>"><?php echo count($borradoresVisiblesPorModulo[$key]) + count($modulo['publicados']); ?></span>
                 </button>
             </li>
             <?php $primer_modulo_tab = false; ?>
@@ -1631,7 +1653,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </li>
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPublicados-<?php echo $key; ?>" type="button" role="tab">
-                                    <i class="fas fa-check-circle me-1"></i>Publicados <span class="badge bg-success ms-1"><?php echo count($modulo['publicados']); ?></span>
+                                    <i class="fas fa-check-circle me-1"></i>Aprobados <span class="badge bg-success ms-1"><?php echo count($modulo['publicados']); ?></span>
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -2086,6 +2108,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                 </div>
                 <div class="p-4">
+                    <ul class="nav nav-pills ev-subtabs mb-4" id="evSubTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#evSubResumen" type="button" role="tab"><i class="fas fa-chart-pie me-2"></i>Evaluación</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#evSubConcertacion" type="button" role="tab"><i class="fas fa-handshake me-2"></i>Concertación</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                    <div class="tab-pane fade show active" id="evSubResumen" role="tabpanel">
                     <?php
                     $evInforme = $informe_resumen ?? ['global_cumplimiento' => 0, 'lineas' => []];
                     $evLineas  = $evInforme['lineas'] ?? [];
@@ -2181,6 +2213,75 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
                     </div>
                     <?php endif; ?>
+                    </div><!-- /evSubResumen -->
+
+                    <div class="tab-pane fade" id="evSubConcertacion" role="tabpanel">
+                    <?php
+                    // Metas propuestas de cada indicador (lo que se concierta con la dependencia responsable)
+                    $cnFilas = [];
+                    foreach (['publicados' => 'Aprobado', 'borradores' => 'Borrador'] as $cnGrupo => $cnEtiqueta) {
+                        $cnLista = $cnGrupo === 'publicados' ? ($publicadosVisiblesPorModulo['formulacion'] ?? []) : ($borradoresVisiblesPorModulo['formulacion'] ?? []);
+                        foreach ($cnLista as $cnR) { $cnR['_estado'] = $cnEtiqueta; $cnFilas[] = $cnR; }
+                    }
+                    usort($cnFilas, function ($a, $b) {
+                        return strcmp(($a['linea_codigo'] ?? '~') . ($a['motor_codigo'] ?? '~') . ($a['proyecto_codigo'] ?? '~'), ($b['linea_codigo'] ?? '~') . ($b['motor_codigo'] ?? '~') . ($b['proyecto_codigo'] ?? '~'));
+                    });
+                    $cnLineas = [];
+                    foreach ($cnFilas as $cnR) { if (!empty($cnR['linea_codigo'])) $cnLineas[$cnR['linea_codigo']] = true; }
+                    ksort($cnLineas);
+                    ?>
+                    <div class="cn-intro">
+                        <div>
+                            <div class="cn-titulo">Concertación de metas</div>
+                            <div class="cn-sub">Metas propuestas de cada indicador para concertar con su dependencia responsable.</div>
+                        </div>
+                        <div class="cn-filtros">
+                            <input type="search" id="cnBuscar" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en concertación">
+                            <select id="cnLinea" aria-label="Línea">
+                                <option value="">Línea: todas</option>
+                                <?php foreach (array_keys($cnLineas) as $cnCod): ?><option value="<?php echo htmlspecialchars($cnCod); ?>"><?php echo htmlspecialchars($cnCod); ?></option><?php endforeach; ?>
+                            </select>
+                            <span class="cn-contador" id="cnContador"><?php echo count($cnFilas); ?> indicadores</span>
+                        </div>
+                    </div>
+                    <?php if (empty($cnFilas)): ?>
+                    <div class="desarrollo-section">
+                        <div class="desarrollo-icon"><i class="fas fa-handshake"></i></div>
+                        <div class="desarrollo-title">SIN INDICADORES PARA CONCERTAR</div>
+                        <div class="desarrollo-subtitle">Cuando haya indicadores en Formulación aparecerán aquí con sus metas.</div>
+                    </div>
+                    <?php else: ?>
+                    <div class="cn-tabla-wrap">
+                        <table class="cn-tabla" id="cnTabla">
+                            <thead><tr>
+                                <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
+                                <th class="cn-num">Línea base</th><th class="cn-num">Semestre 1</th><th class="cn-num">Semestre 2</th><th class="cn-num">Meta del año</th><th>Estado</th>
+                            </tr></thead>
+                            <tbody>
+                            <?php foreach ($cnFilas as $cnR):
+                                $cnNombre = trim((string)($cnR['nombre_indicador'] ?? '')) !== '' ? $cnR['nombre_indicador'] : ($cnR['formula_medicion'] ?: $cnR['nombre_borrador']);
+                                $cnLmp = implode(' · ', array_filter([$cnR['linea_codigo'] ?? '', $cnR['motor_codigo'] ?? '', $cnR['proyecto_codigo'] ?? '']));
+                                $cnMeta = function ($v) { $v = trim((string)$v); return $v === '' ? '—' : htmlspecialchars($v); };
+                            ?>
+                            <tr data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
+                                data-buscar="<?php echo htmlspecialchars(mb_strtolower($cnNombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $cnLmp, 'UTF-8')); ?>">
+                                <td class="cn-nombre"><?php echo htmlspecialchars($cnNombre); ?></td>
+                                <td><span class="cn-lmp"><?php echo htmlspecialchars($cnLmp ?: '—'); ?></span></td>
+                                <td><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></td>
+                                <td class="cn-num"><?php echo $cnMeta($cnR['linea_base_meta'] ?? ''); ?></td>
+                                <td class="cn-num"><?php echo $cnMeta($cnR['meta_s1'] ?? ''); ?></td>
+                                <td class="cn-num"><?php echo $cnMeta($cnR['meta_s2'] ?? ''); ?></td>
+                                <td class="cn-num cn-anio"><?php echo $cnMeta($cnR['anio_base_meta'] ?? ''); ?></td>
+                                <td><span class="cn-estado <?php echo $cnR['_estado'] === 'Aprobado' ? 'ok' : ''; ?>"><?php echo $cnR['_estado']; ?></span></td>
+                            </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <div class="cn-vacio" id="cnVacio" hidden>Ningún indicador coincide con los filtros.</div>
+                    </div>
+                    <?php endif; ?>
+                    </div><!-- /evSubConcertacion -->
+                    </div><!-- /tab-content -->
                 </div>
                 </div>
         </div>
@@ -2682,7 +2783,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <ol class="small text-muted ps-3">
                         <li>Pulsa <strong>Exportar plantilla</strong> y abre el Excel. Tiene dos hojas: <strong>Formulación</strong> y <strong>Seguimiento</strong>.</li>
                         <li><strong>Formulación:</strong> corrige tus indicadores en borrador o agrega nuevos en las filas vacías (columna ID vacía).</li>
-                        <li><strong>Seguimiento:</strong> llena el avance de los indicadores ya publicados. No cambies la columna ID.</li>
+                        <li><strong>Seguimiento:</strong> llena el avance de los indicadores ya aprobados. No cambies la columna ID.</li>
                         <li>Guarda el archivo y súbelo aquí.</li>
                     </ol>
                     <input type="file" class="form-control" id="archivoPlantilla" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
@@ -5206,7 +5307,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const esAprobar = estado === 2;
             Swal.fire({
                 title: esAprobar ? '¿Aprobar y publicar?' : '¿Cancelar formulación?',
-                text: esAprobar ? 'Esta formulación pasará a estado PUBLICADO' : 'Esta formulación pasará a estado CANCELADO',
+                text: esAprobar ? 'Esta formulación pasará a estado APROBADO' : 'Esta formulación pasará a estado CANCELADO',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: esAprobar ? '#27AE60' : '#E74C3C',
@@ -5232,7 +5333,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function devolverABorrador(modulo, id) {
             Swal.fire({
                 title: '¿Devolver a borradores?',
-                text: 'El registro dejará de estar PUBLICADO y se reiniciará su flujo de aprobación',
+                text: 'El registro dejará de estar APROBADO y se reiniciará su flujo de aprobación',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#FF9500',
@@ -5419,7 +5520,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 : '';
             Swal.fire({
                 title: '¿Devolver todos a borrador?',
-                html: 'Se devolverán <strong>' + total + '</strong> registro(s) publicados de <strong>' + nombre + '</strong> a borrador y se reiniciará su semáforo de aprobación.' + extra +
+                html: 'Se devolverán <strong>' + total + '</strong> registro(s) aprobados de <strong>' + nombre + '</strong> a borrador y se reiniciará su semáforo de aprobación.' + extra +
                       '<br><br>Escribe <strong>DEVOLVER</strong> para confirmar.',
                 icon: 'warning',
                 input: 'text',
@@ -5620,6 +5721,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 calcularValorAnual();
             });
         });
+
+        /* ===== CONCERTACIÓN: búsqueda y filtro por línea ===== */
+        (function() {
+            const q = document.getElementById('cnBuscar'), l = document.getElementById('cnLinea');
+            if (!q || !l) return;
+            const filas = Array.from(document.querySelectorAll('#cnTabla tbody tr'));
+            function filtrar() {
+                const t = normFiltro(q.value);
+                let visibles = 0;
+                filas.forEach(function(r) {
+                    const ok = (!t || normFiltro(r.getAttribute('data-buscar')).indexOf(t) !== -1) && (!l.value || r.getAttribute('data-linea') === l.value);
+                    r.style.display = ok ? '' : 'none';
+                    if (ok) visibles++;
+                });
+                document.getElementById('cnContador').textContent = visibles + (visibles === 1 ? ' indicador' : ' indicadores');
+                const vacio = document.getElementById('cnVacio'); if (vacio) vacio.hidden = visibles > 0;
+            }
+            q.addEventListener('input', filtrar); l.addEventListener('change', filtrar);
+        })();
 
         /* ===== FILTRO DE LISTA ===== */
 

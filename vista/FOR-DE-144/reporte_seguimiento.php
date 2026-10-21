@@ -27,7 +27,7 @@ foreach ($indicadores as $r) {
 
     $sol = (int)($r['solicitud_estado_seguimiento'] ?? 0);
     $etapa = (int)($r['semaforo_etapa_seguimiento'] ?? 0);
-    if ((int)($r['estado_seguimiento'] ?? 0) === 2) { $estado = 'publicado'; $estadoTxt = 'Publicado'; $kpi['publicados']++; }
+    if ((int)($r['estado_seguimiento'] ?? 0) === 2) { $estado = 'publicado'; $estadoTxt = 'Aprobado'; $kpi['publicados']++; }
     elseif ($sol === 1) { $estado = 'revision'; $estadoTxt = 'En revisión · ' . ($etapas[min(4, $etapa + 1)] ?? ''); $kpi['revision']++; }
     elseif ($sol === 2) { $estado = 'devuelto'; $estadoTxt = 'Devuelto para ajustes'; $kpi['devueltos']++; }
     else { $estado = 'construccion'; $estadoTxt = $reportado ? 'En construcción' : 'Sin iniciar'; $kpi['construccion']++; }
@@ -139,7 +139,7 @@ tr:last-child td{border-bottom:0}
         <div>
             <small>Reporte de seguimiento · FOR-DE-144</small>
             <h1><?php echo $tituloF; ?> (<?php echo $anio; ?>)</h1>
-            <p>Estado actual de los indicadores publicados · actualizado <?php echo date('d/m/Y H:i'); ?></p>
+            <p>Estado actual de los indicadores aprobados · actualizado <?php echo date('d/m/Y H:i'); ?></p>
         </div>
         <div class="acc">
             <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144">‹ Volver</a>
@@ -148,7 +148,7 @@ tr:last-child td{border-bottom:0}
     </header>
 
     <section class="kpis" aria-label="Resumen">
-        <div class="kpi"><small>Indicadores</small><div class="v"><?php echo $kpi['total']; ?></div><div class="s">publicados en el plan</div></div>
+        <div class="kpi"><small>Indicadores</small><div class="v"><?php echo $kpi['total']; ?></div><div class="s">aprobados en el plan</div></div>
         <div class="kpi b"><small>Avance promedio</small><div class="v"><?php echo $fmt($promedio); ?>%</div><div class="s">meta del <?php echo $META; ?>%</div></div>
         <div class="kpi"><small>Cumplen la meta</small><div class="v"><?php echo $kpi['enMeta']; ?></div><div class="s">con avance ≥ <?php echo $META; ?>%</div></div>
         <div class="kpi a"><small>En camino</small><div class="v"><?php echo $kpi['enCamino']; ?></div><div class="s">con reporte, por debajo de la meta</div></div>
@@ -158,7 +158,7 @@ tr:last-child td{border-bottom:0}
     <section class="grid2">
         <div class="box">
             <h2>Avance por línea estratégica</h2>
-            <?php if (!$porLinea): ?><p class="vacio">Todavía no hay indicadores publicados.</p><?php endif; ?>
+            <?php if (!$porLinea): ?><p class="vacio">Todavía no hay indicadores aprobados.</p><?php endif; ?>
             <?php foreach ($porLinea as $cod => $l):
                 $prom = $l['con'] > 0 ? $l['suma'] / $l['con'] : 0; ?>
             <div class="bar-row">
@@ -179,7 +179,7 @@ tr:last-child td{border-bottom:0}
             </div>
             <h2 style="margin-top:20px">Estado del seguimiento</h2>
             <div class="est">
-                <span class="chip c-publicado">Publicados · <?php echo $kpi['publicados']; ?></span>
+                <span class="chip c-publicado">Aprobados · <?php echo $kpi['publicados']; ?></span>
                 <span class="chip c-revision">En revisión · <?php echo $kpi['revision']; ?></span>
                 <span class="chip c-devuelto">Devueltos · <?php echo $kpi['devueltos']; ?></span>
                 <span class="chip c-construccion">En construcción · <?php echo $kpi['construccion']; ?></span>
@@ -197,7 +197,7 @@ tr:last-child td{border-bottom:0}
             </select>
             <select id="fEstado" aria-label="Estado">
                 <option value="">Estado: todos</option>
-                <option value="publicado">Publicado</option><option value="revision">En revisión</option>
+                <option value="publicado">Aprobado</option><option value="revision">En revisión</option>
                 <option value="devuelto">Devuelto</option><option value="construccion">En construcción / sin iniciar</option>
             </select>
         </div>
@@ -228,7 +228,7 @@ tr:last-child td{border-bottom:0}
                 <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php if (!$filas): ?><p class="vacio">Todavía no hay indicadores publicados en este formulario.</p><?php endif; ?>
+            <?php if (!$filas): ?><p class="vacio">Todavía no hay indicadores aprobados en este formulario.</p><?php endif; ?>
             <p class="vacio" id="sinResultados" hidden>Ningún indicador coincide con los filtros.</p>
         </div>
     </section>
