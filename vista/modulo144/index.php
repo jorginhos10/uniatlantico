@@ -795,14 +795,22 @@ ob_start();
         .seg-input { font-size: 22px; font-weight: 800; min-height: 38px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
         .seg-tile-total { background: #E4EEF8; border-color: transparent; }
         .seg-tile-total .seg-num { color: #143163; }
-        .seg-estado-sem { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
-        .seg-estado-label { background: #E4EEF8; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #143163; }
+        /* Estado de proyectos: una tarjeta por semestre, con aire entre tarjetas y entre campos */
+        .seg-estado-sem { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 20px; align-items: stretch;
+                          background: #fff; border: 1px solid #E5E5EA; border-radius: 14px; padding: 16px; margin-bottom: 20px; }
+        .seg-estado-sem:last-child { margin-bottom: 0; }
+        .seg-estado-label { background: #E4EEF8; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #143163; min-height: 96px; }
         .seg-estado-label span { font-size: 11px; font-weight: 700; letter-spacing: .08em; }
-        .seg-estado-label b { font-size: 34px; font-weight: 800; line-height: 1; }
+        .seg-estado-label b { font-size: 36px; font-weight: 800; line-height: 1; }
+        .seg-estado-campos { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0 !important; }
+        .seg-estado-campos > [class*="col-"] { width: auto; max-width: none; padding: 0; margin: 0; }
+        .seg-estado-campos .form-label { margin-bottom: 6px; }
+        @media (max-width: 1200px) { .seg-estado-campos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 800px) {
-            .seg-estado-sem { grid-template-columns: minmax(0, 1fr); }
-            .seg-estado-label { flex-direction: row; justify-content: flex-start; gap: 8px; padding: 6px 14px; }
-            .seg-estado-label b { font-size: 20px; }
+            .seg-estado-sem { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 14px; }
+            .seg-estado-label { flex-direction: row; justify-content: flex-start; gap: 10px; padding: 8px 14px; min-height: 0; }
+            .seg-estado-label b { font-size: 22px; }
+            .seg-estado-campos { grid-template-columns: minmax(0, 1fr); gap: 12px; }
         }
         .seg-sems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
         .seg-sem { background: #fff; border: 1px solid #E5E5EA; border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
@@ -2764,8 +2772,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </span>
                                     </div>
                                     <input type="number" class="form-control seg-input" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
-                                    <label class="form-label mb-0" for="seguimiento_descripcion_sem1">DESCRIPCIÓN DEL SEMESTRE 1</label>
-                                    <textarea class="form-control" name="descripcion_sem1" id="seguimiento_descripcion_sem1" rows="3" oninput="autoGuardarSeguimiento()" placeholder="Describe el avance del semestre 1..."></textarea>
                                 </div>
                                 <div class="seg-sem">
                                     <div class="seg-sem-head">
@@ -2777,8 +2783,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         </span>
                                     </div>
                                     <input type="number" class="form-control seg-input" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
-                                    <label class="form-label mb-0" for="seguimiento_descripcion_sem2">DESCRIPCIÓN DEL SEMESTRE 2</label>
-                                    <textarea class="form-control" name="descripcion_sem2" id="seguimiento_descripcion_sem2" rows="3" oninput="autoGuardarSeguimiento()" placeholder="Describe el avance del semestre 2..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -4790,8 +4794,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     fecha_seguimiento: $('#seguimiento_fecha').val(),
                     semestre1_seguimiento: $('#seguimiento_semestre1').val(),
                     semestre2_seguimiento: $('#seguimiento_semestre2').val(),
-                    descripcion_sem1: $('#seguimiento_descripcion_sem1').val(),
-                    descripcion_sem2: $('#seguimiento_descripcion_sem2').val(),
                     meta_programada: $('#seguimiento_meta_programada').val(),
                     meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
                     porcentaje_avance: $('#seguimiento_porcentaje').val(),
@@ -5121,8 +5123,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_indicador').val(b.indicador);
                             $('#seguimiento_fecha').val(b.fecha_seguimiento);
                             $('#seguimiento_semestre1').val(b.semestre1_seguimiento);
-                            $('#seguimiento_descripcion_sem1').val(b.descripcion_sem1 || '');
-                            $('#seguimiento_descripcion_sem2').val(b.descripcion_sem2 || '');
                             $('#seguimiento_semestre2').val(b.semestre2_seguimiento);
                             $('#seguimiento_meta_programada').val(b.meta_programada);
                             $('#seguimiento_meta_ejecutada').val(b.meta_ejecutada);
@@ -5327,8 +5327,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function aplicarBloqueoSemestres() {
             if (BLOQUEO_SEM1) $('#seguimiento_logros, #seguimiento_limites, #seguimiento_observacion_estado, #seguimiento_acciones_fortalecimiento').prop('disabled', true);
             if (BLOQUEO_SEM2) $('#seguimiento_logros_sem2, #seguimiento_limites_sem2, #seguimiento_observacion_estado_sem2, #seguimiento_acciones_fortalecimiento_sem2').prop('disabled', true);
-            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_descripcion_sem1, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
-            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #seguimiento_descripcion_sem2, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
+            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
+            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
             const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
             $('#segBloqueoAviso').toggle(bloqueados.length > 0)
                 .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador de este formulario.');
