@@ -1558,6 +1558,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <i class="fas fa-chart-pie me-2"></i>EVALUACIÓN LÍNEAS
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelConcertacion" type="button" role="tab">
+                    <i class="fas fa-handshake me-2"></i>CONCERTACIONES
+                </button>
+            </li>
         </ul>
 
         <div class="tab-content" id="moduloTabsTopContent">
@@ -2108,16 +2113,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                 </div>
                 <div class="p-4">
-                    <ul class="nav nav-pills ev-subtabs mb-4" id="evSubTabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#evSubResumen" type="button" role="tab"><i class="fas fa-chart-pie me-2"></i>Evaluación</button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#evSubConcertacion" type="button" role="tab"><i class="fas fa-handshake me-2"></i>Concertación</button>
-                        </li>
-                    </ul>
-                    <div class="tab-content">
-                    <div class="tab-pane fade show active" id="evSubResumen" role="tabpanel">
                     <?php
                     $evInforme = $informe_resumen ?? ['global_cumplimiento' => 0, 'lineas' => []];
                     $evLineas  = $evInforme['lineas'] ?? [];
@@ -2213,9 +2208,19 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         </div>
                     </div>
                     <?php endif; ?>
-                    </div><!-- /evSubResumen -->
+                </div>
+                </div>
 
-                    <div class="tab-pane fade" id="evSubConcertacion" role="tabpanel">
+            <!-- CONCERTACIONES -->
+            <div class="tab-pane fade" id="panelConcertacion" role="tabpanel">
+                <div class="modulo-panel-header" style="background: linear-gradient(135deg, #143163 0%, #1D71B8 100%);">
+                    <i class="fas fa-handshake fa-2x me-3"></i>
+                    <div>
+                        <span class="modulo-panel-title">CONCERTACIONES</span><br>
+                        <small>Metas propuestas de cada indicador para concertar con su dependencia responsable</small>
+                    </div>
+                </div>
+                <div class="p-4">
                     <?php
                     // Metas propuestas de cada indicador (lo que se concierta con la dependencia responsable)
                     $cnFilas = [];
@@ -2280,10 +2285,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="cn-vacio" id="cnVacio" hidden>Ningún indicador coincide con los filtros.</div>
                     </div>
                     <?php endif; ?>
-                    </div><!-- /evSubConcertacion -->
-                    </div><!-- /tab-content -->
                 </div>
-                </div>
+            </div>
         </div>
         <!-- /Pestañas principales -->
 
