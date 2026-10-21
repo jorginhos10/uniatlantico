@@ -795,6 +795,15 @@ ob_start();
         .seg-input { font-size: 22px; font-weight: 800; min-height: 38px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
         .seg-tile-total { background: #E4EEF8; border-color: transparent; }
         .seg-tile-total .seg-num { color: #143163; }
+        .seg-estado-sem { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; align-items: stretch; margin-bottom: 12px; }
+        .seg-estado-label { background: #E4EEF8; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; color: #143163; }
+        .seg-estado-label span { font-size: 11px; font-weight: 700; letter-spacing: .08em; }
+        .seg-estado-label b { font-size: 34px; font-weight: 800; line-height: 1; }
+        @media (max-width: 800px) {
+            .seg-estado-sem { grid-template-columns: minmax(0, 1fr); }
+            .seg-estado-label { flex-direction: row; justify-content: flex-start; gap: 8px; padding: 6px 14px; }
+            .seg-estado-label b { font-size: 20px; }
+        }
         .seg-sems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
         .seg-sem { background: #fff; border: 1px solid #E5E5EA; border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
         .seg-sem-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -2776,11 +2785,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
                         <div class="indicador-section field-group">
                             <h5 class="indicador-title"><i class="fas fa-chart-line me-2"></i>ESTADO DE PROYECTOS</h5>
-                            <div class="row">
-                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
-                                <div class="col-12 col-md-6 col-xl-3 mb-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                            <div class="seg-estado-sem">
+                                <div class="seg-estado-label"><span>SEMESTRE</span><b>1</b></div>
+                                <div class="row g-3 seg-estado-campos">
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros" id="seguimiento_logros" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites" id="seguimiento_limites" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado" id="seguimiento_observacion_estado" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento" id="seguimiento_acciones_fortalecimiento" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                </div>
+                            </div>
+                            <div class="seg-estado-sem">
+                                <div class="seg-estado-label"><span>SEMESTRE</span><b>2</b></div>
+                                <div class="row g-3 seg-estado-campos">
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">LOGROS</label><textarea class="form-control" name="logros_sem2" id="seguimiento_logros_sem2" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">LÍMITES</label><textarea class="form-control" name="limites_sem2" id="seguimiento_limites_sem2" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">OBSERVACIÓN</label><textarea class="form-control" name="observacion_estado_sem2" id="seguimiento_observacion_estado_sem2" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                    <div class="col-12 col-md-6 col-xl-3"><label class="form-label">ACCIONES DE FORTALECIMIENTO</label><textarea class="form-control" name="acciones_fortalecimiento_sem2" id="seguimiento_acciones_fortalecimiento_sem2" rows="4" oninput="autoGuardarSeguimiento()"></textarea></div>
+                                </div>
                             </div>
                         </div>
 
@@ -4779,7 +4800,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     logros: $('#seguimiento_logros').val(),
                     limites: $('#seguimiento_limites').val(),
                     observacion_estado: $('#seguimiento_observacion_estado').val(),
-                    acciones_fortalecimiento: $('#seguimiento_acciones_fortalecimiento').val()
+                    acciones_fortalecimiento: $('#seguimiento_acciones_fortalecimiento').val(),
+                    logros_sem2: $('#seguimiento_logros_sem2').val(),
+                    limites_sem2: $('#seguimiento_limites_sem2').val(),
+                    observacion_estado_sem2: $('#seguimiento_observacion_estado_sem2').val(),
+                    acciones_fortalecimiento_sem2: $('#seguimiento_acciones_fortalecimiento_sem2').val()
                 };
                 
                 $.ajax({
@@ -5108,6 +5133,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_limites').val(b.limites);
                             $('#seguimiento_observacion_estado').val(b.observacion_estado);
                             $('#seguimiento_acciones_fortalecimiento').val(b.acciones_fortalecimiento);
+                            $('#seguimiento_logros_sem2').val(b.logros_sem2 || '');
+                            $('#seguimiento_limites_sem2').val(b.limites_sem2 || '');
+                            $('#seguimiento_observacion_estado_sem2').val(b.observacion_estado_sem2 || '');
+                            $('#seguimiento_acciones_fortalecimiento_sem2').val(b.acciones_fortalecimiento_sem2 || '');
                             cargarDatosFormulacionEnSeguimiento(b);
                             calcularCumplimientoSeguimiento();
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
@@ -5296,6 +5325,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
 
         function aplicarBloqueoSemestres() {
+            if (BLOQUEO_SEM1) $('#seguimiento_logros, #seguimiento_limites, #seguimiento_observacion_estado, #seguimiento_acciones_fortalecimiento').prop('disabled', true);
+            if (BLOQUEO_SEM2) $('#seguimiento_logros_sem2, #seguimiento_limites_sem2, #seguimiento_observacion_estado_sem2, #seguimiento_acciones_fortalecimiento_sem2').prop('disabled', true);
             if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_descripcion_sem1, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
             if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #seguimiento_descripcion_sem2, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
             const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);

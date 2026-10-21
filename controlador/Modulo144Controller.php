@@ -453,8 +453,10 @@ class Modulo144Controller {
             // Semestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
             if ($modulo === 'seguimiento' && $itemActual) {
                 $bl = $this->semestresBloqueados($itemActual);
-                if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['descripcion_sem1']);
-                if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['descripcion_sem2']);
+                if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['descripcion_sem1'],
+                    $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
+                if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['descripcion_sem2'],
+                    $_POST['logros_sem2'], $_POST['limites_sem2'], $_POST['observacion_estado_sem2'], $_POST['acciones_fortalecimiento_sem2']);
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);

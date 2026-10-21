@@ -81,7 +81,8 @@ class Modulo144Model {
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
                                    'semestre1_seguimiento', 'semestre2_seguimiento', 'descripcion_sem1', 'descripcion_sem2',
-                                   'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'],
+                                   'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento',
+                                   'logros_sem2', 'limites_sem2', 'observacion_estado_sem2', 'acciones_fortalecimiento_sem2'],
             'campos_vista' => [
                 'INDICADOR' => 'indicador',
                 'META PROGRAMADA' => 'meta_programada',
@@ -1417,6 +1418,11 @@ class Modulo144Model {
             $cols = [
                 ['formulacion_144', 'descripcion_sem1', 'TEXT NULL'],
                 ['formulacion_144', 'descripcion_sem2', 'TEXT NULL'],
+                // Estado de proyectos del semestre 2 (logros, limites, observacion_estado y acciones_fortalecimiento son los del semestre 1)
+                ['formulacion_144', 'logros_sem2', 'TEXT NULL'],
+                ['formulacion_144', 'limites_sem2', 'TEXT NULL'],
+                ['formulacion_144', 'observacion_estado_sem2', 'TEXT NULL'],
+                ['formulacion_144', 'acciones_fortalecimiento_sem2', 'TEXT NULL'],
                 ['formulacion_distribucion_facultad_144', 'seguimiento_descripcion2', 'TEXT NULL'],
             ];
             foreach ($cols as [$tabla, $col, $def]) {
