@@ -2714,6 +2714,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="col-12 col-md-12 col-xxl-6"><label class="form-label text-muted">FÓRMULA DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_formula_medicion_view" style="min-height:64px;">-</div></div>
                                 <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">UNIDAD DE MEDIDA</label><div class="bg-light-view" id="seguimiento_unidad_medida_view">-</div></div>
                                 <div class="col-12 col-md-6 col-xxl-3"><label class="form-label text-muted">TIPO DE MEDICIÓN</label><div class="bg-light-view" id="seguimiento_tipo_medicion_view">-</div></div>
+                                <div class="col-12"><label class="form-label text-muted">DESCRIPCIÓN DEL INDICADOR</label><div class="bg-light-view" id="seguimiento_descripcion_indicador_view" style="min-height:64px; white-space:pre-line;">-</div></div>
                             </div>
                         </details>
 
@@ -4678,6 +4679,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#seguimiento_frecuencia_medicion_view').text(b.frecuencia_medicion || '-');
             $('#seguimiento_unidad_medida_view').text(b.unidad_medida || '-');
             $('#seguimiento_tipo_medicion_view').text(b.tipo_medicion || '-');
+            $('#seguimiento_descripcion_indicador_view').text(b.descripcion_indicador || '-');
             $('#seguimiento_ponderacion_proyectos_view').text(b.ponderacion_proyectos ? b.ponderacion_proyectos + '%' : '-');
             $('#seguimiento_actividad_view').text(b.actividad_proyecto || '-');
             $('#seguimiento_ponderacion_actividades_view').text(b.ponderacion_actividades ? b.ponderacion_actividades + '%' : '-');
