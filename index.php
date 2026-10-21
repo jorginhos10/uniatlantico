@@ -299,6 +299,11 @@ switch ($action) {
                 $forde144Controller->informePage($id);
                 break;
 
+            case 'reporteSeguimiento':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->reporteSeguimientoPage($id);
+                break;
+
             case 'verificarDisponibilidad':
                 $forde144Controller->verificarDisponibilidad();
                 break;

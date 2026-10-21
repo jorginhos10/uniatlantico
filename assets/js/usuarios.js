@@ -1406,24 +1406,55 @@ class UsuariosManager {
     // Mostrar modal para restablecer contraseña
     showResetPasswordModal(userId, userName) {
         Swal.fire({
-            title: 'Restablecer Contraseña',
+            title: 'Restablecer contraseña',
             html: `
-                <div style="text-align: left;">
-                    <p>¿Deseas restablecer la contraseña de <strong>${userName}</strong>?</p>
-                    <div style="margin-top: 15px;">
-                        <label for="newPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Nueva contraseña:</label>
-                        <input type="password" id="newPassword" class="swal2-input" placeholder="Mínimo 6 caracteres" style="width: 100%;">
+                <div class="rp-form">
+                    <p class="rp-intro">Vas a restablecer la contraseña de <strong>${userName}</strong>.</p>
+                    <div class="rp-campo">
+                        <label for="newPassword">Nueva contraseña</label>
+                        <div class="rp-input-wrap">
+                            <input type="password" id="newPassword" class="rp-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                            <button type="button" class="rp-ojo" data-objetivo="newPassword" aria-label="Mostrar u ocultar la contraseña" title="Mostrar u ocultar"><i class="fas fa-eye"></i></button>
+                        </div>
                     </div>
-                    <div style="margin-top: 10px;">
-                        <label for="confirmPassword" style="display: block; margin-bottom: 5px; font-weight: bold;">Confirmar contraseña:</label>
-                        <input type="password" id="confirmPassword" class="swal2-input" placeholder="Confirmar contraseña" style="width: 100%;">
+                    <div class="rp-campo">
+                        <label for="confirmPassword">Confirmar contraseña</label>
+                        <div class="rp-input-wrap">
+                            <input type="password" id="confirmPassword" class="rp-input" placeholder="Repite la contraseña" autocomplete="new-password">
+                            <button type="button" class="rp-ojo" data-objetivo="confirmPassword" aria-label="Mostrar u ocultar la confirmación" title="Mostrar u ocultar"><i class="fas fa-eye"></i></button>
+                        </div>
+                        <small class="rp-ayuda" id="rpAyuda">Usa al menos 6 caracteres.</small>
                     </div>
                 </div>
             `,
+            width: 440,
+            customClass: { popup: 'rp-popup', confirmButton: 'rp-btn-confirmar', cancelButton: 'rp-btn-cancelar' },
             showCancelButton: true,
             confirmButtonText: 'Restablecer',
             cancelButtonText: 'Cancelar',
             focusConfirm: false,
+            didOpen: (popup) => {
+                const nueva = popup.querySelector('#newPassword');
+                const conf = popup.querySelector('#confirmPassword');
+                const ayuda = popup.querySelector('#rpAyuda');
+                const revisar = () => {
+                    ayuda.classList.remove('rp-ok', 'rp-mal');
+                    if (!conf.value) { ayuda.textContent = 'Usa al menos 6 caracteres.'; return; }
+                    if (nueva.value === conf.value) { ayuda.textContent = 'Las contraseñas coinciden.'; ayuda.classList.add('rp-ok'); }
+                    else { ayuda.textContent = 'Las contraseñas no coinciden todavía.'; ayuda.classList.add('rp-mal'); }
+                };
+                nueva.addEventListener('input', revisar);
+                conf.addEventListener('input', revisar);
+                popup.querySelectorAll('.rp-ojo').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const campo = popup.querySelector('#' + btn.dataset.objetivo);
+                        const visible = campo.type === 'text';
+                        campo.type = visible ? 'password' : 'text';
+                        btn.querySelector('i').className = visible ? 'fas fa-eye' : 'fas fa-eye-slash';
+                    });
+                });
+                nueva.focus();
+            },
             preConfirm: () => {
                 const newPassword = document.getElementById('newPassword').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;

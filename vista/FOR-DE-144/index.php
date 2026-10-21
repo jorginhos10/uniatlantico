@@ -639,7 +639,7 @@ $fl_etiquetas = [
             $formulario = $it['f'];
             $est = $it['estado'];
             $puedeConstruir = in_array($est, ['abierto', 'libre'], true);
-            $tieneMenu = $perms_f144['editar'] || $perms_f144['eliminar'];
+            $tieneMenu = $perms_f144['editar'] || $perms_f144['eliminar'] || $perms_f144['informe'];
         ?>
         <article class="fl-item" id="formulario-<?php echo $formulario['id']; ?>"
                  data-estado="<?php echo $est; ?>"
@@ -687,6 +687,12 @@ $fl_etiquetas = [
                         <i class="fas fa-ellipsis-h"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end fl-menu">
+                        <?php if ($perms_f144['informe']): ?>
+                        <li><a class="dropdown-item" target="_blank" href="<?php echo Config::getBasePath(); ?>/FOR-DE-144?action=reporteSeguimiento&id=<?php echo $formulario['id']; ?>"><i class="fas fa-chart-line"></i> Reporte de seguimiento</a></li>
+                        <?php endif; ?>
+                        <?php if ($perms_f144['informe'] && ($perms_f144['editar'] || $perms_f144['eliminar'])): ?>
+                        <li><hr class="dropdown-divider"></li>
+                        <?php endif; ?>
                         <?php if ($perms_f144['editar']): ?>
                         <li><button type="button" class="dropdown-item" onclick="editarFormulario(<?php echo $formulario['id']; ?>)"><i class="fas fa-pen"></i> Editar datos y fechas</button></li>
                         <?php endif; ?>

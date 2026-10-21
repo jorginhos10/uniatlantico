@@ -511,5 +511,50 @@ class FORDE144Model {
             return false;
         }
     }
+
+    // Estado actual de los indicadores publicados de un formulario (landing "Reporte de seguimiento")
+    public function getReporteSeguimiento($formulario_id) {
+        $res = ['indicadores' => [], 'evidencias' => []];
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT f.id, f.nombre_borrador, f.nombre_indicador, f.formula_medicion, f.linea_estrategica, f.responsable_formulacion,
+                        f.tipo_medicion, f.unidad_medida, f.meta_programada, f.meta_ejecutada, f.porcentaje_avance,
+                        f.semestre1_seguimiento, f.semestre2_seguimiento, f.estado_seguimiento,
+                        f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento,
+                        le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo
+                 FROM formulacion_144 f
+                 LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                 LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
+                 ORDER BY le.codigo ASC, m.codigo ASC, p.codigo ASC, f.id ASC"
+            );
+            $stmt->execute([':fid' => (int)$formulario_id]);
+            $res['indicadores'] = $stmt->fetchAll();
+        } catch (PDOException $e) {
+            error_log('Error getReporteSeguimiento: ' . $e->getMessage());
+            return $res;
+        }
+        // Evidencias por indicador y semestre (la tabla se crea al cargar la primera evidencia)
+        try {
+            if ($this->db->query("SHOW TABLES LIKE 'evidencias_144'")->rowCount() > 0) {
+                $tieneSem = $this->db->query("SHOW COLUMNS FROM evidencias_144 LIKE 'semestre'")->rowCount() > 0;
+                $sql = $tieneSem
+                    ? "SELECT e.formulacion_id, e.semestre, COUNT(*) AS n FROM evidencias_144 e JOIN formulacion_144 f ON f.id = e.formulacion_id
+                       WHERE f.formulario_id = :fid GROUP BY e.formulacion_id, e.semestre"
+                    : "SELECT e.formulacion_id, 1 AS semestre, COUNT(*) AS n FROM evidencias_144 e JOIN formulacion_144 f ON f.id = e.formulacion_id
+                       WHERE f.formulario_id = :fid GROUP BY e.formulacion_id";
+                $q = $this->db->prepare($sql);
+                $q->execute([':fid' => (int)$formulario_id]);
+                foreach ($q->fetchAll() as $r) {
+                    $sem = (int)$r['semestre'] === 2 ? 2 : 1;
+                    $res['evidencias'][(int)$r['formulacion_id']][$sem] = ($res['evidencias'][(int)$r['formulacion_id']][$sem] ?? 0) + (int)$r['n'];
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('Error evidencias del reporte: ' . $e->getMessage());
+        }
+        return $res;
+    }
 }
 ?>

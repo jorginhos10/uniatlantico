@@ -1190,3 +1190,27 @@
 .usr-deps-item input { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
 .usr-deps-resumen { border-top: 1px solid #e5e5ea; padding: 6px 10px; font-size: 0.78rem; color: #6e6e73; background: #fafafa; }
 .usr-deps-ayuda { display: block; margin-top: 4px; font-size: 0.76rem; color: #86868b; }
+
+/* ═══ Modal "Restablecer contraseña" ═══ */
+.rp-popup { padding: 1.6rem 1.6rem 1.4rem !important; border-radius: 16px !important; }
+.rp-popup .swal2-title { font-size: 1.35rem; padding: 0 0 .25rem; color: #1d1d1f; }
+.rp-popup .swal2-html-container { margin: .6rem 0 0; padding: 0; overflow: visible; }
+.rp-form { display: grid; gap: 18px; text-align: left; }
+.rp-intro { margin: 0; color: #5b6479; font-size: .95rem; line-height: 1.4; }
+.rp-intro strong { color: #143163; }
+.rp-campo { display: grid; gap: 6px; }
+.rp-campo label { font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #424245; margin: 0; }
+.rp-input-wrap { position: relative; }
+.rp-input { width: 100%; box-sizing: border-box; margin: 0; height: 46px; padding: 0 46px 0 14px; font-size: 1rem;
+            border: 1px solid #d2d2d7; border-radius: 10px; background: #fff; color: #1d1d1f; transition: border-color .15s, box-shadow .15s; }
+.rp-input::placeholder { color: #9aa1b2; }
+.rp-input:focus { outline: none; border-color: #143163; box-shadow: 0 0 0 3px rgba(20, 49, 99, .15); }
+.rp-ojo { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 34px; height: 34px; border: 0; border-radius: 8px;
+          background: transparent; color: #6e6e73; cursor: pointer; display: grid; place-items: center; }
+.rp-ojo:hover { background: #f0f2f7; color: #143163; }
+.rp-ayuda { color: #6e6e73; font-size: .8rem; min-height: 1.1em; }
+.rp-ayuda.rp-ok { color: #1f8a4c; }
+.rp-ayuda.rp-mal { color: #b45309; }
+.rp-popup .swal2-actions { margin-top: 1.4rem; gap: 10px; }
+.rp-btn-confirmar { background: #143163 !important; border-radius: 10px !important; padding: .65rem 1.4rem !important; font-weight: 600 !important; }
+.rp-btn-cancelar { background: #eceef4 !important; color: #424245 !important; border-radius: 10px !important; padding: .65rem 1.4rem !important; font-weight: 600 !important; }
