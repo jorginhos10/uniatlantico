@@ -1033,6 +1033,24 @@ ob_start();
         .cn-lmp { display: inline-block; background: #E4EEF8; color: #1D71B8; font-weight: 700; font-size: .75rem; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
         .cn-estado { font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
         .cn-estado.ok { background: #E3F4EA; color: #1F8A4C; }
+        .cn-fila { cursor: pointer; }
+        .cn-fila:hover td { background: #F5F8FC; }
+        .cn-prog { display: inline-block; min-width: 54px; text-align: center; font-weight: 700; font-size: .8rem; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
+        .cn-prog.ok { background: #E3F4EA; color: #1F8A4C; }
+        .cn-abrir { border: 0; background: #E7ECF5; color: #143163; font-weight: 700; font-size: .8rem; border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+        .cn-abrir:hover { background: #143163; color: #fff; }
+        .cn-modal-tabla thead th { background: #E7ECF5; color: #5b6479; font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; vertical-align: middle; }
+        .cn-modal-tabla td { vertical-align: middle; }
+        .cn-hecha { font-weight: 700; font-variant-numeric: tabular-nums; }
+        .cn-hecha small { display: block; font-weight: 400; color: #6E6E73; max-width: 220px; white-space: normal; line-height: 1.25; }
+        .cn-celda { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 190px; }
+        .cn-celda input { width: 90px; border: 1px solid #D2D2D7; border-radius: 8px; padding: 5px 8px; font-size: .85rem; }
+        .cn-btn { border: 0; border-radius: 8px; padding: 6px 12px; font-size: .8rem; font-weight: 700; cursor: pointer; background: #143163; color: #fff; }
+        .cn-btn.sec { background: #E7ECF5; color: #143163; }
+        .cn-btn:disabled { opacity: .5; cursor: wait; }
+        .cn-ok { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: .8rem; color: #1F8A4C; background: #E3F4EA; border-radius: 99px; padding: 4px 10px; }
+        .cn-pend { font-size: .8rem; color: #8A5A00; background: #FDF1D6; border-radius: 99px; padding: 4px 10px; font-weight: 600; }
+        .cn-sin { color: #6E6E73; font-size: .82rem; }
         .cn-vacio { text-align: center; color: #6E6E73; padding: 24px; }
         .ev-nota { font-size: .76rem; color: #6E6E73; margin-top: 14px; line-height: 1.5; }
 
@@ -1554,13 +1572,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <?php $primer_modulo_tab = false; ?>
             <?php endforeach; ?>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelEvaluacion" type="button" role="tab">
-                    <i class="fas fa-chart-pie me-2"></i>EVALUACIÓN LÍNEAS
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelConcertacion" type="button" role="tab">
+                    <i class="fas fa-handshake me-2"></i>CONCERTACIONES
                 </button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelConcertacion" type="button" role="tab">
-                    <i class="fas fa-handshake me-2"></i>CONCERTACIONES
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#panelEvaluacion" type="button" role="tab">
+                    <i class="fas fa-chart-pie me-2"></i>EVALUACIÓN LÍNEAS
                 </button>
             </li>
         </ul>
@@ -2217,31 +2235,30 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <i class="fas fa-handshake fa-2x me-3"></i>
                     <div>
                         <span class="modulo-panel-title">CONCERTACIONES</span><br>
-                        <small>Metas propuestas de cada indicador para concertar con su dependencia responsable</small>
+                        <small>Lo que reportan las facultades se concierta aquí contra su meta propuesta</small>
                     </div>
                 </div>
                 <div class="p-4">
                     <?php
-                    // Metas propuestas de cada indicador (lo que se concierta con la dependencia responsable)
-                    $cnFilas = [];
-                    foreach (['publicados' => 'Aprobado', 'borradores' => 'Borrador'] as $cnGrupo => $cnEtiqueta) {
-                        $cnLista = $cnGrupo === 'publicados' ? ($publicadosVisiblesPorModulo['formulacion'] ?? []) : ($borradoresVisiblesPorModulo['formulacion'] ?? []);
-                        foreach ($cnLista as $cnR) { $cnR['_estado'] = $cnEtiqueta; $cnFilas[] = $cnR; }
-                    }
+                    // Indicadores aprobados que tienen meta por facultad: lo que cada facultad reporta se concierta aquí
+                    $cnFilas = array_values(array_filter($publicadosVisiblesPorModulo['formulacion'] ?? [], function ($r) use ($facultades_por_item) {
+                        return !empty($facultades_por_item[(int)$r['id']]);
+                    }));
                     usort($cnFilas, function ($a, $b) {
                         return strcmp(($a['linea_codigo'] ?? '~') . ($a['motor_codigo'] ?? '~') . ($a['proyecto_codigo'] ?? '~'), ($b['linea_codigo'] ?? '~') . ($b['motor_codigo'] ?? '~') . ($b['proyecto_codigo'] ?? '~'));
                     });
+                    $cnResumen = $resumen_concertaciones ?? [];
                     $cnLineas = [];
                     foreach ($cnFilas as $cnR) { if (!empty($cnR['linea_codigo'])) $cnLineas[$cnR['linea_codigo']] = true; }
                     ksort($cnLineas);
                     ?>
                     <div class="cn-intro">
                         <div>
-                            <div class="cn-titulo">Concertación de metas</div>
-                            <div class="cn-sub">Metas propuestas de cada indicador para concertar con su dependencia responsable.</div>
+                            <div class="cn-titulo">Concertación del seguimiento por facultades</div>
+                            <div class="cn-sub">Abre un indicador para ver todas sus facultades: la meta propuesta, la meta hecha en cada semestre y concertarla.</div>
                         </div>
                         <div class="cn-filtros">
-                            <input type="search" id="cnBuscar" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en concertación">
+                            <input type="search" id="cnBuscar" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en concertaciones">
                             <select id="cnLinea" aria-label="Línea">
                                 <option value="">Línea: todas</option>
                                 <?php foreach (array_keys($cnLineas) as $cnCod): ?><option value="<?php echo htmlspecialchars($cnCod); ?>"><?php echo htmlspecialchars($cnCod); ?></option><?php endforeach; ?>
@@ -2252,32 +2269,32 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <?php if (empty($cnFilas)): ?>
                     <div class="desarrollo-section">
                         <div class="desarrollo-icon"><i class="fas fa-handshake"></i></div>
-                        <div class="desarrollo-title">SIN INDICADORES PARA CONCERTAR</div>
-                        <div class="desarrollo-subtitle">Cuando haya indicadores en Formulación aparecerán aquí con sus metas.</div>
+                        <div class="desarrollo-title">SIN INDICADORES POR FACULTAD</div>
+                        <div class="desarrollo-subtitle">Aquí aparecen los indicadores aprobados que tienen meta asignada a las facultades.</div>
                     </div>
                     <?php else: ?>
                     <div class="cn-tabla-wrap">
                         <table class="cn-tabla" id="cnTabla">
                             <thead><tr>
                                 <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
-                                <th class="cn-num">Línea base</th><th class="cn-num">Semestre 1</th><th class="cn-num">Semestre 2</th><th class="cn-num">Meta del año</th><th>Estado</th>
+                                <th class="cn-num">Facultades</th><th class="cn-num">Semestre 1</th><th class="cn-num">Semestre 2</th><th></th>
                             </tr></thead>
                             <tbody>
                             <?php foreach ($cnFilas as $cnR):
+                                $cnId = (int)$cnR['id'];
                                 $cnNombre = trim((string)($cnR['nombre_indicador'] ?? '')) !== '' ? $cnR['nombre_indicador'] : ($cnR['formula_medicion'] ?: $cnR['nombre_borrador']);
                                 $cnLmp = implode(' · ', array_filter([$cnR['linea_codigo'] ?? '', $cnR['motor_codigo'] ?? '', $cnR['proyecto_codigo'] ?? '']));
-                                $cnMeta = function ($v) { $v = trim((string)$v); return $v === '' ? '—' : htmlspecialchars($v); };
+                                $cnRes = $cnResumen[$cnId] ?? ['facultades' => count($facultades_por_item[$cnId] ?? []), 's1' => 0, 's2' => 0];
                             ?>
-                            <tr data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
-                                data-buscar="<?php echo htmlspecialchars(mb_strtolower($cnNombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $cnLmp, 'UTF-8')); ?>">
+                            <tr class="cn-fila" data-id="<?php echo $cnId; ?>" data-total="<?php echo (int)$cnRes['facultades']; ?>" data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
+                                data-buscar="<?php echo htmlspecialchars(mb_strtolower($cnNombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $cnLmp, 'UTF-8')); ?>" onclick="abrirConcertacion(<?php echo $cnId; ?>)">
                                 <td class="cn-nombre"><?php echo htmlspecialchars($cnNombre); ?></td>
                                 <td><span class="cn-lmp"><?php echo htmlspecialchars($cnLmp ?: '—'); ?></span></td>
                                 <td><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></td>
-                                <td class="cn-num"><?php echo $cnMeta($cnR['linea_base_meta'] ?? ''); ?></td>
-                                <td class="cn-num"><?php echo $cnMeta($cnR['meta_s1'] ?? ''); ?></td>
-                                <td class="cn-num"><?php echo $cnMeta($cnR['meta_s2'] ?? ''); ?></td>
-                                <td class="cn-num cn-anio"><?php echo $cnMeta($cnR['anio_base_meta'] ?? ''); ?></td>
-                                <td><span class="cn-estado <?php echo $cnR['_estado'] === 'Aprobado' ? 'ok' : ''; ?>"><?php echo $cnR['_estado']; ?></span></td>
+                                <td class="cn-num"><?php echo (int)$cnRes['facultades']; ?></td>
+                                <td class="cn-num"><span class="cn-prog cn-s1 <?php echo $cnRes['s1'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>"><?php echo (int)$cnRes['s1']; ?>/<?php echo (int)$cnRes['facultades']; ?></span></td>
+                                <td class="cn-num"><span class="cn-prog cn-s2 <?php echo $cnRes['s2'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>"><?php echo (int)$cnRes['s2']; ?>/<?php echo (int)$cnRes['facultades']; ?></span></td>
+                                <td class="cn-num"><button type="button" class="cn-abrir" onclick="event.stopPropagation(); abrirConcertacion(<?php echo $cnId; ?>)">Concertar <i class="fas fa-chevron-right"></i></button></td>
                             </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -2987,6 +3004,40 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA: concertación de un indicador (todas sus facultades) -->
+    <div class="modal fade" id="modalConcertacion" tabindex="-1" aria-labelledby="cnTituloModal" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#143163; color:#fff;">
+                    <h5 class="modal-title" id="cnTituloModal"><i class="fas fa-handshake me-2"></i>Concertación</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="fw-bold mb-1" id="cnIndicador"></div>
+                    <p class="text-muted small mb-3" id="cnAyuda">La meta hecha es la que registró cada facultad. Al concertarla queda aceptada para el semestre.</p>
+                    <div class="alert alert-danger py-2 small" id="cnError" style="display:none;"></div>
+                    <div class="table-responsive">
+                        <table class="table align-middle cn-modal-tabla" id="cnFacTabla">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Facultad</th>
+                                    <th rowspan="2" class="text-end">Meta propuesta</th>
+                                    <th colspan="2" class="text-center">Semestre 1</th>
+                                    <th colspan="2" class="text-center">Semestre 2</th>
+                                </tr>
+                                <tr><th>Meta hecha</th><th>Concertación</th><th>Meta hecha</th><th>Concertación</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -5743,6 +5794,94 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
             q.addEventListener('input', filtrar); l.addEventListener('change', filtrar);
         })();
+
+        /* ===== CONCERTACIÓN POR INDICADOR: todas las facultades, meta propuesta vs meta hecha ===== */
+        let cnIndicadorActual = 0;
+
+        function cnFmt(v, unidad) {
+            if (v === null || v === undefined || v === '') return '—';
+            const n = parseFloat(v);
+            if (isNaN(n)) return '—';
+            return (Math.round(n * 100) / 100).toLocaleString('es-CO') + (unidad === 'Porcentaje' ? '%' : '');
+        }
+
+        function cnCelda(f, sem, unidad, puede, aplica) {
+            const hecha = f.hecha[sem];
+            const c = f['c' + sem] || {};
+            if (!aplica) return '<span class="cn-sin">No aplica</span>';
+            if (hecha === null) return '<span class="cn-sin">Sin reporte</span>';
+            if (c.concertado) {
+                const quien = (c.usuario ? 'Por ' + c.usuario : '') + (c.fecha ? ' · ' + c.fecha : '');
+                const deshacer = puede ? '<button type="button" class="cn-btn sec" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-concertado="0">Deshacer</button>' : '';
+                return '<div class="cn-celda"><span class="cn-ok" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check"></i>Concertado ' + cnFmt(c.valor !== null ? c.valor : hecha, unidad) + '</span>' + deshacer + '</div>';
+            }
+            if (!puede) return '<span class="cn-pend">Pendiente</span>';
+            return '<div class="cn-celda"><input type="number" step="0.01" class="cn-valor" value="' + hecha + '" aria-label="Valor concertado">' +
+                   '<button type="button" class="cn-btn" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-concertado="1">Concertar</button></div>';
+        }
+
+        function cnPintar(r) {
+            const unidad = r.indicador.unidad;
+            const aplicaS1 = r.indicador.tipo !== 'Límite';
+            $('#cnTituloModal').html('<i class="fas fa-handshake me-2"></i>Concertación · ' + evalHtmlEscape(r.indicador.nombre).slice(0, 110));
+            $('#cnIndicador').text(r.indicador.nombre);
+            $('#cnAyuda').text(r.puede_concertar
+                ? 'La meta hecha es la que registró cada facultad. Puedes ajustar el valor y concertarla; al concertar queda aceptada para el semestre.'
+                : 'Estás viendo el estado de la concertación. La concertan los administradores y la dependencia responsable del indicador.');
+            const cuerpo = $('#cnFacTabla tbody').empty();
+            if (!r.facultades.length) cuerpo.append('<tr><td colspan="6" class="text-center text-muted py-4">Este indicador no tiene facultades con meta.</td></tr>');
+            let c1 = 0, c2 = 0;
+            r.facultades.forEach(function(f) {
+                if (f['c1'].concertado) c1++;
+                if (f['c2'].concertado) c2++;
+                const desc = function(sem) { return f.descripcion[sem] ? '<small title="' + evalHtmlEscape(f.descripcion[sem]) + '">' + evalHtmlEscape(String(f.descripcion[sem]).slice(0, 90)) + (String(f.descripcion[sem]).length > 90 ? '…' : '') + '</small>' : ''; };
+                cuerpo.append(
+                    '<tr data-fac="' + f.facultad_id + '"><td class="fw-semibold">' + evalHtmlEscape(f.nombre) + '</td>' +
+                    '<td class="text-end cn-hecha">' + cnFmt(f.propuesta, unidad) + '</td>' +
+                    '<td class="cn-hecha">' + cnFmt(f.hecha[1], unidad) + desc(1) + '</td><td>' + cnCelda(f, 1, unidad, r.puede_concertar, aplicaS1) + '</td>' +
+                    '<td class="cn-hecha">' + cnFmt(f.hecha[2], unidad) + desc(2) + '</td><td>' + cnCelda(f, 2, unidad, r.puede_concertar, true) + '</td></tr>'
+                );
+            });
+            // Resumen en la lista
+            const fila = $('.cn-fila[data-id="' + r.indicador.id + '"]');
+            const total = r.facultades.length;
+            fila.find('.cn-s1').text(c1 + '/' + total).toggleClass('ok', total > 0 && c1 >= total);
+            fila.find('.cn-s2').text(c2 + '/' + total).toggleClass('ok', total > 0 && c2 >= total);
+        }
+
+        function cnCargar() {
+            $.getJSON(basePath + '/modulo144/getConcertacion', { formulacion_id: cnIndicadorActual }, function(r) {
+                if (!r.success) { $('#cnError').text(r.message || 'No se pudo cargar la concertación').show(); return; }
+                $('#cnError').hide();
+                cnPintar(r);
+            }).fail(function() { $('#cnError').text('Error de conexión con el servidor').show(); });
+        }
+
+        function abrirConcertacion(id) {
+            cnIndicadorActual = parseInt(id, 10) || 0;
+            if (!cnIndicadorActual) return;
+            $('#cnFacTabla tbody').html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
+            $('#cnError').hide();
+            $('#modalConcertacion').modal('show');
+            cnCargar();
+        }
+
+        $(document).on('click', '#cnFacTabla .cn-btn', function() {
+            const btn = $(this);
+            const fila = btn.closest('tr');
+            btn.prop('disabled', true);
+            $.post(basePath + '/modulo144/guardarConcertacion', {
+                formulacion_id: cnIndicadorActual,
+                facultad_id: btn.data('fac'),
+                semestre: btn.data('sem'),
+                concertado: btn.data('concertado'),
+                valor: btn.data('concertado') ? btn.closest('.cn-celda').find('.cn-valor').val() : ''
+            }, function(r) {
+                if (!r.success) { $('#cnError').text(r.message || 'No se pudo guardar').show(); btn.prop('disabled', false); return; }
+                $('#cnError').hide();
+                cnCargar();
+            }, 'json').fail(function() { $('#cnError').text('Error de conexión con el servidor').show(); btn.prop('disabled', false); });
+        });
 
         /* ===== FILTRO DE LISTA ===== */
 

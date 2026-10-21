@@ -1435,5 +1435,89 @@ class Modulo144Model {
             error_log('Error asegurarColumnasDescripcionSemestres: ' . $e->getMessage());
         }
     }
+
+    // ───────── Concertaciones: lo que reporta cada facultad se concierta contra su meta propuesta ─────────
+    // Una fila por indicador, facultad y semestre. concertado = 1 cuando la meta hecha quedó concertada.
+    private function asegurarTablaConcertaciones() {
+        static $listo = false;
+        if ($listo) return;
+        $this->db->exec("CREATE TABLE IF NOT EXISTS concertaciones_144 (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            formulacion_id INT NOT NULL,
+            facultad_id INT NOT NULL,
+            semestre TINYINT NOT NULL,
+            concertado TINYINT(1) NOT NULL DEFAULT 0,
+            valor_concertado DECIMAL(12,2) NULL,
+            observacion TEXT NULL,
+            usuario_id INT NULL,
+            fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_concertacion (formulacion_id, facultad_id, semestre)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $listo = true;
+    }
+
+    // [formulacion_id => ['facultades' => n, 's1' => concertadas, 's2' => concertadas]] de los indicadores con distribución
+    public function getResumenConcertaciones($formularioId) {
+        $res = [];
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "SELECT d.formulacion_id, COUNT(*) AS n
+                 FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
+                 WHERE f.formulario_id = :fid AND d.distribucion > 0 GROUP BY d.formulacion_id"
+            );
+            $stmt->execute([':fid' => (int)$formularioId]);
+            foreach ($stmt->fetchAll() as $r) $res[(int)$r['formulacion_id']] = ['facultades' => (int)$r['n'], 's1' => 0, 's2' => 0];
+
+            $q = $this->db->prepare(
+                "SELECT c.formulacion_id, c.semestre, COUNT(*) AS n
+                 FROM concertaciones_144 c JOIN formulacion_144 f ON f.id = c.formulacion_id
+                 JOIN formulacion_distribucion_facultad_144 d ON d.formulacion_id = c.formulacion_id AND d.facultad_id = c.facultad_id AND d.distribucion > 0
+                 WHERE f.formulario_id = :fid AND c.concertado = 1 GROUP BY c.formulacion_id, c.semestre"
+            );
+            $q->execute([':fid' => (int)$formularioId]);
+            foreach ($q->fetchAll() as $r) {
+                $id = (int)$r['formulacion_id'];
+                if (isset($res[$id])) $res[$id][(int)$r['semestre'] === 2 ? 's2' : 's1'] = (int)$r['n'];
+            }
+        } catch (PDOException $e) {
+            error_log('Error getResumenConcertaciones: ' . $e->getMessage());
+        }
+        return $res;
+    }
+
+    // [facultad_id => [semestre => fila]] con el nombre de quien concertó
+    public function getConcertaciones($formulacionId) {
+        $res = [];
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "SELECT c.facultad_id, c.semestre, c.concertado, c.valor_concertado, c.observacion, c.fecha_actualizacion, u.nombre AS usuario
+                 FROM concertaciones_144 c LEFT JOIN usuarios u ON u.id = c.usuario_id WHERE c.formulacion_id = :f"
+            );
+            $stmt->execute([':f' => (int)$formulacionId]);
+            foreach ($stmt->fetchAll() as $r) $res[(int)$r['facultad_id']][(int)$r['semestre']] = $r;
+        } catch (PDOException $e) {
+            error_log('Error getConcertaciones: ' . $e->getMessage());
+        }
+        return $res;
+    }
+
+    public function guardarConcertacion($formulacionId, $facultadId, $semestre, $concertado, $valor, $observacion, $usuarioId) {
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, valor_concertado, observacion, usuario_id)
+                 VALUES (:f, :fac, :sem, :c, :v, :o, :u)
+                 ON DUPLICATE KEY UPDATE concertado = VALUES(concertado), valor_concertado = VALUES(valor_concertado),
+                                         observacion = VALUES(observacion), usuario_id = VALUES(usuario_id)"
+            );
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre,
+                                   ':c' => $concertado ? 1 : 0, ':v' => $valor, ':o' => $observacion, ':u' => $usuarioId ?: null]);
+        } catch (PDOException $e) {
+            error_log('Error guardarConcertacion: ' . $e->getMessage());
+            return false;
+        }
+    }
 }
 ?>

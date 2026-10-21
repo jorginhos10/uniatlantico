@@ -39,6 +39,7 @@ class Modulo144Controller {
         // Facultades del usuario (por su dependencia principal o por cualquiera de las asociadas en "Responsable de")
         $viewer_facultades = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
         $facultades_por_item = $this->model->getFacultadesConDistribucion((int)$formulario['id']);
+        $resumen_concertaciones = $this->model->getResumenConcertaciones((int)$formulario['id']);
         $facultades = $this->model->getFacultades();
 
         // Resumen del informe (cumplimiento ponderado por líneas, motores y proyectos) para "Evaluación líneas"
@@ -1258,6 +1259,90 @@ class Modulo144Controller {
         $b = $this->model->getBloqueosSemestres((int)($item['formulario_id'] ?? 0));
         if ($b['excepto_admin'] && $this->esAdminSeguimiento()) return ['sem1' => false, 'sem2' => false, 'excepto_admin' => true];
         return $b;
+    }
+
+    // ───────── Concertaciones por facultad ─────────
+    // Concertan: administradores, quien creó el indicador y la dependencia responsable (la facultad no concierta lo suyo)
+    private function puedeConcertar(array $item) {
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        return $this->esAdminSeguimiento() || ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) || $this->esResponsableDelItem($item);
+    }
+
+    // Tabla del indicador con todas sus facultades: meta propuesta, meta hecha por semestre y su concertación
+    public function getConcertacion() {
+        header('Content-Type: application/json');
+        $id = intval($_GET['formulacion_id'] ?? 0);
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+
+        $propias = $this->facultadesRestringidas($item);
+        $nombres = [];
+        foreach ($this->model->getFacultades() as $f) $nombres[(int)$f['id']] = $f['nombre'];
+        $conc = $this->model->getConcertaciones($id);
+        $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
+
+        $filas = [];
+        foreach ($this->model->getDistribucionFacultades($id) as $d) {
+            $fid = (int)$d['facultad_id'];
+            if ((float)$d['distribucion'] <= 0) continue;
+            if ($propias && !in_array($fid, $propias, true)) continue;
+            $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
+            $fila = [
+                'facultad_id' => $fid,
+                'nombre' => $nombres[$fid] ?? ('Facultad ' . $fid),
+                'propuesta' => (float)$d['distribucion'],
+                'hecha' => [1 => $esLimite ? null : $num($d['seguimiento_sem1'] ?? null), 2 => $num($d['seguimiento_sem2'] ?? null)],
+                'descripcion' => [1 => $d['seguimiento_descripcion'] ?? '', 2 => $d['seguimiento_descripcion2'] ?? ''],
+            ];
+            foreach ([1, 2] as $sem) {
+                $c = $conc[$fid][$sem] ?? null;
+                $fila['c' . $sem] = $c ? [
+                    'concertado' => (int)$c['concertado'] === 1,
+                    'valor' => $c['valor_concertado'] !== null ? (float)$c['valor_concertado'] : null,
+                    'usuario' => $c['usuario'] ?? '', 'fecha' => $c['fecha_actualizacion'] ?? '',
+                ] : ['concertado' => false, 'valor' => null, 'usuario' => '', 'fecha' => ''];
+            }
+            $filas[] = $fila;
+        }
+        echo json_encode([
+            'success' => true,
+            'indicador' => [
+                'id' => $id,
+                'nombre' => trim((string)($item['nombre_indicador'] ?? '')) !== '' ? $item['nombre_indicador'] : ($item['formula_medicion'] ?: $item['nombre_borrador']),
+                'unidad' => $item['unidad_medida'] ?? '', 'tipo' => $item['tipo_medicion'] ?? '',
+                'bloqueo' => $this->semestresBloqueados($item),
+            ],
+            'puede_concertar' => $this->puedeConcertar($item),
+            'facultades' => $filas,
+        ]);
+    }
+
+    public function guardarConcertacion() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $id = intval($_POST['formulacion_id'] ?? 0);
+        $fac = intval($_POST['facultad_id'] ?? 0);
+        $sem = intval($_POST['semestre'] ?? 0);
+        $concertado = !empty($_POST['concertado']) && $_POST['concertado'] !== '0';
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+        if (!$this->puedeConcertar($item)) { echo json_encode(['success' => false, 'message' => 'No puedes concertar este indicador']); return; }
+
+        $actual = null;
+        foreach ($this->model->getDistribucionFacultades($id) as $d) {
+            if ((int)$d['facultad_id'] === $fac && (float)$d['distribucion'] > 0) { $actual = $d; break; }
+        }
+        if (!$actual) { echo json_encode(['success' => false, 'message' => 'La facultad no tiene meta en este indicador']); return; }
+
+        $hecha = $actual['seguimiento_sem' . $sem] ?? null;
+        $valor = null;
+        if ($concertado) {
+            if ($hecha === null || $hecha === '') { echo json_encode(['success' => false, 'message' => 'La facultad aún no reporta este semestre']); return; }
+            $v = trim((string)($_POST['valor'] ?? ''));
+            $valor = $v === '' ? (float)$hecha : (float)str_replace(',', '.', $v);
+        }
+        $ok = $this->model->guardarConcertacion($id, $fac, $sem, $concertado, $valor, trim((string)($_POST['observacion'] ?? '')) ?: null, $_SESSION['usuario_id'] ?? 0);
+        echo json_encode(['success' => $ok, 'message' => $ok ? ($concertado ? 'Concertado' : 'Concertación deshecha') : 'No se pudo guardar']);
     }
 }
 ?>

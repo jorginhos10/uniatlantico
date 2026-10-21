@@ -436,6 +436,12 @@ switch ($action) {
             case 'guardarSeguimientoFacultad':
                 $modulo144Controller->guardarSeguimientoFacultad();
                 break;
+            case 'getConcertacion':
+                $modulo144Controller->getConcertacion();
+                break;
+            case 'guardarConcertacion':
+                $modulo144Controller->guardarConcertacion();
+                break;
             case 'resumenEvidencias':
                 $modulo144Controller->resumenEvidencias();
                 break;
