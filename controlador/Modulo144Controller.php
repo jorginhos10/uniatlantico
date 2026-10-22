@@ -1325,8 +1325,11 @@ class Modulo144Controller {
                 'id' => $id,
                 'nombre' => trim((string)($item['nombre_indicador'] ?? '')) !== '' ? $item['nombre_indicador'] : ($item['formula_medicion'] ?: $item['nombre_borrador']),
                 'unidad' => $item['unidad_medida'] ?? '', 'tipo' => $item['tipo_medicion'] ?? '',
+                'lmp' => implode(' · ', array_filter([$item['linea_codigo'] ?? '', $item['motor_codigo'] ?? '', $item['proyecto_codigo'] ?? ''])),
+                'meta' => $item['anio_base_meta'] ?? null,
                 'bloqueo' => $this->semestresBloqueados($item),
             ],
+            'completo' => empty($propias), // false cuando el usuario solo ve su facultad
             'puede_concertar' => count(array_filter($filas, function ($f) { return $f['puede']; })) > 0,
             'dependencia' => [
                 'nombre' => (string)($item['responsable_formulacion'] ?? ''),

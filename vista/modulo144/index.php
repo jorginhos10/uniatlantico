@@ -1033,6 +1033,77 @@ ob_start();
         .cn-lmp { display: inline-block; background: #E4EEF8; color: #1D71B8; font-weight: 700; font-size: .75rem; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
         .cn-estado { font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
         .cn-estado.ok { background: #E3F4EA; color: #1F8A4C; }
+        /* Concertaciones: vista simple */
+        .cnx-barra { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+        .cnx-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .cnx-chip { border: 1px solid #E1E4EC; background: #fff; color: #424245; border-radius: 999px; padding: 6px 14px; font-size: .84rem; font-weight: 600; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+        .cnx-chip b { background: #EEF0F5; color: #5b6479; border-radius: 99px; padding: 0 8px; font-size: .75rem; }
+        .cnx-chip:hover { border-color: #143163; }
+        .cnx-chip.on { background: #143163; border-color: #143163; color: #fff; }
+        .cnx-chip.on b { background: rgba(255,255,255,.2); color: #fff; }
+        .cnx-tools { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .cnx-tools input, .cnx-tools select { border: 1px solid #E1E4EC; border-radius: 10px; padding: 8px 12px; min-height: 38px; font-size: .88rem; background: #fff; min-width: 0; }
+        .cnx-tools input { flex: 1 1 260px; max-width: 420px; }
+        .cnx-vista { border: 1px solid #E1E4EC; background: #fff; color: #143163; border-radius: 10px; padding: 8px 12px; min-height: 38px; font-size: .84rem; font-weight: 600; cursor: pointer; margin-left: auto; }
+        .cnx-vista:hover { border-color: #143163; }
+        .cnx-lista { display: flex; flex-direction: column; gap: 8px; }
+        .cnx-item { display: grid; grid-template-columns: minmax(0, 1fr) 118px 118px 124px 18px; gap: 18px; align-items: center; background: #fff; border: 1px solid #E8EAF0; border-radius: 12px; padding: 12px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+        .cnx-item:hover, .cnx-item:focus-visible { border-color: #143163; box-shadow: 0 2px 10px rgba(20,49,99,.08); outline: none; }
+        .cnx-nombre { font-weight: 600; color: #1d1d1f; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .cnx-sub { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: .8rem; color: #6E6E73; }
+        .cnx-prog { display: grid; grid-template-columns: 22px minmax(0, 1fr) 34px; gap: 6px; align-items: center; font-size: .78rem; color: #6E6E73; }
+        .cnx-prog b { text-align: right; color: #424245; font-variant-numeric: tabular-nums; font-weight: 600; }
+        .cnx-barra-p { height: 6px; background: #EEF0F5; border-radius: 99px; overflow: hidden; }
+        .cnx-barra-p i { display: block; height: 100%; background: #1D71B8; border-radius: 99px; transition: width .25s; }
+        .cnx-pill { font-size: .74rem; font-weight: 700; border-radius: 99px; padding: 4px 10px; text-align: center; white-space: nowrap; }
+        .cnx-pill.si { background: #E3F4EA; color: #1F8A4C; }
+        .cnx-pill.no { background: #FDF1D6; color: #8A5A00; }
+        .cnx-pill.nd { background: #EEF0F5; color: #6E6E73; }
+        .cnx-flecha { color: #B0B5C3; font-size: .8rem; }
+        .cnx-item:hover .cnx-flecha { color: #143163; }
+        @media (max-width: 900px) {
+            .cnx-item { grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; }
+            .cnx-main { grid-column: 1 / -1; }
+            .cnx-flecha { display: none; }
+            .cnx-vista { margin-left: 0; }
+        }
+        /* Concertaciones: ventana de un indicador */
+        .cnx-modal .modal-header { background: #143163; color: #fff; padding: .6rem 1rem; gap: 14px; align-items: center; }
+        .cnx-modal .modal-title { flex: 1; font-size: 1rem; font-weight: 600; }
+        .cnx-nav { display: flex; align-items: center; gap: 6px; font-size: .8rem; opacity: .95; }
+        .cnx-flechas { border: 0; width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.14); color: #fff; cursor: pointer; }
+        .cnx-flechas:hover:not(:disabled) { background: rgba(255,255,255,.28); }
+        .cnx-flechas:disabled { opacity: .35; cursor: default; }
+        .cnx-ind { font-size: 1.05rem; font-weight: 700; color: #1d1d1f; line-height: 1.35; }
+        .cnx-metas { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0 14px; }
+        .cnx-dato { font-size: .8rem; color: #5b6479; background: #F2F4F8; border-radius: 99px; padding: 3px 10px; }
+        .cnx-comp { display: flex; flex-wrap: wrap; gap: 10px 28px; align-items: center; background: #F7F8FB; border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+        .cnx-c { display: grid; gap: 2px; font-size: .88rem; }
+        .cnx-c small { color: #6E6E73; font-size: .74rem; letter-spacing: .03em; }
+        .cnx-comp .cnx-pill { margin-left: auto; font-size: .8rem; padding: 6px 14px; }
+        .cnx-ayuda { color: #6E6E73; font-size: .84rem; margin: 0 0 10px; }
+        .cnx-tabla { width: 100%; border-collapse: collapse; }
+        .cnx-tabla th { font-size: .72rem; letter-spacing: .05em; text-transform: uppercase; color: #8a90a2; font-weight: 700; padding: 8px 12px; border-bottom: 1px solid #E8EAF0; text-align: left; }
+        .cnx-tabla td { padding: 12px; border-bottom: 1px solid #F0F1F5; vertical-align: middle; }
+        .cnx-tabla .cnx-n { text-align: right; width: 90px; font-variant-numeric: tabular-nums; }
+        .cnx-fac { font-weight: 600; }
+        .cnx-celda { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 220px; }
+        .cnx-valor { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 42px; }
+        .cnx-input { width: 96px; border: 1px solid #C9CEDB; border-radius: 8px; padding: 5px 8px; font-size: .9rem; font-weight: 700; }
+        .cnx-estado { font-size: .78rem; color: #8A5A00; background: #FDF1D6; border-radius: 99px; padding: 3px 10px; font-weight: 600; }
+        .cnx-estado.ok { color: #1F8A4C; background: #E3F4EA; }
+        .cnx-btn { border: 0; border-radius: 8px; padding: 6px 14px; font-size: .8rem; font-weight: 700; cursor: pointer; background: #143163; color: #fff; }
+        .cnx-btn.sec { background: #E7ECF5; color: #143163; }
+        .cnx-btn:hover:not(:disabled) { filter: brightness(1.15); }
+        .cnx-btn:disabled { opacity: .5; cursor: wait; }
+        .cnx-link { border: 0; background: none; color: #6E6E73; font-size: .78rem; text-decoration: underline; cursor: pointer; padding: 2px 4px; }
+        .cnx-link:hover { color: #143163; }
+        .cnx-nd { color: #9aa1b2; font-size: .82rem; }
+        .cnx-det { border: 0; background: none; color: #9aa1b2; cursor: pointer; width: 30px; height: 30px; border-radius: 8px; }
+        .cnx-det:hover { background: #F2F4F8; color: #143163; }
+        .cnx-desc td { background: #F9FAFC; color: #424245; font-size: .86rem; line-height: 1.45; padding: 10px 16px 14px; }
+        .cnx-modal .modal-footer { justify-content: space-between; }
+        .cnx-masivo { display: flex; gap: 8px; flex-wrap: wrap; }
         .cn-matriz { min-width: max-content; }
         .cn-matriz th, .cn-matriz td { white-space: nowrap; }
         .cn-matriz .cn-grupos th { text-align: center; font-size: .78rem; letter-spacing: .04em; padding: 8px 10px; background: transparent; color: #143163; position: static; border-bottom: 0; }
@@ -2281,20 +2352,47 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     foreach ($cnFilas as $cnR) { if (!empty($cnR['linea_codigo'])) $cnLineas[$cnR['linea_codigo']] = true; }
                     ksort($cnLineas);
                     ?>
-                    <div class="cn-intro">
-                        <div>
-                            <div class="cn-titulo">Concertación del seguimiento por facultades</div>
-                            <div class="cn-sub">Abre un indicador para ver todas sus facultades: la meta propuesta, la meta hecha en cada semestre y concertarla.</div>
+                    <?php
+                    $cnMat = $matriz_concertacion ?? [];
+                    // Estado de cada indicador: lo que reporta la dependencia, lo que suman las facultades y cuánto está concertado
+                    $cnInfo = [];
+                    $cnConteo = ['' => count($cnFilas), 'pendiente' => 0, 'concertado' => 0, 'sinreporte' => 0, 'nocoinciden' => 0];
+                    foreach ($cnFilas as $cnR) {
+                        $id = (int)$cnR['id'];
+                        $lim = ($cnR['tipo_medicion'] ?? '') === 'Límite';
+                        $dS1 = $lim ? null : (($cnR['semestre1_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre1_seguimiento'] : null);
+                        $dS2 = ($cnR['semestre2_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre2_seguimiento'] : null;
+                        $fS1 = null; $fS2 = null; $rep1 = 0; $rep2 = 0;
+                        foreach (($cnMat[$id] ?? []) as $cnD) {
+                            if (!$lim && ($cnD['seguimiento_sem1'] ?? '') !== '' && $cnD['seguimiento_sem1'] !== null) { $fS1 = ($fS1 ?? 0) + (float)$cnD['seguimiento_sem1']; $rep1++; }
+                            if (($cnD['seguimiento_sem2'] ?? '') !== '' && $cnD['seguimiento_sem2'] !== null) { $fS2 = ($fS2 ?? 0) + (float)$cnD['seguimiento_sem2']; $rep2++; }
+                        }
+                        $hay = $dS1 !== null || $dS2 !== null || $fS1 !== null || $fS2 !== null;
+                        $igual = function ($x, $y) { return abs(($x ?? 0) - ($y ?? 0)) < 0.01; };
+                        $coin = !$hay ? 'nd' : (($igual($dS1, $fS1) && $igual($dS2, $fS2)) ? 'si' : 'no');
+                        $res = $cnResumen[$id] ?? ['facultades' => 0, 's1' => 0, 's2' => 0];
+                        $estado = ($rep1 + $rep2) === 0 ? 'sinreporte' : ((($res['s1'] < $rep1) || ($res['s2'] < $rep2)) ? 'pendiente' : 'concertado');
+                        $cnInfo[$id] = ['coin' => $coin, 'estado' => $estado, 'rep1' => $rep1, 'rep2' => $rep2, 'c1' => (int)$res['s1'], 'c2' => (int)$res['s2']];
+                        $cnConteo[$estado]++;
+                        if ($coin === 'no') $cnConteo['nocoinciden']++;
+                    }
+                    ?>
+                    <div class="cnx-barra">
+                        <div class="cnx-chips" id="cnChips" role="group" aria-label="Filtrar por estado">
+                            <button type="button" class="cnx-chip on" data-f="">Todos <b><?php echo $cnConteo['']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="pendiente">Pendientes <b><?php echo $cnConteo['pendiente']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="concertado">Concertados <b><?php echo $cnConteo['concertado']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="nocoinciden">No coinciden <b><?php echo $cnConteo['nocoinciden']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="sinreporte">Sin reporte <b><?php echo $cnConteo['sinreporte']; ?></b></button>
                         </div>
-                        <div class="cn-filtros">
+                        <div class="cnx-tools">
                             <input type="search" id="cnBuscar" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en concertaciones">
                             <select id="cnLinea" aria-label="Línea">
                                 <option value="">Línea: todas</option>
                                 <?php foreach (array_keys($cnLineas) as $cnCod): ?><option value="<?php echo htmlspecialchars($cnCod); ?>"><?php echo htmlspecialchars($cnCod); ?></option><?php endforeach; ?>
                             </select>
-                            <select id="cnFacultad" aria-label="Facultad">
-                                <option value="">Facultad: todas</option>
-                            </select>
+                            <select id="cnFacultad" aria-label="Facultad" hidden><option value="">Facultad: todas</option></select>
+                            <button type="button" id="cnVista" class="cnx-vista" title="Cambiar entre la vista simple y el formato Excel"><i class="fas fa-table me-1"></i>Formato Excel</button>
                             <span class="cn-contador" id="cnContador"><?php echo count($cnFilas); ?> indicadores</span>
                         </div>
                     </div>
@@ -2305,8 +2403,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="desarrollo-subtitle">Aquí aparecen los indicadores aprobados que tienen meta asignada a las facultades.</div>
                     </div>
                     <?php else: ?>
+                    <div class="cnx-lista" id="cnVistaLista">
+                        <?php foreach ($cnFilas as $cnR):
+                            $id = (int)$cnR['id']; $inf = $cnInfo[$id];
+                            $nombre = trim((string)($cnR['nombre_indicador'] ?? '')) !== '' ? $cnR['nombre_indicador'] : ($cnR['formula_medicion'] ?: $cnR['nombre_borrador']);
+                            $lmp = implode(' · ', array_filter([$cnR['linea_codigo'] ?? '', $cnR['motor_codigo'] ?? '', $cnR['proyecto_codigo'] ?? '']));
+                        ?>
+                        <div class="cnx-item" role="button" tabindex="0" data-id="<?php echo $id; ?>" data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
+                             data-estado="<?php echo $inf['estado']; ?>" data-coinciden="<?php echo $inf['coin']; ?>"
+                             data-buscar="<?php echo htmlspecialchars(mb_strtolower($nombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $lmp, 'UTF-8')); ?>"
+                             onclick="abrirConcertacion(<?php echo $id; ?>)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirConcertacion(<?php echo $id; ?>);}">
+                            <div class="cnx-main">
+                                <div class="cnx-nombre"><?php echo htmlspecialchars($nombre); ?></div>
+                                <div class="cnx-sub"><span class="cn-lmp"><?php echo htmlspecialchars($lmp ?: '—'); ?></span><span><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></span></div>
+                            </div>
+                            <?php foreach ([1, 2] as $sem): $rep = $inf['rep' . $sem]; $con = $inf['c' . $sem]; ?>
+                            <div class="cnx-prog" data-sem="<?php echo $sem; ?>" title="Semestre <?php echo $sem; ?> concertado">
+                                <span class="cnx-sem">S<?php echo $sem; ?></span>
+                                <span class="cnx-barra-p"><i style="width:<?php echo $rep ? round(min($con, $rep) / $rep * 100) : 0; ?>%"></i></span>
+                                <b><?php echo $rep ? $con . '/' . $rep : '—'; ?></b>
+                            </div>
+                            <?php endforeach; ?>
+                            <span class="cnx-pill <?php echo $inf['coin']; ?>"><?php echo $inf['coin'] === 'si' ? 'Coinciden' : ($inf['coin'] === 'no' ? 'No coinciden' : 'Sin datos'); ?></span>
+                            <i class="fas fa-chevron-right cnx-flecha"></i>
+                        </div>
+                        <?php endforeach; ?>
+                        <div class="cn-vacio" id="cnxVacio" hidden>Ningún indicador coincide con los filtros.</div>
+                    </div>
+                    <div id="cnVistaMatriz" hidden>
                     <?php
-                    $cnMat = $matriz_concertacion ?? [];
                     // Facultades que tienen meta o reporte en alguno de los indicadores listados
                     $cnFacs = [];
                     foreach ($facultades as $cnF) {
@@ -2372,7 +2497,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 $igual = function ($x, $y) { return abs(($x ?? 0) - ($y ?? 0)) < 0.01; };
                                 $coinciden = !$hayDatos ? null : ($igual($dS1, $fS1) && $igual($dS2, $fS2));
                             ?>
-                            <tr class="cn-fila" data-id="<?php echo $cnId; ?>" data-total="<?php echo (int)$cnRes['facultades']; ?>" data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
+                            <tr class="cn-fila" data-id="<?php echo $cnId; ?>" data-estado="<?php echo $cnInfo[$cnId]['estado']; ?>" data-coinciden="<?php echo $cnInfo[$cnId]['coin']; ?>" data-total="<?php echo (int)$cnRes['facultades']; ?>" data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
                                 data-buscar="<?php echo htmlspecialchars(mb_strtolower($cnNombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $cnLmp, 'UTF-8')); ?>" onclick="abrirConcertacion(<?php echo $cnId; ?>)">
                                 <td class="cn-sticky cn-nombre"><?php echo htmlspecialchars($cnNombre); ?></td>
                                 <td><span class="cn-lmp" title="<?php echo htmlspecialchars($cnR['linea_estrategica'] ?? ''); ?>"><?php echo htmlspecialchars($cnLmp ?: '—'); ?></span></td>
@@ -2406,8 +2531,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <?php endforeach; ?>
                             </tbody>
                         </table>
-                        <div class="cn-vacio" id="cnVacio" hidden>Ningún indicador coincide con los filtros.</div>
                     </div>
+                    </div><!-- /cnVistaMatriz -->
                     <?php endif; ?>
                 </div>
             </div>
@@ -3118,32 +3243,31 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <!-- VENTANA: concertación de un indicador (todas sus facultades) -->
     <div class="modal fade" id="modalConcertacion" tabindex="-1" aria-labelledby="cnTituloModal" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header" style="background:#143163; color:#fff;">
-                    <h5 class="modal-title" id="cnTituloModal"><i class="fas fa-handshake me-2"></i>Concertación</h5>
+            <div class="modal-content cnx-modal">
+                <div class="modal-header">
+                    <div class="cnx-nav">
+                        <button type="button" class="cnx-flechas" id="cnPrev" aria-label="Indicador anterior" title="Indicador anterior"><i class="fas fa-chevron-left"></i></button>
+                        <span id="cnPos"></span>
+                        <button type="button" class="cnx-flechas" id="cnNext" aria-label="Indicador siguiente" title="Indicador siguiente"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    <h5 class="modal-title" id="cnTituloModal">Concertación</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="fw-bold mb-1" id="cnIndicador"></div>
-                    <div class="cn-dep-resumen" id="cnResumenDep"></div>
-                    <p class="text-muted small mb-3" id="cnAyuda">La meta hecha es la que registró cada facultad. Al concertarla queda aceptada para el semestre.</p>
+                    <div class="cnx-ind" id="cnIndicador"></div>
+                    <div class="cnx-metas" id="cnMeta"></div>
+                    <div class="cnx-comp" id="cnResumenDep"></div>
                     <div class="alert alert-danger py-2 small" id="cnError" style="display:none;"></div>
+                    <p class="cnx-ayuda" id="cnAyuda"></p>
                     <div class="table-responsive">
-                        <table class="table align-middle cn-modal-tabla" id="cnFacTabla">
-                            <thead>
-                                <tr>
-                                    <th rowspan="2">Facultad</th>
-                                    <th rowspan="2" class="text-end">Meta propuesta</th>
-                                    <th colspan="2" class="text-center">Semestre 1</th>
-                                    <th colspan="2" class="text-center">Semestre 2</th>
-                                </tr>
-                                <tr><th>Meta hecha</th><th>Concertación</th><th>Meta hecha</th><th>Concertación</th></tr>
-                            </thead>
+                        <table class="cnx-tabla" id="cnFacTabla">
+                            <thead><tr><th>Facultad</th><th class="cnx-n">Meta</th><th>Semestre 1</th><th>Semestre 2</th><th></th></tr></thead>
                             <tbody></tbody>
                         </table>
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <div class="cnx-masivo" id="cnMasivo"></div>
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -5901,26 +6025,57 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         });
 
-        /* ===== CONCERTACIÓN: búsqueda y filtro por línea ===== */
+        /* ===== CONCERTACIONES: lista, filtros y concertación por indicador ===== */
         (function() {
-            const q = document.getElementById('cnBuscar'), l = document.getElementById('cnLinea');
+            const chips = Array.from(document.querySelectorAll('#cnChips .cnx-chip'));
+            const q = document.getElementById('cnBuscar'), l = document.getElementById('cnLinea'), sf = document.getElementById('cnFacultad');
+            const btnVista = document.getElementById('cnVista');
             if (!q || !l) return;
-            const filas = Array.from(document.querySelectorAll('#cnTabla tbody tr'));
-            function filtrar() {
+            let estado = '';
+
+            const filas = function() {
+                return Array.from(document.querySelectorAll('#cnVistaLista .cnx-item, #cnTabla tbody tr.cn-fila'));
+            };
+            function cumple(el, t) {
+                if (t && normFiltro(el.getAttribute('data-buscar')).indexOf(t) === -1) return false;
+                if (l.value && el.getAttribute('data-linea') !== l.value) return false;
+                if (estado === 'nocoinciden') return el.getAttribute('data-coinciden') === 'no';
+                if (estado && el.getAttribute('data-estado') !== estado) return false;
+                return true;
+            }
+            window.cnFiltrar = function() {
                 const t = normFiltro(q.value);
                 let visibles = 0;
-                filas.forEach(function(r) {
-                    const ok = (!t || normFiltro(r.getAttribute('data-buscar')).indexOf(t) !== -1) && (!l.value || r.getAttribute('data-linea') === l.value);
-                    r.style.display = ok ? '' : 'none';
-                    if (ok) visibles++;
+                filas().forEach(function(el) {
+                    const ok = cumple(el, t);
+                    el.style.display = ok ? '' : 'none';
+                    if (ok && el.classList.contains('cnx-item')) visibles++;
                 });
-                document.getElementById('cnContador').textContent = visibles + (visibles === 1 ? ' indicador' : ' indicadores');
-                const vacio = document.getElementById('cnVacio'); if (vacio) vacio.hidden = visibles > 0;
-            }
-            q.addEventListener('input', filtrar); l.addEventListener('change', filtrar);
+                const n = document.getElementById('cnContador');
+                if (n) n.textContent = visibles + (visibles === 1 ? ' indicador' : ' indicadores');
+                const v1 = document.getElementById('cnxVacio'); if (v1) v1.hidden = visibles > 0;
+            };
+            window.cnActualizarChips = function() {
+                const items = Array.from(document.querySelectorAll('#cnVistaLista .cnx-item'));
+                const cuenta = { '': items.length, pendiente: 0, concertado: 0, sinreporte: 0, nocoinciden: 0 };
+                items.forEach(function(it) {
+                    const e = it.getAttribute('data-estado'); if (cuenta[e] !== undefined) cuenta[e]++;
+                    if (it.getAttribute('data-coinciden') === 'no') cuenta.nocoinciden++;
+                });
+                chips.forEach(function(c) { const b = c.querySelector('b'); if (b) b.textContent = cuenta[c.getAttribute('data-f')] || 0; });
+            };
 
-            // Facultad: deja visible solo el bloque de la facultad elegida
-            const sf = document.getElementById('cnFacultad');
+            chips.forEach(function(c) {
+                c.addEventListener('click', function() {
+                    estado = c.getAttribute('data-f');
+                    chips.forEach(function(x) { x.classList.toggle('on', x === c); });
+                    window.cnFiltrar();
+                });
+            });
+            q.addEventListener('input', window.cnFiltrar);
+            l.addEventListener('change', window.cnFiltrar);
+
+            // Formato Excel: bloques por facultad
             if (sf) {
                 const vistos = {};
                 document.querySelectorAll('#cnTabla thead .cn-g-fac').forEach(function(th) {
@@ -5934,10 +6089,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     });
                 });
             }
+
+            // Vista simple (por defecto) o formato Excel; se recuerda la elección
+            function vista(excel) {
+                const lista = document.getElementById('cnVistaLista'), mat = document.getElementById('cnVistaMatriz');
+                if (lista) lista.hidden = excel;
+                if (mat) mat.hidden = !excel;
+                if (sf) sf.hidden = !excel;
+                if (btnVista) btnVista.innerHTML = excel ? '<i class="fas fa-list me-1"></i>Vista simple' : '<i class="fas fa-table me-1"></i>Formato Excel';
+                try { localStorage.setItem('cnVistaExcel', excel ? '1' : '0'); } catch (e) {}
+            }
+            if (btnVista) {
+                btnVista.addEventListener('click', function() { vista(!!document.getElementById('cnVistaLista').hidden === false); });
+                let guardada = false; try { guardada = localStorage.getItem('cnVistaExcel') === '1'; } catch (e) {}
+                vista(guardada);
+            }
+            window.cnActualizarChips();
         })();
 
-        /* ===== CONCERTACIÓN POR INDICADOR: todas las facultades, meta propuesta vs meta hecha ===== */
         let cnIndicadorActual = 0;
+        let cnOrden = [];
 
         function cnFmt(v, unidad) {
             if (v === null || v === undefined || v === '') return '—';
@@ -5946,60 +6117,104 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return (Math.round(n * 100) / 100).toLocaleString('es-CO') + (unidad === 'Porcentaje' ? '%' : '');
         }
 
-        function cnCelda(f, sem, unidad, puede, aplica) {
-            puede = !!f.puede;
+        // Celda de un semestre: la meta hecha y, debajo, su estado o su acción
+        function cnCeldaSem(f, sem, unidad, aplica) {
+            if (!aplica) return '<span class="cnx-nd">No aplica</span>';
             const hecha = f.hecha[sem];
+            if (hecha === null) return '<span class="cnx-nd">Sin reporte</span>';
             const c = f['c' + sem] || {};
-            if (!aplica) return '<span class="cn-sin">No aplica</span>';
-            if (hecha === null) return '<span class="cn-sin">Sin reporte</span>';
+            const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
             if (c.concertado) {
                 const quien = (c.usuario ? 'Por ' + c.usuario : '') + (c.fecha ? ' · ' + c.fecha : '');
-                const deshacer = puede ? '<button type="button" class="cn-btn sec" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-concertado="0">Deshacer</button>' : '';
-                return '<div class="cn-celda"><span class="cn-ok" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check"></i>Concertado ' + cnFmt(c.valor !== null ? c.valor : hecha, unidad) + '</span>' + deshacer + '</div>';
+                return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(c.valor !== null ? c.valor : hecha, unidad) + '</span>' +
+                       '<span class="cnx-estado ok" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check"></i> Concertado</span>' +
+                       (f.puede ? '<button type="button" class="cnx-link" data-acc="deshacer" ' + attrs + '>Deshacer</button>' : '') + '</div>';
             }
-            if (!puede) return '<span class="cn-pend">Pendiente</span>';
-            return '<div class="cn-celda"><input type="number" step="0.01" class="cn-valor" value="' + hecha + '" aria-label="Valor concertado">' +
-                   '<button type="button" class="cn-btn" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-concertado="1">Concertar</button></div>';
+            if (!f.puede) return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(hecha, unidad) + '</span><span class="cnx-estado">Pendiente</span></div>';
+            return '<div class="cnx-celda"><span class="cnx-valor" data-hecha="' + hecha + '">' + cnFmt(hecha, unidad) + '</span>' +
+                   '<button type="button" class="cnx-btn" data-acc="concertar" ' + attrs + '>Concertar</button>' +
+                   '<button type="button" class="cnx-link" data-acc="ajustar" ' + attrs + '>Ajustar</button></div>';
+        }
+
+        function cnActualizarLista(r) {
+            if (!r.completo) return; // quien solo ve su facultad no recalcula los totales del indicador
+            const aplicaS1 = r.indicador.tipo !== 'Límite';
+            const reps = [0, r.facultades.filter(function(f) { return aplicaS1 && f.hecha[1] !== null; }).length, r.facultades.filter(function(f) { return f.hecha[2] !== null; }).length];
+            const cons = [0, r.facultades.filter(function(f) { return f.hecha[1] !== null && f.c1.concertado; }).length, r.facultades.filter(function(f) { return f.hecha[2] !== null && f.c2.concertado; }).length];
+            const item = document.querySelector('#cnVistaLista .cnx-item[data-id="' + r.indicador.id + '"]');
+            if (item) {
+                [1, 2].forEach(function(s) {
+                    const p = item.querySelector('.cnx-prog[data-sem="' + s + '"]');
+                    if (!p) return;
+                    p.querySelector('b').textContent = reps[s] ? cons[s] + '/' + reps[s] : '—';
+                    p.querySelector('i').style.width = (reps[s] ? Math.round(Math.min(cons[s], reps[s]) / reps[s] * 100) : 0) + '%';
+                });
+                const estado = (reps[1] + reps[2]) === 0 ? 'sinreporte' : ((cons[1] < reps[1] || cons[2] < reps[2]) ? 'pendiente' : 'concertado');
+                item.setAttribute('data-estado', estado);
+                const fm = document.querySelector('#cnTabla tr.cn-fila[data-id="' + r.indicador.id + '"]');
+                if (fm) {
+                    fm.setAttribute('data-estado', estado);
+                    const a = fm.querySelector('.cn-s1'), b = fm.querySelector('.cn-s2');
+                    if (a) a.textContent = cons[1] + '/' + reps[1];
+                    if (b) b.textContent = cons[2] + '/' + reps[2];
+                }
+            }
+            if (window.cnActualizarChips) window.cnActualizarChips();
         }
 
         function cnPintar(r) {
             const unidad = r.indicador.unidad;
             const aplicaS1 = r.indicador.tipo !== 'Límite';
-            $('#cnIndicador').text(r.indicador.nombre);
             const dep = r.dependencia || {};
             const nomDep = dep.nombre || 'la dependencia responsable';
-            $('#cnTituloModal').html('<i class="fas fa-handshake me-2"></i>Concertación con ' + evalHtmlEscape(nomDep));
+            $('#cnTituloModal').text('Concertación con ' + nomDep);
+            $('#cnIndicador').text(r.indicador.nombre);
+            $('#cnMeta').html(
+                (r.indicador.lmp ? '<span class="cn-lmp">' + evalHtmlEscape(r.indicador.lmp) + '</span>' : '') +
+                (r.indicador.tipo ? '<span class="cnx-dato">' + evalHtmlEscape(r.indicador.tipo) + '</span>' : '') +
+                (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? '<span class="cnx-dato">Meta general <b>' + cnFmt(r.indicador.meta, unidad) + '</b></span>' : ''));
             $('#cnAyuda').text(r.puede_concertar
-                ? 'Cada facultad concierta con ' + nomDep + ': revisa tu meta hecha, ajusta el valor si hace falta y pulsa Concertar.'
+                ? 'Revisa la meta hecha de cada semestre y pulsa Concertar. Si el valor debe cambiar, usa Ajustar.'
                 : 'Estás viendo el estado de la concertación. Cada facultad concierta lo suyo con ' + nomDep + '.');
-            // Comparación entre lo que reporta la dependencia y la suma de las facultades
-            const fmtDep = function(v) { return cnFmt(v, unidad); };
+
+            // Dependencia frente a la suma de las facultades
             const iguales = function(a, b) { return Math.abs((a || 0) - (b || 0)) < 0.01; };
-            const hayDatos = [dep.s1, dep.s2, dep.suma1, dep.suma2].some(function(v) { return v !== null && v !== undefined; });
-            const coinciden = hayDatos && iguales(dep.s1, dep.suma1) && iguales(dep.s2, dep.suma2);
+            const hay = [dep.s1, dep.s2, dep.suma1, dep.suma2].some(function(v) { return v !== null && v !== undefined; });
+            const coinciden = hay && iguales(dep.s1, dep.suma1) && iguales(dep.s2, dep.suma2);
             $('#cnResumenDep').html(
-                '<div class="cn-dep-bloque"><b>' + evalHtmlEscape(nomDep) + '</b> reporta: Sem 1 <b>' + fmtDep(dep.s1) + '</b> · Sem 2 <b>' + fmtDep(dep.s2) + '</b></div>' +
-                '<div class="cn-dep-bloque">Las facultades suman: Sem 1 <b>' + fmtDep(dep.suma1) + '</b> · Sem 2 <b>' + fmtDep(dep.suma2) + '</b></div>' +
-                '<div class="cn-dep-bloque"><span class="cn-coinciden ' + (!hayDatos ? 'nd' : (coinciden ? 'si' : 'no')) + '">' + (!hayDatos ? 'Sin datos' : (coinciden ? 'Coinciden: SÍ' : 'Coinciden: NO')) + '</span></div>');
+                '<div class="cnx-c"><small>' + evalHtmlEscape(nomDep) + '</small><span>Sem 1 <b>' + cnFmt(dep.s1, unidad) + '</b> · Sem 2 <b>' + cnFmt(dep.s2, unidad) + '</b></span></div>' +
+                '<div class="cnx-c"><small>Suma de las facultades</small><span>Sem 1 <b>' + cnFmt(dep.suma1, unidad) + '</b> · Sem 2 <b>' + cnFmt(dep.suma2, unidad) + '</b></span></div>' +
+                '<span class="cnx-pill ' + (!hay ? 'nd' : (coinciden ? 'si' : 'no')) + '">' + (!hay ? 'Sin datos' : (coinciden ? 'Coinciden' : 'No coinciden')) + '</span>');
+
             const cuerpo = $('#cnFacTabla tbody').empty();
-            if (!r.facultades.length) cuerpo.append('<tr><td colspan="6" class="text-center text-muted py-4">Este indicador no tiene facultades con meta.</td></tr>');
-            let c1 = 0, c2 = 0;
+            if (!r.facultades.length) cuerpo.append('<tr><td colspan="5" class="text-center text-muted py-4">Este indicador no tiene facultades con meta ni seguimiento.</td></tr>');
             r.facultades.forEach(function(f) {
-                if (f['c1'].concertado) c1++;
-                if (f['c2'].concertado) c2++;
-                const desc = function(sem) { return f.descripcion[sem] ? '<small title="' + evalHtmlEscape(f.descripcion[sem]) + '">' + evalHtmlEscape(String(f.descripcion[sem]).slice(0, 90)) + (String(f.descripcion[sem]).length > 90 ? '…' : '') + '</small>' : ''; };
+                const tieneDesc = (f.descripcion[1] || f.descripcion[2]);
                 cuerpo.append(
-                    '<tr data-fac="' + f.facultad_id + '"><td class="fw-semibold">' + evalHtmlEscape(f.nombre) + '</td>' +
-                    '<td class="text-end cn-hecha">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cn-sin">Sin meta</span>') + '</td>' +
-                    '<td class="cn-hecha">' + cnFmt(f.hecha[1], unidad) + desc(1) + '</td><td>' + cnCelda(f, 1, unidad, r.puede_concertar, aplicaS1) + '</td>' +
-                    '<td class="cn-hecha">' + cnFmt(f.hecha[2], unidad) + desc(2) + '</td><td>' + cnCelda(f, 2, unidad, r.puede_concertar, true) + '</td></tr>'
+                    '<tr class="cnx-fila-fac" data-fac="' + f.facultad_id + '"><td class="cnx-fac">' + evalHtmlEscape(f.nombre) + '</td>' +
+                    '<td class="cnx-n">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cnx-nd">Sin meta</span>') + '</td>' +
+                    '<td>' + cnCeldaSem(f, 1, unidad, aplicaS1) + '</td><td>' + cnCeldaSem(f, 2, unidad, true) + '</td>' +
+                    '<td class="cnx-det-td">' + (tieneDesc ? '<button type="button" class="cnx-det" aria-label="Ver descripción" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</td></tr>' +
+                    (tieneDesc ? '<tr class="cnx-desc" hidden><td colspan="5">' +
+                        (f.descripcion[1] ? '<div><b>Semestre 1:</b> ' + evalHtmlEscape(f.descripcion[1]) + '</div>' : '') +
+                        (f.descripcion[2] ? '<div><b>Semestre 2:</b> ' + evalHtmlEscape(f.descripcion[2]) + '</div>' : '') + '</td></tr>' : '')
                 );
             });
-            // Resumen en la lista
-            const fila = $('.cn-fila[data-id="' + r.indicador.id + '"]');
-            const total = r.facultades.length;
-            fila.find('.cn-s1').text(c1 + '/' + total).toggleClass('ok', total > 0 && c1 >= total);
-            fila.find('.cn-s2').text(c2 + '/' + total).toggleClass('ok', total > 0 && c2 >= total);
+
+            // Acciones en bloque: concertar todo lo pendiente de un semestre
+            const masivo = $('#cnMasivo').empty();
+            [1, 2].forEach(function(s) {
+                const n = $('#cnFacTabla .cnx-btn[data-acc="concertar"][data-sem="' + s + '"]').length;
+                if (n > 0) masivo.append('<button type="button" class="cnx-btn sec" data-acc="todo" data-sem="' + s + '">Concertar todo el semestre ' + s + ' (' + n + ')</button>');
+            });
+
+            // Navegación entre indicadores del listado
+            const pos = cnOrden.indexOf(cnIndicadorActual);
+            $('#cnPos').text(pos >= 0 ? (pos + 1) + ' de ' + cnOrden.length : '');
+            $('#cnPrev').prop('disabled', pos <= 0);
+            $('#cnNext').prop('disabled', pos < 0 || pos >= cnOrden.length - 1);
+
+            cnActualizarLista(r);
         }
 
         function cnCargar() {
@@ -6010,30 +6225,72 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }).fail(function() { $('#cnError').text('Error de conexión con el servidor').show(); });
         }
 
+        function cnIdsVisibles() {
+            return Array.from(document.querySelectorAll('#cnVistaLista:not([hidden]) .cnx-item, #cnVistaMatriz:not([hidden]) tr.cn-fila'))
+                .filter(function(el) { return el.style.display !== 'none'; })
+                .map(function(el) { return parseInt(el.getAttribute('data-id'), 10); });
+        }
+
         function abrirConcertacion(id) {
             cnIndicadorActual = parseInt(id, 10) || 0;
             if (!cnIndicadorActual) return;
-            $('#cnFacTabla tbody').html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
+            cnOrden = cnIdsVisibles();
+            $('#cnFacTabla tbody').html('<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>');
+            $('#cnMasivo').empty();
             $('#cnError').hide();
             $('#modalConcertacion').modal('show');
             cnCargar();
         }
 
-        $(document).on('click', '#cnFacTabla .cn-btn', function() {
+        function cnIr(delta) {
+            const pos = cnOrden.indexOf(cnIndicadorActual) + delta;
+            if (pos < 0 || pos >= cnOrden.length) return;
+            cnIndicadorActual = cnOrden[pos];
+            cnCargar();
+        }
+        $(document).on('click', '#cnPrev', function() { cnIr(-1); });
+        $(document).on('click', '#cnNext', function() { cnIr(1); });
+
+        function cnGuardar(fac, sem, concertado, valor) {
+            return $.post(basePath + '/modulo144/guardarConcertacion', {
+                formulacion_id: cnIndicadorActual, facultad_id: fac, semestre: sem, concertado: concertado ? 1 : 0, valor: valor
+            }, null, 'json');
+        }
+
+        $(document).on('click', '#cnFacTabla [data-acc], #cnMasivo [data-acc]', function() {
             const btn = $(this);
-            const fila = btn.closest('tr');
+            const acc = btn.data('acc');
+            if (acc === 'ajustar') {
+                const celda = btn.closest('.cnx-celda');
+                const valor = celda.find('.cnx-valor').data('hecha');
+                celda.find('.cnx-valor').replaceWith('<input type="number" step="0.01" class="cnx-input" value="' + valor + '" aria-label="Valor concertado">');
+                celda.find('.cnx-input').trigger('focus');
+                btn.remove();
+                return;
+            }
+            const fallo = function(m) { $('#cnError').text(m || 'No se pudo guardar').show(); btn.prop('disabled', false); };
             btn.prop('disabled', true);
-            $.post(basePath + '/modulo144/guardarConcertacion', {
-                formulacion_id: cnIndicadorActual,
-                facultad_id: btn.data('fac'),
-                semestre: btn.data('sem'),
-                concertado: btn.data('concertado'),
-                valor: btn.data('concertado') ? btn.closest('.cn-celda').find('.cn-valor').val() : ''
-            }, function(r) {
-                if (!r.success) { $('#cnError').text(r.message || 'No se pudo guardar').show(); btn.prop('disabled', false); return; }
+            if (acc === 'todo') {
+                const sem = btn.data('sem');
+                const pend = $('#cnFacTabla .cnx-btn[data-acc="concertar"][data-sem="' + sem + '"]').toArray();
+                (function siguiente(i) {
+                    if (i >= pend.length) { cnCargar(); return; }
+                    const b = $(pend[i]);
+                    cnGuardar(b.data('fac'), sem, true, '').done(function(r) { if (!r.success) fallo(r.message); siguiente(i + 1); }).fail(function() { fallo('Error de conexión con el servidor'); });
+                })(0);
+                return;
+            }
+            const concertar = acc === 'concertar';
+            const valor = concertar ? (btn.closest('.cnx-celda').find('.cnx-input').val() || '') : '';
+            cnGuardar(btn.data('fac'), btn.data('sem'), concertar, valor).done(function(r) {
+                if (!r.success) { fallo(r.message); return; }
                 $('#cnError').hide();
                 cnCargar();
-            }, 'json').fail(function() { $('#cnError').text('Error de conexión con el servidor').show(); btn.prop('disabled', false); });
+            }).fail(function() { fallo('Error de conexión con el servidor'); });
+        });
+
+        $(document).on('click', '#cnFacTabla .cnx-det', function() {
+            $(this).closest('tr').next('.cnx-desc').prop('hidden', function(_, h) { return !h; });
         });
 
         /* ===== FILTRO DE LISTA ===== */
