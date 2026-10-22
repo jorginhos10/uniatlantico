@@ -192,11 +192,8 @@ tr:last-child td{border-bottom:0}
     </header>
 
     <section class="kpis" aria-label="Resumen">
-        <div class="kpi"><small>Indicadores</small><div class="v"><?php echo $kpi['total']; ?></div><div class="s">aprobados en el plan</div></div>
-        <div class="kpi b"><small>Avance promedio</small><div class="v"><?php echo $fmt($promedio); ?>%</div><div class="s">meta del <?php echo $META; ?>%</div></div>
-        <div class="kpi"><small>Cumplen la meta</small><div class="v"><?php echo $kpi['enMeta']; ?></div><div class="s">con avance ≥ <?php echo $META; ?>%</div></div>
-        <div class="kpi a"><small>En camino</small><div class="v"><?php echo $kpi['enCamino']; ?></div><div class="s">con reporte, por debajo de la meta</div></div>
-        <div class="kpi g"><small>Sin reporte</small><div class="v"><?php echo $kpi['sinReporte']; ?></div><div class="s">aún sin semestre registrado</div></div>
+        <div class="kpi b"><small>Cumplidos</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">indicadores con seguimiento aprobado</div></div>
+        <div class="kpi a"><small>Faltantes</small><div class="v"><?php echo $kpi['total'] - $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">indicadores sin aprobar</div></div>
     </section>
 
     <nav class="tabs" role="tablist">
