@@ -1103,6 +1103,12 @@ ob_start();
         .cnx-det:hover { background: #F2F4F8; color: #143163; }
         .cnx-desc td { background: #F9FAFC; color: #424245; font-size: .86rem; line-height: 1.45; padding: 10px 16px 14px; }
         .cnx-modal .modal-footer { justify-content: space-between; }
+        .cnx-fila-dep td { background: #F7F8FB; }
+        .cnx-fila-dep .cnx-fac small { display: block; font-weight: 500; font-size: .74rem; color: #6E6E73; margin-top: 2px; }
+        .cnx-aprob td { background: #fff; border-top: 2px solid #E8EAF0; border-bottom: 0; padding-top: 14px; }
+        .cnx-aprob .cnx-fac { color: #143163; }
+        .cnx-prog.apr .cnx-barra-p i { background: #1F8A4C; }
+        .cnx-prog.apr b { color: #1F8A4C; }
         .cnx-masivo { display: flex; gap: 8px; flex-wrap: wrap; }
         .cn-matriz { min-width: max-content; }
         .cn-matriz th, .cn-matriz td { white-space: nowrap; }
@@ -2341,7 +2347,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="p-4">
                     <?php
                     // Indicadores aprobados que tienen meta por facultad: lo que cada facultad reporta se concierta aquí
-                    $cnFilas = array_values(array_filter($publicadosVisiblesPorModulo['formulacion'] ?? [], function ($r) use ($resumen_concertaciones) {
+                    $cnFilas = array_values(array_filter($datos_modulos['formulacion']['publicados'] ?? [], function ($r) use ($resumen_concertaciones) {
                         return !empty(($resumen_concertaciones ?? [])[(int)$r['id']]['facultades']);
                     }));
                     usort($cnFilas, function ($a, $b) {
@@ -2354,25 +2360,43 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     ?>
                     <?php
                     $cnMat = $matriz_concertacion ?? [];
-                    // Estado de cada indicador: lo que reporta la dependencia, lo que suman las facultades y cuánto está concertado
+                    $cnTodas = $concertaciones_todas ?? [];
+                    // Estado de cada indicador: lo que reporta la dependencia, lo que suman las facultades, lo concertado y lo aprobado
                     $cnInfo = [];
-                    $cnConteo = ['' => count($cnFilas), 'pendiente' => 0, 'concertado' => 0, 'sinreporte' => 0, 'nocoinciden' => 0];
+                    $cnConteo = ['' => count($cnFilas), 'pendiente' => 0, 'concertado' => 0, 'aprobado' => 0, 'sinreporte' => 0, 'nocoinciden' => 0];
                     foreach ($cnFilas as $cnR) {
                         $id = (int)$cnR['id'];
                         $lim = ($cnR['tipo_medicion'] ?? '') === 'Límite';
-                        $dS1 = $lim ? null : (($cnR['semestre1_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre1_seguimiento'] : null);
-                        $dS2 = ($cnR['semestre2_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre2_seguimiento'] : null;
-                        $fS1 = null; $fS2 = null; $rep1 = 0; $rep2 = 0;
-                        foreach (($cnMat[$id] ?? []) as $cnD) {
-                            if (!$lim && ($cnD['seguimiento_sem1'] ?? '') !== '' && $cnD['seguimiento_sem1'] !== null) { $fS1 = ($fS1 ?? 0) + (float)$cnD['seguimiento_sem1']; $rep1++; }
-                            if (($cnD['seguimiento_sem2'] ?? '') !== '' && $cnD['seguimiento_sem2'] !== null) { $fS2 = ($fS2 ?? 0) + (float)$cnD['seguimiento_sem2']; $rep2++; }
+                        $dep = [1 => $lim ? null : (($cnR['semestre1_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre1_seguimiento'] : null),
+                                2 => ($cnR['semestre2_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre2_seguimiento'] : null];
+                        $fac = [1 => null, 2 => null];
+                        $rep = [1 => 0, 2 => 0]; $done = [1 => 0, 2 => 0];
+                        foreach (($cnMat[$id] ?? []) as $cnFid => $cnD) {
+                            foreach ([1, 2] as $sem) {
+                                if ($sem === 1 && $lim) continue;
+                                $v = $cnD['seguimiento_sem' . $sem] ?? null;
+                                if ($v !== null && $v !== '') {
+                                    $fac[$sem] = ($fac[$sem] ?? 0) + (float)$v; $rep[$sem]++;
+                                    if (!empty($cnTodas[$id][$cnFid][$sem]['concertado'])) $done[$sem]++;
+                                }
+                            }
                         }
-                        $hay = $dS1 !== null || $dS2 !== null || $fS1 !== null || $fS2 !== null;
+                        foreach ([1, 2] as $sem) {
+                            if ($dep[$sem] !== null) { $rep[$sem]++; if (!empty($cnTodas[$id][0][$sem]['concertado'])) $done[$sem]++; }
+                        }
+                        $apr = [1 => !empty($cnTodas[$id][0][1]['aprobado']), 2 => !empty($cnTodas[$id][0][2]['aprobado'])];
+                        $hay = $dep[1] !== null || $dep[2] !== null || $fac[1] !== null || $fac[2] !== null;
                         $igual = function ($x, $y) { return abs(($x ?? 0) - ($y ?? 0)) < 0.01; };
-                        $coin = !$hay ? 'nd' : (($igual($dS1, $fS1) && $igual($dS2, $fS2)) ? 'si' : 'no');
-                        $res = $cnResumen[$id] ?? ['facultades' => 0, 's1' => 0, 's2' => 0];
-                        $estado = ($rep1 + $rep2) === 0 ? 'sinreporte' : ((($res['s1'] < $rep1) || ($res['s2'] < $rep2)) ? 'pendiente' : 'concertado');
-                        $cnInfo[$id] = ['coin' => $coin, 'estado' => $estado, 'rep1' => $rep1, 'rep2' => $rep2, 'c1' => (int)$res['s1'], 'c2' => (int)$res['s2']];
+                        $coin = !$hay ? 'nd' : (($igual($dep[1], $fac[1]) && $igual($dep[2], $fac[2])) ? 'si' : 'no');
+                        if ($rep[1] + $rep[2] === 0) { $estado = 'sinreporte'; }
+                        else {
+                            $todoAprobado = true; $todoConcertado = true;
+                            foreach ([1, 2] as $sem) {
+                                if ($rep[$sem] > 0) { if (!$apr[$sem]) $todoAprobado = false; if ($done[$sem] < $rep[$sem]) $todoConcertado = false; }
+                            }
+                            $estado = $todoAprobado ? 'aprobado' : ($todoConcertado ? 'concertado' : 'pendiente');
+                        }
+                        $cnInfo[$id] = ['coin' => $coin, 'estado' => $estado, 't1' => $rep[1], 't2' => $rep[2], 'd1' => $done[1], 'd2' => $done[2], 'a1' => $apr[1], 'a2' => $apr[2]];
                         $cnConteo[$estado]++;
                         if ($coin === 'no') $cnConteo['nocoinciden']++;
                     }
@@ -2382,6 +2406,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <button type="button" class="cnx-chip on" data-f="">Todos <b><?php echo $cnConteo['']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="pendiente">Pendientes <b><?php echo $cnConteo['pendiente']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="concertado">Concertados <b><?php echo $cnConteo['concertado']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="aprobado">Aprobados <b><?php echo $cnConteo['aprobado']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="nocoinciden">No coinciden <b><?php echo $cnConteo['nocoinciden']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="sinreporte">Sin reporte <b><?php echo $cnConteo['sinreporte']; ?></b></button>
                         </div>
@@ -2417,8 +2442,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <div class="cnx-nombre"><?php echo htmlspecialchars($nombre); ?></div>
                                 <div class="cnx-sub"><span class="cn-lmp"><?php echo htmlspecialchars($lmp ?: '—'); ?></span><span><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></span></div>
                             </div>
-                            <?php foreach ([1, 2] as $sem): $rep = $inf['rep' . $sem]; $con = $inf['c' . $sem]; ?>
-                            <div class="cnx-prog" data-sem="<?php echo $sem; ?>" title="Semestre <?php echo $sem; ?> concertado">
+                            <?php foreach ([1, 2] as $sem): $rep = $inf['t' . $sem]; $con = $inf['d' . $sem]; ?>
+                            <div class="cnx-prog<?php echo $inf['a' . $sem] ? ' apr' : ''; ?>" data-sem="<?php echo $sem; ?>" title="Semestre <?php echo $sem; ?>: concertado por la dependencia y las facultades<?php echo $inf['a' . $sem] ? ' · aprobado' : ''; ?>">
                                 <span class="cnx-sem">S<?php echo $sem; ?></span>
                                 <span class="cnx-barra-p"><i style="width:<?php echo $rep ? round(min($con, $rep) / $rep * 100) : 0; ?>%"></i></span>
                                 <b><?php echo $rep ? $con . '/' . $rep : '—'; ?></b>
@@ -2524,8 +2549,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <td class="cn-desc cn-fg" data-fac="<?php echo $fid; ?>" title="<?php echo htmlspecialchars($xd); ?>"><?php echo htmlspecialchars($cnTexto($xd)); ?></td>
                                 <?php endforeach; ?>
                                 <td class="cn-coinciden <?php echo $coinciden === null ? 'nd' : ($coinciden ? 'si' : 'no'); ?>"><?php echo $coinciden === null ? '—' : ($coinciden ? 'SÍ' : 'NO'); ?></td>
-                                <td class="cn-concerta"><span class="cn-prog cn-s1 <?php echo $cnRes['s1'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>" title="Semestre 1 concertado"><?php echo (int)$cnRes['s1']; ?>/<?php echo (int)$cnRes['facultades']; ?></span>
-                                    <span class="cn-prog cn-s2 <?php echo $cnRes['s2'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>" title="Semestre 2 concertado"><?php echo (int)$cnRes['s2']; ?>/<?php echo (int)$cnRes['facultades']; ?></span>
+                                <td class="cn-concerta"><span class="cn-prog cn-s1 <?php echo $cnInfo[$cnId]['t1'] > 0 && $cnInfo[$cnId]['d1'] >= $cnInfo[$cnId]['t1'] ? 'ok' : ''; ?>" title="Semestre 1 concertado"><?php echo (int)$cnInfo[$cnId]['d1']; ?>/<?php echo (int)$cnInfo[$cnId]['t1']; ?></span>
+                                    <span class="cn-prog cn-s2 <?php echo $cnInfo[$cnId]['t2'] > 0 && $cnInfo[$cnId]['d2'] >= $cnInfo[$cnId]['t2'] ? 'ok' : ''; ?>" title="Semestre 2 concertado"><?php echo (int)$cnInfo[$cnId]['d2']; ?>/<?php echo (int)$cnInfo[$cnId]['t2']; ?></span>
                                     <button type="button" class="cn-abrir" onclick="event.stopPropagation(); abrirConcertacion(<?php echo $cnId; ?>)">Concertar</button></td>
                             </tr>
                             <?php endforeach; ?>
@@ -3263,6 +3288,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <table class="cnx-tabla" id="cnFacTabla">
                             <thead><tr><th>Facultad</th><th class="cnx-n">Meta</th><th>Semestre 1</th><th>Semestre 2</th><th></th></tr></thead>
                             <tbody></tbody>
+                            <tfoot></tfoot>
                         </table>
                     </div>
                 </div>
@@ -6057,7 +6083,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             };
             window.cnActualizarChips = function() {
                 const items = Array.from(document.querySelectorAll('#cnVistaLista .cnx-item'));
-                const cuenta = { '': items.length, pendiente: 0, concertado: 0, sinreporte: 0, nocoinciden: 0 };
+                const cuenta = { '': items.length, pendiente: 0, concertado: 0, aprobado: 0, sinreporte: 0, nocoinciden: 0 };
                 items.forEach(function(it) {
                     const e = it.getAttribute('data-estado'); if (cuenta[e] !== undefined) cuenta[e]++;
                     if (it.getAttribute('data-coinciden') === 'no') cuenta.nocoinciden++;
@@ -6117,30 +6143,53 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return (Math.round(n * 100) / 100).toLocaleString('es-CO') + (unidad === 'Porcentaje' ? '%' : '');
         }
 
-        // Celda de un semestre: la meta hecha y, debajo, su estado o su acción
-        function cnCeldaSem(f, sem, unidad, aplica) {
-            if (!aplica) return '<span class="cnx-nd">No aplica</span>';
-            const hecha = f.hecha[sem];
-            if (hecha === null) return '<span class="cnx-nd">Sin reporte</span>';
-            const c = f['c' + sem] || {};
-            const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
+        // Celda de un semestre: el valor reportado y, a su lado, su estado o su acción.
+        // o: { hecha, c, puede, aprobado, fac (0 = dependencia responsable), sem, unidad, aplica }
+        function cnCeldaSem(o) {
+            if (!o.aplica) return '<span class="cnx-nd">No aplica</span>';
+            if (o.hecha === null || o.hecha === undefined) return '<span class="cnx-nd">Sin reporte</span>';
+            const c = o.c || {};
+            const attrs = 'data-fac="' + o.fac + '" data-sem="' + o.sem + '"';
             if (c.concertado) {
                 const quien = (c.usuario ? 'Por ' + c.usuario : '') + (c.fecha ? ' · ' + c.fecha : '');
-                return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(c.valor !== null ? c.valor : hecha, unidad) + '</span>' +
+                return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(c.valor !== null ? c.valor : o.hecha, o.unidad) + '</span>' +
                        '<span class="cnx-estado ok" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check"></i> Concertado</span>' +
-                       (f.puede ? '<button type="button" class="cnx-link" data-acc="deshacer" ' + attrs + '>Deshacer</button>' : '') + '</div>';
+                       (o.puede && !o.aprobado ? '<button type="button" class="cnx-link" data-acc="deshacer" ' + attrs + '>Deshacer</button>' : '') + '</div>';
             }
-            if (!f.puede) return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(hecha, unidad) + '</span><span class="cnx-estado">Pendiente</span></div>';
-            return '<div class="cnx-celda"><span class="cnx-valor" data-hecha="' + hecha + '">' + cnFmt(hecha, unidad) + '</span>' +
+            if (!o.puede || o.aprobado) return '<div class="cnx-celda"><span class="cnx-valor">' + cnFmt(o.hecha, o.unidad) + '</span><span class="cnx-estado">Pendiente</span></div>';
+            return '<div class="cnx-celda"><span class="cnx-valor" data-hecha="' + o.hecha + '">' + cnFmt(o.hecha, o.unidad) + '</span>' +
                    '<button type="button" class="cnx-btn" data-acc="concertar" ' + attrs + '>Concertar</button>' +
                    '<button type="button" class="cnx-link" data-acc="ajustar" ' + attrs + '>Ajustar</button></div>';
         }
 
+        // Celda de aprobación (solo el superadministrador aprueba)
+        function cnCeldaAprobacion(r, sem) {
+            const a = (r.aprobacion || {})[sem] || {};
+            if (a.aprobado) {
+                const quien = (a.usuario ? 'Por ' + a.usuario : '') + (a.fecha ? ' · ' + a.fecha : '');
+                return '<div class="cnx-celda"><span class="cnx-estado ok" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check-circle"></i> Aprobado</span>' +
+                       (r.es_superadmin ? '<button type="button" class="cnx-link" data-acc="desaprobar" data-sem="' + sem + '">Quitar aprobación</button>' : '') + '</div>';
+            }
+            return r.es_superadmin
+                ? '<button type="button" class="cnx-btn" data-acc="aprobar" data-sem="' + sem + '">Aprobar semestre ' + sem + '</button>'
+                : '<span class="cnx-nd">Pendiente de aprobación</span>';
+        }
+
         function cnActualizarLista(r) {
-            if (!r.completo) return; // quien solo ve su facultad no recalcula los totales del indicador
             const aplicaS1 = r.indicador.tipo !== 'Límite';
-            const reps = [0, r.facultades.filter(function(f) { return aplicaS1 && f.hecha[1] !== null; }).length, r.facultades.filter(function(f) { return f.hecha[2] !== null; }).length];
-            const cons = [0, r.facultades.filter(function(f) { return f.hecha[1] !== null && f.c1.concertado; }).length, r.facultades.filter(function(f) { return f.hecha[2] !== null && f.c2.concertado; }).length];
+            const reps = [0, 0, 0], cons = [0, 0, 0];
+            [1, 2].forEach(function(s) {
+                if (s === 1 && !aplicaS1) return;
+                if (r.dependencia.hecha[s] !== null) { reps[s]++; if (r.dependencia['c' + s].concertado) cons[s]++; }
+                r.facultades.forEach(function(f) { if (f.hecha[s] !== null) { reps[s]++; if (f['c' + s].concertado) cons[s]++; } });
+            });
+            const aprob = [false, !!r.aprobacion[1].aprobado, !!r.aprobacion[2].aprobado];
+            let estado = 'sinreporte';
+            if (reps[1] + reps[2] > 0) {
+                const todoAprobado = [1, 2].every(function(s) { return reps[s] === 0 || aprob[s]; });
+                const todoConcertado = [1, 2].every(function(s) { return reps[s] === 0 || cons[s] >= reps[s]; });
+                estado = todoAprobado ? 'aprobado' : (todoConcertado ? 'concertado' : 'pendiente');
+            }
             const item = document.querySelector('#cnVistaLista .cnx-item[data-id="' + r.indicador.id + '"]');
             if (item) {
                 [1, 2].forEach(function(s) {
@@ -6148,16 +6197,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     if (!p) return;
                     p.querySelector('b').textContent = reps[s] ? cons[s] + '/' + reps[s] : '—';
                     p.querySelector('i').style.width = (reps[s] ? Math.round(Math.min(cons[s], reps[s]) / reps[s] * 100) : 0) + '%';
+                    p.classList.toggle('apr', aprob[s]);
                 });
-                const estado = (reps[1] + reps[2]) === 0 ? 'sinreporte' : ((cons[1] < reps[1] || cons[2] < reps[2]) ? 'pendiente' : 'concertado');
                 item.setAttribute('data-estado', estado);
-                const fm = document.querySelector('#cnTabla tr.cn-fila[data-id="' + r.indicador.id + '"]');
-                if (fm) {
-                    fm.setAttribute('data-estado', estado);
-                    const a = fm.querySelector('.cn-s1'), b = fm.querySelector('.cn-s2');
-                    if (a) a.textContent = cons[1] + '/' + reps[1];
-                    if (b) b.textContent = cons[2] + '/' + reps[2];
-                }
+            }
+            const fm = document.querySelector('#cnTabla tr.cn-fila[data-id="' + r.indicador.id + '"]');
+            if (fm) {
+                fm.setAttribute('data-estado', estado);
+                const a = fm.querySelector('.cn-s1'), b = fm.querySelector('.cn-s2');
+                if (a) a.textContent = cons[1] + '/' + reps[1];
+                if (b) b.textContent = cons[2] + '/' + reps[2];
             }
             if (window.cnActualizarChips) window.cnActualizarChips();
         }
@@ -6167,15 +6216,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const aplicaS1 = r.indicador.tipo !== 'Límite';
             const dep = r.dependencia || {};
             const nomDep = dep.nombre || 'la dependencia responsable';
+            const aprob = [false, !!r.aprobacion[1].aprobado, !!r.aprobacion[2].aprobado];
             $('#cnTituloModal').text('Concertación con ' + nomDep);
             $('#cnIndicador').text(r.indicador.nombre);
             $('#cnMeta').html(
                 (r.indicador.lmp ? '<span class="cn-lmp">' + evalHtmlEscape(r.indicador.lmp) + '</span>' : '') +
                 (r.indicador.tipo ? '<span class="cnx-dato">' + evalHtmlEscape(r.indicador.tipo) + '</span>' : '') +
                 (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? '<span class="cnx-dato">Meta general <b>' + cnFmt(r.indicador.meta, unidad) + '</b></span>' : ''));
-            $('#cnAyuda').text(r.puede_concertar
-                ? 'Revisa la meta hecha de cada semestre y pulsa Concertar. Si el valor debe cambiar, usa Ajustar.'
-                : 'Estás viendo el estado de la concertación. Cada facultad concierta lo suyo con ' + nomDep + '.');
+            $('#cnAyuda').text('Todos pueden ver los valores. La dependencia responsable concierta el suyo, cada facultad el suyo y el superadministrador aprueba al final.' +
+                (r.puede_concertar ? ' Revisa tu valor y pulsa Concertar; si debe cambiar, usa Ajustar.' : ''));
 
             // Dependencia frente a la suma de las facultades
             const iguales = function(a, b) { return Math.abs((a || 0) - (b || 0)) < 0.01; };
@@ -6187,25 +6236,36 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 '<span class="cnx-pill ' + (!hay ? 'nd' : (coinciden ? 'si' : 'no')) + '">' + (!hay ? 'Sin datos' : (coinciden ? 'Coinciden' : 'No coinciden')) + '</span>');
 
             const cuerpo = $('#cnFacTabla tbody').empty();
-            if (!r.facultades.length) cuerpo.append('<tr><td colspan="5" class="text-center text-muted py-4">Este indicador no tiene facultades con meta ni seguimiento.</td></tr>');
+            // Primero la dependencia responsable (concierta su valor), luego cada facultad (concierta el suyo)
+            cuerpo.append(
+                '<tr class="cnx-fila-dep"><td class="cnx-fac">' + evalHtmlEscape(nomDep) + '<small>Dependencia responsable</small></td>' +
+                '<td class="cnx-n">' + (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? cnFmt(r.indicador.meta, unidad) : '—') + '</td>' +
+                '<td>' + cnCeldaSem({ hecha: dep.hecha[1], c: dep.c1, puede: dep.puede, aprobado: aprob[1], fac: 0, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
+                '<td>' + cnCeldaSem({ hecha: dep.hecha[2], c: dep.c2, puede: dep.puede, aprobado: aprob[2], fac: 0, sem: 2, unidad: unidad, aplica: true }) + '</td><td></td></tr>');
+            if (!r.facultades.length) cuerpo.append('<tr><td colspan="5" class="text-center text-muted py-4">Ninguna facultad tiene meta ni seguimiento en este indicador.</td></tr>');
             r.facultades.forEach(function(f) {
                 const tieneDesc = (f.descripcion[1] || f.descripcion[2]);
                 cuerpo.append(
                     '<tr class="cnx-fila-fac" data-fac="' + f.facultad_id + '"><td class="cnx-fac">' + evalHtmlEscape(f.nombre) + '</td>' +
                     '<td class="cnx-n">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cnx-nd">Sin meta</span>') + '</td>' +
-                    '<td>' + cnCeldaSem(f, 1, unidad, aplicaS1) + '</td><td>' + cnCeldaSem(f, 2, unidad, true) + '</td>' +
+                    '<td>' + cnCeldaSem({ hecha: f.hecha[1], c: f.c1, puede: f.puede, aprobado: aprob[1], fac: f.facultad_id, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
+                    '<td>' + cnCeldaSem({ hecha: f.hecha[2], c: f.c2, puede: f.puede, aprobado: aprob[2], fac: f.facultad_id, sem: 2, unidad: unidad, aplica: true }) + '</td>' +
                     '<td class="cnx-det-td">' + (tieneDesc ? '<button type="button" class="cnx-det" aria-label="Ver descripción" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</td></tr>' +
                     (tieneDesc ? '<tr class="cnx-desc" hidden><td colspan="5">' +
                         (f.descripcion[1] ? '<div><b>Semestre 1:</b> ' + evalHtmlEscape(f.descripcion[1]) + '</div>' : '') +
                         (f.descripcion[2] ? '<div><b>Semestre 2:</b> ' + evalHtmlEscape(f.descripcion[2]) + '</div>' : '') + '</td></tr>' : '')
                 );
             });
+            // Aprobación (solo el superadministrador)
+            $('#cnFacTabla tfoot').html(
+                '<tr class="cnx-aprob"><td colspan="2" class="cnx-fac">Aprobación del superadministrador</td>' +
+                '<td>' + cnCeldaAprobacion(r, 1) + '</td><td>' + cnCeldaAprobacion(r, 2) + '</td><td></td></tr>');
 
-            // Acciones en bloque: concertar todo lo pendiente de un semestre
+            // Acciones en bloque: concertar todo lo pendiente que el usuario puede concertar
             const masivo = $('#cnMasivo').empty();
             [1, 2].forEach(function(s) {
                 const n = $('#cnFacTabla .cnx-btn[data-acc="concertar"][data-sem="' + s + '"]').length;
-                if (n > 0) masivo.append('<button type="button" class="cnx-btn sec" data-acc="todo" data-sem="' + s + '">Concertar todo el semestre ' + s + ' (' + n + ')</button>');
+                if (n > 1) masivo.append('<button type="button" class="cnx-btn sec" data-acc="todo" data-sem="' + s + '">Concertar todo el semestre ' + s + ' (' + n + ')</button>');
             });
 
             // Navegación entre indicadores del listado
@@ -6269,7 +6329,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return;
             }
             const fallo = function(m) { $('#cnError').text(m || 'No se pudo guardar').show(); btn.prop('disabled', false); };
+            const ok = function(r) { if (!r.success) { fallo(r.message); return false; } $('#cnError').hide(); return true; };
             btn.prop('disabled', true);
+            if (acc === 'aprobar' || acc === 'desaprobar') {
+                $.post(basePath + '/modulo144/aprobarConcertacion', { formulacion_id: cnIndicadorActual, semestre: btn.data('sem'), aprobado: acc === 'aprobar' ? 1 : 0 }, function(r) {
+                    if (ok(r)) cnCargar();
+                }, 'json').fail(function() { fallo('Error de conexión con el servidor'); });
+                return;
+            }
             if (acc === 'todo') {
                 const sem = btn.data('sem');
                 const pend = $('#cnFacTabla .cnx-btn[data-acc="concertar"][data-sem="' + sem + '"]').toArray();
@@ -6283,9 +6350,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const concertar = acc === 'concertar';
             const valor = concertar ? (btn.closest('.cnx-celda').find('.cnx-input').val() || '') : '';
             cnGuardar(btn.data('fac'), btn.data('sem'), concertar, valor).done(function(r) {
-                if (!r.success) { fallo(r.message); return; }
-                $('#cnError').hide();
-                cnCargar();
+                if (ok(r)) cnCargar();
             }).fail(function() { fallo('Error de conexión con el servidor'); });
         });
 

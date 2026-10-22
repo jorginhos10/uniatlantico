@@ -41,6 +41,7 @@ class Modulo144Controller {
         $facultades_por_item = $this->model->getFacultadesConAcceso((int)$formulario['id']);
         $resumen_concertaciones = $this->model->getResumenConcertaciones((int)$formulario['id']);
         $matriz_concertacion = $this->model->getMatrizConcertacion((int)$formulario['id']);
+        $concertaciones_todas = $this->model->getTodasConcertaciones((int)$formulario['id']);
         $facultades = $this->model->getFacultades();
 
         // Resumen del informe (cumplimiento ponderado por líneas, motores y proyectos) para "Evaluación líneas"
@@ -1263,62 +1264,63 @@ class Modulo144Controller {
     }
 
     // ───────── Concertaciones por facultad ─────────
-    // Concertan: administradores, quien creó el indicador y la dependencia responsable (la facultad no concierta lo suyo)
-    private function puedeConcertar(array $item) {
-        $uid = (int)($_SESSION['usuario_id'] ?? 0);
-        return $this->esAdminSeguimiento() || ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) || $this->esResponsableDelItem($item);
+    // Quién concierta cada valor: la dependencia responsable concierta el suyo y cada facultad el suyo.
+    // Todos ven todos los valores; solo el superadministrador aprueba. El superadministrador también puede concertar por cualquiera.
+    private function esSuperadminConcertacion() {
+        return (int)($_SESSION['usuario_id'] ?? 0) === 1;
     }
 
-    // Tabla del indicador con todas sus facultades: meta propuesta, meta hecha por semestre y su concertación
+    private function puedeConcertarDependencia(array $item) {
+        return $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
+    }
+
+    private function puedeConcertarFacultad($facultadId) {
+        return $this->esSuperadminConcertacion()
+            || in_array((int)$facultadId, $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0), true);
+    }
+
+    // Tabla del indicador: la dependencia responsable y todas sus facultades, con meta propuesta, meta hecha por semestre y su concertación
     public function getConcertacion() {
         header('Content-Type: application/json');
         $id = intval($_GET['formulacion_id'] ?? 0);
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
 
-        $propias = $this->facultadesRestringidas($item);
         $nombres = [];
         foreach ($this->model->getFacultades() as $f) $nombres[(int)$f['id']] = $f['nombre'];
         $conc = $this->model->getConcertaciones($id);
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
-
-        // Lo que reportan todas las facultades (antes de limitar la vista a la facultad del usuario)
-        $todas = $this->model->getDistribucionFacultades($id);
-        $sumaFac = [1 => null, 2 => null];
-        foreach ($todas as $d) {
-            foreach ([1, 2] as $sem) {
-                $v = $d['seguimiento_sem' . $sem] ?? null;
-                if ($v !== null && $v !== '') $sumaFac[$sem] = ($sumaFac[$sem] ?? 0) + (float)$v;
-            }
-        }
-        $numDep = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
+        $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
+        $info = function ($c) {
+            return $c ? [
+                'concertado' => (int)$c['concertado'] === 1,
+                'valor' => $c['valor_concertado'] !== null ? (float)$c['valor_concertado'] : null,
+                'usuario' => $c['usuario'] ?? '', 'fecha' => $c['fecha_actualizacion'] ?? '',
+            ] : ['concertado' => false, 'valor' => null, 'usuario' => '', 'fecha' => ''];
+        };
 
         $filas = [];
-        foreach ($todas as $d) {
+        $sumaFac = [1 => null, 2 => null];
+        foreach ($this->model->getDistribucionFacultades($id) as $d) {
             $fid = (int)$d['facultad_id'];
-            $reporto = (isset($d['seguimiento_sem1']) && $d['seguimiento_sem1'] !== null && $d['seguimiento_sem1'] !== '')
-                    || (isset($d['seguimiento_sem2']) && $d['seguimiento_sem2'] !== null && $d['seguimiento_sem2'] !== '');
-            if ((float)$d['distribucion'] <= 0 && !$reporto) continue; // sin meta y sin reporte: nada que concertar
-            if ($propias && !in_array($fid, $propias, true)) continue;
-            $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
-            $fila = [
+            $h1 = $esLimite ? null : $num($d['seguimiento_sem1'] ?? null);
+            $h2 = $num($d['seguimiento_sem2'] ?? null);
+            foreach ([1 => $h1, 2 => $h2] as $sem => $v) if ($v !== null) $sumaFac[$sem] = ($sumaFac[$sem] ?? 0) + $v;
+            if ((float)$d['distribucion'] <= 0 && $h1 === null && $h2 === null) continue; // sin meta y sin reporte: nada que concertar
+            $filas[] = [
                 'facultad_id' => $fid,
-                'puede' => $this->puedeRegistrarSeguimientoFacultad($item, $fid), // la facultad concierta lo suyo (también administradores y responsables)
+                'puede' => $this->puedeConcertarFacultad($fid),
                 'nombre' => $nombres[$fid] ?? ('Facultad ' . $fid),
                 'propuesta' => (float)$d['distribucion'],
-                'hecha' => [1 => $esLimite ? null : $num($d['seguimiento_sem1'] ?? null), 2 => $num($d['seguimiento_sem2'] ?? null)],
+                'hecha' => [1 => $h1, 2 => $h2],
                 'descripcion' => [1 => $d['seguimiento_descripcion'] ?? '', 2 => $d['seguimiento_descripcion2'] ?? ''],
+                'c1' => $info($conc[$fid][1] ?? null), 'c2' => $info($conc[$fid][2] ?? null),
             ];
-            foreach ([1, 2] as $sem) {
-                $c = $conc[$fid][$sem] ?? null;
-                $fila['c' . $sem] = $c ? [
-                    'concertado' => (int)$c['concertado'] === 1,
-                    'valor' => $c['valor_concertado'] !== null ? (float)$c['valor_concertado'] : null,
-                    'usuario' => $c['usuario'] ?? '', 'fecha' => $c['fecha_actualizacion'] ?? '',
-                ] : ['concertado' => false, 'valor' => null, 'usuario' => '', 'fecha' => ''];
-            }
-            $filas[] = $fila;
         }
+        $aprob = function ($sem) use ($conc) {
+            $c = $conc[0][$sem] ?? null;
+            return $c && (int)$c['aprobado'] === 1 ? ['aprobado' => true, 'usuario' => $c['aprobador'] ?? '', 'fecha' => $c['fecha_aprobado'] ?? ''] : ['aprobado' => false, 'usuario' => '', 'fecha' => ''];
+        };
         echo json_encode([
             'success' => true,
             'indicador' => [
@@ -1329,14 +1331,18 @@ class Modulo144Controller {
                 'meta' => $item['anio_base_meta'] ?? null,
                 'bloqueo' => $this->semestresBloqueados($item),
             ],
-            'completo' => empty($propias), // false cuando el usuario solo ve su facultad
-            'puede_concertar' => count(array_filter($filas, function ($f) { return $f['puede']; })) > 0,
+            'completo' => true,
+            'puede_concertar' => $this->puedeConcertarDependencia($item) || count(array_filter($filas, function ($f) { return $f['puede']; })) > 0,
+            'es_superadmin' => $this->esSuperadminConcertacion(),
             'dependencia' => [
                 'nombre' => (string)($item['responsable_formulacion'] ?? ''),
-                's1' => $esLimite ? null : $numDep($item['semestre1_seguimiento'] ?? null),
-                's2' => $numDep($item['semestre2_seguimiento'] ?? null),
+                'puede' => $this->puedeConcertarDependencia($item),
+                'hecha' => [1 => $esLimite ? null : $num($item['semestre1_seguimiento'] ?? null), 2 => $num($item['semestre2_seguimiento'] ?? null)],
+                'c1' => $info($conc[0][1] ?? null), 'c2' => $info($conc[0][2] ?? null),
+                's1' => $esLimite ? null : $num($item['semestre1_seguimiento'] ?? null), 's2' => $num($item['semestre2_seguimiento'] ?? null),
                 'suma1' => $esLimite ? null : $sumaFac[1], 'suma2' => $sumaFac[2],
             ],
+            'aprobacion' => [1 => $aprob(1), 2 => $aprob(2)],
             'facultades' => $filas,
         ]);
     }
@@ -1345,29 +1351,72 @@ class Modulo144Controller {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
         $id = intval($_POST['formulacion_id'] ?? 0);
-        $fac = intval($_POST['facultad_id'] ?? 0);
+        $fac = intval($_POST['facultad_id'] ?? 0); // 0 = dependencia responsable
         $sem = intval($_POST['semestre'] ?? 0);
         $concertado = !empty($_POST['concertado']) && $_POST['concertado'] !== '0';
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
-        if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
-        // La facultad concierta con la dependencia responsable: cada una confirma lo suyo (y los administradores o responsables pueden hacerlo por ella)
-        if (!$this->puedeRegistrarSeguimientoFacultad($item, $fac)) { echo json_encode(['success' => false, 'message' => 'Solo la propia facultad puede concertar su seguimiento']); return; }
+        if (!$item || $fac < 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
 
-        $actual = null;
-        foreach ($this->model->getDistribucionFacultades($id) as $d) {
-            if ((int)$d['facultad_id'] === $fac) { $actual = $d; break; }
+        $conc = $this->model->getConcertaciones($id);
+        if (!empty($conc[0][$sem]) && (int)$conc[0][$sem]['aprobado'] === 1) {
+            echo json_encode(['success' => false, 'message' => 'Este semestre ya fue aprobado por el superadministrador. Debe quitar la aprobación para cambiarlo']);
+            return;
         }
-        if (!$actual) { echo json_encode(['success' => false, 'message' => 'La facultad no tiene seguimiento registrado en este indicador']); return; }
 
-        $hecha = $actual['seguimiento_sem' . $sem] ?? null;
+        $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
+        if ($fac === 0) {
+            if (!$this->puedeConcertarDependencia($item)) { echo json_encode(['success' => false, 'message' => 'Solo la dependencia responsable concierta su valor']); return; }
+            $hecha = $sem === 1 ? ($esLimite ? null : ($item['semestre1_seguimiento'] ?? null)) : ($item['semestre2_seguimiento'] ?? null);
+        } else {
+            if (!$this->puedeConcertarFacultad($fac)) { echo json_encode(['success' => false, 'message' => 'Solo la propia facultad concierta su valor']); return; }
+            $actual = null;
+            foreach ($this->model->getDistribucionFacultades($id) as $d) {
+                if ((int)$d['facultad_id'] === $fac) { $actual = $d; break; }
+            }
+            if (!$actual) { echo json_encode(['success' => false, 'message' => 'La facultad no tiene seguimiento registrado en este indicador']); return; }
+            $hecha = $actual['seguimiento_sem' . $sem] ?? null;
+        }
+
         $valor = null;
         if ($concertado) {
-            if ($hecha === null || $hecha === '') { echo json_encode(['success' => false, 'message' => 'La facultad aún no reporta este semestre']); return; }
+            if ($hecha === null || $hecha === '') { echo json_encode(['success' => false, 'message' => 'Aún no hay valor reportado para este semestre']); return; }
             $v = trim((string)($_POST['valor'] ?? ''));
             $valor = $v === '' ? (float)$hecha : (float)str_replace(',', '.', $v);
         }
         $ok = $this->model->guardarConcertacion($id, $fac, $sem, $concertado, $valor, trim((string)($_POST['observacion'] ?? '')) ?: null, $_SESSION['usuario_id'] ?? 0);
         echo json_encode(['success' => $ok, 'message' => $ok ? ($concertado ? 'Concertado' : 'Concertación deshecha') : 'No se pudo guardar']);
+    }
+
+    // Solo el superadministrador aprueba, y solo cuando la dependencia y todas las facultades con reporte ya concertaron
+    public function aprobarConcertacion() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        if (!$this->esSuperadminConcertacion()) { echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede aprobar']); return; }
+        $id = intval($_POST['formulacion_id'] ?? 0);
+        $sem = intval($_POST['semestre'] ?? 0);
+        $aprobar = !empty($_POST['aprobado']) && $_POST['aprobado'] !== '0';
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+
+        if ($aprobar) {
+            $conc = $this->model->getConcertaciones($id);
+            $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
+            $faltan = [];
+            $depVal = $sem === 1 ? ($esLimite ? null : ($item['semestre1_seguimiento'] ?? null)) : ($item['semestre2_seguimiento'] ?? null);
+            if ($depVal !== null && $depVal !== '' && empty($conc[0][$sem]['concertado'])) $faltan[] = 'la dependencia responsable';
+            foreach ($this->model->getDistribucionFacultades($id) as $d) {
+                $v = $d['seguimiento_sem' . $sem] ?? null;
+                if ($sem === 1 && $esLimite) continue;
+                if ($v !== null && $v !== '' && empty($conc[(int)$d['facultad_id']][$sem]['concertado'])) $faltan[] = 'una facultad';
+            }
+            if ($faltan) {
+                $n = count($faltan);
+                echo json_encode(['success' => false, 'message' => 'Aún faltan por concertar: ' . ($n === 1 ? $faltan[0] : $n . ' participantes') . '.']);
+                return;
+            }
+        }
+        $ok = $this->model->guardarAprobacion($id, $sem, $aprobar, $_SESSION['usuario_id'] ?? 0);
+        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado' : 'Aprobación retirada') : 'No se pudo guardar']);
     }
 }
 ?>

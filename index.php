@@ -442,6 +442,9 @@ switch ($action) {
             case 'guardarConcertacion':
                 $modulo144Controller->guardarConcertacion();
                 break;
+            case 'aprobarConcertacion':
+                $modulo144Controller->aprobarConcertacion();
+                break;
             case 'resumenEvidencias':
                 $modulo144Controller->resumenEvidencias();
                 break;
