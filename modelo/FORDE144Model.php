@@ -535,18 +535,18 @@ class FORDE144Model {
             error_log('Error getReporteSeguimiento: ' . $e->getMessage());
             return $res;
         }
-        // Facultades con meta en cada indicador y cuántas ya reportaron cada semestre: [id => ['total', 's1', 's2']]
+        // Facultades con meta en cada indicador: [formulacion_id => [[id, nombre], ...]]
         try {
             $q = $this->db->prepare(
-                "SELECT d.formulacion_id, COUNT(*) AS total,
-                        SUM(d.seguimiento_sem1 IS NOT NULL AND d.seguimiento_sem1 <> '') AS s1,
-                        SUM(d.seguimiento_sem2 IS NOT NULL AND d.seguimiento_sem2 <> '') AS s2
-                 FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
-                 WHERE f.formulario_id = :fid AND d.distribucion > 0 GROUP BY d.formulacion_id"
+                "SELECT d.formulacion_id, fa.id AS facultad_id, fa.nombre
+                 FROM formulacion_distribucion_facultad_144 d
+                 JOIN formulacion_144 f ON f.id = d.formulacion_id
+                 JOIN facultades fa ON fa.id = d.facultad_id
+                 WHERE f.formulario_id = :fid AND d.distribucion > 0"
             );
             $q->execute([':fid' => (int)$formulario_id]);
             foreach ($q->fetchAll() as $r) {
-                $res['facultades'][(int)$r['formulacion_id']] = ['total' => (int)$r['total'], 's1' => (int)$r['s1'], 's2' => (int)$r['s2']];
+                $res['facultades'][(int)$r['formulacion_id']][] = ['id' => (int)$r['facultad_id'], 'nombre' => $r['nombre']];
             }
         } catch (PDOException $e) {
             error_log('Error facultades del reporte: ' . $e->getMessage());
