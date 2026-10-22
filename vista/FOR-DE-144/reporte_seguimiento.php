@@ -58,6 +58,14 @@ foreach ($indicadores as $r) {
     ];
 }
 ksort($porLinea);
+// Dependencias responsables (un indicador puede tener varias separadas por coma o punto y coma)
+$dependencias = [];
+foreach ($filas as $i => $f) {
+    $lista = array_values(array_filter(array_map('trim', preg_split('/\s*[;,\/\n]\s*/u', (string)$f['responsable']))));
+    $filas[$i]['deps'] = $lista;
+    foreach ($lista as $d) $dependencias[mb_strtolower($d, 'UTF-8')] = $d;
+}
+uasort($dependencias, function ($a, $b) { return strcoll($a, $b); });
 $cumpl = array_filter(array_map(function ($f) { return $f['pct']; }, $filas), function ($v) { return $v !== null; });
 $promedio = $cumpl ? array_sum($cumpl) / count($cumpl) : 0;
 $pctDe = function ($n, $t) { return $t > 0 ? round($n / $t * 100) : 0; };
@@ -195,21 +203,20 @@ tr:last-child td{border-bottom:0}
                 <option value="">Línea: todas</option>
                 <?php foreach (array_keys($porLinea) as $cod): ?><option value="<?php echo $h($cod); ?>"><?php echo $h($cod); ?></option><?php endforeach; ?>
             </select>
-            <select id="fEstado" aria-label="Estado">
-                <option value="">Estado: todos</option>
-                <option value="publicado">Aprobado</option><option value="revision">En revisión</option>
-                <option value="devuelto">Devuelto</option><option value="construccion">En construcción / sin iniciar</option>
+            <select id="fDependencia" aria-label="Dependencia">
+                <option value="">Dependencia: todas</option>
+                <?php foreach ($dependencias as $k => $d): ?><option value="<?php echo $h($k); ?>"><?php echo $h($d); ?></option><?php endforeach; ?>
             </select>
         </div>
         <div class="tw">
             <table id="tabla">
                 <thead><tr>
                     <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
-                    <th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Avance</th><th>Estado</th><th>Semáforo</th>
+                    <th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Estado</th><th>Semáforo</th>
                 </tr></thead>
                 <tbody>
                 <?php foreach ($filas as $f): ?>
-                <tr data-linea="<?php echo $h($f['linea']); ?>" data-estado="<?php echo $h($f['estado']); ?>"
+                <tr data-linea="<?php echo $h($f['linea']); ?>" data-estado="<?php echo $h($f['estado']); ?>" data-deps="|<?php echo $h(mb_strtolower(implode('|', $f['deps']), 'UTF-8')); ?>|"
                     data-buscar="<?php echo $h(mb_strtolower($f['nombre'] . ' ' . $f['indicador'] . ' ' . $f['responsable'] . ' ' . $f['lmp'], 'UTF-8')); ?>">
                     <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
@@ -217,9 +224,6 @@ tr:last-child td{border-bottom:0}
                     <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
                     <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">—</span>'; ?></td>
                     <td><span class="ev"><span class="<?php echo $f['ev1'] ? '' : 'z'; ?>" title="Evidencias del semestre 1">S1 · <?php echo $f['ev1']; ?></span><span class="<?php echo $f['ev2'] ? '' : 'z'; ?>" title="Evidencias del semestre 2">S2 · <?php echo $f['ev2']; ?></span></span></td>
-                    <td><?php if ($f['pct'] === null): ?><span class="nd">—</span><?php else: ?>
-                        <div class="pct"><div class="trk"><i class="<?php echo $f['pct'] >= $META ? '' : 'cam'; ?>" style="width:<?php echo round($f['pct']); ?>%"></i></div><span><?php echo round($f['pct']); ?>%</span></div>
-                        <?php endif; ?></td>
                     <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
                     <td><span class="sem-circ" title="Etapas del semáforo de aprobación">
                         <?php foreach (['G', 'L', 'V', 'P'] as $i => $letra): ?><i class="<?php echo ($f['estado'] === 'publicado' || ($f['sol'] === 1 && $i < $f['etapa'])) ? 'on' : ''; ?>"><?php echo $letra; ?></i><?php endforeach; ?>
@@ -237,14 +241,14 @@ tr:last-child td{border-bottom:0}
 </div>
 <script>
 (function () {
-    var q = document.getElementById('buscar'), l = document.getElementById('fLinea'), e = document.getElementById('fEstado');
+    var q = document.getElementById('buscar'), l = document.getElementById('fLinea'), e = document.getElementById('fDependencia');
     var filas = Array.prototype.slice.call(document.querySelectorAll('#tabla tbody tr'));
     function filtrar() {
         var t = q.value.trim().toLowerCase(), visibles = 0;
         filas.forEach(function (r) {
             var ok = (!t || r.getAttribute('data-buscar').indexOf(t) !== -1)
                 && (!l.value || r.getAttribute('data-linea') === l.value)
-                && (!e.value || r.getAttribute('data-estado') === e.value);
+                && (!e.value || r.getAttribute('data-deps').indexOf('|' + e.value + '|') !== -1);
             r.hidden = !ok; if (ok) visibles++;
         });
         document.getElementById('sinResultados').hidden = visibles > 0 || !filas.length;
