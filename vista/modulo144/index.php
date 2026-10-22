@@ -1087,7 +1087,7 @@ ob_start();
         .cnx-tabla td { padding: 12px; border-bottom: 1px solid #F0F1F5; vertical-align: middle; }
         .cnx-tabla .cnx-n { text-align: right; width: 90px; font-variant-numeric: tabular-nums; }
         .cnx-fac { font-weight: 600; }
-        .cnx-celda { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 220px; }
+        .cnx-celda { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; min-width: 0; }
         .cnx-valor { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 42px; }
         .cnx-input { width: 96px; border: 1px solid #C9CEDB; border-radius: 8px; padding: 5px 8px; font-size: .9rem; font-weight: 700; }
         .cnx-estado { font-size: .78rem; color: #8A5A00; background: #FDF1D6; border-radius: 99px; padding: 3px 10px; font-weight: 600; }
@@ -1103,6 +1103,29 @@ ob_start();
         .cnx-det:hover { background: #F2F4F8; color: #143163; }
         .cnx-desc td { background: #F9FAFC; color: #424245; font-size: .86rem; line-height: 1.45; padding: 10px 16px 14px; }
         .cnx-modal .modal-footer { justify-content: space-between; }
+        .cnx-modal .table-responsive { overflow-x: visible; }
+        .cnx-tabla tr[hidden] { display: none; }
+        @media (max-width: 820px) {
+            .cnx-modal .modal-body { padding: 14px 12px; }
+            .cnx-tabla, .cnx-tabla tbody, .cnx-tabla tfoot, .cnx-tabla tr, .cnx-tabla td { display: block; width: 100%; box-sizing: border-box; }
+            .cnx-tabla thead { display: none; }
+            .cnx-tabla tr { border: 1px solid #E8EAF0; border-radius: 12px; padding: 8px 14px; margin-bottom: 10px; background: #fff; position: relative; }
+            .cnx-tabla tr[hidden] { display: none; }
+            .cnx-tabla td { border: 0; padding: 7px 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; text-align: right; }
+            .cnx-tabla td[data-label]::before { content: attr(data-label); flex: none; min-width: 86px; text-align: left; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #8a90a2; }
+            .cnx-tabla td.cnx-fac { display: block; text-align: left; font-weight: 700; padding: 4px 36px 8px 0; }
+            .cnx-tabla td.cnx-n { font-variant-numeric: tabular-nums; }
+            .cnx-tabla .cnx-celda { justify-content: flex-end; }
+            .cnx-tabla td.cnx-det-td { position: absolute; top: 6px; right: 6px; width: auto; padding: 0; }
+            .cnx-tabla td.cnx-det-td:empty { display: none; }
+            .cnx-tabla tr.cnx-desc { background: #F9FAFC; }
+            .cnx-tabla tr.cnx-desc td { display: block; text-align: left; padding: 6px 0; }
+            .cnx-tabla tfoot tr td.cnx-fac { padding-right: 0; }
+            .cnx-comp { gap: 8px 16px; }
+            .cnx-comp .cnx-pill { margin-left: 0; }
+            .cnx-modal .modal-footer { flex-direction: column; align-items: stretch; }
+            .cnx-masivo { flex-direction: column; }
+        }
         .cnx-fila-dep td { background: #F7F8FB; }
         .cnx-fila-dep .cnx-fac small { display: block; font-weight: 500; font-size: .74rem; color: #6E6E73; margin-top: 2px; }
         .cnx-aprob td { background: #fff; border-top: 2px solid #E8EAF0; border-bottom: 0; padding-top: 14px; }
@@ -6239,17 +6262,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             // Primero la dependencia responsable (concierta su valor), luego cada facultad (concierta el suyo)
             cuerpo.append(
                 '<tr class="cnx-fila-dep"><td class="cnx-fac">' + evalHtmlEscape(nomDep) + '<small>Dependencia responsable</small></td>' +
-                '<td class="cnx-n">' + (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? cnFmt(r.indicador.meta, unidad) : '—') + '</td>' +
-                '<td>' + cnCeldaSem({ hecha: dep.hecha[1], c: dep.c1, puede: dep.puede, aprobado: aprob[1], fac: 0, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
-                '<td>' + cnCeldaSem({ hecha: dep.hecha[2], c: dep.c2, puede: dep.puede, aprobado: aprob[2], fac: 0, sem: 2, unidad: unidad, aplica: true }) + '</td><td></td></tr>');
+                '<td class="cnx-n" data-label="Meta">' + (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? cnFmt(r.indicador.meta, unidad) : '—') + '</td>' +
+                '<td data-label="Semestre 1">' + cnCeldaSem({ hecha: dep.hecha[1], c: dep.c1, puede: dep.puede, aprobado: aprob[1], fac: 0, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
+                '<td data-label="Semestre 2">' + cnCeldaSem({ hecha: dep.hecha[2], c: dep.c2, puede: dep.puede, aprobado: aprob[2], fac: 0, sem: 2, unidad: unidad, aplica: true }) + '</td><td></td></tr>');
             if (!r.facultades.length) cuerpo.append('<tr><td colspan="5" class="text-center text-muted py-4">Ninguna facultad tiene meta ni seguimiento en este indicador.</td></tr>');
             r.facultades.forEach(function(f) {
                 const tieneDesc = (f.descripcion[1] || f.descripcion[2]);
                 cuerpo.append(
                     '<tr class="cnx-fila-fac" data-fac="' + f.facultad_id + '"><td class="cnx-fac">' + evalHtmlEscape(f.nombre) + '</td>' +
-                    '<td class="cnx-n">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cnx-nd">Sin meta</span>') + '</td>' +
-                    '<td>' + cnCeldaSem({ hecha: f.hecha[1], c: f.c1, puede: f.puede, aprobado: aprob[1], fac: f.facultad_id, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
-                    '<td>' + cnCeldaSem({ hecha: f.hecha[2], c: f.c2, puede: f.puede, aprobado: aprob[2], fac: f.facultad_id, sem: 2, unidad: unidad, aplica: true }) + '</td>' +
+                    '<td class="cnx-n" data-label="Meta">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cnx-nd">Sin meta</span>') + '</td>' +
+                    '<td data-label="Semestre 1">' + cnCeldaSem({ hecha: f.hecha[1], c: f.c1, puede: f.puede, aprobado: aprob[1], fac: f.facultad_id, sem: 1, unidad: unidad, aplica: aplicaS1 }) + '</td>' +
+                    '<td data-label="Semestre 2">' + cnCeldaSem({ hecha: f.hecha[2], c: f.c2, puede: f.puede, aprobado: aprob[2], fac: f.facultad_id, sem: 2, unidad: unidad, aplica: true }) + '</td>' +
                     '<td class="cnx-det-td">' + (tieneDesc ? '<button type="button" class="cnx-det" aria-label="Ver descripción" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</td></tr>' +
                     (tieneDesc ? '<tr class="cnx-desc" hidden><td colspan="5">' +
                         (f.descripcion[1] ? '<div><b>Semestre 1:</b> ' + evalHtmlEscape(f.descripcion[1]) + '</div>' : '') +
@@ -6259,7 +6282,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             // Aprobación (solo el superadministrador)
             $('#cnFacTabla tfoot').html(
                 '<tr class="cnx-aprob"><td colspan="2" class="cnx-fac">Aprobación del superadministrador</td>' +
-                '<td>' + cnCeldaAprobacion(r, 1) + '</td><td>' + cnCeldaAprobacion(r, 2) + '</td><td></td></tr>');
+                '<td data-label="Semestre 1">' + cnCeldaAprobacion(r, 1) + '</td><td data-label="Semestre 2">' + cnCeldaAprobacion(r, 2) + '</td><td></td></tr>');
 
             // Acciones en bloque: concertar todo lo pendiente que el usuario puede concertar
             const masivo = $('#cnMasivo').empty();
