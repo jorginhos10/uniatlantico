@@ -1033,6 +1033,35 @@ ob_start();
         .cn-lmp { display: inline-block; background: #E4EEF8; color: #1D71B8; font-weight: 700; font-size: .75rem; border-radius: 99px; padding: 3px 10px; white-space: nowrap; }
         .cn-estado { font-size: .75rem; font-weight: 700; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
         .cn-estado.ok { background: #E3F4EA; color: #1F8A4C; }
+        .cn-matriz { min-width: max-content; }
+        .cn-matriz th, .cn-matriz td { white-space: nowrap; }
+        .cn-matriz .cn-grupos th { text-align: center; font-size: .78rem; letter-spacing: .04em; padding: 8px 10px; background: transparent; color: #143163; position: static; border-bottom: 0; }
+        .cn-matriz .cn-g-dep { background: #D85819 !important; color: #fff !important; border-radius: 8px 8px 0 0; }
+        .cn-matriz .cn-g-fac { background: #F4C7AE !important; color: #5a2a10 !important; border-radius: 8px 8px 0 0; border-left: 4px solid #fff; }
+        .cn-matriz thead tr:not(.cn-grupos) th { background: #143163; color: #fff; text-align: center; }
+        .cn-matriz thead .cn-th-coinciden { background: #1D71B8; }
+        .cn-matriz td.cn-fg:first-of-type { border-left: 0; }
+        .cn-matriz .cn-meta { border-left: 4px solid #fff; background: #FBEDE4; font-weight: 700; }
+        .cn-matriz .cn-fg[data-fac] { background-clip: padding-box; }
+        .cn-matriz .cn-sticky { position: sticky; left: 0; z-index: 2; background: #fff; box-shadow: 1px 0 0 #E5E5EA; }
+        .cn-matriz thead .cn-sticky { z-index: 3; background: #143163; text-align: left; }
+        .cn-matriz .cn-nombre { min-width: 260px; max-width: 320px; white-space: normal; }
+        .cn-matriz .cn-formula, .cn-matriz .cn-desc { white-space: normal; min-width: 200px; max-width: 280px; font-size: .8rem; color: #424245; }
+        .cn-matriz .cn-tipo { white-space: normal; min-width: 130px; text-align: center; }
+        .cn-matriz .cn-resp { min-width: 190px; white-space: normal; }
+        .cn-matriz .cn-num { text-align: center; }
+        .cn-matriz .cn-tot { font-weight: 800; color: #143163; }
+        .cn-coinciden { font-weight: 800; text-align: center; letter-spacing: .04em; }
+        td.cn-coinciden.si { background: #D8F0DF; color: #1F8A4C; }
+        td.cn-coinciden.no { background: #FDF1D6; color: #8A5A00; }
+        td.cn-coinciden.nd { color: #6E6E73; }
+        span.cn-coinciden { border-radius: 99px; padding: 4px 12px; font-size: .8rem; display: inline-block; }
+        span.cn-coinciden.si { background: #D8F0DF; color: #1F8A4C; }
+        span.cn-coinciden.no { background: #FDF1D6; color: #8A5A00; }
+        span.cn-coinciden.nd { background: #EEF0F5; color: #6E6E73; }
+        .cn-concerta { white-space: nowrap; }
+        .cn-concerta .cn-prog { margin-right: 4px; }
+        .cn-dep-resumen { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; background: #F2F5FA; border: 1px solid #E5E5EA; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: .88rem; }
         .cn-fila { cursor: pointer; }
         .cn-fila:hover td { background: #F5F8FC; }
         .cn-prog { display: inline-block; min-width: 54px; text-align: center; font-weight: 700; font-size: .8rem; border-radius: 99px; padding: 3px 10px; background: #FDF1D6; color: #8A5A00; }
@@ -2241,8 +2270,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="p-4">
                     <?php
                     // Indicadores aprobados que tienen meta por facultad: lo que cada facultad reporta se concierta aquí
-                    $cnFilas = array_values(array_filter($publicadosVisiblesPorModulo['formulacion'] ?? [], function ($r) use ($facultades_por_item) {
-                        return !empty($facultades_por_item[(int)$r['id']]);
+                    $cnFilas = array_values(array_filter($publicadosVisiblesPorModulo['formulacion'] ?? [], function ($r) use ($resumen_concertaciones) {
+                        return !empty(($resumen_concertaciones ?? [])[(int)$r['id']]['facultades']);
                     }));
                     usort($cnFilas, function ($a, $b) {
                         return strcmp(($a['linea_codigo'] ?? '~') . ($a['motor_codigo'] ?? '~') . ($a['proyecto_codigo'] ?? '~'), ($b['linea_codigo'] ?? '~') . ($b['motor_codigo'] ?? '~') . ($b['proyecto_codigo'] ?? '~'));
@@ -2263,6 +2292,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="">Línea: todas</option>
                                 <?php foreach (array_keys($cnLineas) as $cnCod): ?><option value="<?php echo htmlspecialchars($cnCod); ?>"><?php echo htmlspecialchars($cnCod); ?></option><?php endforeach; ?>
                             </select>
+                            <select id="cnFacultad" aria-label="Facultad">
+                                <option value="">Facultad: todas</option>
+                            </select>
                             <span class="cn-contador" id="cnContador"><?php echo count($cnFilas); ?> indicadores</span>
                         </div>
                     </div>
@@ -2273,28 +2305,103 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <div class="desarrollo-subtitle">Aquí aparecen los indicadores aprobados que tienen meta asignada a las facultades.</div>
                     </div>
                     <?php else: ?>
+                    <?php
+                    $cnMat = $matriz_concertacion ?? [];
+                    // Facultades que tienen meta o reporte en alguno de los indicadores listados
+                    $cnFacs = [];
+                    foreach ($facultades as $cnF) {
+                        foreach ($cnFilas as $cnR0) { if (isset($cnMat[(int)$cnR0['id']][(int)$cnF['id']])) { $cnFacs[] = $cnF; break; } }
+                    }
+                    $cnCorto = function ($n) { return mb_convert_case(preg_replace('/^\s*facultad\s+de\s+/iu', '', (string)$n), MB_CASE_TITLE, 'UTF-8'); };
+                    $cnV = function ($v, $u) {
+                        if ($v === null || $v === '') return '';
+                        $t = rtrim(rtrim(number_format((float)$v, 2, ',', '.'), '0'), ',');
+                        return $t . ($u === 'Porcentaje' ? '%' : '');
+                    };
+                    $cnTot = function ($tipo, $s1, $s2) {
+                        $v = array_values(array_filter([$s1, $s2], function ($x) { return $x !== null && $x !== ''; }));
+                        if (!$v) return null;
+                        $v = array_map('floatval', $v);
+                        if ($tipo === 'Promedio') return array_sum($v) / count($v);
+                        if ($tipo === 'Último valor reportado' || $tipo === 'Límite') return ($s2 !== null && $s2 !== '') ? (float)$s2 : (float)$s1;
+                        return array_sum($v);
+                    };
+                    $cnTexto = function ($t, $max = 140) { $t = trim((string)$t); return mb_strlen($t, 'UTF-8') > $max ? mb_substr($t, 0, $max, 'UTF-8') . '…' : $t; };
+                    ?>
                     <div class="cn-tabla-wrap">
-                        <table class="cn-tabla" id="cnTabla">
-                            <thead><tr>
-                                <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
-                                <th class="cn-num">Facultades</th><th class="cn-num">Semestre 1</th><th class="cn-num">Semestre 2</th><th></th>
-                            </tr></thead>
+                        <table class="cn-tabla cn-matriz" id="cnTabla">
+                            <thead>
+                                <tr class="cn-grupos">
+                                    <th colspan="6"></th>
+                                    <th colspan="4" class="cn-g-dep">Dependencia responsable</th>
+                                    <?php foreach ($cnFacs as $cnF): ?>
+                                    <th colspan="5" class="cn-g-fac cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>"><?php echo htmlspecialchars($cnCorto($cnF['nombre'])); ?></th>
+                                    <?php endforeach; ?>
+                                    <th colspan="2"></th>
+                                </tr>
+                                <tr>
+                                    <th class="cn-sticky">Indicador</th><th>Línea estratégica</th><th>Fórmula del indicador</th><th>Tipo de medición</th><th class="cn-num">Meta general</th><th>Responsable</th>
+                                    <th class="cn-num">Sem 1</th><th class="cn-num">Sem 2</th><th class="cn-num">Total</th><th>Descripción</th>
+                                    <?php foreach ($cnFacs as $cnF): ?>
+                                    <th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Meta</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Sem 1</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Sem 2</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Total</th><th class="cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Descripción</th>
+                                    <?php endforeach; ?>
+                                    <th class="cn-th-coinciden">Coinciden</th><th>Concertación</th>
+                                </tr>
+                            </thead>
                             <tbody>
                             <?php foreach ($cnFilas as $cnR):
                                 $cnId = (int)$cnR['id'];
+                                $cnU = $cnR['unidad_medida'] ?? '';
+                                $cnTipo = $cnR['tipo_medicion'] ?? '';
+                                $cnLimite = $cnTipo === 'Límite';
                                 $cnNombre = trim((string)($cnR['nombre_indicador'] ?? '')) !== '' ? $cnR['nombre_indicador'] : ($cnR['formula_medicion'] ?: $cnR['nombre_borrador']);
                                 $cnLmp = implode(' · ', array_filter([$cnR['linea_codigo'] ?? '', $cnR['motor_codigo'] ?? '', $cnR['proyecto_codigo'] ?? '']));
-                                $cnRes = $cnResumen[$cnId] ?? ['facultades' => count($facultades_por_item[$cnId] ?? []), 's1' => 0, 's2' => 0];
+                                $cnRes = $cnResumen[$cnId] ?? ['facultades' => 0, 's1' => 0, 's2' => 0];
+                                // Lo que reporta la dependencia responsable
+                                $dS1 = $cnLimite ? null : (($cnR['semestre1_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre1_seguimiento'] : null);
+                                $dS2 = ($cnR['semestre2_seguimiento'] ?? '') !== '' ? (float)$cnR['semestre2_seguimiento'] : null;
+                                $dDesc = trim(($cnR['logros'] ?? '') !== '' ? 'S1: ' . $cnR['logros'] : '') . (($cnR['logros_sem2'] ?? '') !== '' ? "\nS2: " . $cnR['logros_sem2'] : '');
+                                // Suma de lo que reportan las facultades
+                                $fS1 = null; $fS2 = null;
+                                foreach (($cnMat[$cnId] ?? []) as $cnD) {
+                                    if (($cnD['seguimiento_sem1'] ?? '') !== '' && $cnD['seguimiento_sem1'] !== null) $fS1 = ($fS1 ?? 0) + (float)$cnD['seguimiento_sem1'];
+                                    if (($cnD['seguimiento_sem2'] ?? '') !== '' && $cnD['seguimiento_sem2'] !== null) $fS2 = ($fS2 ?? 0) + (float)$cnD['seguimiento_sem2'];
+                                }
+                                if ($cnLimite) $fS1 = null;
+                                $hayDatos = $dS1 !== null || $dS2 !== null || $fS1 !== null || $fS2 !== null;
+                                $igual = function ($x, $y) { return abs(($x ?? 0) - ($y ?? 0)) < 0.01; };
+                                $coinciden = !$hayDatos ? null : ($igual($dS1, $fS1) && $igual($dS2, $fS2));
                             ?>
                             <tr class="cn-fila" data-id="<?php echo $cnId; ?>" data-total="<?php echo (int)$cnRes['facultades']; ?>" data-linea="<?php echo htmlspecialchars($cnR['linea_codigo'] ?? ''); ?>"
                                 data-buscar="<?php echo htmlspecialchars(mb_strtolower($cnNombre . ' ' . ($cnR['responsable_formulacion'] ?? '') . ' ' . $cnLmp, 'UTF-8')); ?>" onclick="abrirConcertacion(<?php echo $cnId; ?>)">
-                                <td class="cn-nombre"><?php echo htmlspecialchars($cnNombre); ?></td>
-                                <td><span class="cn-lmp"><?php echo htmlspecialchars($cnLmp ?: '—'); ?></span></td>
-                                <td><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></td>
-                                <td class="cn-num"><?php echo (int)$cnRes['facultades']; ?></td>
-                                <td class="cn-num"><span class="cn-prog cn-s1 <?php echo $cnRes['s1'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>"><?php echo (int)$cnRes['s1']; ?>/<?php echo (int)$cnRes['facultades']; ?></span></td>
-                                <td class="cn-num"><span class="cn-prog cn-s2 <?php echo $cnRes['s2'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>"><?php echo (int)$cnRes['s2']; ?>/<?php echo (int)$cnRes['facultades']; ?></span></td>
-                                <td class="cn-num"><button type="button" class="cn-abrir" onclick="event.stopPropagation(); abrirConcertacion(<?php echo $cnId; ?>)">Concertar <i class="fas fa-chevron-right"></i></button></td>
+                                <td class="cn-sticky cn-nombre"><?php echo htmlspecialchars($cnNombre); ?></td>
+                                <td><span class="cn-lmp" title="<?php echo htmlspecialchars($cnR['linea_estrategica'] ?? ''); ?>"><?php echo htmlspecialchars($cnLmp ?: '—'); ?></span></td>
+                                <td class="cn-formula"><?php echo htmlspecialchars($cnTexto($cnR['formula_medicion'] ?? '', 110)); ?></td>
+                                <td class="cn-tipo"><?php echo htmlspecialchars($cnTipo ?: '—'); ?></td>
+                                <td class="cn-num cn-anio"><?php echo $cnV($cnR['anio_base_meta'] ?? '', $cnU) ?: '—'; ?></td>
+                                <td class="cn-resp"><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></td>
+                                <td class="cn-num"><?php echo $cnV($dS1, $cnU) ?: ($cnLimite ? '<span class="cn-sin">N/A</span>' : '—'); ?></td>
+                                <td class="cn-num"><?php echo $cnV($dS2, $cnU) ?: '—'; ?></td>
+                                <td class="cn-num cn-tot"><?php echo $cnV($cnTot($cnTipo, $dS1, $dS2), $cnU) ?: '—'; ?></td>
+                                <td class="cn-desc" title="<?php echo htmlspecialchars($dDesc); ?>"><?php echo htmlspecialchars($cnTexto($dDesc)); ?></td>
+                                <?php foreach ($cnFacs as $cnF):
+                                    $cnD = $cnMat[$cnId][(int)$cnF['id']] ?? null;
+                                    $x1 = $cnD && ($cnD['seguimiento_sem1'] ?? '') !== '' ? $cnD['seguimiento_sem1'] : null;
+                                    $x2 = $cnD && ($cnD['seguimiento_sem2'] ?? '') !== '' ? $cnD['seguimiento_sem2'] : null;
+                                    if ($cnLimite) $x1 = null;
+                                    $xd = $cnD ? trim((($cnD['seguimiento_descripcion'] ?? '') !== '' ? 'S1: ' . $cnD['seguimiento_descripcion'] : '') . (($cnD['seguimiento_descripcion2'] ?? '') !== '' ? "\nS2: " . $cnD['seguimiento_descripcion2'] : '')) : '';
+                                    $fid = (int)$cnF['id'];
+                                ?>
+                                <td class="cn-num cn-fg cn-meta" data-fac="<?php echo $fid; ?>"><?php echo $cnD && (float)$cnD['distribucion'] > 0 ? $cnV($cnD['distribucion'], $cnU) : ($cnD ? '<span class="cn-sin">Sin meta</span>' : '<span class="cn-sin">—</span>'); ?></td>
+                                <td class="cn-num cn-fg" data-fac="<?php echo $fid; ?>"><?php echo $cnV($x1, $cnU) ?: '—'; ?></td>
+                                <td class="cn-num cn-fg" data-fac="<?php echo $fid; ?>"><?php echo $cnV($x2, $cnU) ?: '—'; ?></td>
+                                <td class="cn-num cn-fg cn-tot" data-fac="<?php echo $fid; ?>"><?php echo $cnV($cnTot($cnTipo, $x1, $x2), $cnU) ?: '—'; ?></td>
+                                <td class="cn-desc cn-fg" data-fac="<?php echo $fid; ?>" title="<?php echo htmlspecialchars($xd); ?>"><?php echo htmlspecialchars($cnTexto($xd)); ?></td>
+                                <?php endforeach; ?>
+                                <td class="cn-coinciden <?php echo $coinciden === null ? 'nd' : ($coinciden ? 'si' : 'no'); ?>"><?php echo $coinciden === null ? '—' : ($coinciden ? 'SÍ' : 'NO'); ?></td>
+                                <td class="cn-concerta"><span class="cn-prog cn-s1 <?php echo $cnRes['s1'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>" title="Semestre 1 concertado"><?php echo (int)$cnRes['s1']; ?>/<?php echo (int)$cnRes['facultades']; ?></span>
+                                    <span class="cn-prog cn-s2 <?php echo $cnRes['s2'] >= $cnRes['facultades'] && $cnRes['facultades'] > 0 ? 'ok' : ''; ?>" title="Semestre 2 concertado"><?php echo (int)$cnRes['s2']; ?>/<?php echo (int)$cnRes['facultades']; ?></span>
+                                    <button type="button" class="cn-abrir" onclick="event.stopPropagation(); abrirConcertacion(<?php echo $cnId; ?>)">Concertar</button></td>
                             </tr>
                             <?php endforeach; ?>
                             </tbody>
@@ -3018,6 +3125,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
                 <div class="modal-body">
                     <div class="fw-bold mb-1" id="cnIndicador"></div>
+                    <div class="cn-dep-resumen" id="cnResumenDep"></div>
                     <p class="text-muted small mb-3" id="cnAyuda">La meta hecha es la que registró cada facultad. Al concertarla queda aceptada para el semestre.</p>
                     <div class="alert alert-danger py-2 small" id="cnError" style="display:none;"></div>
                     <div class="table-responsive">
@@ -3909,7 +4017,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // Muestra solo las facultades con valor en la distribución del indicador
-        function cargarSeguimientoFacultades(formulacionId) {
+        // gestionado = indicador gestionado desde facultades: todas las facultades pueden reportar, aunque no tengan meta
+        function cargarSeguimientoFacultades(formulacionId, gestionado) {
             const filas = $('#tablaSeguimientoFacultades tbody tr');
             filas.hide().removeClass('table-primary');
             filas.find('input').val('');
@@ -3927,10 +4036,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     let hay = false;
                     (response.distribucion || []).forEach(function(d) {
                         const dist = segFacNum(d.distribucion) || 0;
-                        if (dist <= 0) return;
+                        const reporto = [d.seguimiento_sem1, d.seguimiento_sem2, d.seguimiento_descripcion, d.seguimiento_descripcion2]
+                            .some(function(v) { return v !== null && v !== undefined && String(v).trim() !== ''; });
+                        if (dist <= 0 && !reporto) return; // sin meta ni reporte: se decide abajo si se muestra
                         const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + d.facultad_id + '"]');
                         if (!fila.length) return;
-                        fila.find('.seg-fac-distribucion').text(dist.toFixed(2));
+                        fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : 'Sin meta');
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
                         fila.find('.seg-fac-desc1').val(d.seguimiento_descripcion || '');
@@ -3939,6 +4050,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         fila.show();
                         hay = true;
                     });
+                    // Indicador gestionado desde facultades: las facultades sin meta también aparecen y pueden reportar lo que hacen
+                    if (gestionado) {
+                        const soloIds = (response.solo_facultades || []).map(Number);
+                        $('#tablaSeguimientoFacultades tbody tr').each(function() {
+                            const fila = $(this);
+                            const fid = parseInt(fila.data('facultad-id'), 10);
+                            if (fila.is(':visible')) return;
+                            if (soloIds.length && soloIds.indexOf(fid) === -1) return; // la facultad solo ve la suya
+                            fila.find('.seg-fac-distribucion').text('Sin meta');
+                            if (VIEWER_FACULTADES.includes(fid)) fila.addClass('table-primary');
+                            fila.show();
+                            hay = true;
+                        });
+                    }
                     $('#seguimientoFacultadesWrap').toggle(hay);
                     // Usuario de facultad: solo ve su propia fila (el servidor no envía las demás)
                     const soloPropia = (response.solo_facultades || []).length > 0;
@@ -5308,7 +5433,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
                             aplicarBloqueoSemestres();
-                            cargarSeguimientoFacultades(b.id);
+                            cargarSeguimientoFacultades(b.id, String(b.gestionado_facultades) === '1');
                             cargarResumenEvidencias(b.id);
                             $('#modalSeguimiento').modal('show');
                         }
@@ -5793,6 +5918,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const vacio = document.getElementById('cnVacio'); if (vacio) vacio.hidden = visibles > 0;
             }
             q.addEventListener('input', filtrar); l.addEventListener('change', filtrar);
+
+            // Facultad: deja visible solo el bloque de la facultad elegida
+            const sf = document.getElementById('cnFacultad');
+            if (sf) {
+                const vistos = {};
+                document.querySelectorAll('#cnTabla thead .cn-g-fac').forEach(function(th) {
+                    const id = th.getAttribute('data-fac');
+                    if (vistos[id]) return; vistos[id] = true;
+                    const o = document.createElement('option'); o.value = id; o.textContent = th.textContent.trim(); sf.appendChild(o);
+                });
+                sf.addEventListener('change', function() {
+                    document.querySelectorAll('#cnTabla .cn-fg').forEach(function(c) {
+                        c.style.display = (!sf.value || c.getAttribute('data-fac') === sf.value) ? '' : 'none';
+                    });
+                });
+            }
         })();
 
         /* ===== CONCERTACIÓN POR INDICADOR: todas las facultades, meta propuesta vs meta hecha ===== */
@@ -5806,6 +5947,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function cnCelda(f, sem, unidad, puede, aplica) {
+            puede = !!f.puede;
             const hecha = f.hecha[sem];
             const c = f['c' + sem] || {};
             if (!aplica) return '<span class="cn-sin">No aplica</span>';
@@ -5823,11 +5965,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function cnPintar(r) {
             const unidad = r.indicador.unidad;
             const aplicaS1 = r.indicador.tipo !== 'Límite';
-            $('#cnTituloModal').html('<i class="fas fa-handshake me-2"></i>Concertación · ' + evalHtmlEscape(r.indicador.nombre).slice(0, 110));
             $('#cnIndicador').text(r.indicador.nombre);
+            const dep = r.dependencia || {};
+            const nomDep = dep.nombre || 'la dependencia responsable';
+            $('#cnTituloModal').html('<i class="fas fa-handshake me-2"></i>Concertación con ' + evalHtmlEscape(nomDep));
             $('#cnAyuda').text(r.puede_concertar
-                ? 'La meta hecha es la que registró cada facultad. Puedes ajustar el valor y concertarla; al concertar queda aceptada para el semestre.'
-                : 'Estás viendo el estado de la concertación. La concertan los administradores y la dependencia responsable del indicador.');
+                ? 'Cada facultad concierta con ' + nomDep + ': revisa tu meta hecha, ajusta el valor si hace falta y pulsa Concertar.'
+                : 'Estás viendo el estado de la concertación. Cada facultad concierta lo suyo con ' + nomDep + '.');
+            // Comparación entre lo que reporta la dependencia y la suma de las facultades
+            const fmtDep = function(v) { return cnFmt(v, unidad); };
+            const iguales = function(a, b) { return Math.abs((a || 0) - (b || 0)) < 0.01; };
+            const hayDatos = [dep.s1, dep.s2, dep.suma1, dep.suma2].some(function(v) { return v !== null && v !== undefined; });
+            const coinciden = hayDatos && iguales(dep.s1, dep.suma1) && iguales(dep.s2, dep.suma2);
+            $('#cnResumenDep').html(
+                '<div class="cn-dep-bloque"><b>' + evalHtmlEscape(nomDep) + '</b> reporta: Sem 1 <b>' + fmtDep(dep.s1) + '</b> · Sem 2 <b>' + fmtDep(dep.s2) + '</b></div>' +
+                '<div class="cn-dep-bloque">Las facultades suman: Sem 1 <b>' + fmtDep(dep.suma1) + '</b> · Sem 2 <b>' + fmtDep(dep.suma2) + '</b></div>' +
+                '<div class="cn-dep-bloque"><span class="cn-coinciden ' + (!hayDatos ? 'nd' : (coinciden ? 'si' : 'no')) + '">' + (!hayDatos ? 'Sin datos' : (coinciden ? 'Coinciden: SÍ' : 'Coinciden: NO')) + '</span></div>');
             const cuerpo = $('#cnFacTabla tbody').empty();
             if (!r.facultades.length) cuerpo.append('<tr><td colspan="6" class="text-center text-muted py-4">Este indicador no tiene facultades con meta.</td></tr>');
             let c1 = 0, c2 = 0;
@@ -5837,7 +5990,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const desc = function(sem) { return f.descripcion[sem] ? '<small title="' + evalHtmlEscape(f.descripcion[sem]) + '">' + evalHtmlEscape(String(f.descripcion[sem]).slice(0, 90)) + (String(f.descripcion[sem]).length > 90 ? '…' : '') + '</small>' : ''; };
                 cuerpo.append(
                     '<tr data-fac="' + f.facultad_id + '"><td class="fw-semibold">' + evalHtmlEscape(f.nombre) + '</td>' +
-                    '<td class="text-end cn-hecha">' + cnFmt(f.propuesta, unidad) + '</td>' +
+                    '<td class="text-end cn-hecha">' + (f.propuesta > 0 ? cnFmt(f.propuesta, unidad) : '<span class="cn-sin">Sin meta</span>') + '</td>' +
                     '<td class="cn-hecha">' + cnFmt(f.hecha[1], unidad) + desc(1) + '</td><td>' + cnCelda(f, 1, unidad, r.puede_concertar, aplicaS1) + '</td>' +
                     '<td class="cn-hecha">' + cnFmt(f.hecha[2], unidad) + desc(2) + '</td><td>' + cnCelda(f, 2, unidad, r.puede_concertar, true) + '</td></tr>'
                 );

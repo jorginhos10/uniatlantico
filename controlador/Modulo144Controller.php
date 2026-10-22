@@ -38,8 +38,9 @@ class Modulo144Controller {
         // Si la dependencia del usuario es una facultad, ve en Seguimiento los indicadores donde su facultad tiene distribución
         // Facultades del usuario (por su dependencia principal o por cualquiera de las asociadas en "Responsable de")
         $viewer_facultades = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
-        $facultades_por_item = $this->model->getFacultadesConDistribucion((int)$formulario['id']);
+        $facultades_por_item = $this->model->getFacultadesConAcceso((int)$formulario['id']);
         $resumen_concertaciones = $this->model->getResumenConcertaciones((int)$formulario['id']);
+        $matriz_concertacion = $this->model->getMatrizConcertacion((int)$formulario['id']);
         $facultades = $this->model->getFacultades();
 
         // Resumen del informe (cumplimiento ponderado por líneas, motores y proyectos) para "Evaluación líneas"
@@ -1281,14 +1282,28 @@ class Modulo144Controller {
         $conc = $this->model->getConcertaciones($id);
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
 
+        // Lo que reportan todas las facultades (antes de limitar la vista a la facultad del usuario)
+        $todas = $this->model->getDistribucionFacultades($id);
+        $sumaFac = [1 => null, 2 => null];
+        foreach ($todas as $d) {
+            foreach ([1, 2] as $sem) {
+                $v = $d['seguimiento_sem' . $sem] ?? null;
+                if ($v !== null && $v !== '') $sumaFac[$sem] = ($sumaFac[$sem] ?? 0) + (float)$v;
+            }
+        }
+        $numDep = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
+
         $filas = [];
-        foreach ($this->model->getDistribucionFacultades($id) as $d) {
+        foreach ($todas as $d) {
             $fid = (int)$d['facultad_id'];
-            if ((float)$d['distribucion'] <= 0) continue;
+            $reporto = (isset($d['seguimiento_sem1']) && $d['seguimiento_sem1'] !== null && $d['seguimiento_sem1'] !== '')
+                    || (isset($d['seguimiento_sem2']) && $d['seguimiento_sem2'] !== null && $d['seguimiento_sem2'] !== '');
+            if ((float)$d['distribucion'] <= 0 && !$reporto) continue; // sin meta y sin reporte: nada que concertar
             if ($propias && !in_array($fid, $propias, true)) continue;
             $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
             $fila = [
                 'facultad_id' => $fid,
+                'puede' => $this->puedeRegistrarSeguimientoFacultad($item, $fid), // la facultad concierta lo suyo (también administradores y responsables)
                 'nombre' => $nombres[$fid] ?? ('Facultad ' . $fid),
                 'propuesta' => (float)$d['distribucion'],
                 'hecha' => [1 => $esLimite ? null : $num($d['seguimiento_sem1'] ?? null), 2 => $num($d['seguimiento_sem2'] ?? null)],
@@ -1312,7 +1327,13 @@ class Modulo144Controller {
                 'unidad' => $item['unidad_medida'] ?? '', 'tipo' => $item['tipo_medicion'] ?? '',
                 'bloqueo' => $this->semestresBloqueados($item),
             ],
-            'puede_concertar' => $this->puedeConcertar($item),
+            'puede_concertar' => count(array_filter($filas, function ($f) { return $f['puede']; })) > 0,
+            'dependencia' => [
+                'nombre' => (string)($item['responsable_formulacion'] ?? ''),
+                's1' => $esLimite ? null : $numDep($item['semestre1_seguimiento'] ?? null),
+                's2' => $numDep($item['semestre2_seguimiento'] ?? null),
+                'suma1' => $esLimite ? null : $sumaFac[1], 'suma2' => $sumaFac[2],
+            ],
             'facultades' => $filas,
         ]);
     }
@@ -1326,13 +1347,14 @@ class Modulo144Controller {
         $concertado = !empty($_POST['concertado']) && $_POST['concertado'] !== '0';
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
-        if (!$this->puedeConcertar($item)) { echo json_encode(['success' => false, 'message' => 'No puedes concertar este indicador']); return; }
+        // La facultad concierta con la dependencia responsable: cada una confirma lo suyo (y los administradores o responsables pueden hacerlo por ella)
+        if (!$this->puedeRegistrarSeguimientoFacultad($item, $fac)) { echo json_encode(['success' => false, 'message' => 'Solo la propia facultad puede concertar su seguimiento']); return; }
 
         $actual = null;
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
-            if ((int)$d['facultad_id'] === $fac && (float)$d['distribucion'] > 0) { $actual = $d; break; }
+            if ((int)$d['facultad_id'] === $fac) { $actual = $d; break; }
         }
-        if (!$actual) { echo json_encode(['success' => false, 'message' => 'La facultad no tiene meta en este indicador']); return; }
+        if (!$actual) { echo json_encode(['success' => false, 'message' => 'La facultad no tiene seguimiento registrado en este indicador']); return; }
 
         $hecha = $actual['seguimiento_sem' . $sem] ?? null;
         $valor = null;

@@ -980,6 +980,27 @@ class Modulo144Model {
         }
     }
 
+    // Facultades que pueden ver y registrar el seguimiento de cada indicador: las que tienen meta en la distribución y,
+    // en los indicadores gestionados desde facultades, todas (una facultad sin meta también puede reportar lo que hace)
+    public function getFacultadesConAcceso($formularioId) {
+        $mapa = $this->getFacultadesConDistribucion($formularioId);
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT f.id AS formulacion_id, fa.id AS facultad_id
+                 FROM formulacion_144 f JOIN facultades fa ON fa.estado = 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2 AND f.gestionado_facultades = '1'"
+            );
+            $stmt->execute([':fid' => $formularioId]);
+            foreach ($stmt->fetchAll() as $r) {
+                $mapa[(int)$r['formulacion_id']][] = (int)$r['facultad_id'];
+            }
+            foreach ($mapa as $k => $ids) $mapa[$k] = array_values(array_unique($ids));
+        } catch (PDOException $e) {
+            error_log('Error getFacultadesConAcceso: ' . $e->getMessage());
+        }
+        return $mapa;
+    }
+
     // La facultad del usuario es la que tiene el mismo nombre que su dependencia (sin acentos ni mayúsculas)
     // Ids de las facultades del usuario: las que tienen el mismo nombre que cualquiera de sus dependencias
     // (la principal y las asociadas en "Responsable de"), sin importar mayúsculas ni tildes.
@@ -1461,18 +1482,29 @@ class Modulo144Model {
         $res = [];
         try {
             $this->asegurarTablaConcertaciones();
-            $stmt = $this->db->prepare(
-                "SELECT d.formulacion_id, COUNT(*) AS n
-                 FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
-                 WHERE f.formulario_id = :fid AND d.distribucion > 0 GROUP BY d.formulacion_id"
-            );
-            $stmt->execute([':fid' => (int)$formularioId]);
+            // Cuentan las facultades con meta y las que no la tienen pero reportaron algo
+            try {
+                $stmt = $this->db->prepare(
+                    "SELECT d.formulacion_id, COUNT(*) AS n
+                     FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
+                     WHERE f.formulario_id = :fid AND (d.distribucion > 0 OR d.seguimiento_sem1 IS NOT NULL OR d.seguimiento_sem2 IS NOT NULL)
+                     GROUP BY d.formulacion_id"
+                );
+                $stmt->execute([':fid' => (int)$formularioId]);
+            } catch (PDOException $e) {
+                $stmt = $this->db->prepare(
+                    "SELECT d.formulacion_id, COUNT(*) AS n
+                     FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
+                     WHERE f.formulario_id = :fid AND d.distribucion > 0 GROUP BY d.formulacion_id"
+                );
+                $stmt->execute([':fid' => (int)$formularioId]);
+            }
             foreach ($stmt->fetchAll() as $r) $res[(int)$r['formulacion_id']] = ['facultades' => (int)$r['n'], 's1' => 0, 's2' => 0];
 
             $q = $this->db->prepare(
                 "SELECT c.formulacion_id, c.semestre, COUNT(*) AS n
                  FROM concertaciones_144 c JOIN formulacion_144 f ON f.id = c.formulacion_id
-                 JOIN formulacion_distribucion_facultad_144 d ON d.formulacion_id = c.formulacion_id AND d.facultad_id = c.facultad_id AND d.distribucion > 0
+                 JOIN formulacion_distribucion_facultad_144 d ON d.formulacion_id = c.formulacion_id AND d.facultad_id = c.facultad_id
                  WHERE f.formulario_id = :fid AND c.concertado = 1 GROUP BY c.formulacion_id, c.semestre"
             );
             $q->execute([':fid' => (int)$formularioId]);
@@ -1518,6 +1550,31 @@ class Modulo144Model {
             error_log('Error guardarConcertacion: ' . $e->getMessage());
             return false;
         }
+    }
+
+    // [formulacion_id => [facultad_id => fila]] con meta propuesta y seguimiento de cada facultad (matriz de Concertaciones)
+    public function getMatrizConcertacion($formularioId) {
+        $this->asegurarColumnasDescripcionSemestres();
+        $variantes = [
+            'd.facultad_id, d.distribucion, d.seguimiento_sem1, d.seguimiento_sem2, d.seguimiento_descripcion, d.seguimiento_descripcion2',
+            'd.facultad_id, d.distribucion, d.seguimiento_sem1, d.seguimiento_sem2, d.seguimiento_descripcion',
+            'd.facultad_id, d.distribucion',
+        ];
+        foreach ($variantes as $i => $cols) {
+            try {
+                $stmt = $this->db->prepare(
+                    "SELECT d.formulacion_id, {$cols} FROM formulacion_distribucion_facultad_144 d
+                     JOIN formulacion_144 f ON f.id = d.formulacion_id WHERE f.formulario_id = :fid"
+                );
+                $stmt->execute([':fid' => (int)$formularioId]);
+                $res = [];
+                foreach ($stmt->fetchAll() as $r) $res[(int)$r['formulacion_id']][(int)$r['facultad_id']] = $r;
+                return $res;
+            } catch (PDOException $e) {
+                if ($i === count($variantes) - 1) error_log('Error getMatrizConcertacion: ' . $e->getMessage());
+            }
+        }
+        return [];
     }
 }
 ?>
