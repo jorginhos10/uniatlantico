@@ -60,8 +60,9 @@ foreach ($indicadores as $r) {
     ];
     // Por facultad: cuántos de sus indicadores hay en cada estado del seguimiento
     foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
-        if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0];
+        if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
         $porFacultad[$fx['id']]['total']++;
+        $porFacultad[$fx['id']]['idx'][] = count($filas) - 1;
         $porFacultad[$fx['id']][$estado]++;
     }
 }
@@ -75,6 +76,15 @@ foreach ($filas as $i => $f) {
     foreach ($lista as $d) $dependencias[mb_strtolower($d, 'UTF-8')] = $d;
 }
 uasort($dependencias, function ($a, $b) { return strcoll($a, $b); });
+$porDep = [];
+foreach ($filas as $i => $f) {
+    foreach ($f['deps'] as $d) {
+        $k = mb_strtolower($d, 'UTF-8');
+        if (!isset($porDep[$k])) $porDep[$k] = ['nombre' => $d, 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
+        $porDep[$k]['total']++; $porDep[$k][$f['estado']]++; $porDep[$k]['idx'][] = $i;
+    }
+}
+uasort($porDep, function ($a, $b) { return strcoll($a['nombre'], $b['nombre']); });
 $cumpl = array_filter(array_map(function ($f) { return $f['pct']; }, $filas), function ($v) { return $v !== null; });
 $promedio = $cumpl ? array_sum($cumpl) / count($cumpl) : 0;
 $pctDe = function ($n, $t) { return $t > 0 ? round($n / $t * 100) : 0; };
@@ -148,6 +158,22 @@ tr:last-child td{border-bottom:0}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.bar-row{grid-template-columns:minmax(90px,130px) minmax(0,1fr) 48px}.hero h1{font-size:21px}}
 @media print{.acc,.tools{display:none}body{background:#fff}}
 .fc{white-space:nowrap}.fcn{display:block;font-size:.82rem;color:var(--fg)}.fcn b{color:var(--navy);margin-right:4px}
+.tp[hidden]{display:none!important}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;border-bottom:2px solid var(--line)}
+.tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--orange)}
+.acc{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff}
+.acc summary{display:grid;grid-template-columns:minmax(160px,1.4fr) 60px minmax(80px,1fr) auto;gap:12px;align-items:center;padding:12px 14px 12px 28px;cursor:pointer;list-style:none;position:relative}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary::before{content:'▸';position:absolute;left:11px;color:var(--muted)}
+.acc[open] summary::before{content:'▾'}
+.acc[open] summary{border-bottom:1px solid var(--line)}
+.acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}
+.acc-chips{display:flex;gap:4px}
+.acc .tw{padding:0 6px 6px}
+.acc-ayuda{margin:-4px 0 12px}
+@media(max-width:700px){.acc summary{grid-template-columns:1fr 50px}.acc summary .trk,.acc-chips{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -173,59 +199,59 @@ tr:last-child td{border-bottom:0}
         <div class="kpi g"><small>Sin reporte</small><div class="v"><?php echo $kpi['sinReporte']; ?></div><div class="s">aún sin semestre registrado</div></div>
     </section>
 
-    <section class="grid2">
-        <div class="box">
-            <h2>Avance por línea estratégica</h2>
-            <?php if (!$porLinea): ?><p class="vacio">Todavía no hay indicadores aprobados.</p><?php endif; ?>
-            <?php foreach ($porLinea as $cod => $l):
-                $prom = $l['con'] > 0 ? $l['suma'] / $l['con'] : 0; ?>
-            <div class="bar-row">
-                <div class="n" title="<?php echo $h($cod . ' - ' . $l['nombre']); ?>"><b><?php echo $h($cod); ?></b> <small><?php echo $h($l['nombre']); ?></small></div>
-                <div class="trk"><i class="<?php echo $prom >= $META ? '' : 'cam'; ?>" style="width:<?php echo round($prom); ?>%"></i></div>
-                <b><?php echo $l['con'] > 0 ? round($prom) . '%' : '—'; ?></b>
-            </div>
-            <?php endforeach; ?>
-            <div class="leg"><span><i style="background:var(--blue)"></i>Cumple la meta</span><span><i style="background:var(--amber)"></i>En camino</span><span><i style="background:var(--orange)"></i>Meta <?php echo $META; ?>%</span></div>
-        </div>
-        <div class="box">
-            <h2>Reporte por semestre</h2>
-            <div class="sem">
-                <div class="sem-row"><div class="t">Semestre 1 <span><?php echo $kpi['s1']; ?> de <?php echo $kpi['total']; ?> indicadores</span></div>
-                    <div class="trk" style="--x:0"><i style="width:<?php echo $pctDe($kpi['s1'], $kpi['total']); ?>%"></i></div></div>
-                <div class="sem-row"><div class="t">Semestre 2 <span><?php echo $kpi['s2']; ?> de <?php echo $kpi['total']; ?> indicadores</span></div>
-                    <div class="trk"><i style="width:<?php echo $pctDe($kpi['s2'], $kpi['total']); ?>%"></i></div></div>
-            </div>
-            <h2 style="margin-top:20px">Estado del seguimiento</h2>
-            <div class="est">
-                <span class="chip c-publicado">Aprobados · <?php echo $kpi['publicados']; ?></span>
-                <span class="chip c-revision">En revisión · <?php echo $kpi['revision']; ?></span>
-                <span class="chip c-devuelto">Devueltos · <?php echo $kpi['devueltos']; ?></span>
-                <span class="chip c-construccion">En construcción · <?php echo $kpi['construccion']; ?></span>
-            </div>
-        </div>
+    <nav class="tabs" role="tablist">
+        <button type="button" role="tab" class="on" data-tp="tp-ind">Indicadores</button>
+        <button type="button" role="tab" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
+        <button type="button" role="tab" data-tp="tp-fac">Facultades <span><?php echo count($porFacultad); ?></span></button>
+    </nav>
+
+    <?php
+    // Desplegables: cada grupo muestra cuántos indicadores están aprobados y, al abrirlo, el detalle
+    $desplegables = function ($grupos, $vacio) use ($h, $pctDe, $filas, $fmt) {
+        if (!$grupos) { echo '<p class="vacio">' . $h($vacio) . '</p>'; return; }
+        foreach ($grupos as $g): ?>
+        <details class="acc">
+            <summary>
+                <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
+                <span class="acc-c"><?php echo $g['publicado']; ?>/<?php echo $g['total']; ?></span>
+                <span class="trk"><i style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i></span>
+                <span class="acc-chips">
+                    <span class="chip c-revision" title="En revisión"><?php echo $g['revision']; ?></span>
+                    <span class="chip c-devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
+                    <span class="chip c-construccion" title="En construcción"><?php echo $g['construccion']; ?></span>
+                </span>
+            </summary>
+            <div class="tw"><table>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th></tr></thead>
+                <tbody>
+                <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
+                <tr>
+                    <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
+                    <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
+                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
+                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . $pc : '<span class="nd">—</span>'; ?></td>
+                    <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table></div>
+        </details>
+        <?php endforeach;
+    }; ?>
+
+    <section class="box tp" id="tp-dep" hidden>
+        <h2>Por dependencia</h2>
+        <p class="vacio acc-ayuda">Indicadores aprobados del total de cada dependencia. Los números de colores son en revisión, devueltos y en construcción.</p>
+        <?php $desplegables($porDep, 'Todavía no hay indicadores aprobados.'); ?>
     </section>
 
-    <?php if ($porFacultad): ?>
-    <section class="box">
-        <h2>Seguimiento por facultad</h2>
-        <p class="vacio" style="margin:-4px 0 12px">Indicadores con meta en la facultad: cuántos están aprobados del total.</p>
-        <?php foreach ($porFacultad as $pf): ?>
-        <div class="bar-row">
-            <div class="n"><b><?php echo $h($pf['nombre']); ?></b></div>
-            <div class="trk"><i style="width:<?php echo $pctDe($pf['publicado'], $pf['total']); ?>%"></i></div>
-            <b><?php echo $pf['publicado']; ?>/<?php echo $pf['total']; ?></b>
-        </div>
-        <div class="est" style="margin:2px 0 12px">
-            <span class="chip c-publicado">Aprobados · <?php echo $pf['publicado']; ?></span>
-            <span class="chip c-revision">En revisión · <?php echo $pf['revision']; ?></span>
-            <span class="chip c-devuelto">Devueltos · <?php echo $pf['devuelto']; ?></span>
-            <span class="chip c-construccion">En construcción · <?php echo $pf['construccion']; ?></span>
-        </div>
-        <?php endforeach; ?>
+    <section class="box tp" id="tp-fac" hidden>
+        <h2>Facultades</h2>
+        <p class="vacio acc-ayuda">Indicadores aprobados del total con meta en cada facultad. Los números de colores son en revisión, devueltos y en construcción.</p>
+        <?php $desplegables($porFacultad, 'Ninguna facultad tiene metas en los indicadores aprobados.'); ?>
     </section>
-    <?php endif; ?>
 
-    <section class="box">
+    <section class="box tp" id="tp-ind">
         <h2>Indicadores</h2>
         <div class="tools">
             <input type="search" id="buscar" placeholder="Buscar indicador, dependencia o línea…" aria-label="Buscar">
@@ -283,6 +309,12 @@ tr:last-child td{border-bottom:0}
         });
         document.getElementById('sinResultados').hidden = visibles > 0 || !filas.length;
     }
+    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+        b.addEventListener('click', function () {
+            Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (x) { x.classList.toggle('on', x === b); });
+            Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
+        });
+    });
     q.addEventListener('input', filtrar); l.addEventListener('change', filtrar); e.addEventListener('change', filtrar);
 })();
 </script>
