@@ -1479,6 +1479,8 @@ class Modulo144Model {
             // Debate de la meta real: cada lado propone su valor; el superadministrador aprueba el valor final
             'valor_facultad' => 'DECIMAL(12,2) NULL', 'valor_vicerrectoria' => 'DECIMAL(12,2) NULL', 'valor_final' => 'DECIMAL(12,2) NULL',
             'usuario_facultad' => 'INT NULL', 'fecha_facultad' => 'DATETIME NULL', 'usuario_vice' => 'INT NULL', 'fecha_vice' => 'DATETIME NULL',
+            // Cada declarante explica su valor
+            'descripcion_facultad' => 'TEXT NULL', 'descripcion_vicerrectoria' => 'TEXT NULL',
         ] as $col => $def) {
             if ($this->db->query("SHOW COLUMNS FROM concertaciones_144 LIKE '{$col}'")->rowCount() === 0) {
                 $this->db->exec("ALTER TABLE concertaciones_144 ADD COLUMN {$col} {$def}");
@@ -1535,6 +1537,7 @@ class Modulo144Model {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
                 "SELECT c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.valor_final, c.aprobado, c.fecha_aprobado, c.fecha_facultad, c.fecha_vice,
+                        c.descripcion_facultad, c.descripcion_vicerrectoria,
                         uf.nombre AS usuario_facultad, uv.nombre AS usuario_vice, ua.nombre AS aprobador
                  FROM concertaciones_144 c
                  LEFT JOIN usuarios uf ON uf.id = c.usuario_facultad
@@ -1589,6 +1592,25 @@ class Modulo144Model {
             return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valor, ':u' => $usuarioId ?: null]);
         } catch (PDOException $e) {
             error_log('Error guardarPropuesta: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Descripción con la que un lado explica su valor ($texto vacío = borrarla)
+    public function guardarDescripcion($formulacionId, $facultadId, $semestre, $lado, $texto, $usuarioId) {
+        $col = $lado === 'facultad' ? 'descripcion_facultad' : 'descripcion_vicerrectoria';
+        $ucol = $lado === 'facultad' ? 'usuario_facultad' : 'usuario_vice';
+        $fcol = $lado === 'facultad' ? 'fecha_facultad' : 'fecha_vice';
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol})
+                 VALUES (:f, :fac, :s, 0, :t, :u, NOW())
+                 ON DUPLICATE KEY UPDATE {$col} = VALUES({$col}), {$ucol} = VALUES({$ucol}), {$fcol} = VALUES({$fcol})"
+            );
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':t' => $texto === '' ? null : $texto, ':u' => $usuarioId ?: null]);
+        } catch (PDOException $e) {
+            error_log('Error guardarDescripcion: ' . $e->getMessage());
             return false;
         }
     }

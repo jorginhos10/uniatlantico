@@ -1133,7 +1133,7 @@ ob_start();
         .cnx-sem-cab .cnx-btn { margin-left: auto; }
         .cnx-sem-vacio { padding: 14px 4px; }
         .cnx-unica { border: 2px solid #1d1d1f; border-radius: 12px; overflow: hidden; background: #fff; }
-        .cnx-uh, .cnx-ur { display: grid; grid-template-columns: minmax(150px, .9fr) minmax(270px, 1.5fr) minmax(270px, 1.5fr); }
+        .cnx-uh, .cnx-ur { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1.6fr) minmax(0, 1.6fr); }
         .cnx-uh { background: #F7F8FB; border-bottom: 2px solid #1d1d1f; }
         .cnx-uh-nombre { padding: 10px 12px; font-weight: 800; align-self: end; }
         .cnx-uh-sem { padding: 10px 12px 0; border-left: 2px solid #1d1d1f; display: flex; flex-direction: column; justify-content: flex-end; }
@@ -1151,8 +1151,12 @@ ob_start();
         .cnx-gnombre { font-weight: 700; line-height: 1.25; padding-right: 26px; }
         .cnx-gn small { color: #6E6E73; font-size: .76rem; }
         .cnx-gn .cnx-det { position: absolute; top: 6px; right: 6px; }
-        .cnx-gl { padding: 10px 12px; display: flex; align-items: center; justify-content: center; }
-        .cnx-in { width: 100%; max-width: 130px; text-align: center; border: 1px solid #C9CEDB; border-radius: 8px; padding: 7px 8px; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .cnx-gl { padding: 10px 10px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 8px; min-width: 0; }
+        .cnx-gl .cnx-valor, .cnx-gl > .cnx-nd { text-align: center; }
+        .cnx-txt { width: 100%; box-sizing: border-box; min-height: 56px; resize: vertical; border: 1px solid #C9CEDB; border-radius: 8px; padding: 6px 8px; font-size: .84rem; line-height: 1.3; font-family: inherit; }
+        .cnx-txt:focus { outline: 2px solid #1D71B8; outline-offset: 1px; border-color: #1D71B8; }
+        .cnx-desc-ro { font-size: .82rem; color: #424245; line-height: 1.35; white-space: pre-line; word-break: break-word; }
+        .cnx-in { width: 100%; max-width: none; box-sizing: border-box; text-align: center; border: 1px solid #C9CEDB; border-radius: 8px; padding: 7px 8px; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         .cnx-in:focus { outline: 2px solid #1D71B8; outline-offset: 1px; border-color: #1D71B8; }
         .cnx-gl .cnx-valor { font-size: 1.05rem; }
         .cnx-res { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px; border-left: 1px solid #E8EAF0; }
@@ -6218,18 +6222,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return Math.abs(a - b) < 0.01 ? 'acuerdo' : 'debate';
         }
 
-        // Valor de un lado: campo editable para quien puede colocarlo; texto para los demás
+        // Un lado (declarante): su valor y la descripción con la que lo explica. Quien puede colocarlo ve campos; los demás, solo lectura
         function cnLadoHtml(f, sem, c, lado, unidad) {
-            const val = lado === 'facultad' ? c.vf : c.vv;
-            const puede = lado === 'facultad' ? f.puede_f : f.puede_v;
-            const quien = lado === 'facultad' ? (c.uf ? 'Puesto por ' + c.uf + (c.ff ? ' · ' + c.ff : '') : (c.vf_propio ? '' : 'Valor reportado en el seguimiento'))
-                                              : (c.uv ? 'Puesto por ' + c.uv + (c.fv ? ' · ' + c.fv : '') : '');
+            const esF = lado === 'facultad';
+            const val = esF ? c.vf : c.vv;
+            const desc = esF ? c.df : c.dv;
+            const puede = esF ? f.puede_f : f.puede_v;
+            const quien = esF ? (c.uf ? 'Puesto por ' + c.uf + (c.ff ? ' · ' + c.ff : '') : (c.vf_propio ? '' : 'Valor reportado en el seguimiento'))
+                              : (c.uv ? 'Puesto por ' + c.uv + (c.fv ? ' · ' + c.fv : '') : '');
+            const nombre = esF ? 'facultad' : 'vicerrectoría';
+            const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-lado="' + lado + '"';
             if (puede && !c.aprobado) {
-                return '<input type="number" step="0.01" class="cnx-in" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-lado="' + lado + '" value="' +
-                       (val === null ? '' : val) + '" placeholder="—" title="' + evalHtmlEscape(quien) + '" aria-label="Valor de la ' + (lado === 'facultad' ? 'facultad' : 'vicerrectoría') + '">';
+                return '<input type="number" step="0.01" class="cnx-in" ' + attrs + ' value="' + (val === null ? '' : val) + '" placeholder="Valor" title="' + evalHtmlEscape(quien) + '" aria-label="Valor de la ' + nombre + '">' +
+                       '<textarea class="cnx-txt" rows="2" ' + attrs + ' placeholder="Descripción de la ' + nombre + '…" aria-label="Descripción de la ' + nombre + '">' + evalHtmlEscape(desc || '') + '</textarea>';
             }
-            return val === null ? '<span class="cnx-nd" title="' + evalHtmlEscape(quien) + '">—</span>'
-                                : '<span class="cnx-valor" title="' + evalHtmlEscape(quien) + '">' + cnFmt(val, unidad) + '</span>';
+            return (val === null ? '<span class="cnx-nd" title="' + evalHtmlEscape(quien) + '">—</span>' : '<span class="cnx-valor" title="' + evalHtmlEscape(quien) + '">' + cnFmt(val, unidad) + '</span>') +
+                   (desc ? '<div class="cnx-desc-ro">' + evalHtmlEscape(desc) + '</div>' : '<div class="cnx-desc-ro cnx-nd">Sin descripción</div>');
         }
 
         function cnResultadoHtml(f, sem, c, esSuper, unidad) {
@@ -6282,8 +6290,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             };
             let html = '<div class="cnx-unica"><div class="cnx-uh"><div class="cnx-uh-nombre">Facultad</div>' + cab(1) + cab(2) + '</div>';
             r.facultades.forEach(function(f) {
-                const desc = [1, 2].filter(function(s) { return f.sem[s].desc; })
-                    .map(function(s) { return '<div><b>Semestre ' + s + ':</b> ' + evalHtmlEscape(f.sem[s].desc) + '</div>'; }).join('');
                 const bloque = function(sem) {
                     const c = f.sem[sem];
                     if (!c.aplica) return '<div class="cnx-us" data-sem="' + sem + '"><div class="cnx-nd cnx-na">No aplica en este indicador</div></div>';
@@ -6294,8 +6300,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 };
                 html += '<div class="cnx-ur" data-fac="' + f.facultad_id + '">' +
                     '<div class="cnx-gn"><span class="cnx-gnombre">' + evalHtmlEscape(f.nombre) + '</span><small>' + (f.propuesta > 0 ? 'Meta ' + cnFmt(f.propuesta, unidad) : 'Sin meta') + '</small>' +
-                        (desc ? '<button type="button" class="cnx-det" aria-label="Ver lo que describe la facultad" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</div>' +
-                    bloque(1) + bloque(2) + (desc ? '<div class="cnx-gdesc" hidden>' + desc + '</div>' : '') + '</div>';
+                        '</div>' + bloque(1) + bloque(2) + '</div>';
             });
             return html + '</div>';
         }
@@ -6396,17 +6401,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $(document).on('click', '#cnNext', function() { cnIr(1); });
 
         // Guarda el valor de un lado al salir del campo (Enter o clic fuera) y refresca solo esa fila
-        $(document).on('change', '#cnSemestres .cnx-in', function() {
+        $(document).on('change', '#cnSemestres .cnx-in, #cnSemestres .cnx-txt', function() {
             const el = $(this);
             const fac = el.data('fac'), sem = el.data('sem'), lado = el.data('lado');
             const texto = el.val();
+            const esDescripcion = el.hasClass('cnx-txt');
+            const datos = { formulacion_id: cnIndicadorActual, facultad_id: fac, semestre: sem, lado: lado };
+            datos[esDescripcion ? 'descripcion' : 'valor'] = texto;
             el.prop('disabled', true);
-            $.post(basePath + '/modulo144/guardarConcertacion', { formulacion_id: cnIndicadorActual, facultad_id: fac, semestre: sem, lado: lado, valor: texto }, function(r) {
+            $.post(basePath + '/modulo144/guardarConcertacion', datos, function(r) {
                 el.prop('disabled', false);
                 if (!r.success) { $('#cnError').text(r.message || 'No se pudo guardar').show(); cnCargar(); return; }
                 $('#cnError').hide();
                 const f = cnDatos.facultades.filter(function(x) { return x.facultad_id == fac; })[0];
                 const c = f.sem[sem], n = cnNum(texto);
+                if (esDescripcion) { if (lado === 'facultad') { c.df = texto; c.df_propia = true; } else { c.dv = texto; } return; }
                 if (lado === 'facultad') { c.vf = n === null ? c.hecha : n; c.vf_propio = n !== null; } else { c.vv = n; }
                 $('.cnx-res[data-fac="' + fac + '"][data-sem="' + sem + '"]').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
                 $('.cnx-uh-sem[data-sem="' + sem + '"] .cnx-sem-cab').html(cnCabSemHtml(cnDatos, sem));

@@ -1316,7 +1316,10 @@ class Modulo144Controller {
                     'apr_usuario' => $c['aprobador'] ?? '', 'apr_fecha' => $c['fecha_aprobado'] ?? '',
                     'uf' => $c['usuario_facultad'] ?? '', 'ff' => $c['fecha_facultad'] ?? '',
                     'uv' => $c['usuario_vice'] ?? '', 'fv' => $c['fecha_vice'] ?? '',
-                    'desc' => $s === 1 ? ($d['seguimiento_descripcion'] ?? '') : ($d['seguimiento_descripcion2'] ?? ''),
+                    // Descripción de cada declarante; la de la facultad parte de la que escribió en su seguimiento
+                    'df' => ($c && $c['descripcion_facultad'] !== null) ? $c['descripcion_facultad'] : ($s === 1 ? ($d['seguimiento_descripcion'] ?? '') : ($d['seguimiento_descripcion2'] ?? '')),
+                    'df_propia' => $c && $c['descripcion_facultad'] !== null,
+                    'dv' => $c['descripcion_vicerrectoria'] ?? '',
                 ];
             }
             if (!$hay) continue; // sin meta, sin reporte y sin propuestas: nada que debatir
@@ -1366,6 +1369,13 @@ class Modulo144Controller {
         $conc = $this->model->getConcertaciones($id);
         if (!empty($conc[$fac][$sem]) && (int)$conc[$fac][$sem]['aprobado'] === 1) {
             echo json_encode(['success' => false, 'message' => 'Este valor ya fue aprobado por el superadministrador. Debe quitar la aprobación para cambiarlo']);
+            return;
+        }
+        // Descripción del declarante (no cambia el valor)
+        if (array_key_exists('descripcion', $_POST)) {
+            $texto = mb_substr(trim((string)$_POST['descripcion']), 0, 2000, 'UTF-8');
+            $ok = $this->model->guardarDescripcion($id, $fac, $sem, $lado, $texto, $_SESSION['usuario_id'] ?? 0);
+            echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado' : 'No se pudo guardar']);
             return;
         }
         $v = trim((string)($_POST['valor'] ?? ''));
