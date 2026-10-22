@@ -60,6 +60,20 @@ class Modulo144Controller {
             ];
         }
 
+        // Concertaciones: ven todo el superadministrador y la dependencia responsable del indicador (vicerrectoría);
+        // los usuarios de facultad solo ven lo que su facultad tiene que concertar
+        if ((int)($_SESSION['usuario_id'] ?? 0) !== 1) {
+            $propias = array_flip(array_map('intval', $viewer_facultades));
+            foreach ($datos_modulos['formulacion']['publicados'] ?? [] as $r) {
+                $iid = (int)$r['id'];
+                if (!isset($resumen_concertaciones[$iid]) || $this->esResponsableDelItem($r)) continue;
+                $matriz_concertacion[$iid] = array_intersect_key($matriz_concertacion[$iid] ?? [], $propias);
+                $concertaciones_todas[$iid] = array_intersect_key($concertaciones_todas[$iid] ?? [], $propias);
+                if (!$matriz_concertacion[$iid]) unset($resumen_concertaciones[$iid], $matriz_concertacion[$iid], $concertaciones_todas[$iid]);
+                else $resumen_concertaciones[$iid]['facultades'] = count($matriz_concertacion[$iid]);
+            }
+        }
+
         // Cargar preferencias de filtro del usuario actual
         $filter_preferences = [];
         $uid = $_SESSION['usuario_id'] ?? 0;
@@ -1287,10 +1301,13 @@ class Modulo144Controller {
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
         $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
         $puedeV = $this->puedeConcertarDependencia($item);
+        // Solo el superadministrador y la dependencia responsable ven todas las facultades; las demás, únicamente la suya
+        $verTodas = $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
 
         $filas = [];
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
             $fid = (int)$d['facultad_id'];
+            if (!$verTodas && !$this->puedeConcertarFacultad($fid)) continue;
             $sem = [];
             $hay = (float)$d['distribucion'] > 0;
             foreach ([1, 2] as $s) {
@@ -1340,6 +1357,7 @@ class Modulo144Controller {
                 'meta' => $item['anio_base_meta'] ?? null,
             ],
             'es_superadmin' => $this->esSuperadminConcertacion(),
+            'ver_todas' => $verTodas,
             'puede_concertar' => $puedeV || count(array_filter($filas, function ($f) { return $f['puede_f']; })) > 0,
             'dependencia' => [
                 'nombre' => (string)($item['responsable_formulacion'] ?? ''),

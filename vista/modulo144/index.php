@@ -6364,11 +6364,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#cnMeta').html(
                 (r.indicador.lmp ? '<span class="cn-lmp">' + evalHtmlEscape(r.indicador.lmp) + '</span>' : '') +
                 (r.indicador.tipo ? '<span class="cnx-dato">' + evalHtmlEscape(r.indicador.tipo) + '</span>' : '') +
-                (r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? '<span class="cnx-dato">Meta general <b>' + cnFmt(r.indicador.meta, unidad) + '</b></span>' : '') +
-                '<span class="cnx-dato">' + evalHtmlEscape(nomDep) + ' reporta: Sem 1 <b>' + cnFmt(dep.s1, unidad) + '</b> · Sem 2 <b>' + cnFmt(dep.s2, unidad) + '</b></span>');
+                (r.ver_todas && r.indicador.meta !== null && r.indicador.meta !== undefined && r.indicador.meta !== '' ? '<span class="cnx-dato">Meta general <b>' + cnFmt(r.indicador.meta, unidad) + '</b></span>' : '') +
+                (r.ver_todas ? '<span class="cnx-dato">' + evalHtmlEscape(nomDep) + ' reporta: Sem 1 <b>' + cnFmt(dep.s1, unidad) + '</b> · Sem 2 <b>' + cnFmt(dep.s2, unidad) + '</b></span>' : ''));
             $('#cnResumenDep').empty();
-            $('#cnAyuda').text('La facultad y la vicerrectoría colocan cada una su valor para debatir cuál es la meta real. Todos ven todos los valores y solo el superadministrador aprueba.' +
-                (r.puede_concertar ? ' Escribe tu valor en tu columna; se guarda al salir del campo.' : ''));
+            $('#cnAyuda').text(r.ver_todas
+                ? 'La facultad y la vicerrectoría colocan cada una su valor para debatir cuál es la meta real. Si coinciden, al concertar pasa al seguimiento; si difieren, decide el superadministrador.' + (r.puede_concertar ? ' Escribe tu valor en tu columna; se guarda al salir del campo.' : '')
+                : 'Escribe el valor de tu facultad y su descripción; se guarda al salir del campo. Cuando la vicerrectoría coloque el suyo podrás concertar.');
             $('#cnSemestres').html(cnTablaUnica(r));
 
             const pos = cnOrden.indexOf(cnIndicadorActual);
