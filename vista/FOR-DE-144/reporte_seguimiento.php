@@ -8,6 +8,7 @@ $h = function ($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); }
 $basePath = Config::getBasePath();
 $indicadores = $reporte['indicadores'] ?? [];
 $evidencias  = $reporte['evidencias'] ?? [];
+$facultadesRep = $reporte['facultades'] ?? [];
 $tituloF = $h($formulario['titulo'] ?? '');
 $anio    = $h($formulario['anio'] ?? date('Y'));
 $META    = 80; // meta de cumplimiento (%)
@@ -17,6 +18,7 @@ $tieneValor = function ($v) { return $v !== null && trim((string)$v) !== ''; };
 
 $filas = [];
 $kpi = ['total' => 0, 's1' => 0, 's2' => 0, 'sinReporte' => 0, 'enMeta' => 0, 'enCamino' => 0, 'publicados' => 0, 'revision' => 0, 'devueltos' => 0, 'construccion' => 0];
+$kpiFac = ['ind' => 0, 'total' => 0, 's1' => 0, 's2' => 0]; // seguimientos por facultad
 $porLinea = []; // código => ['nombre' =>, 'n' =>, 'suma' =>, 'con' =>]
 foreach ($indicadores as $r) {
     $esLimite = ($r['tipo_medicion'] ?? '') === 'Límite';
@@ -55,7 +57,12 @@ foreach ($indicadores as $r) {
         'ev1' => (int)($ev[1] ?? 0), 'ev2' => (int)($ev[2] ?? 0),
         'pct' => $reportado ? $pct : null, 'estado' => $estado, 'estadoTxt' => $estadoTxt, 'etapa' => $etapa, 'sol' => $sol,
         'unidad' => $r['unidad_medida'] ?? '',
+        'fac' => (($r['gestionado_facultades'] ?? '') === '1' || isset($facultadesRep[(int)$r['id']])) ? ($facultadesRep[(int)$r['id']] ?? ['total' => 0, 's1' => 0, 's2' => 0]) : null,
     ];
+    if ($facultadesRep && isset($facultadesRep[(int)$r['id']])) {
+        $fx = $facultadesRep[(int)$r['id']];
+        $kpiFac['total'] += $fx['total']; $kpiFac['s1'] += $fx['s1']; $kpiFac['s2'] += $fx['s2']; $kpiFac['ind']++;
+    }
 }
 ksort($porLinea);
 // Dependencias responsables (un indicador puede tener varias separadas por coma o punto y coma)
@@ -138,6 +145,7 @@ tr:last-child td{border-bottom:0}
 .pie{color:var(--muted);font-size:12px;text-align:center}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.bar-row{grid-template-columns:minmax(90px,130px) minmax(0,1fr) 48px}.hero h1{font-size:21px}}
 @media print{.acc,.tools{display:none}body{background:#fff}}
+.fc{white-space:nowrap}.fcn{display:block;font-size:.82rem;color:var(--fg)}.fcn b{color:var(--navy);margin-right:4px}
 </style>
 </head>
 <body>
@@ -185,6 +193,15 @@ tr:last-child td{border-bottom:0}
                 <div class="sem-row"><div class="t">Semestre 2 <span><?php echo $kpi['s2']; ?> de <?php echo $kpi['total']; ?> indicadores</span></div>
                     <div class="trk"><i style="width:<?php echo $pctDe($kpi['s2'], $kpi['total']); ?>%"></i></div></div>
             </div>
+            <?php if ($kpiFac['total'] > 0): ?>
+            <h2 style="margin-top:20px">Seguimiento por facultades</h2>
+            <div class="sem">
+                <div class="sem-row"><div class="t">Semestre 1 <span><?php echo $kpiFac['s1']; ?> de <?php echo $kpiFac['total']; ?> facultades</span></div>
+                    <div class="trk"><i style="width:<?php echo $pctDe($kpiFac['s1'], $kpiFac['total']); ?>%"></i></div></div>
+                <div class="sem-row"><div class="t">Semestre 2 <span><?php echo $kpiFac['s2']; ?> de <?php echo $kpiFac['total']; ?> facultades</span></div>
+                    <div class="trk"><i style="width:<?php echo $pctDe($kpiFac['s2'], $kpiFac['total']); ?>%"></i></div></div>
+            </div>
+            <?php endif; ?>
             <h2 style="margin-top:20px">Estado del seguimiento</h2>
             <div class="est">
                 <span class="chip c-publicado">Aprobados · <?php echo $kpi['publicados']; ?></span>
@@ -212,7 +229,7 @@ tr:last-child td{border-bottom:0}
             <table id="tabla">
                 <thead><tr>
                     <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
-                    <th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Estado</th><th>Semáforo</th>
+                    <th>Semestre 1</th><th>Semestre 2</th><th>Facultades</th><th>Evidencias</th><th>Estado</th><th>Semáforo</th>
                 </tr></thead>
                 <tbody>
                 <?php foreach ($filas as $f): ?>
@@ -223,6 +240,10 @@ tr:last-child td{border-bottom:0}
                     <td><?php echo $h($f['responsable'] ?: '—'); ?></td>
                     <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
                     <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">—</span>'; ?></td>
+                    <td class="fc"><?php if ($f['fac'] && $f['fac']['total'] > 0): ?>
+                        <span class="fcn" title="Facultades con meta que ya reportaron el semestre 1"><b>S1</b> <?php echo $f['fac']['s1']; ?> de <?php echo $f['fac']['total']; ?></span>
+                        <span class="fcn" title="Facultades con meta que ya reportaron el semestre 2"><b>S2</b> <?php echo $f['fac']['s2']; ?> de <?php echo $f['fac']['total']; ?></span>
+                        <?php elseif ($f['fac']): ?><span class="nd">Sin metas por facultad</span><?php else: ?><span class="nd">—</span><?php endif; ?></td>
                     <td><span class="ev"><span class="<?php echo $f['ev1'] ? '' : 'z'; ?>" title="Evidencias del semestre 1">S1 · <?php echo $f['ev1']; ?></span><span class="<?php echo $f['ev2'] ? '' : 'z'; ?>" title="Evidencias del semestre 2">S2 · <?php echo $f['ev2']; ?></span></span></td>
                     <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
                     <td><span class="sem-circ" title="Etapas del semáforo de aprobación">

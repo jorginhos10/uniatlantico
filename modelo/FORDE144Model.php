@@ -514,13 +514,13 @@ class FORDE144Model {
 
     // Estado actual de los indicadores publicados de un formulario (landing "Reporte de seguimiento")
     public function getReporteSeguimiento($formulario_id) {
-        $res = ['indicadores' => [], 'evidencias' => []];
+        $res = ['indicadores' => [], 'evidencias' => [], 'facultades' => []];
         try {
             $stmt = $this->db->prepare(
                 "SELECT f.id, f.nombre_borrador, f.nombre_indicador, f.formula_medicion, f.linea_estrategica, f.responsable_formulacion,
                         f.tipo_medicion, f.unidad_medida, f.meta_programada, f.meta_ejecutada, f.porcentaje_avance,
                         f.semestre1_seguimiento, f.semestre2_seguimiento, f.estado_seguimiento,
-                        f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento,
+                        f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento, f.gestionado_facultades,
                         le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo
                  FROM formulacion_144 f
                  LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
@@ -534,6 +534,22 @@ class FORDE144Model {
         } catch (PDOException $e) {
             error_log('Error getReporteSeguimiento: ' . $e->getMessage());
             return $res;
+        }
+        // Facultades con meta en cada indicador y cuántas ya reportaron cada semestre: [id => ['total', 's1', 's2']]
+        try {
+            $q = $this->db->prepare(
+                "SELECT d.formulacion_id, COUNT(*) AS total,
+                        SUM(d.seguimiento_sem1 IS NOT NULL AND d.seguimiento_sem1 <> '') AS s1,
+                        SUM(d.seguimiento_sem2 IS NOT NULL AND d.seguimiento_sem2 <> '') AS s2
+                 FROM formulacion_distribucion_facultad_144 d JOIN formulacion_144 f ON f.id = d.formulacion_id
+                 WHERE f.formulario_id = :fid AND d.distribucion > 0 GROUP BY d.formulacion_id"
+            );
+            $q->execute([':fid' => (int)$formulario_id]);
+            foreach ($q->fetchAll() as $r) {
+                $res['facultades'][(int)$r['formulacion_id']] = ['total' => (int)$r['total'], 's1' => (int)$r['s1'], 's2' => (int)$r['s2']];
+            }
+        } catch (PDOException $e) {
+            error_log('Error facultades del reporte: ' . $e->getMessage());
         }
         // Evidencias por indicador y semestre (la tabla se crea al cargar la primera evidencia)
         try {
