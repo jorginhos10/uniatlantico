@@ -1127,25 +1127,31 @@ ob_start();
             .cnx-masivo { flex-direction: column; }
         }
         /* Debate de la meta real: facultad | vicerrectoría */
-        .cnx-semestre { margin-bottom: 22px; }
-        .cnx-sem-cab { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-        .cnx-sem-cab h6 { margin: 0; font-size: 1.1rem; font-weight: 800; color: #143163; }
-        .cnx-sem-cuenta { font-size: .82rem; color: #6E6E73; }
+        .cnx-sem-cab { display: flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; margin-bottom: 6px; }
+        .cnx-sem-cab h6 { margin: 0; font-size: 1.05rem; font-weight: 800; color: #143163; }
+        .cnx-sem-cuenta { font-size: .78rem; color: #6E6E73; }
         .cnx-sem-cab .cnx-btn { margin-left: auto; }
         .cnx-sem-vacio { padding: 14px 4px; }
-        .cnx-grid { border: 2px solid #1d1d1f; border-radius: 12px; overflow: hidden; background: #fff; }
-        .cnx-gh, .cnx-gr { display: grid; grid-template-columns: minmax(150px, 1.2fr) minmax(110px, 1fr) minmax(110px, 1fr) minmax(190px, 1.4fr); }
-        .cnx-gh { background: #F7F8FB; border-bottom: 2px solid #1d1d1f; }
-        .cnx-gh span { padding: 10px 12px; font-weight: 800; font-size: .95rem; text-align: center; color: #1d1d1f; }
-        .cnx-gh span:nth-child(3), .cnx-gr .cnx-gv { border-left: 2px solid #1d1d1f; }
-        .cnx-gr { border-bottom: 1px solid #E8EAF0; align-items: stretch; }
-        .cnx-gr:last-child { border-bottom: 0; }
+        .cnx-unica { border: 2px solid #1d1d1f; border-radius: 12px; overflow: hidden; background: #fff; }
+        .cnx-uh, .cnx-ur { display: grid; grid-template-columns: minmax(150px, .9fr) minmax(270px, 1.5fr) minmax(270px, 1.5fr); }
+        .cnx-uh { background: #F7F8FB; border-bottom: 2px solid #1d1d1f; }
+        .cnx-uh-nombre { padding: 10px 12px; font-weight: 800; align-self: end; }
+        .cnx-uh-sem { padding: 10px 12px 0; border-left: 2px solid #1d1d1f; display: flex; flex-direction: column; justify-content: flex-end; }
+        .cnx-uh-sub { display: grid; grid-template-columns: 1fr 1fr; margin: 0 -12px; border-top: 1px solid #D5D9E4; }
+        .cnx-uh-sub span { padding: 8px 12px; text-align: center; font-weight: 800; font-size: .92rem; }
+        .cnx-uh-sub span:nth-child(2) { border-left: 2px solid #1d1d1f; }
+        .cnx-ur { border-bottom: 1px solid #E8EAF0; align-items: stretch; }
+        .cnx-ur:last-child { border-bottom: 0; }
+        .cnx-us { display: grid; grid-template-columns: 1fr 1fr; border-left: 2px solid #1d1d1f; }
+        .cnx-us .cnx-gf { border-left: 0; }
+        .cnx-us .cnx-gv { border-left: 2px solid #1d1d1f; }
+        .cnx-us .cnx-res { grid-column: 1 / -1; border-left: 0; border-top: 1px dashed #E8EAF0; flex-direction: row; flex-wrap: wrap; align-items: center; padding: 8px 12px; }
+        .cnx-na { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; padding: 14px; }
         .cnx-gn { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; position: relative; justify-content: center; }
         .cnx-gnombre { font-weight: 700; line-height: 1.25; padding-right: 26px; }
         .cnx-gn small { color: #6E6E73; font-size: .76rem; }
         .cnx-gn .cnx-det { position: absolute; top: 6px; right: 6px; }
         .cnx-gl { padding: 10px 12px; display: flex; align-items: center; justify-content: center; }
-        .cnx-gf { border-left: 1px solid #E8EAF0; }
         .cnx-in { width: 100%; max-width: 130px; text-align: center; border: 1px solid #C9CEDB; border-radius: 8px; padding: 7px 8px; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
         .cnx-in:focus { outline: 2px solid #1D71B8; outline-offset: 1px; border-color: #1D71B8; }
         .cnx-gl .cnx-valor { font-size: 1.05rem; }
@@ -1156,13 +1162,13 @@ ob_start();
         .cnx-elige { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
         .cnx-gdesc { grid-column: 1 / -1; background: #F9FAFC; border-top: 1px dashed #E1E4EC; color: #424245; font-size: .86rem; line-height: 1.45; padding: 10px 14px; }
         .cnx-gdesc[hidden] { display: none; }
-        @media (max-width: 700px) {
-            .cnx-gh, .cnx-gr { grid-template-columns: 1fr 1fr; }
-            .cnx-gh span:first-child, .cnx-gh span:last-child { display: none; }
-            .cnx-gh span:nth-child(3), .cnx-gr .cnx-gv { border-left: 2px solid #1d1d1f; }
-            .cnx-gn { grid-column: 1 / -1; padding-bottom: 4px; }
-            .cnx-gf { border-left: 0; }
-            .cnx-res { grid-column: 1 / -1; border-left: 0; border-top: 1px dashed #E8EAF0; flex-direction: row; flex-wrap: wrap; align-items: center; }
+        @media (max-width: 860px) {
+            .cnx-uh, .cnx-ur { grid-template-columns: 1fr; }
+            .cnx-uh-nombre { display: none; }
+            .cnx-uh-sem { border-left: 0; border-bottom: 1px solid #D5D9E4; padding-bottom: 0; }
+            .cnx-ur { border-bottom: 3px solid #EEF0F5; }
+            .cnx-us { border-left: 0; border-top: 1px solid #E8EAF0; }
+            .cnx-us::before { content: 'Semestre ' attr(data-sem); grid-column: 1 / -1; padding: 6px 12px 0; font-size: .72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #8a90a2; }
             .cnx-sem-cab .cnx-btn { margin-left: 0; width: 100%; }
         }
         .cnx-fila-dep td { background: #F7F8FB; }
@@ -6266,24 +6272,32 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                    (r.es_superadmin && n.acuerdo > 1 ? '<button type="button" class="cnx-btn sec" data-acc="aprobar-todo" data-sem="' + sem + '">Aprobar los ' + n.acuerdo + ' de acuerdo</button>' : '');
         }
 
-        function cnPanelSem(r, sem) {
+        // Una sola tabla: una fila por facultad y, en cada semestre, su columna (facultad | vicerrectoría) y su resultado
+        function cnTablaUnica(r) {
             const unidad = r.indicador.unidad;
-            const aplica = !(sem === 1 && r.indicador.tipo === 'Límite');
-            let html = '<section class="cnx-semestre" data-sem="' + sem + '"><header class="cnx-sem-cab">' + cnCabSemHtml(r, sem) + '</header>';
-            if (!aplica) return html + '<div class="cnx-nd cnx-sem-vacio">En este indicador el semestre 1 no aplica.</div></section>';
-            if (!r.facultades.length) return html + '<div class="cnx-nd cnx-sem-vacio">Ninguna facultad tiene meta ni seguimiento en este indicador.</div></section>';
-            html += '<div class="cnx-grid"><div class="cnx-gh"><span></span><span>Facultad</span><span>Vicerrectoría</span><span>Resultado</span></div>';
+            if (!r.facultades.length) return '<div class="cnx-nd cnx-sem-vacio">Ninguna facultad tiene meta ni seguimiento en este indicador.</div>';
+            const cab = function(sem) {
+                return '<div class="cnx-uh-sem" data-sem="' + sem + '"><div class="cnx-sem-cab">' + cnCabSemHtml(r, sem) + '</div>' +
+                       '<div class="cnx-uh-sub"><span>Facultad</span><span>Vicerrectoría</span></div></div>';
+            };
+            let html = '<div class="cnx-unica"><div class="cnx-uh"><div class="cnx-uh-nombre">Facultad</div>' + cab(1) + cab(2) + '</div>';
             r.facultades.forEach(function(f) {
-                const c = f.sem[sem];
-                html += '<div class="cnx-gr" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' +
+                const desc = [1, 2].filter(function(s) { return f.sem[s].desc; })
+                    .map(function(s) { return '<div><b>Semestre ' + s + ':</b> ' + evalHtmlEscape(f.sem[s].desc) + '</div>'; }).join('');
+                const bloque = function(sem) {
+                    const c = f.sem[sem];
+                    if (!c.aplica) return '<div class="cnx-us" data-sem="' + sem + '"><div class="cnx-nd cnx-na">No aplica en este indicador</div></div>';
+                    return '<div class="cnx-us" data-sem="' + sem + '">' +
+                        '<div class="cnx-gl cnx-gf">' + cnLadoHtml(f, sem, c, 'facultad', unidad) + '</div>' +
+                        '<div class="cnx-gl cnx-gv">' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + '</div>' +
+                        '<div class="cnx-res" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' + cnResultadoHtml(f, sem, c, r.es_superadmin, unidad) + '</div></div>';
+                };
+                html += '<div class="cnx-ur" data-fac="' + f.facultad_id + '">' +
                     '<div class="cnx-gn"><span class="cnx-gnombre">' + evalHtmlEscape(f.nombre) + '</span><small>' + (f.propuesta > 0 ? 'Meta ' + cnFmt(f.propuesta, unidad) : 'Sin meta') + '</small>' +
-                        (c.desc ? '<button type="button" class="cnx-det" aria-label="Ver lo que describe la facultad" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</div>' +
-                    '<div class="cnx-gl cnx-gf">' + cnLadoHtml(f, sem, c, 'facultad', unidad) + '</div>' +
-                    '<div class="cnx-gl cnx-gv">' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + '</div>' +
-                    '<div class="cnx-res" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' + cnResultadoHtml(f, sem, c, r.es_superadmin, unidad) + '</div>' +
-                    (c.desc ? '<div class="cnx-gdesc" hidden>' + evalHtmlEscape(c.desc) + '</div>' : '') + '</div>';
+                        (desc ? '<button type="button" class="cnx-det" aria-label="Ver lo que describe la facultad" title="Ver lo que describe la facultad"><i class="fas fa-comment-dots"></i></button>' : '') + '</div>' +
+                    bloque(1) + bloque(2) + (desc ? '<div class="cnx-gdesc" hidden>' + desc + '</div>' : '') + '</div>';
             });
-            return html + '</div></section>';
+            return html + '</div>';
         }
 
         function cnActualizarLista(r) {
@@ -6339,7 +6353,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#cnResumenDep').empty();
             $('#cnAyuda').text('La facultad y la vicerrectoría colocan cada una su valor para debatir cuál es la meta real. Todos ven todos los valores y solo el superadministrador aprueba.' +
                 (r.puede_concertar ? ' Escribe tu valor en tu columna; se guarda al salir del campo.' : ''));
-            $('#cnSemestres').html(cnPanelSem(r, 1) + cnPanelSem(r, 2));
+            $('#cnSemestres').html(cnTablaUnica(r));
 
             const pos = cnOrden.indexOf(cnIndicadorActual);
             $('#cnPos').text(pos >= 0 ? (pos + 1) + ' de ' + cnOrden.length : '');
@@ -6395,7 +6409,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const c = f.sem[sem], n = cnNum(texto);
                 if (lado === 'facultad') { c.vf = n === null ? c.hecha : n; c.vf_propio = n !== null; } else { c.vv = n; }
                 $('.cnx-res[data-fac="' + fac + '"][data-sem="' + sem + '"]').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
-                $('.cnx-semestre[data-sem="' + sem + '"] .cnx-sem-cab').html(cnCabSemHtml(cnDatos, sem));
+                $('.cnx-uh-sem[data-sem="' + sem + '"] .cnx-sem-cab').html(cnCabSemHtml(cnDatos, sem));
                 cnActualizarLista(cnDatos);
             }, 'json').fail(function() { el.prop('disabled', false); $('#cnError').text('Error de conexión con el servidor').show(); });
         });
@@ -6426,7 +6440,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
 
         $(document).on('click', '#cnSemestres .cnx-det', function() {
-            $(this).closest('.cnx-gr').find('.cnx-gdesc').prop('hidden', function(_, h) { return !h; });
+            $(this).closest('.cnx-ur').find('.cnx-gdesc').prop('hidden', function(_, h) { return !h; });
         });
 
         /* ===== FILTRO DE LISTA ===== */
