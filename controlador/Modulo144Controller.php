@@ -935,22 +935,16 @@ class Modulo144Controller {
             return;
         }
 
-        // Semestres bloqueados: se conserva el valor que ya tenía la facultad
+        // El valor de cada semestre es el concertado (pestaña Concertaciones): aquí nunca se cambia, solo la descripción
         $bl = $this->semestresBloqueados($item);
-        if ($bl['sem1'] || $bl['sem2']) {
-            $actualFac = null;
-            foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
-                if ((int)$d['facultad_id'] === $facultadId) { $actualFac = $d; break; }
-            }
-            if ($bl['sem1']) {
-                $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
-                $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
-            }
-            if ($bl['sem2']) {
-                $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
-                $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
-            }
+        $actualFac = null;
+        foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
+            if ((int)$d['facultad_id'] === $facultadId) { $actualFac = $d; break; }
         }
+        $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
+        $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
+        if ($bl['sem1']) $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
+        if ($bl['sem2']) $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
 
         $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion, $descripcion2);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
@@ -1414,8 +1408,14 @@ class Modulo144Controller {
         if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores: la facultad y la vicerrectoría deben colocar el suyo']); return; }
         // Si el valor de la facultad viene del seguimiento y nunca se guardó, se fija ahora para que lo enviado no cambie
         if ($c === null || $c['valor_facultad'] === null) $this->model->guardarPropuesta($id, $fac, $sem, 'facultad', $vf, $_SESSION['usuario_id'] ?? 0);
+        // Valores iguales: queda concertado y pasa directo al seguimiento por facultades; distintos: decide el superadministrador
+        if (abs($vf - $vv) < 0.01) {
+            $ok = $this->model->guardarAprobacion($id, $fac, $sem, true, $vf, $_SESSION['usuario_id'] ?? 0);
+            echo json_encode(['success' => $ok, 'auto' => true, 'message' => $ok ? 'Concertado: el valor pasó al seguimiento por facultades' : 'No se pudo concertar']);
+            return;
+        }
         $ok = $this->model->enviarConcertacion($id, $fac, $sem, $_SESSION['usuario_id'] ?? 0);
-        echo json_encode(['success' => $ok, 'message' => $ok ? 'Enviado al superadministrador' : 'No se pudo enviar']);
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Los valores difieren: enviado al superadministrador para que decida' : 'No se pudo enviar']);
     }
 
     // Solo el superadministrador decide lo enviado: aprueba (el valor pasa al seguimiento por facultades), rechaza (se sigue concertando)

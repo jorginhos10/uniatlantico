@@ -3296,14 +3296,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <tr data-facultad-id="<?php echo (int)$fac['id']; ?>" style="display:none;">
                                             <td><?php echo htmlspecialchars($fac['nombre']); ?></td>
                                             <td class="text-end seg-fac-distribucion">0</td>
-                                            <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="0.00"></td>
+                                            <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="—" readonly tabindex="-1" title="Valor concertado (se asigna en Concertaciones)" style="background:#f1f3f8;cursor:not-allowed"></td>
                                             <td><input type="text" class="form-control form-control-sm seg-fac-desc1" maxlength="1000" placeholder="Descripción del semestre 1..."></td>
                                             <td class="text-center">
                                                 <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 1)" title="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?>">
                                                     <i class="fas fa-plus"></i><span class="ev-n" data-sem="1">0</span>
                                                 </button>
                                             </td>
-                                            <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="0.00"></td>
+                                            <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="—" readonly tabindex="-1" title="Valor concertado (se asigna en Concertaciones)" style="background:#f1f3f8;cursor:not-allowed"></td>
                                             <td><input type="text" class="form-control form-control-sm seg-fac-desc2" maxlength="1000" placeholder="Descripción del semestre 2..."></td>
                                             <td class="text-center">
                                                 <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 2)" title="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?>">
@@ -6245,7 +6245,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const e = cnEstadoCelda(c);
             const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
             const iguales = Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
-            const hint = iguales ? 'Los valores coinciden' : 'Difieren en ' + cnFmt(Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)), '');
+            const hint = iguales ? 'Coinciden: al concertar pasa al seguimiento' : 'Difieren en ' + cnFmt(Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)), '') + ': decide el superadministrador';
             if (e === 'aprobado') {
                 const quien = (c.apr_usuario ? 'Aprobó ' + c.apr_usuario : '') + (c.apr_fecha ? ' · ' + c.apr_fecha : '');
                 return '<span class="cnx-estado fin" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check-circle"></i> Meta real <b>' + cnFmt(c.final, cnDatos ? cnDatos.indicador.unidad : '') + '</b></span>' +
