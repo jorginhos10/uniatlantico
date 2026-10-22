@@ -1161,6 +1161,11 @@ ob_start();
         .cnx-gl .cnx-valor { font-size: 1.05rem; }
         .cnx-res { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 6px; border-left: 1px solid #E8EAF0; }
         .cnx-estado.deb { color: #8A5A00; background: #FDF1D6; }
+        .cnx-estado.env { color: #1D71B8; background: #E4EEF8; }
+        .cnx-pill.env { background: #E4EEF8; color: #1D71B8; }
+        .cnx-btn.verde { background: #1F8A4C; color: #fff; }
+        .cnx-hint { font-size: .76rem; color: #6E6E73; }
+        .cnx-acciones { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
         .cnx-estado.fin { color: #fff; background: #143163; }
         .cnx-estado.fin b, .cnx-estado.ok b { margin-left: 2px; }
         .cnx-elige { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
@@ -2433,20 +2438,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <?php
                     $cnMat = $matriz_concertacion ?? [];
                     $cnTodas = $concertaciones_todas ?? [];
-                    // vacio | pendiente (falta un valor) | debate (difieren) | acuerdo (iguales) | aprobado
-                    $cnEst = function ($vf, $vv, $apr) {
+                    // pendiente (falta un valor) | listo (los dos valores, falta concertar) | enviado (espera al superadministrador) | aprobado
+                    $cnEst = function ($vf, $vv, $apr, $env) {
                         if ($apr) return 'aprobado';
                         if ($vf === null && $vv === null) return 'vacio';
                         if ($vf === null || $vv === null) return 'pendiente';
-                        return abs($vf - $vv) < 0.01 ? 'acuerdo' : 'debate';
+                        return $env ? 'enviado' : 'listo';
                     };
                     $cnInfo = [];
-                    $cnConteo = ['' => count($cnFilas), 'debate' => 0, 'pendiente' => 0, 'acuerdo' => 0, 'aprobado' => 0, 'sinreporte' => 0];
+                    $cnConteo = ['' => count($cnFilas), 'pendiente' => 0, 'listo' => 0, 'enviado' => 0, 'aprobado' => 0, 'sinreporte' => 0];
                     foreach ($cnFilas as $cnR) {
                         $id = (int)$cnR['id'];
                         $lim = ($cnR['tipo_medicion'] ?? '') === 'Límite';
-                        $tot = [1 => 0, 2 => 0]; $done = [1 => 0, 2 => 0]; $ap = [1 => 0, 2 => 0];
-                        $hayDebate = false; $hayPend = false;
+                        $tot = [1 => 0, 2 => 0]; $ap = [1 => 0, 2 => 0];
+                        $hayEnv = false; $hayListo = false; $hayPend = false;
                         foreach (($cnMat[$id] ?? []) as $cnFid => $cnD) {
                             foreach ([1, 2] as $sem) {
                                 if ($sem === 1 && $lim) continue;
@@ -2454,22 +2459,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 $t = $cnTodas[$id][$cnFid][$sem] ?? null;
                                 $vf = ($t && $t['vf'] !== null) ? $t['vf'] : $h;
                                 $vv = $t ? $t['vv'] : null;
-                                $e = $cnEst($vf, $vv, $t && $t['aprobado']);
+                                $e = $cnEst($vf, $vv, $t && $t['aprobado'], $t && $t['enviado']);
                                 if ($e === 'vacio') continue;
                                 $tot[$sem]++;
-                                if ($e === 'acuerdo' || $e === 'aprobado') $done[$sem]++;
                                 if ($e === 'aprobado') $ap[$sem]++;
-                                if ($e === 'debate') $hayDebate = true;
+                                if ($e === 'enviado') $hayEnv = true;
+                                if ($e === 'listo') $hayListo = true;
                                 if ($e === 'pendiente') $hayPend = true;
                             }
                         }
                         if ($tot[1] + $tot[2] === 0) $estado = 'sinreporte';
-                        else {
-                            $todoApr = ($tot[1] === 0 || $ap[1] >= $tot[1]) && ($tot[2] === 0 || $ap[2] >= $tot[2]);
-                            $estado = $hayDebate ? 'debate' : ($hayPend ? 'pendiente' : ($todoApr ? 'aprobado' : 'acuerdo'));
-                        }
-                        $coin = in_array($estado, ['acuerdo', 'aprobado'], true) ? 'si' : ($estado === 'debate' ? 'no' : 'nd');
-                        $cnInfo[$id] = ['coin' => $coin, 'estado' => $estado, 't1' => $tot[1], 't2' => $tot[2], 'd1' => $done[1], 'd2' => $done[2],
+                        else $estado = $hayEnv ? 'enviado' : ($hayListo ? 'listo' : ($hayPend ? 'pendiente' : 'aprobado'));
+                        $cnInfo[$id] = ['coin' => $estado === 'aprobado' ? 'si' : 'nd', 'estado' => $estado, 't1' => $tot[1], 't2' => $tot[2], 'd1' => $ap[1], 'd2' => $ap[2],
                                         'a1' => $tot[1] > 0 && $ap[1] >= $tot[1], 'a2' => $tot[2] > 0 && $ap[2] >= $tot[2]];
                         $cnConteo[$estado]++;
                     }
@@ -2477,9 +2478,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <div class="cnx-barra">
                         <div class="cnx-chips" id="cnChips" role="group" aria-label="Filtrar por estado">
                             <button type="button" class="cnx-chip on" data-f="">Todos <b><?php echo $cnConteo['']; ?></b></button>
-                            <button type="button" class="cnx-chip" data-f="debate">En debate <b><?php echo $cnConteo['debate']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="pendiente">Falta un valor <b><?php echo $cnConteo['pendiente']; ?></b></button>
-                            <button type="button" class="cnx-chip" data-f="acuerdo">De acuerdo <b><?php echo $cnConteo['acuerdo']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="listo">Para concertar <b><?php echo $cnConteo['listo']; ?></b></button>
+                            <button type="button" class="cnx-chip" data-f="enviado">Por aprobar <b><?php echo $cnConteo['enviado']; ?></b></button>
                             <button type="button" class="cnx-chip" data-f="aprobado">Aprobados <b><?php echo $cnConteo['aprobado']; ?></b></button>
                         </div>
                         <div class="cnx-tools">
@@ -2521,7 +2522,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <b><?php echo $rep ? $con . '/' . $rep : '—'; ?></b>
                             </div>
                             <?php endforeach; ?>
-                            <span class="cnx-pill <?php echo $inf['coin']; ?>"><?php echo ['debate' => 'En debate', 'pendiente' => 'Falta un valor', 'acuerdo' => 'De acuerdo', 'aprobado' => 'Aprobado', 'sinreporte' => 'Sin datos'][$inf['estado']]; ?></span>
+                            <span class="cnx-pill <?php echo ['pendiente' => 'nd', 'listo' => 'no', 'enviado' => 'env', 'aprobado' => 'si', 'sinreporte' => 'nd'][$inf['estado']]; ?>"><?php echo ['pendiente' => 'Falta un valor', 'listo' => 'Para concertar', 'enviado' => 'Por aprobar', 'aprobado' => 'Aprobado', 'sinreporte' => 'Sin datos'][$inf['estado']]; ?></span>
                             <i class="fas fa-chevron-right cnx-flecha"></i>
                         </div>
                         <?php endforeach; ?>
@@ -2567,7 +2568,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <?php foreach ($cnFacs as $cnF): ?>
                                     <th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Meta</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Sem 1</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Sem 2</th><th class="cn-num cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Total</th><th class="cn-fg" data-fac="<?php echo (int)$cnF['id']; ?>">Descripción</th>
                                     <?php endforeach; ?>
-                                    <th class="cn-th-coinciden">De acuerdo</th><th>Concertación</th>
+                                    <th class="cn-th-coinciden">Aprobado</th><th>Concertación</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -6148,7 +6149,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             };
             window.cnActualizarChips = function() {
                 const items = Array.from(document.querySelectorAll('#cnVistaLista .cnx-item'));
-                const cuenta = { '': items.length, debate: 0, pendiente: 0, acuerdo: 0, aprobado: 0, sinreporte: 0 };
+                const cuenta = { '': items.length, pendiente: 0, listo: 0, enviado: 0, aprobado: 0, sinreporte: 0 };
                 items.forEach(function(it) {
                     const e = it.getAttribute('data-estado'); if (cuenta[e] !== undefined) cuenta[e]++;
                     if (it.getAttribute('data-coinciden') === 'no') cuenta.nocoinciden++;
@@ -6208,18 +6209,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return (Math.round(n * 100) / 100).toLocaleString('es-CO') + (unidad === 'Porcentaje' ? '%' : '');
         }
 
-        // ── Debate de la meta real: la facultad y la vicerrectoría colocan su valor, el superadministrador aprueba ──
+        // ── Concertación: la facultad y la vicerrectoría colocan su valor; al concertar se envía al superadministrador ──
         let cnDatos = null;
 
         function cnNum(v) { return (v === null || v === undefined || v === '') ? null : parseFloat(v); }
 
-        // vacio | pendiente (falta un valor) | debate (difieren) | acuerdo (iguales) | aprobado
+        // vacio | pendiente (falta un valor) | listo (los dos valores, falta concertar) | enviado (espera al superadministrador) | aprobado
         function cnEstadoCelda(c) {
             if (c.aprobado) return 'aprobado';
             const a = cnNum(c.vf), b = cnNum(c.vv);
             if (a === null && b === null) return 'vacio';
             if (a === null || b === null) return 'pendiente';
-            return Math.abs(a - b) < 0.01 ? 'acuerdo' : 'debate';
+            return c.enviado ? 'enviado' : 'listo';
         }
 
         // Un lado (declarante): su valor y la descripción con la que lo explica. Quien puede colocarlo ve campos; los demás, solo lectura
@@ -6243,41 +6244,54 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function cnResultadoHtml(f, sem, c, esSuper, unidad) {
             const e = cnEstadoCelda(c);
             const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
+            const iguales = Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
+            const hint = iguales ? 'Los valores coinciden' : 'Difieren en ' + cnFmt(Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)), '');
             if (e === 'aprobado') {
                 const quien = (c.apr_usuario ? 'Aprobó ' + c.apr_usuario : '') + (c.apr_fecha ? ' · ' + c.apr_fecha : '');
-                return '<span class="cnx-estado fin" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check-circle"></i> Meta real <b>' + cnFmt(c.final, unidad) + '</b></span>' +
-                       (esSuper ? '<button type="button" class="cnx-link" data-acc="quitar" ' + attrs + '>Quitar</button>' : '');
+                return '<span class="cnx-estado fin" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check-circle"></i> Meta real <b>' + cnFmt(c.final, cnDatos ? cnDatos.indicador.unidad : '') + '</b></span>' +
+                       '<span class="cnx-hint">Ya está en el seguimiento por facultades</span>' +
+                       (esSuper ? '<button type="button" class="cnx-link" data-acc="quitar" ' + attrs + '>Quitar aprobación</button>' : '');
             }
-            if (e === 'acuerdo') {
-                return '<span class="cnx-estado ok"><i class="fas fa-check"></i> De acuerdo <b>' + cnFmt(c.vf, unidad) + '</b></span>' +
-                       (esSuper ? '<button type="button" class="cnx-btn" data-acc="aprobar" ' + attrs + '>Aprobar</button>' : '');
+            if (e === 'enviado') {
+                let html = '<span class="cnx-estado env"><i class="fas fa-paper-plane"></i> Enviado al superadministrador</span>';
+                if (esSuper) {
+                    html += iguales
+                        ? '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" ' + attrs + '>Aprobar ' + cnFmt(c.vf, cnDatos.indicador.unidad) + '</button>' +
+                          '<button type="button" class="cnx-btn sec" data-acc="rechazar" ' + attrs + '>Rechazar</button></span>'
+                        : '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="facultad" ' + attrs + '>Aprobar la de la facultad (' + cnFmt(c.vf, cnDatos.indicador.unidad) + ')</button>' +
+                          '<button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="vicerrectoria" ' + attrs + '>Aprobar la de la vicerrectoría (' + cnFmt(c.vv, cnDatos.indicador.unidad) + ')</button>' +
+                          '<button type="button" class="cnx-btn sec" data-acc="rechazar" ' + attrs + '>Rechazar</button></span>';
+                } else {
+                    html += '<span class="cnx-hint">' + hint + '</span>';
+                }
+                return html;
             }
-            if (e === 'debate') {
-                return '<span class="cnx-estado deb">En debate · difieren ' + cnFmt(Math.abs(c.vf - c.vv), unidad) + '</span>' +
-                       (esSuper ? '<span class="cnx-elige"><button type="button" class="cnx-btn sec" data-acc="aprobar" data-elige="facultad" ' + attrs + '>Aprobar la de la facultad</button>' +
-                                  '<button type="button" class="cnx-btn sec" data-acc="aprobar" data-elige="vicerrectoria" ' + attrs + '>Aprobar la de la vicerrectoría</button></span>' : '');
+            if (e === 'listo') {
+                return (c.rechazado ? '<span class="cnx-estado deb">Rechazado · sigan concertando</span>' : '') +
+                       (f.puede_enviar ? '<button type="button" class="cnx-btn verde" data-acc="enviar" ' + attrs + '>Concertar</button>' : '<span class="cnx-estado">Listo para concertar</span>') +
+                       '<span class="cnx-hint">' + hint + '</span>';
             }
             if (e === 'pendiente') return '<span class="cnx-estado">Falta el valor de la ' + (cnNum(c.vf) === null ? 'facultad' : 'vicerrectoría') + '</span>';
             return '<span class="cnx-nd">Sin valores</span>';
         }
 
         function cnConteoSem(r, sem) {
-            const o = { total: 0, acuerdo: 0, aprobado: 0, debate: 0, pendiente: 0 };
+            const o = { total: 0, aprobado: 0, enviado: 0, listo: 0, pendiente: 0, iguales: 0 };
             r.facultades.forEach(function(f) {
                 const c = f.sem[sem];
                 if (!c.aplica) return;
                 const e = cnEstadoCelda(c);
                 if (e === 'vacio') return;
                 o.total++; o[e]++;
+                if (e === 'enviado' && Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01) o.iguales++;
             });
             return o;
         }
 
         function cnCabSemHtml(r, sem) {
             const n = cnConteoSem(r, sem);
-            const listos = n.acuerdo + n.aprobado;
-            return '<h6>Semestre ' + sem + '</h6><span class="cnx-sem-cuenta">' + (n.total ? listos + ' de ' + n.total + ' de acuerdo' + (n.debate ? ' · ' + n.debate + ' en debate' : '') : 'Sin valores todavía') + '</span>' +
-                   (r.es_superadmin && n.acuerdo > 1 ? '<button type="button" class="cnx-btn sec" data-acc="aprobar-todo" data-sem="' + sem + '">Aprobar los ' + n.acuerdo + ' de acuerdo</button>' : '');
+            return '<h6>Semestre ' + sem + '</h6><span class="cnx-sem-cuenta">' + (n.total ? n.aprobado + ' de ' + n.total + ' aprobados' + (n.enviado ? ' · ' + n.enviado + ' por aprobar' : '') : 'Sin valores todavía') + '</span>' +
+                   (r.es_superadmin && n.iguales > 1 ? '<button type="button" class="cnx-btn verde" data-acc="aprobar-todo" data-sem="' + sem + '">Aprobar los ' + n.iguales + ' que coinciden</button>' : '');
         }
 
         // Una sola tabla: una fila por facultad y, en cada semestre, su columna (facultad | vicerrectoría) y su resultado
@@ -6306,25 +6320,22 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function cnActualizarLista(r) {
-            const t = [0, 0, 0], d = [0, 0, 0], ap = [0, 0, 0];
-            let debate = 0, pendiente = 0;
+            const t = [0, 0, 0], ap = [0, 0, 0];
+            let env = 0, listo = 0, pend = 0;
             [1, 2].forEach(function(s) {
                 const n = cnConteoSem(r, s);
-                t[s] = n.total; d[s] = n.acuerdo + n.aprobado; ap[s] = n.aprobado; debate += n.debate; pendiente += n.pendiente;
+                t[s] = n.total; ap[s] = n.aprobado; env += n.enviado; listo += n.listo; pend += n.pendiente;
             });
             let estado = 'sinreporte';
-            if (t[1] + t[2] > 0) {
-                const todoAprobado = [1, 2].every(function(s) { return t[s] === 0 || ap[s] >= t[s]; });
-                estado = debate ? 'debate' : (pendiente ? 'pendiente' : (todoAprobado ? 'aprobado' : 'acuerdo'));
-            }
-            const etiquetas = { debate: ['En debate', 'no'], pendiente: ['Falta un valor', 'nd'], acuerdo: ['De acuerdo', 'si'], aprobado: ['Aprobado', 'si'], sinreporte: ['Sin datos', 'nd'] };
+            if (t[1] + t[2] > 0) estado = env ? 'enviado' : (listo ? 'listo' : (pend ? 'pendiente' : 'aprobado'));
+            const etiquetas = { pendiente: ['Falta un valor', 'nd'], listo: ['Para concertar', 'no'], enviado: ['Por aprobar', 'env'], aprobado: ['Aprobado', 'si'], sinreporte: ['Sin datos', 'nd'] };
             const item = document.querySelector('#cnVistaLista .cnx-item[data-id="' + r.indicador.id + '"]');
             if (item) {
                 [1, 2].forEach(function(s) {
                     const p = item.querySelector('.cnx-prog[data-sem="' + s + '"]');
                     if (!p) return;
-                    p.querySelector('b').textContent = t[s] ? d[s] + '/' + t[s] : '—';
-                    p.querySelector('i').style.width = (t[s] ? Math.round(d[s] / t[s] * 100) : 0) + '%';
+                    p.querySelector('b').textContent = t[s] ? ap[s] + '/' + t[s] : '—';
+                    p.querySelector('i').style.width = (t[s] ? Math.round(ap[s] / t[s] * 100) : 0) + '%';
                     p.classList.toggle('apr', t[s] > 0 && ap[s] >= t[s]);
                 });
                 item.setAttribute('data-estado', estado);
@@ -6335,10 +6346,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (fm) {
                 fm.setAttribute('data-estado', estado);
                 const a = fm.querySelector('.cn-s1'), b = fm.querySelector('.cn-s2');
-                if (a) a.textContent = d[1] + '/' + t[1];
-                if (b) b.textContent = d[2] + '/' + t[2];
+                if (a) a.textContent = ap[1] + '/' + t[1];
+                if (b) b.textContent = ap[2] + '/' + t[2];
                 const cel = fm.querySelector('.cn-coinciden');
-                if (cel) { cel.className = 'cn-coinciden ' + etiquetas[estado][1]; cel.textContent = etiquetas[estado][1] === 'si' ? 'SÍ' : (etiquetas[estado][1] === 'no' ? 'NO' : '—'); }
+                if (cel) { const ok = estado === 'aprobado'; cel.className = 'cn-coinciden ' + (ok ? 'si' : 'nd'); cel.textContent = ok ? 'SÍ' : '—'; }
             }
             if (window.cnActualizarChips) window.cnActualizarChips();
         }
@@ -6417,31 +6428,43 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const c = f.sem[sem], n = cnNum(texto);
                 if (esDescripcion) { if (lado === 'facultad') { c.df = texto; c.df_propia = true; } else { c.dv = texto; } return; }
                 if (lado === 'facultad') { c.vf = n === null ? c.hecha : n; c.vf_propio = n !== null; } else { c.vv = n; }
+                c.enviado = false; c.rechazado = false; // cambiar un valor obliga a concertar de nuevo
                 $('.cnx-res[data-fac="' + fac + '"][data-sem="' + sem + '"]').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
                 $('.cnx-uh-sem[data-sem="' + sem + '"] .cnx-sem-cab').html(cnCabSemHtml(cnDatos, sem));
                 cnActualizarLista(cnDatos);
             }, 'json').fail(function() { el.prop('disabled', false); $('#cnError').text('Error de conexión con el servidor').show(); });
         });
 
-        // Aprobación del superadministrador
+        // Concertar (envía al superadministrador) y decisiones del superadministrador (aprobar, rechazar, quitar)
         $(document).on('click', '#cnSemestres [data-acc]', function() {
             const btn = $(this);
             const acc = btn.data('acc');
             const fallo = function(m) { $('#cnError').text(m || 'No se pudo guardar').show(); btn.prop('disabled', false); };
-            const aprobar = function(fac, sem, aprobado, elige) {
-                return $.post(basePath + '/modulo144/aprobarConcertacion', { formulacion_id: cnIndicadorActual, facultad_id: fac, semestre: sem, aprobado: aprobado ? 1 : 0, elige: elige || '' }, null, 'json');
+            const post = function(ruta, datos) {
+                return $.post(basePath + '/modulo144/' + ruta, $.extend({ formulacion_id: cnIndicadorActual }, datos), null, 'json');
             };
             btn.prop('disabled', true);
             if (acc === 'aprobar-todo') {
                 const sem = btn.data('sem');
-                const pend = cnDatos.facultades.filter(function(f) { return cnEstadoCelda(f.sem[sem]) === 'acuerdo'; });
+                const pend = cnDatos.facultades.filter(function(f) {
+                    const c = f.sem[sem];
+                    return c.aplica && cnEstadoCelda(c) === 'enviado' && Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
+                });
                 (function siguiente(i) {
                     if (i >= pend.length) { cnCargar(); return; }
-                    aprobar(pend[i].facultad_id, sem, true, '').done(function(r) { if (!r.success) { fallo(r.message); return; } siguiente(i + 1); }).fail(function() { fallo('Error de conexión con el servidor'); });
+                    post('aprobarConcertacion', { facultad_id: pend[i].facultad_id, semestre: sem, aprobado: 1 }).done(function(r) { if (!r.success) { fallo(r.message); return; } siguiente(i + 1); })
+                        .fail(function() { fallo('Error de conexión con el servidor'); });
                 })(0);
                 return;
             }
-            aprobar(btn.data('fac'), btn.data('sem'), acc === 'aprobar', btn.data('elige')).done(function(r) {
+            const fac = btn.data('fac'), sem = btn.data('sem');
+            let req;
+            if (acc === 'enviar') req = post('enviarConcertacion', { facultad_id: fac, semestre: sem });
+            else if (acc === 'aprobar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, aprobado: 1, elige: btn.data('elige') || '' });
+            else if (acc === 'rechazar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, rechazar: 1 });
+            else if (acc === 'quitar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, aprobado: 0 });
+            else { btn.prop('disabled', false); return; }
+            req.done(function(r) {
                 if (!r.success) { fallo(r.message); return; }
                 $('#cnError').hide();
                 cnCargar();

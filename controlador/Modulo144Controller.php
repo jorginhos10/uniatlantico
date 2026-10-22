@@ -1320,6 +1320,9 @@ class Modulo144Controller {
                     'df' => ($c && $c['descripcion_facultad'] !== null) ? $c['descripcion_facultad'] : ($s === 1 ? ($d['seguimiento_descripcion'] ?? '') : ($d['seguimiento_descripcion2'] ?? '')),
                     'df_propia' => $c && $c['descripcion_facultad'] !== null,
                     'dv' => $c['descripcion_vicerrectoria'] ?? '',
+                    'enviado' => $c ? (int)$c['enviado'] === 1 : false,
+                    'rechazado' => $c ? (int)$c['rechazado'] === 1 : false,
+                    'uenvio' => $c['usuario_envio_nombre'] ?? '', 'fenvio' => $c['fecha_envio'] ?? '',
                 ];
             }
             if (!$hay) continue; // sin meta, sin reporte y sin propuestas: nada que debatir
@@ -1329,6 +1332,7 @@ class Modulo144Controller {
                 'propuesta' => (float)$d['distribucion'],
                 'puede_f' => $this->puedeConcertarFacultad($fid),
                 'puede_v' => $puedeV,
+                'puede_enviar' => $puedeV || $this->puedeConcertarFacultad($fid), // cualquiera de los dos declarantes envía lo concertado
                 'sem' => $sem,
             ];
         }
@@ -1385,31 +1389,63 @@ class Modulo144Controller {
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado' : 'No se pudo guardar']);
     }
 
-    // Solo el superadministrador aprueba la meta real. Si los dos valores coinciden se aprueba ese valor;
-    // si difieren, elige cuál aprueba (el de la facultad o el de la vicerrectoría).
+    // Cuando los dos declarantes ya colocaron su valor, cualquiera de ellos pulsa Concertar y la fila pasa al superadministrador
+    public function enviarConcertacion() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
+        $id = intval($_POST['formulacion_id'] ?? 0);
+        $fac = intval($_POST['facultad_id'] ?? 0);
+        $sem = intval($_POST['semestre'] ?? 0);
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+        if (!($this->puedeConcertarFacultad($fac) || $this->puedeConcertarDependencia($item))) {
+            echo json_encode(['success' => false, 'message' => 'Solo la facultad o la vicerrectoría pueden concertar']); return;
+        }
+        $conc = $this->model->getConcertaciones($id);
+        $c = $conc[$fac][$sem] ?? null;
+        if ($c && (int)$c['aprobado'] === 1) { echo json_encode(['success' => false, 'message' => 'Este valor ya fue aprobado']); return; }
+        $vf = $c && $c['valor_facultad'] !== null ? (float)$c['valor_facultad'] : null;
+        if ($vf === null) {
+            foreach ($this->model->getDistribucionFacultades($id) as $d) {
+                if ((int)$d['facultad_id'] === $fac) { $h = $d['seguimiento_sem' . $sem] ?? null; $vf = ($h === null || $h === '') ? null : (float)$h; break; }
+            }
+        }
+        $vv = $c && $c['valor_vicerrectoria'] !== null ? (float)$c['valor_vicerrectoria'] : null;
+        if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores: la facultad y la vicerrectoría deben colocar el suyo']); return; }
+        // Si el valor de la facultad viene del seguimiento y nunca se guardó, se fija ahora para que lo enviado no cambie
+        if ($c === null || $c['valor_facultad'] === null) $this->model->guardarPropuesta($id, $fac, $sem, 'facultad', $vf, $_SESSION['usuario_id'] ?? 0);
+        $ok = $this->model->enviarConcertacion($id, $fac, $sem, $_SESSION['usuario_id'] ?? 0);
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Enviado al superadministrador' : 'No se pudo enviar']);
+    }
+
+    // Solo el superadministrador decide lo enviado: aprueba (el valor pasa al seguimiento por facultades), rechaza (se sigue concertando)
+    // o quita una aprobación. Si los dos valores difieren, al aprobar elige uno de los dos.
     public function aprobarConcertacion() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
-        if (!$this->esSuperadminConcertacion()) { echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede aprobar']); return; }
+        if (!$this->esSuperadminConcertacion()) { echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede aprobar o rechazar']); return; }
         $id = intval($_POST['formulacion_id'] ?? 0);
         $fac = intval($_POST['facultad_id'] ?? 0);
         $sem = intval($_POST['semestre'] ?? 0);
         $aprobar = !empty($_POST['aprobado']) && $_POST['aprobado'] !== '0';
+        $rechazar = !empty($_POST['rechazar']) && $_POST['rechazar'] !== '0';
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+
+        if ($rechazar) {
+            $ok = $this->model->rechazarConcertacion($id, $fac, $sem);
+            echo json_encode(['success' => $ok, 'message' => $ok ? 'Rechazado: se debe seguir concertando' : 'No se pudo rechazar']);
+            return;
+        }
 
         $final = null;
         if ($aprobar) {
             $conc = $this->model->getConcertaciones($id);
             $c = $conc[$fac][$sem] ?? null;
-            $vf = $c && $c['valor_facultad'] !== null ? (float)$c['valor_facultad'] : null;
-            if ($vf === null) {
-                foreach ($this->model->getDistribucionFacultades($id) as $d) {
-                    if ((int)$d['facultad_id'] === $fac) { $h = $d['seguimiento_sem' . $sem] ?? null; $vf = ($h === null || $h === '') ? null : (float)$h; break; }
-                }
-            }
-            $vv = $c && $c['valor_vicerrectoria'] !== null ? (float)$c['valor_vicerrectoria'] : null;
-            if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores: la facultad y la vicerrectoría deben colocar el suyo']); return; }
+            if (!$c || (int)$c['enviado'] !== 1) { echo json_encode(['success' => false, 'message' => 'Primero la facultad o la vicerrectoría deben concertar y enviarlo']); return; }
+            $vf = $c['valor_facultad'] !== null ? (float)$c['valor_facultad'] : null;
+            $vv = $c['valor_vicerrectoria'] !== null ? (float)$c['valor_vicerrectoria'] : null;
+            if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores']); return; }
             if (abs($vf - $vv) < 0.01) $final = $vf;
             else {
                 $eleccion = $_POST['elige'] ?? '';
@@ -1419,7 +1455,7 @@ class Modulo144Controller {
             }
         }
         $ok = $this->model->guardarAprobacion($id, $fac, $sem, $aprobar, $final, $_SESSION['usuario_id'] ?? 0);
-        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado' : 'Aprobación retirada') : 'No se pudo guardar']);
+        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado: el valor pasó al seguimiento por facultades' : 'Aprobación retirada') : 'No se pudo guardar']);
     }
 }
 ?>

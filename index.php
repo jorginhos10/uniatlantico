@@ -445,6 +445,9 @@ switch ($action) {
             case 'aprobarConcertacion':
                 $modulo144Controller->aprobarConcertacion();
                 break;
+            case 'enviarConcertacion':
+                $modulo144Controller->enviarConcertacion();
+                break;
             case 'resumenEvidencias':
                 $modulo144Controller->resumenEvidencias();
                 break;

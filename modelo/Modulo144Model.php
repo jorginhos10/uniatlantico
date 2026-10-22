@@ -1481,6 +1481,10 @@ class Modulo144Model {
             'usuario_facultad' => 'INT NULL', 'fecha_facultad' => 'DATETIME NULL', 'usuario_vice' => 'INT NULL', 'fecha_vice' => 'DATETIME NULL',
             // Cada declarante explica su valor
             'descripcion_facultad' => 'TEXT NULL', 'descripcion_vicerrectoria' => 'TEXT NULL',
+            // Flujo: al concertar se envía al superadministrador, que aprueba (y el valor pasa al seguimiento) o rechaza
+            'enviado' => 'TINYINT(1) NOT NULL DEFAULT 0', 'fecha_envio' => 'DATETIME NULL', 'usuario_envio' => 'INT NULL',
+            'rechazado' => 'TINYINT(1) NOT NULL DEFAULT 0',
+            'valor_previo' => 'DECIMAL(12,2) NULL', 'previo_existia' => 'TINYINT(1) NOT NULL DEFAULT 0',
         ] as $col => $def) {
             if ($this->db->query("SHOW COLUMNS FROM concertaciones_144 LIKE '{$col}'")->rowCount() === 0) {
                 $this->db->exec("ALTER TABLE concertaciones_144 ADD COLUMN {$col} {$def}");
@@ -1537,12 +1541,13 @@ class Modulo144Model {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
                 "SELECT c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.valor_final, c.aprobado, c.fecha_aprobado, c.fecha_facultad, c.fecha_vice,
-                        c.descripcion_facultad, c.descripcion_vicerrectoria,
+                        c.descripcion_facultad, c.descripcion_vicerrectoria, c.enviado, c.rechazado, c.fecha_envio, ue.nombre AS usuario_envio_nombre,
                         uf.nombre AS usuario_facultad, uv.nombre AS usuario_vice, ua.nombre AS aprobador
                  FROM concertaciones_144 c
                  LEFT JOIN usuarios uf ON uf.id = c.usuario_facultad
                  LEFT JOIN usuarios uv ON uv.id = c.usuario_vice
                  LEFT JOIN usuarios ua ON ua.id = c.aprobado_por
+                 LEFT JOIN usuarios ue ON ue.id = c.usuario_envio
                  WHERE c.formulacion_id = :f AND c.facultad_id > 0"
             );
             $stmt->execute([':f' => (int)$formulacionId]);
@@ -1559,7 +1564,7 @@ class Modulo144Model {
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "SELECT c.formulacion_id, c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.aprobado
+                "SELECT c.formulacion_id, c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.aprobado, c.enviado
                  FROM concertaciones_144 c JOIN formulacion_144 f ON f.id = c.formulacion_id
                  WHERE f.formulario_id = :fid AND c.facultad_id > 0"
             );
@@ -1569,6 +1574,7 @@ class Modulo144Model {
                     'vf' => $r['valor_facultad'] !== null ? (float)$r['valor_facultad'] : null,
                     'vv' => $r['valor_vicerrectoria'] !== null ? (float)$r['valor_vicerrectoria'] : null,
                     'aprobado' => (int)$r['aprobado'] === 1,
+                    'enviado' => (int)$r['enviado'] === 1,
                 ];
             }
         } catch (PDOException $e) {
@@ -1584,10 +1590,11 @@ class Modulo144Model {
         $fcol = $lado === 'facultad' ? 'fecha_facultad' : 'fecha_vice';
         try {
             $this->asegurarTablaConcertaciones();
+            // Si el valor cambia, lo enviado deja de valer: hay que volver a concertar
             $stmt = $this->db->prepare(
-                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol})
-                 VALUES (:f, :fac, :s, 0, :v, :u, NOW())
-                 ON DUPLICATE KEY UPDATE {$col} = VALUES({$col}), {$ucol} = VALUES({$ucol}), {$fcol} = VALUES({$fcol})"
+                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol}, enviado, rechazado)
+                 VALUES (:f, :fac, :s, 0, :v, :u, NOW(), 0, 0)
+                 ON DUPLICATE KEY UPDATE {$col} = VALUES({$col}), {$ucol} = VALUES({$ucol}), {$fcol} = VALUES({$fcol}), enviado = 0, rechazado = 0"
             );
             return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valor, ':u' => $usuarioId ?: null]);
         } catch (PDOException $e) {
@@ -1616,18 +1623,86 @@ class Modulo144Model {
     }
 
     // Aprobación de la meta real de una facultad en un semestre (solo superadministrador)
+    // Valor del seguimiento de una facultad en un semestre (null si no hay)
+    private function leerSeguimientoFacultad($formulacionId, $facultadId, $semestre) {
+        $col = (int)$semestre === 2 ? 'seguimiento_sem2' : 'seguimiento_sem1';
+        $stmt = $this->db->prepare("SELECT {$col} FROM formulacion_distribucion_facultad_144 WHERE formulacion_id = :f AND facultad_id = :fac");
+        $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId]);
+        $v = $stmt->fetchColumn();
+        return ($v === false || $v === null || $v === '') ? null : (float)$v;
+    }
+
+    private function escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, $valor) {
+        $col = (int)$semestre === 2 ? 'seguimiento_sem2' : 'seguimiento_sem1';
+        $stmt = $this->db->prepare(
+            "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, {$col}) VALUES (:f, :fac, 0, :v)
+             ON DUPLICATE KEY UPDATE {$col} = VALUES({$col})"
+        );
+        $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':v' => $valor]);
+    }
+
+    // Aprueba (o retira la aprobación de) la meta real de una facultad en un semestre. Solo superadministrador.
+    // Al aprobar, el valor final se escribe en el seguimiento por facultades; al retirarla, se restaura el que había.
     public function guardarAprobacion($formulacionId, $facultadId, $semestre, $aprobado, $valorFinal, $usuarioId) {
         try {
             $this->asegurarTablaConcertaciones();
-            $stmt = $this->db->prepare(
-                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado)
-                 VALUES (:f, :fac, :s, 0, :a, :v, :u, IF(:a2 = 1, NOW(), NULL))
-                 ON DUPLICATE KEY UPDATE aprobado = VALUES(aprobado), valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = VALUES(fecha_aprobado)"
-            );
-            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':a' => $aprobado ? 1 : 0, ':a2' => $aprobado ? 1 : 0,
-                                   ':v' => $aprobado ? $valorFinal : null, ':u' => $aprobado ? ($usuarioId ?: null) : null]);
+            $this->db->beginTransaction();
+            if ($aprobado) {
+                $previo = $this->leerSeguimientoFacultad($formulacionId, $facultadId, $semestre);
+                $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, $valorFinal);
+                $stmt = $this->db->prepare(
+                    "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado, enviado, rechazado, valor_previo, previo_existia)
+                     VALUES (:f, :fac, :s, 0, 1, :v, :u, NOW(), 0, 0, :pv, :pe)
+                     ON DUPLICATE KEY UPDATE aprobado = 1, valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = NOW(),
+                                             enviado = 0, rechazado = 0, valor_previo = VALUES(valor_previo), previo_existia = VALUES(previo_existia)"
+                );
+                $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valorFinal, ':u' => $usuarioId ?: null,
+                                ':pv' => $previo, ':pe' => $previo === null ? 0 : 1]);
+            } else {
+                $q = $this->db->prepare("SELECT valor_previo, previo_existia FROM concertaciones_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
+                $q->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+                $r = $q->fetch();
+                if ($r) $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, ((int)$r['previo_existia'] === 1 && $r['valor_previo'] !== null) ? (float)$r['valor_previo'] : null);
+                $stmt = $this->db->prepare(
+                    "UPDATE concertaciones_144 SET aprobado = 0, valor_final = NULL, aprobado_por = NULL, fecha_aprobado = NULL, enviado = 0, valor_previo = NULL, previo_existia = 0
+                     WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s"
+                );
+                $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            }
+            $this->db->commit();
+            return true;
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             error_log('Error guardarAprobacion: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Envía al superadministrador lo concertado entre la facultad y la vicerrectoría
+    public function enviarConcertacion($formulacionId, $facultadId, $semestre, $usuarioId) {
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "UPDATE concertaciones_144 SET enviado = 1, rechazado = 0, fecha_envio = NOW(), usuario_envio = :u
+                 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s AND aprobado = 0"
+            );
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':u' => $usuarioId ?: null]);
+        } catch (PDOException $e) {
+            error_log('Error enviarConcertacion: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // El superadministrador rechaza: vuelve al debate y se debe seguir concertando
+    public function rechazarConcertacion($formulacionId, $facultadId, $semestre) {
+        try {
+            $this->asegurarTablaConcertaciones();
+            $stmt = $this->db->prepare(
+                "UPDATE concertaciones_144 SET enviado = 0, rechazado = 1 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s AND aprobado = 0"
+            );
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+        } catch (PDOException $e) {
+            error_log('Error rechazarConcertacion: ' . $e->getMessage());
             return false;
         }
     }
