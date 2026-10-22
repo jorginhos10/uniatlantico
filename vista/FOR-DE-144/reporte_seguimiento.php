@@ -193,7 +193,7 @@ tr:last-child td{border-bottom:0}
 
     <section class="kpis" aria-label="Resumen">
         <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['total'] - $kpi['sinReporte']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">con al menos un semestre registrado</div></div>
-        <div class="kpi"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['sinReporte']; ?></span></div><div class="s">de los que faltan por reportar</div></div>
+        <div class="kpi"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo</div></div>
     </section>
 
     <nav class="tabs" role="tablist">
