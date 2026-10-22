@@ -200,8 +200,7 @@ tr:last-child td{border-bottom:0}
     </section>
 
     <nav class="tabs" role="tablist">
-        <button type="button" role="tab" class="on" data-tp="tp-ind">Indicadores</button>
-        <button type="button" role="tab" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
+        <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
         <button type="button" role="tab" data-tp="tp-fac">Facultades <span><?php echo count($porFacultad); ?></span></button>
     </nav>
 
@@ -239,7 +238,7 @@ tr:last-child td{border-bottom:0}
         <?php endforeach;
     }; ?>
 
-    <section class="box tp" id="tp-dep" hidden>
+    <section class="box tp" id="tp-dep">
         <h2>Por dependencia</h2>
         <p class="vacio acc-ayuda">Indicadores aprobados del total de cada dependencia. Los números de colores son en revisión, devueltos y en construcción.</p>
         <?php $desplegables($porDep, 'Todavía no hay indicadores aprobados.'); ?>
@@ -251,71 +250,17 @@ tr:last-child td{border-bottom:0}
         <?php $desplegables($porFacultad, 'Ninguna facultad tiene metas en los indicadores aprobados.'); ?>
     </section>
 
-    <section class="box tp" id="tp-ind">
-        <h2>Indicadores</h2>
-        <div class="tools">
-            <input type="search" id="buscar" placeholder="Buscar indicador, dependencia o línea…" aria-label="Buscar">
-            <select id="fLinea" aria-label="Línea">
-                <option value="">Línea: todas</option>
-                <?php foreach (array_keys($porLinea) as $cod): ?><option value="<?php echo $h($cod); ?>"><?php echo $h($cod); ?></option><?php endforeach; ?>
-            </select>
-            <select id="fDependencia" aria-label="Dependencia">
-                <option value="">Dependencia: todas</option>
-                <?php foreach ($dependencias as $k => $d): ?><option value="<?php echo $h($k); ?>"><?php echo $h($d); ?></option><?php endforeach; ?>
-            </select>
-        </div>
-        <div class="tw">
-            <table id="tabla">
-                <thead><tr>
-                    <th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th>
-                    <th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Estado</th><th>Semáforo</th>
-                </tr></thead>
-                <tbody>
-                <?php foreach ($filas as $f): ?>
-                <tr data-linea="<?php echo $h($f['linea']); ?>" data-estado="<?php echo $h($f['estado']); ?>" data-deps="|<?php echo $h(mb_strtolower(implode('|', $f['deps']), 'UTF-8')); ?>|"
-                    data-buscar="<?php echo $h(mb_strtolower($f['nombre'] . ' ' . $f['indicador'] . ' ' . $f['responsable'] . ' ' . $f['lmp'], 'UTF-8')); ?>">
-                    <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
-                    <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
-                    <td><?php echo $h($f['responsable'] ?: '—'); ?></td>
-                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
-                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . ($f['unidad'] === 'Porcentaje' ? '%' : '') : '<span class="nd">—</span>'; ?></td>
-                    <td><span class="ev"><span class="<?php echo $f['ev1'] ? '' : 'z'; ?>" title="Evidencias del semestre 1">S1 · <?php echo $f['ev1']; ?></span><span class="<?php echo $f['ev2'] ? '' : 'z'; ?>" title="Evidencias del semestre 2">S2 · <?php echo $f['ev2']; ?></span></span></td>
-                    <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
-                    <td><span class="sem-circ" title="Etapas del semáforo de aprobación">
-                        <?php foreach (['G', 'L', 'V', 'P'] as $i => $letra): ?><i class="<?php echo ($f['estado'] === 'publicado' || ($f['sol'] === 1 && $i < $f['etapa'])) ? 'on' : ''; ?>"><?php echo $letra; ?></i><?php endforeach; ?>
-                    </span></td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php if (!$filas): ?><p class="vacio">Todavía no hay indicadores aprobados en este formulario.</p><?php endif; ?>
-            <p class="vacio" id="sinResultados" hidden>Ningún indicador coincide con los filtros.</p>
-        </div>
-    </section>
-
     <p class="pie">Los indicadores sin reporte no cuentan en el avance promedio. Para cambiar un dato, ábrelo en el Plan de acción.</p>
 </div>
 <script>
 (function () {
-    var q = document.getElementById('buscar'), l = document.getElementById('fLinea'), e = document.getElementById('fDependencia');
-    var filas = Array.prototype.slice.call(document.querySelectorAll('#tabla tbody tr'));
-    function filtrar() {
-        var t = q.value.trim().toLowerCase(), visibles = 0;
-        filas.forEach(function (r) {
-            var ok = (!t || r.getAttribute('data-buscar').indexOf(t) !== -1)
-                && (!l.value || r.getAttribute('data-linea') === l.value)
-                && (!e.value || r.getAttribute('data-deps').indexOf('|' + e.value + '|') !== -1);
-            r.hidden = !ok; if (ok) visibles++;
-        });
-        document.getElementById('sinResultados').hidden = visibles > 0 || !filas.length;
-    }
-    Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+    botones.forEach(function (b) {
         b.addEventListener('click', function () {
-            Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (x) { x.classList.toggle('on', x === b); });
+            botones.forEach(function (x) { x.classList.toggle('on', x === b); });
             Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
         });
     });
-    q.addEventListener('input', filtrar); l.addEventListener('change', filtrar); e.addEventListener('change', filtrar);
 })();
 </script>
 </body>
