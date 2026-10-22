@@ -1474,7 +1474,12 @@ class Modulo144Model {
             fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
             UNIQUE KEY uq_concertacion (formulacion_id, facultad_id, semestre)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
-        foreach (['aprobado' => 'TINYINT(1) NOT NULL DEFAULT 0', 'aprobado_por' => 'INT NULL', 'fecha_aprobado' => 'DATETIME NULL'] as $col => $def) {
+        foreach ([
+            'aprobado' => 'TINYINT(1) NOT NULL DEFAULT 0', 'aprobado_por' => 'INT NULL', 'fecha_aprobado' => 'DATETIME NULL',
+            // Debate de la meta real: cada lado propone su valor; el superadministrador aprueba el valor final
+            'valor_facultad' => 'DECIMAL(12,2) NULL', 'valor_vicerrectoria' => 'DECIMAL(12,2) NULL', 'valor_final' => 'DECIMAL(12,2) NULL',
+            'usuario_facultad' => 'INT NULL', 'fecha_facultad' => 'DATETIME NULL', 'usuario_vice' => 'INT NULL', 'fecha_vice' => 'DATETIME NULL',
+        ] as $col => $def) {
             if ($this->db->query("SHOW COLUMNS FROM concertaciones_144 LIKE '{$col}'")->rowCount() === 0) {
                 $this->db->exec("ALTER TABLE concertaciones_144 ADD COLUMN {$col} {$def}");
             }
@@ -1523,18 +1528,19 @@ class Modulo144Model {
         return $res;
     }
 
-    // [facultad_id => [semestre => fila]] con quien concertó y quien aprobó. facultad_id 0 = dependencia responsable (y aprobación del indicador)
+    // [facultad_id => [semestre => fila]] con las propuestas de cada lado, quién las puso y la aprobación
     public function getConcertaciones($formulacionId) {
         $res = [];
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "SELECT c.facultad_id, c.semestre, c.concertado, c.valor_concertado, c.observacion, c.fecha_actualizacion, u.nombre AS usuario,
-                        c.aprobado, c.fecha_aprobado, ua.nombre AS aprobador
+                "SELECT c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.valor_final, c.aprobado, c.fecha_aprobado, c.fecha_facultad, c.fecha_vice,
+                        uf.nombre AS usuario_facultad, uv.nombre AS usuario_vice, ua.nombre AS aprobador
                  FROM concertaciones_144 c
-                 LEFT JOIN usuarios u ON u.id = c.usuario_id
+                 LEFT JOIN usuarios uf ON uf.id = c.usuario_facultad
+                 LEFT JOIN usuarios uv ON uv.id = c.usuario_vice
                  LEFT JOIN usuarios ua ON ua.id = c.aprobado_por
-                 WHERE c.formulacion_id = :f"
+                 WHERE c.formulacion_id = :f AND c.facultad_id > 0"
             );
             $stmt->execute([':f' => (int)$formulacionId]);
             foreach ($stmt->fetchAll() as $r) $res[(int)$r['facultad_id']][(int)$r['semestre']] = $r;
@@ -1544,18 +1550,23 @@ class Modulo144Model {
         return $res;
     }
 
-    // Todas las concertaciones del formulario: [formulacion_id => [facultad_id => [semestre => ['concertado' =>, 'aprobado' =>]]]]
+    // Todas las propuestas del formulario: [formulacion_id => [facultad_id => [semestre => ['vf' =>, 'vv' =>, 'aprobado' =>]]]]
     public function getTodasConcertaciones($formularioId) {
         $res = [];
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "SELECT c.formulacion_id, c.facultad_id, c.semestre, c.concertado, c.aprobado
-                 FROM concertaciones_144 c JOIN formulacion_144 f ON f.id = c.formulacion_id WHERE f.formulario_id = :fid"
+                "SELECT c.formulacion_id, c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.aprobado
+                 FROM concertaciones_144 c JOIN formulacion_144 f ON f.id = c.formulacion_id
+                 WHERE f.formulario_id = :fid AND c.facultad_id > 0"
             );
             $stmt->execute([':fid' => (int)$formularioId]);
             foreach ($stmt->fetchAll() as $r) {
-                $res[(int)$r['formulacion_id']][(int)$r['facultad_id']][(int)$r['semestre']] = ['concertado' => (int)$r['concertado'] === 1, 'aprobado' => (int)$r['aprobado'] === 1];
+                $res[(int)$r['formulacion_id']][(int)$r['facultad_id']][(int)$r['semestre']] = [
+                    'vf' => $r['valor_facultad'] !== null ? (float)$r['valor_facultad'] : null,
+                    'vv' => $r['valor_vicerrectoria'] !== null ? (float)$r['valor_vicerrectoria'] : null,
+                    'aprobado' => (int)$r['aprobado'] === 1,
+                ];
             }
         } catch (PDOException $e) {
             error_log('Error getTodasConcertaciones: ' . $e->getMessage());
@@ -1563,35 +1574,38 @@ class Modulo144Model {
         return $res;
     }
 
-    // Aprobación del superadministrador de un semestre del indicador
-    public function guardarAprobacion($formulacionId, $semestre, $aprobado, $usuarioId) {
+    // Propuesta de un lado ('facultad' o 'vicerrectoria') para un semestre de una facultad. $valor null = borrar la propuesta
+    public function guardarPropuesta($formulacionId, $facultadId, $semestre, $lado, $valor, $usuarioId) {
+        $col = $lado === 'facultad' ? 'valor_facultad' : 'valor_vicerrectoria';
+        $ucol = $lado === 'facultad' ? 'usuario_facultad' : 'usuario_vice';
+        $fcol = $lado === 'facultad' ? 'fecha_facultad' : 'fecha_vice';
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, aprobado_por, fecha_aprobado)
-                 VALUES (:f, 0, :s, 0, :a, :u, IF(:a2 = 1, NOW(), NULL))
-                 ON DUPLICATE KEY UPDATE aprobado = VALUES(aprobado), aprobado_por = VALUES(aprobado_por), fecha_aprobado = VALUES(fecha_aprobado)"
+                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol})
+                 VALUES (:f, :fac, :s, 0, :v, :u, NOW())
+                 ON DUPLICATE KEY UPDATE {$col} = VALUES({$col}), {$ucol} = VALUES({$ucol}), {$fcol} = VALUES({$fcol})"
             );
-            return $stmt->execute([':f' => (int)$formulacionId, ':s' => (int)$semestre, ':a' => $aprobado ? 1 : 0, ':a2' => $aprobado ? 1 : 0, ':u' => $aprobado ? ($usuarioId ?: null) : null]);
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valor, ':u' => $usuarioId ?: null]);
         } catch (PDOException $e) {
-            error_log('Error guardarAprobacion: ' . $e->getMessage());
+            error_log('Error guardarPropuesta: ' . $e->getMessage());
             return false;
         }
     }
 
-    public function guardarConcertacion($formulacionId, $facultadId, $semestre, $concertado, $valor, $observacion, $usuarioId) {
+    // Aprobación de la meta real de una facultad en un semestre (solo superadministrador)
+    public function guardarAprobacion($formulacionId, $facultadId, $semestre, $aprobado, $valorFinal, $usuarioId) {
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, valor_concertado, observacion, usuario_id)
-                 VALUES (:f, :fac, :sem, :c, :v, :o, :u)
-                 ON DUPLICATE KEY UPDATE concertado = VALUES(concertado), valor_concertado = VALUES(valor_concertado),
-                                         observacion = VALUES(observacion), usuario_id = VALUES(usuario_id)"
+                "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado)
+                 VALUES (:f, :fac, :s, 0, :a, :v, :u, IF(:a2 = 1, NOW(), NULL))
+                 ON DUPLICATE KEY UPDATE aprobado = VALUES(aprobado), valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = VALUES(fecha_aprobado)"
             );
-            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre,
-                                   ':c' => $concertado ? 1 : 0, ':v' => $valor, ':o' => $observacion, ':u' => $usuarioId ?: null]);
+            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':a' => $aprobado ? 1 : 0, ':a2' => $aprobado ? 1 : 0,
+                                   ':v' => $aprobado ? $valorFinal : null, ':u' => $aprobado ? ($usuarioId ?: null) : null]);
         } catch (PDOException $e) {
-            error_log('Error guardarConcertacion: ' . $e->getMessage());
+            error_log('Error guardarAprobacion: ' . $e->getMessage());
             return false;
         }
     }
