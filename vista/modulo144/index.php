@@ -1215,6 +1215,7 @@ ob_start();
         .cnx-estado.env { color: #1D71B8; background: #E4EEF8; }
         .cnx-pill.env { background: #E4EEF8; color: #1D71B8; }
         .cnx-btn.verde { background: #1F8A4C; color: #fff; }
+        .cnx-btn.naranja { background: #D85819; color: #fff; }
         .cnx-hint { font-size: .76rem; color: #6E6E73; }
         .cnx-acciones { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
         .cnx-estado.fin { color: #fff; background: #143163; }
@@ -6347,7 +6348,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
             if (e === 'listo') {
                 return (c.rechazado ? '<span class="cnx-estado deb">Rechazado · sigan concertando</span>' : '') +
-                       (f.puede_enviar ? '<button type="button" class="cnx-btn verde" data-acc="enviar" ' + attrs + '>Concertar</button>' : '<span class="cnx-estado">Listo para concertar</span>') +
+                       (f.puede_enviar ? '<button type="button" class="cnx-btn ' + (iguales ? 'verde' : 'naranja') + '" data-acc="enviar" ' + attrs + '>Concertar</button>' : '<span class="cnx-estado">Listo para concertar</span>') +
                        '<span class="cnx-hint">' + hint + '</span>';
             }
             if (e === 'pendiente') return '<span class="cnx-estado">Falta el valor de la ' + (cnNum(c.vf) === null ? 'facultad' : 'vicerrectoría') + '</span>';
