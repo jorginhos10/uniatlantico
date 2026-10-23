@@ -1485,6 +1485,8 @@ class Modulo144Model {
             'enviado' => 'TINYINT(1) NOT NULL DEFAULT 0', 'fecha_envio' => 'DATETIME NULL', 'usuario_envio' => 'INT NULL',
             'rechazado' => 'TINYINT(1) NOT NULL DEFAULT 0',
             'valor_previo' => 'DECIMAL(12,2) NULL', 'previo_existia' => 'TINYINT(1) NOT NULL DEFAULT 0',
+            // Descripción del valor concertado (es la que queda en el seguimiento por facultades) y la que había antes de aprobar
+            'descripcion_concertada' => 'TEXT NULL', 'descripcion_previa' => 'TEXT NULL',
         ] as $col => $def) {
             if ($this->db->query("SHOW COLUMNS FROM concertaciones_144 LIKE '{$col}'")->rowCount() === 0) {
                 $this->db->exec("ALTER TABLE concertaciones_144 ADD COLUMN {$col} {$def}");
@@ -1541,7 +1543,7 @@ class Modulo144Model {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
                 "SELECT c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.valor_final, c.aprobado, c.fecha_aprobado, c.fecha_facultad, c.fecha_vice,
-                        c.descripcion_facultad, c.descripcion_vicerrectoria, c.enviado, c.rechazado, c.fecha_envio, ue.nombre AS usuario_envio_nombre,
+                        c.descripcion_facultad, c.descripcion_vicerrectoria, c.descripcion_concertada, c.enviado, c.rechazado, c.fecha_envio, ue.nombre AS usuario_envio_nombre,
                         uf.nombre AS usuario_facultad, uv.nombre AS usuario_vice, ua.nombre AS aprobador
                  FROM concertaciones_144 c
                  LEFT JOIN usuarios uf ON uf.id = c.usuario_facultad
@@ -1632,6 +1634,46 @@ class Modulo144Model {
         return ($v === false || $v === null || $v === '') ? null : (float)$v;
     }
 
+    // Descripción del seguimiento de una facultad en un semestre (null si no hay)
+    private function leerDescripcionFacultad($formulacionId, $facultadId, $semestre) {
+        $this->asegurarColumnasDescripcionSemestres();
+        $col = (int)$semestre === 2 ? 'seguimiento_descripcion2' : 'seguimiento_descripcion';
+        $stmt = $this->db->prepare("SELECT {$col} FROM formulacion_distribucion_facultad_144 WHERE formulacion_id = :f AND facultad_id = :fac");
+        $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId]);
+        $v = $stmt->fetchColumn();
+        return ($v === false || $v === null || trim((string)$v) === '') ? null : $v;
+    }
+
+    private function escribirDescripcionFacultad($formulacionId, $facultadId, $semestre, $texto) {
+        $this->asegurarColumnasDescripcionSemestres();
+        $col = (int)$semestre === 2 ? 'seguimiento_descripcion2' : 'seguimiento_descripcion';
+        $stmt = $this->db->prepare(
+            "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, distribucion, {$col}) VALUES (:f, :fac, 0, :t)
+             ON DUPLICATE KEY UPDATE {$col} = VALUES({$col})"
+        );
+        $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':t' => $texto]);
+    }
+
+    // Descripción del valor concertado: solo existe tras concertar y es la que queda en el seguimiento por facultades
+    public function guardarDescripcionConcertada($formulacionId, $facultadId, $semestre, $texto) {
+        try {
+            $this->asegurarTablaConcertaciones();
+            $this->db->beginTransaction();
+            $q = $this->db->prepare("SELECT aprobado FROM concertaciones_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
+            $q->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            if ((int)$q->fetchColumn() !== 1) { $this->db->rollBack(); return false; }
+            $u = $this->db->prepare("UPDATE concertaciones_144 SET descripcion_concertada = :t WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
+            $u->execute([':t' => $texto === '' ? null : $texto, ':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            $this->escribirDescripcionFacultad($formulacionId, $facultadId, $semestre, $texto === '' ? null : $texto);
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log('Error guardarDescripcionConcertada: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     private function escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, $valor) {
         $col = (int)$semestre === 2 ? 'seguimiento_sem2' : 'seguimiento_sem1';
         $stmt = $this->db->prepare(
@@ -1649,22 +1691,26 @@ class Modulo144Model {
             $this->db->beginTransaction();
             if ($aprobado) {
                 $previo = $this->leerSeguimientoFacultad($formulacionId, $facultadId, $semestre);
+                $descPrevia = $this->leerDescripcionFacultad($formulacionId, $facultadId, $semestre);
                 $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, $valorFinal);
                 $stmt = $this->db->prepare(
-                    "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado, enviado, rechazado, valor_previo, previo_existia)
-                     VALUES (:f, :fac, :s, 0, 1, :v, :u, NOW(), 0, 0, :pv, :pe)
+                    "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado, enviado, rechazado, valor_previo, previo_existia, descripcion_previa, descripcion_concertada)
+                     VALUES (:f, :fac, :s, 0, 1, :v, :u, NOW(), 0, 0, :pv, :pe, :dp, NULL)
                      ON DUPLICATE KEY UPDATE aprobado = 1, valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = NOW(),
-                                             enviado = 0, rechazado = 0, valor_previo = VALUES(valor_previo), previo_existia = VALUES(previo_existia)"
+                                             enviado = 0, rechazado = 0, valor_previo = VALUES(valor_previo), previo_existia = VALUES(previo_existia),
+                                             descripcion_previa = VALUES(descripcion_previa), descripcion_concertada = NULL"
                 );
                 $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valorFinal, ':u' => $usuarioId ?: null,
-                                ':pv' => $previo, ':pe' => $previo === null ? 0 : 1]);
+                                ':pv' => $previo, ':pe' => $previo === null ? 0 : 1, ':dp' => $descPrevia]);
             } else {
-                $q = $this->db->prepare("SELECT valor_previo, previo_existia FROM concertaciones_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
+                $q = $this->db->prepare("SELECT valor_previo, previo_existia, descripcion_previa FROM concertaciones_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
                 $q->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
                 $r = $q->fetch();
+                if ($r) $this->escribirDescripcionFacultad($formulacionId, $facultadId, $semestre, $r['descripcion_previa']);
                 if ($r) $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, ((int)$r['previo_existia'] === 1 && $r['valor_previo'] !== null) ? (float)$r['valor_previo'] : null);
                 $stmt = $this->db->prepare(
-                    "UPDATE concertaciones_144 SET aprobado = 0, valor_final = NULL, aprobado_por = NULL, fecha_aprobado = NULL, enviado = 0, valor_previo = NULL, previo_existia = 0
+                    "UPDATE concertaciones_144 SET aprobado = 0, valor_final = NULL, aprobado_por = NULL, fecha_aprobado = NULL, enviado = 0, valor_previo = NULL, previo_existia = 0,
+                            descripcion_concertada = NULL, descripcion_previa = NULL
                      WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s"
                 );
                 $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);

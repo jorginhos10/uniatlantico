@@ -1336,6 +1336,7 @@ class Modulo144Controller {
                     'df' => ($c && $c['descripcion_facultad'] !== null) ? $c['descripcion_facultad'] : ($s === 1 ? ($d['seguimiento_descripcion'] ?? '') : ($d['seguimiento_descripcion2'] ?? '')),
                     'df_propia' => $c && $c['descripcion_facultad'] !== null,
                     'dv' => $c['descripcion_vicerrectoria'] ?? '',
+                    'dc' => $c['descripcion_concertada'] ?? '',
                     'enviado' => $c ? (int)$c['enviado'] === 1 : false,
                     'rechazado' => $c ? (int)$c['rechazado'] === 1 : false,
                     'uenvio' => $c['usuario_envio_nombre'] ?? '', 'fenvio' => $c['fecha_envio'] ?? '',
@@ -1381,8 +1382,17 @@ class Modulo144Controller {
         $id = intval($_POST['formulacion_id'] ?? 0);
         $fac = intval($_POST['facultad_id'] ?? 0);
         $sem = intval($_POST['semestre'] ?? 0);
+        $esConcertado = ($_POST['lado'] ?? '') === 'concertado';
         $lado = ($_POST['lado'] ?? '') === 'vicerrectoria' ? 'vicerrectoria' : (($_POST['lado'] ?? '') === 'facultad' ? 'facultad' : '');
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        // Descripción del valor concertado: la escribe quien concierta (facultad o vicerrectoría) una vez aprobado el valor
+        if ($esConcertado && $item && $fac > 0 && in_array($sem, [1, 2], true)) {
+            if (!($this->puedeConcertarFacultad($fac) || $this->puedeConcertarDependencia($item))) { echo json_encode(['success' => false, 'message' => 'Solo la facultad o la vicerrectoría pueden describir el valor concertado']); return; }
+            $texto = mb_substr(trim((string)($_POST['descripcion'] ?? '')), 0, 2000, 'UTF-8');
+            $ok = $this->model->guardarDescripcionConcertada($id, $fac, $sem, $texto);
+            echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado en el seguimiento por facultades' : 'Primero debe concertarse el valor']);
+            return;
+        }
         if (!$item || $fac <= 0 || $lado === '' || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
         if ($sem === 1 && ($item['tipo_medicion'] ?? '') === 'Límite') { echo json_encode(['success' => false, 'message' => 'En este indicador el semestre 1 no aplica']); return; }
 
