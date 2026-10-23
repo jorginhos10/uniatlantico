@@ -5410,8 +5410,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (response.success) { seguimientoGuardado = true; mostrarAutoSaveIndicator(); }
                         else Swal.fire({ icon: 'warning', title: 'No se guardó el seguimiento', text: response.message || 'Intenta de nuevo', toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
                     },
-                    error: function() {
-                        Swal.fire({ icon: 'error', title: 'No se guardó el seguimiento', text: 'Error de conexión con el servidor', toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
+                    error: function(xhr, estado) {
+                        // Sin conexión (status 0) o una respuesta que no es JSON (error de PHP): se muestra qué devolvió el servidor
+                        const detalle = xhr.status === 0 ? 'Sin conexión con el servidor'
+                            : 'HTTP ' + xhr.status + (estado === 'parsererror' ? ' · respuesta no válida: ' + String(xhr.responseText || '').replace(/<[^>]*>/g, ' ').replace(/s+/g, ' ').trim().slice(0, 220) : '');
+                        console.error('autoGuardarSeguimiento', xhr.status, estado, xhr.responseText);
+                        Swal.fire({ icon: 'error', title: 'No se guardó el seguimiento', text: detalle, toast: true, position: 'top-end', timer: 12000, showConfirmButton: true });
                     }
                 });
             }, 500);
