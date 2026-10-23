@@ -5407,11 +5407,24 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     data: data,
                     dataType: 'json',
                     success: function(response) {
-                        if (response.success) mostrarAutoSaveIndicator();
+                        if (response.success) { seguimientoGuardado = true; mostrarAutoSaveIndicator(); }
+                        else Swal.fire({ icon: 'warning', title: 'No se guardó el seguimiento', text: response.message || 'Intenta de nuevo', toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
+                    },
+                    error: function() {
+                        Swal.fire({ icon: 'error', title: 'No se guardó el seguimiento', text: 'Error de conexión con el servidor', toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
                     }
                 });
             }, 500);
         }
+
+        // La lista se arma en el servidor: al cerrar el seguimiento con cambios guardados se recarga para ver los valores nuevos
+        let seguimientoGuardado = false;
+        $('#modalSeguimiento').on('hidden.bs.modal', function() {
+            if (!seguimientoGuardado) return;
+            seguimientoGuardado = false;
+            guardarEstadoAcordeon();
+            location.reload();
+        });
 
         function mostrarAutoSaveIndicator() {
             const indicator = document.getElementById('autoSaveIndicator');
