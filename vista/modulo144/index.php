@@ -1709,7 +1709,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     $meta = $m2 ?? $m1 ?? $lb;
                     $cumplido = $s2 ?? $s1 ?? 0.0;
                 } elseif ($tipo === 'Límite') {
-                    $meta = $m2 ?? $m1 ?? $lb;
+                    $meta = $m2; // el semestre 1 y la línea base no aplican
                     $cumplido = $s2 ?? 0.0;
                 }
                 $html = '';
@@ -2598,7 +2598,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (!$v) return null;
                         $v = array_map('floatval', $v);
                         if ($tipo === 'Promedio') return array_sum($v) / count($v);
-                        if ($tipo === 'Último valor reportado' || $tipo === 'Límite') return ($s2 !== null && $s2 !== '') ? (float)$s2 : (float)$s1;
+                        if ($tipo === 'Límite') return ($s2 !== null && $s2 !== '') ? (float)$s2 : null; // el semestre 1 no aplica
+                        if ($tipo === 'Último valor reportado') return ($s2 !== null && $s2 !== '') ? (float)$s2 : (float)$s1;
                         return array_sum($v);
                     };
                     $cnTexto = function ($t, $max = 140) { $t = trim((string)$t); return mb_strlen($t, 'UTF-8') > $max ? mb_substr($t, 0, $max, 'UTF-8') . '…' : $t; };
@@ -5181,7 +5182,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             let pct;
             if (tipoMedicion === 'Límite') {
                 // Declarado (semestre 2) debe ser MENOR que el calculado (límite) para cumplir.
-                if (logrado === null || logrado === 0) {
+                // Un 0 declarado es el mejor resultado posible para un límite (está por debajo), no un "sin reporte"
+                if (logrado === null) {
                     pct = 0;
                 } else if (!isNaN(meta) && logrado >= meta) {
                     pct = 0;
@@ -5239,8 +5241,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 valorAnual = ultimoValor !== null ? ultimoValor.toFixed(2) : '';
             }
             else if (b.tipo_medicion === 'Límite') {
-                const limiteCalc = obtenerUltimoValorReportado(lineaBaseRaw, metaS1Raw, metaS2Raw);
-                valorAnual = limiteCalc !== null ? limiteCalc.toFixed(2) : '';
+                // Límite = meta del semestre 2 (igual que en Formulación); la línea base y el semestre 1 no aplican
+                valorAnual = metaS2 !== null && !isNaN(metaS2) ? metaS2.toFixed(2) : '';
             }
 
             $('#seguimiento_anio_view').text(valorAnual);

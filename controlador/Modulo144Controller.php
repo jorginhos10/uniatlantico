@@ -469,6 +469,8 @@ class Modulo144Controller {
 
             // Semestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
             if ($modulo === 'seguimiento' && $itemActual) {
+                // En "Límite" el semestre 1 no se registra: nunca se guarda un valor ahí
+                if (($itemActual['tipo_medicion'] ?? '') === 'Límite') unset($_POST['semestre1_seguimiento']);
                 $bl = $this->semestresBloqueados($itemActual);
                 if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['descripcion_sem1'],
                     $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
