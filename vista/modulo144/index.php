@@ -419,6 +419,8 @@ ob_start();
             margin-top: 2px;
         }
         .cumplido-meta i { font-size: 0.7rem; color: var(--apple-blue, #0071e3); }
+        .cumplido-meta.excede i, .cumplido-meta.excede strong { color: #D85819; }
+        .cumplido-meta.excede::after { content: 'Pasó el límite'; margin-left: 6px; font-size: .68rem; font-weight: 700; color: #D85819; }
         .cumplido-meta strong { color: var(--apple-text, #1d1d1f); font-weight: 600; }
         .lmp-suma {
             font-size: 0.68rem;
@@ -1714,7 +1716,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 }
                 $html = '';
                 if ($meta !== null) {
-                    $html .= '<div class="cumplido-meta" title="Cumplido ' . $fmt($cumplido) . ' de una meta anual de ' . $fmt($meta) . '">'
+                    $excede = ($tipo === 'Límite' && $s2 !== null && $cumplido > $meta);
+                    $html .= '<div class="cumplido-meta' . ($excede ? ' excede' : '') . '" title="' . ($tipo === 'Límite' ? ($excede ? 'Se pasó del límite de ' . $fmt($meta) . ' por ' . $fmt($cumplido - $meta) : 'Dentro del límite de ' . $fmt($meta)) : 'Cumplido ' . $fmt($cumplido) . ' de una meta anual de ' . $fmt($meta)) . '">'
                            . '<i class="fas fa-bullseye"></i><strong>' . $fmt($cumplido) . '</strong><span>/ ' . $fmt($meta) . '</span></div>';
                 }
                 if (trim($tipo) !== '') {
@@ -5181,12 +5184,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
             let pct;
             if (tipoMedicion === 'Límite') {
-                // Declarado (semestre 2) debe ser MENOR que el calculado (límite) para cumplir.
+                // Lo declarado (semestre 2) no debe pasar el límite: igual o por debajo cumple.
                 // Un 0 declarado es el mejor resultado posible para un límite (está por debajo), no un "sin reporte"
                 if (logrado === null) {
                     pct = 0;
-                } else if (!isNaN(meta) && logrado >= meta) {
-                    pct = 0;
+                } else if (!isNaN(meta) && logrado > meta) {
+                    pct = 0; // se pasó del límite
                 } else if (!isNaN(meta)) {
                     pct = 100;
                 } else {
