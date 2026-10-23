@@ -1159,7 +1159,13 @@ ob_start();
         .cnv-sem > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; background: #f4f6fb; border-bottom: 1px solid #dbe0ec; }
         .cnv-sem > header h4 { margin: 0; font-size: 1rem; font-weight: 800; color: #143163; }
         .cnv-pill { font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #dbe0ec; color: #5d667c; white-space: nowrap; }
-        .cnv-duelo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .cnv-duelo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .cnv-conc { background: #f4f6fb; }
+        .cnv-conc-box { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1.5px dashed #C9CEDB; border-radius: 10px; padding: 10px; text-align: center; min-height: 64px; background: #fff; }
+        .cnv-conc-v { font-size: 1.6rem; font-weight: 800; color: #8c93a6; }
+        .cnv-conc-v.ok { color: #237a4b; }
+        .cnv-conc-box small { color: #5d667c; font-size: .72rem; }
+        .cnv-lado .seg-ev-btn { align-self: flex-start; font-size: .78rem; font-weight: 600; }
         .cnv-lado { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
         .cnv-lado + .cnv-lado { border-left: 1px dashed #dbe0ec; }
         .cnv-t { font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #5d667c; }
@@ -4370,6 +4376,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // ── Evidencias del seguimiento: hasta 5 archivos por semestre, por indicador y por facultad ──
         let evFacultadActual = 0;
         let evSemestreActual = 1;
+        let evFormulacionConcertacion = 0; // distinto de 0: la ventana se abrió desde Concertaciones (facultad_id negativo = lado de la vicerrectoría)
+        function evFormulacionId() { return evFormulacionConcertacion || $('#seguimiento_id').val(); }
 
         function evAplicarResumen(r) {
             const g = r.general || {};
@@ -4418,12 +4426,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#evBtnElegir').prop('disabled', archivos.length >= (r.maximo || 5));
             $('#evRuta').text(r.carpeta || '');
             $('#modalEvidencias').data('estado', r);
-            if (!evFacultadActual) $('#segEvGenN' + evSemestreActual).text(archivos.length);
+            if (evFormulacionConcertacion) {
+                const fidCn = Math.abs(evFacultadActual), ladoCn = evFacultadActual < 0 ? 'vicerrectoria' : 'facultad';
+                $('.cnv-ev[data-fac="' + fidCn + '"][data-sem="' + evSemestreActual + '"][data-lado="' + ladoCn + '"] .ev-n').text(archivos.length);
+                if (typeof cnDatos !== 'undefined' && cnDatos) {
+                    const fCn = cnDatos.facultades.filter(function(x) { return x.facultad_id == fidCn; })[0];
+                    if (fCn) fCn[ladoCn === 'facultad' ? 'ev_f' : 'ev_v'][evSemestreActual] = archivos.length;
+                }
+            }
+            else if (!evFacultadActual) $('#segEvGenN' + evSemestreActual).text(archivos.length);
             else $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"] .ev-n[data-sem="' + evSemestreActual + '"]').text(archivos.length);
         }
 
         function evRecargar() {
-            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: $('#seguimiento_id').val(), facultad_id: evFacultadActual, semestre: evSemestreActual }, function(r) {
+            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: evFormulacionId(), facultad_id: evFacultadActual, semestre: evSemestreActual }, function(r) {
                 if (!r.success) { evMostrarError(r.message || 'No se pudieron cargar las evidencias'); return; }
                 evPintar(r);
             }).fail(function() { evMostrarError('Error de conexión con el servidor'); });
@@ -4432,6 +4448,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // facultadId 0 = evidencias del indicador; semestre 1 o 2
         function abrirEvidencias(facultadId, semestre) {
             if (!$('#seguimiento_id').val()) return;
+            evFormulacionConcertacion = 0;
             evFacultadActual = parseInt(facultadId, 10) || 0;
             evSemestreActual = parseInt(semestre, 10) === 2 ? 2 : 1;
             const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"]');
@@ -4443,6 +4460,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $('#modalEvidencias').modal('show');
             evRecargar();
         }
+
+        // Evidencias de un lado de la concertación: la facultad (facultad_id) o la vicerrectoría (facultad_id negativo)
+        function abrirEvidenciasCn(facultadId, semestre, lado) {
+            if (!cnIndicadorActual) return;
+            evFormulacionConcertacion = cnIndicadorActual;
+            evFacultadActual = (lado === 'vicerrectoria' ? -1 : 1) * (parseInt(facultadId, 10) || 0);
+            evSemestreActual = parseInt(semestre, 10) === 2 ? 2 : 1;
+            const f = cnDatos.facultades.filter(function(x) { return x.facultad_id == facultadId; })[0];
+            $('#evTitulo').text('Evidencias · Semestre ' + evSemestreActual + ' · ' + (lado === 'vicerrectoria' ? 'Vicerrectoría' : 'Facultad') + (f ? ' · ' + cnNombreCorto(f.nombre) : ''));
+            $('#evQuien').text(cnDatos.indicador.nombre);
+            evMostrarError('');
+            $('#evLista').empty();
+            $('#evVacio').show();
+            $('#modalEvidencias').modal('show');
+            evRecargar();
+        }
+        $(document).on('click', '#cnSemestres .cnv-ev', function() { abrirEvidenciasCn($(this).data('fac'), $(this).data('sem'), $(this).data('lado')); });
 
         $(document).on('click', '#evBtnElegir', function() { $('#evInput').trigger('click'); });
 
@@ -4457,7 +4491,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (i >= archivos.length) { if (errores.length) evMostrarError(errores.join(' · ')); evRecargar(); return; }
                 const f = archivos[i++];
                 const datos = new FormData();
-                datos.append('formulacion_id', $('#seguimiento_id').val());
+                datos.append('formulacion_id', evFormulacionId());
                 datos.append('facultad_id', evFacultadActual);
                 datos.append('semestre', evSemestreActual);
                 datos.append('archivo', f);
@@ -6366,14 +6400,28 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return h;
         }
 
+        function cnEvBtn(f, sem, lado) {
+            const n = (lado === 'facultad' ? f.ev_f : f.ev_v)[sem] || 0;
+            return '<button type="button" class="seg-ev-btn cnv-ev" data-fac="' + f.facultad_id + '" data-sem="' + sem + '" data-lado="' + lado + '" title="Evidencias del semestre ' + sem + ' (hasta 5 archivos)" aria-label="Evidencias de ' + (lado === 'facultad' ? 'la facultad' : 'la vicerrectoría') + ', semestre ' + sem + '">' +
+                   '<i class="fas fa-plus"></i><span>Evidencias</span><span class="ev-n">' + n + '</span></button>';
+        }
+
+        // Cuadro de solo lectura: lo que quedó concertado y pasó al seguimiento por facultades
+        function cnConcHtml(c, unidad) {
+            return c.aprobado
+                ? '<div class="cnv-conc-v ok">' + cnFmt(c.final, unidad) + '</div><small>Ya está en el seguimiento por facultades</small>'
+                : '<div class="cnv-conc-v">—</div><small>Se asigna al concertar</small>';
+        }
+
         function cnPanelHtml(r, f, sem) {
             const c = f.sem[sem], unidad = r.indicador.unidad;
             if (!c.aplica) return '<article class="cnv-sem"><header><h4>Semestre ' + sem + '</h4></header><div class="cnx-nd cnv-na">No aplica en este indicador</div></article>';
             const e = cnEstadoCelda(c);
             return '<article class="cnv-sem" data-sem="' + sem + '"><header><h4>Semestre ' + sem + '</h4><span class="cnv-pill ' + e + '">' + CN_TXT[e] + '</span></header>' +
                 '<div class="cnv-duelo">' +
-                    '<div class="cnv-lado"><span class="cnv-t">Facultad</span>' + cnLadoHtml(f, sem, c, 'facultad', unidad) + '</div>' +
-                    '<div class="cnv-lado"><span class="cnv-t">Vicerrectoría</span>' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + '</div>' +
+                    '<div class="cnv-lado"><span class="cnv-t">Facultad</span>' + cnLadoHtml(f, sem, c, 'facultad', unidad) + cnEvBtn(f, sem, 'facultad') + '</div>' +
+                    '<div class="cnv-lado"><span class="cnv-t">Vicerrectoría</span>' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + cnEvBtn(f, sem, 'vicerrectoria') + '</div>' +
+                    '<div class="cnv-lado cnv-conc"><span class="cnv-t">Valor concertado</span><div class="cnv-conc-box">' + cnConcHtml(c, unidad) + '</div></div>' +
                 '</div>' +
                 '<div class="cnx-res" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' + cnResultadoHtml(f, sem, c, r.es_superadmin, unidad) + '</div></article>';
         }
@@ -6399,6 +6447,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const p = $('.cnv-sem[data-sem="' + sem + '"]');
             p.find('.cnv-pill').attr('class', 'cnv-pill ' + e).text(CN_TXT[e]);
             p.find('.cnx-res').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
+            p.find('.cnv-conc-box').html(cnConcHtml(c, cnDatos.indicador.unidad));
             $('#cnRail').html(cnRailHtml(cnDatos));
         }
         $(document).on('click', '#cnSemestres .cnv-fi', function() {

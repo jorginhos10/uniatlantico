@@ -1116,6 +1116,8 @@ class Modulo144Controller {
         // Un semestre bloqueado (Editar formulario → Campos) tampoco admite cambios en sus evidencias
         $bl = $this->semestresBloqueados($item);
         if (!empty($bl[(int)$semestre === 2 ? 'sem2' : 'sem1'])) return false;
+        // facultad_id negativo: evidencias del lado de la vicerrectoría en la concertación de esa facultad
+        if ($facultadId < 0) return $this->puedeConcertarDependencia($item);
         if ($facultadId > 0) return $this->puedeRegistrarSeguimientoFacultad($item, $facultadId);
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         return $this->esAdminSeguimiento() || ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) || $this->esResponsableDelItem($item);
@@ -1123,9 +1125,9 @@ class Modulo144Controller {
 
     // Quién puede consultar: cualquiera con acceso al indicador; las evidencias de otra facultad solo su facultad
     private function puedeVerEvidencias(array $item, $facultadId) {
-        if ($facultadId <= 0) return true;
+        if ($facultadId == 0) return true;
         $propias = $this->facultadesRestringidas($item);
-        return !$propias || in_array((int)$facultadId, $propias, true);
+        return !$propias || in_array(abs((int)$facultadId), $propias, true);
     }
 
     private function slugEvidencia($texto) {
@@ -1138,8 +1140,9 @@ class Modulo144Controller {
     private function carpetaEvidencias(array $item, $facultadId, $semestre = 1) {
         $anio = preg_replace('/\D/', '', (string)($item['anio'] ?? ''));
         $ruta = 'evidencias/' . ($anio !== '' ? $anio : 'sin-anio') . '/' . (int)$item['id'];
-        if ($facultadId > 0) {
-            $ruta .= '/' . $this->slugEvidencia($this->model->getNombreFacultad($facultadId) ?: ('facultad-' . (int)$facultadId));
+        if ($facultadId != 0) {
+            $fid = abs((int)$facultadId);
+            $ruta .= '/' . ($facultadId < 0 ? 'VICERRECTORIA-' : '') . $this->slugEvidencia($this->model->getNombreFacultad($fid) ?: ('facultad-' . $fid));
         }
         return $ruta . '/semestre-' . ((int)$semestre === 2 ? 2 : 1);
     }
@@ -1304,6 +1307,8 @@ class Modulo144Controller {
         // Solo el superadministrador y la dependencia responsable ven todas las facultades; las demás, únicamente la suya
         $verTodas = $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
 
+        $evid = $this->model->getResumenEvidencias($id)['facultades'];
+
         $filas = [];
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
             $fid = (int)$d['facultad_id'];
@@ -1344,6 +1349,8 @@ class Modulo144Controller {
                 'puede_f' => $this->puedeConcertarFacultad($fid),
                 'puede_v' => $puedeV,
                 'puede_enviar' => $puedeV || $this->puedeConcertarFacultad($fid), // cualquiera de los dos declarantes envía lo concertado
+                'ev_f' => [1 => (int)($evid[$fid][1] ?? 0), 2 => (int)($evid[$fid][2] ?? 0)],
+                'ev_v' => [1 => (int)($evid[-$fid][1] ?? 0), 2 => (int)($evid[-$fid][2] ?? 0)],
                 'sem' => $sem,
             ];
         }
