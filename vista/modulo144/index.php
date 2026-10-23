@@ -5373,6 +5373,29 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
+        // Valores actuales de los campos del seguimiento del indicador
+        function leerCamposSeguimiento() {
+            return {
+                indicador: $('#seguimiento_indicador').val(),
+                fecha_seguimiento: $('#seguimiento_fecha').val(),
+                semestre1_seguimiento: $('#seguimiento_semestre1').val(),
+                semestre2_seguimiento: $('#seguimiento_semestre2').val(),
+                meta_programada: $('#seguimiento_meta_programada').val(),
+                meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
+                porcentaje_avance: $('#seguimiento_porcentaje').val(),
+                responsable_seguimiento: $('#seguimiento_responsable').val(),
+                observaciones: $('#seguimiento_observaciones').val(),
+                logros: $('#seguimiento_logros').val(),
+                limites: $('#seguimiento_limites').val(),
+                observacion_estado: $('#seguimiento_observacion_estado').val(),
+                acciones_fortalecimiento: $('#seguimiento_acciones_fortalecimiento').val(),
+                logros_sem2: $('#seguimiento_logros_sem2').val(),
+                limites_sem2: $('#seguimiento_limites_sem2').val(),
+                observacion_estado_sem2: $('#seguimiento_observacion_estado_sem2').val(),
+                acciones_fortalecimiento_sem2: $('#seguimiento_acciones_fortalecimiento_sem2').val()
+            };
+        }
+
         function autoGuardarSeguimiento() {
             const id = $('#seguimiento_id').val();
             if (!id) return;
@@ -5380,34 +5403,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (timeoutId) clearTimeout(timeoutId);
             
             timeoutId = setTimeout(function() {
-                const data = {
-                    modulo: 'seguimiento', id: id,
-                    indicador: $('#seguimiento_indicador').val(),
-                    fecha_seguimiento: $('#seguimiento_fecha').val(),
-                    semestre1_seguimiento: $('#seguimiento_semestre1').val(),
-                    semestre2_seguimiento: $('#seguimiento_semestre2').val(),
-                    meta_programada: $('#seguimiento_meta_programada').val(),
-                    meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
-                    porcentaje_avance: $('#seguimiento_porcentaje').val(),
-                    responsable_seguimiento: $('#seguimiento_responsable').val(),
-                    observaciones: $('#seguimiento_observaciones').val(),
-                    logros: $('#seguimiento_logros').val(),
-                    limites: $('#seguimiento_limites').val(),
-                    observacion_estado: $('#seguimiento_observacion_estado').val(),
-                    acciones_fortalecimiento: $('#seguimiento_acciones_fortalecimiento').val(),
-                    logros_sem2: $('#seguimiento_logros_sem2').val(),
-                    limites_sem2: $('#seguimiento_limites_sem2').val(),
-                    observacion_estado_sem2: $('#seguimiento_observacion_estado_sem2').val(),
-                    acciones_fortalecimiento_sem2: $('#seguimiento_acciones_fortalecimiento_sem2').val()
-                };
-                
+                const todos = leerCamposSeguimiento();
+                // Solo se envía lo que cambió desde la última vez que se guardó o se abrió el indicador: menos datos por petición
+                // y, si el servidor rechaza un texto (HTTP 406), no arrastra los demás campos
+                const cambios = {};
+                Object.keys(todos).forEach(function(k) { if (!seguimientoSnap || todos[k] !== seguimientoSnap[k]) cambios[k] = todos[k]; });
+                if (!Object.keys(cambios).length) return;
+                const data = Object.assign({ modulo: 'seguimiento', id: id }, cambios);
+
                 $.ajax({
                     url: basePath + '/modulo144/guardar',
                     type: 'POST',
                     data: data,
                     dataType: 'json',
                     success: function(response) {
-                        if (response.success) { seguimientoGuardado = true; mostrarAutoSaveIndicator(); }
+                        if (response.success) { seguimientoGuardado = true; seguimientoSnap = Object.assign(seguimientoSnap || {}, cambios); mostrarAutoSaveIndicator(); }
                         else Swal.fire({ icon: 'warning', title: 'No se guardó el seguimiento', text: response.message || 'Intenta de nuevo', toast: true, position: 'top-end', timer: 4000, showConfirmButton: false });
                     },
                     error: function(xhr, estado) {
@@ -5423,6 +5433,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         // La lista se arma en el servidor: al cerrar el seguimiento con cambios guardados se recarga para ver los valores nuevos
         let seguimientoGuardado = false;
+        let seguimientoSnap = null; // valores tal como están guardados; se arma al abrir el indicador
         $('#modalSeguimiento').on('hidden.bs.modal', function() {
             if (!seguimientoGuardado) return;
             seguimientoGuardado = false;
@@ -5748,11 +5759,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_acciones_fortalecimiento_sem2').val(b.acciones_fortalecimiento_sem2 || '');
                             cargarDatosFormulacionEnSeguimiento(b);
                             calcularCumplimientoSeguimiento();
+                            seguimientoSnap = null; // se fija tras cargar todo (abajo)
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
                             aplicarBloqueoSemestres();
                             cargarSeguimientoFacultades(b.id, String(b.gestionado_facultades) === '1');
                             cargarResumenEvidencias(b.id);
+                            seguimientoSnap = leerCamposSeguimiento();
                             $('#modalSeguimiento').modal('show');
                         }
                     }
