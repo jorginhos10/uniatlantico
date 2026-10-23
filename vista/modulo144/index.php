@@ -1132,6 +1132,50 @@ ob_start();
         .cnx-sem-cuenta { font-size: .78rem; color: #6E6E73; }
         .cnx-sem-cab .cnx-btn { margin-left: auto; }
         .cnx-sem-vacio { padding: 14px 4px; }
+        .cnx-modal .modal-body { padding: 0; background: #eef1f7; }
+        .cnx-modal .cnx-ind, .cnx-modal .cnx-metas, .cnx-modal .cnx-ayuda, .cnx-modal #cnError { margin-left: 24px; margin-right: 24px; }
+        .cnx-modal .cnx-ind { margin-top: 16px; }
+        .cnv-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 0; border-top: 1px solid #dbe0ec; margin-top: 8px; min-height: 60vh; background: #fff; }
+        .cnv-body.solo { grid-template-columns: minmax(0, 1fr); }
+        .cnv-rail { border-right: 1px solid #dbe0ec; background: #f4f6fb; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+        .cnv-rail h3 { margin: 2px 4px; font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: #5d667c; }
+        .cnv-fi { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 8px; text-align: left; border: 1px solid #dbe0ec; background: #fff; border-radius: 10px; padding: 9px 11px; cursor: pointer; }
+        .cnv-fi:hover { border-color: #1D71B8; }
+        .cnv-fi[aria-current="true"] { border-color: #143163; box-shadow: inset 3px 0 0 #D85819; }
+        .cnv-fi .n { font-weight: 700; font-size: .85rem; line-height: 1.25; }
+        .cnv-fi small { color: #5d667c; }
+        .cnv-dots { display: flex; gap: 4px; align-items: center; }
+        .cnv-dot { font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: #dbe0ec; color: #5d667c; }
+        .cnv-dot.listo, .cnv-pill.listo { background: #e4f4ea; color: #237a4b; }
+        .cnv-dot.pendiente, .cnv-pill.pendiente { background: #fdf1d6; color: #8a5a00; }
+        .cnv-dot.enviado, .cnv-pill.enviado { background: #e1eefa; color: #144f86; }
+        .cnv-dot.aprobado, .cnv-pill.aprobado { background: #237a4b; color: #fff; }
+        .cnv-det { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+        .cnv-dh { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+        .cnv-dh h3 { margin: 0; font-size: 1.25rem; font-weight: 800; color: #143163; text-transform: uppercase; }
+        .cnv-dh span { color: #5d667c; }
+        .cnv-sems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .cnv-sem { border: 1px solid #dbe0ec; border-radius: 12px; background: #fff; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+        .cnv-sem > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 14px; background: #f4f6fb; border-bottom: 1px solid #dbe0ec; }
+        .cnv-sem > header h4 { margin: 0; font-size: 1rem; font-weight: 800; color: #143163; }
+        .cnv-pill { font-size: .75rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #dbe0ec; color: #5d667c; white-space: nowrap; }
+        .cnv-duelo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+        .cnv-lado { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+        .cnv-lado + .cnv-lado { border-left: 1px dashed #dbe0ec; }
+        .cnv-t { font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #5d667c; }
+        .cnv-lado .cnx-in { font-size: 1.4rem; font-weight: 800; padding: 8px 12px; border-radius: 10px; }
+        .cnv-lado .cnx-valor { font-size: 1.4rem; font-weight: 800; text-align: center; }
+        .cnv-sem .cnx-res { border-top: 1px solid #dbe0ec; padding: 12px 14px; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; justify-content: center; min-height: 62px; }
+        .cnv-na { padding: 18px; text-align: center; }
+        @media (max-width: 1000px) { .cnv-sems { grid-template-columns: minmax(0, 1fr); } }
+        @media (max-width: 760px) {
+            .cnv-body { grid-template-columns: minmax(0, 1fr); }
+            .cnv-rail { border-right: 0; border-bottom: 1px solid #dbe0ec; flex-direction: row; overflow-x: auto; }
+            .cnv-rail h3 { display: none; }
+            .cnv-fi { min-width: 200px; }
+            .cnv-duelo { grid-template-columns: minmax(0, 1fr); }
+            .cnv-lado + .cnv-lado { border-left: 0; border-top: 1px dashed #dbe0ec; }
+        }
         .cnx-unica { border: 2px solid #1d1d1f; border-radius: 12px; overflow: hidden; background: #fff; }
         .cnx-uh, .cnx-ur { display: grid; grid-template-columns: minmax(110px, .6fr) minmax(0, 1.6fr) minmax(0, 1.6fr); }
         .cnx-uh { background: #F7F8FB; border-bottom: 2px solid #1d1d1f; }
@@ -3340,7 +3384,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     <!-- VENTANA: concertación de un indicador (todas sus facultades) -->
     <div class="modal fade" id="modalConcertacion" tabindex="-1" aria-labelledby="cnTituloModal" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-fullscreen">
             <div class="modal-content cnx-modal">
                 <div class="modal-header">
                     <div class="cnx-nav">
@@ -6294,30 +6338,76 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                    (r.es_superadmin && n.iguales > 1 ? '<button type="button" class="cnx-btn verde" data-acc="aprobar-todo" data-sem="' + sem + '">Aprobar los ' + n.iguales + ' que coinciden</button>' : '');
         }
 
-        // Una sola tabla: una fila por facultad y, en cada semestre, su columna (facultad | vicerrectoría) y su resultado
-        function cnTablaUnica(r) {
+        // Riel de facultades (con el estado de cada semestre) y, a la derecha, el debate de la facultad elegida
+        const CN_TXT = { vacio: 'Sin valores', pendiente: 'Falta un valor', listo: 'Para concertar', enviado: 'Por aprobar', aprobado: 'Concertado' };
+        let cnSel = 0;
+        function cnNombreCorto(n) { return String(n).replace(/^Facultad de (las? )?/i, '').replace(/^Facultad /i, ''); }
+
+        function cnRailHtml(r) {
             const unidad = r.indicador.unidad;
-            if (!r.facultades.length) return '<div class="cnx-nd cnx-sem-vacio">Ninguna facultad tiene meta ni seguimiento en este indicador.</div>';
-            const cab = function(sem) {
-                return '<div class="cnx-uh-sem" data-sem="' + sem + '"><div class="cnx-sem-cab">' + cnCabSemHtml(r, sem) + '</div>' +
-                       '<div class="cnx-uh-sub"><span>Facultad</span><span>Vicerrectoría</span></div></div>';
-            };
-            let html = '<div class="cnx-unica"><div class="cnx-uh"><div class="cnx-uh-nombre">Facultad</div>' + cab(1) + cab(2) + '</div>';
+            let h = '<h3>Facultades · ' + r.facultades.length + '</h3>';
             r.facultades.forEach(function(f) {
-                const bloque = function(sem) {
-                    const c = f.sem[sem];
-                    if (!c.aplica) return '<div class="cnx-us" data-sem="' + sem + '"><div class="cnx-nd cnx-na">No aplica en este indicador</div></div>';
-                    return '<div class="cnx-us" data-sem="' + sem + '">' +
-                        '<div class="cnx-gl cnx-gf">' + cnLadoHtml(f, sem, c, 'facultad', unidad) + '</div>' +
-                        '<div class="cnx-gl cnx-gv">' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + '</div>' +
-                        '<div class="cnx-res" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' + cnResultadoHtml(f, sem, c, r.es_superadmin, unidad) + '</div></div>';
-                };
-                html += '<div class="cnx-ur" data-fac="' + f.facultad_id + '">' +
-                    '<div class="cnx-gn"><span class="cnx-gnombre">' + evalHtmlEscape(f.nombre) + '</span><small>' + (f.propuesta > 0 ? 'Meta ' + cnFmt(f.propuesta, unidad) : 'Sin meta') + '</small>' +
-                        '</div>' + bloque(1) + bloque(2) + '</div>';
+                const dots = [1, 2].map(function(s) {
+                    const c = f.sem[s];
+                    if (!c.aplica) return '<span class="cnv-dot nd" title="Semestre ' + s + ': no aplica">S' + s + '</span>';
+                    const e = cnEstadoCelda(c);
+                    return '<span class="cnv-dot ' + e + '" title="Semestre ' + s + ': ' + CN_TXT[e] + '">S' + s + '</span>';
+                }).join('');
+                h += '<button type="button" class="cnv-fi" data-fac="' + f.facultad_id + '" aria-current="' + (f.facultad_id == cnSel) + '">' +
+                     '<span class="n">' + evalHtmlEscape(cnNombreCorto(f.nombre)) + '</span><span class="cnv-dots">' + dots + '</span>' +
+                     '<small>' + (f.propuesta > 0 ? 'Meta ' + cnFmt(f.propuesta, unidad) : 'Sin meta') + '</small></button>';
             });
-            return html + '</div>';
+            if (r.es_superadmin) {
+                [1, 2].forEach(function(s) {
+                    const n = cnConteoSem(r, s);
+                    if (n.iguales > 1) h += '<button type="button" class="cnx-btn verde" data-acc="aprobar-todo" data-sem="' + s + '">Semestre ' + s + ': aprobar los ' + n.iguales + ' que coinciden</button>';
+                });
+            }
+            return h;
         }
+
+        function cnPanelHtml(r, f, sem) {
+            const c = f.sem[sem], unidad = r.indicador.unidad;
+            if (!c.aplica) return '<article class="cnv-sem"><header><h4>Semestre ' + sem + '</h4></header><div class="cnx-nd cnv-na">No aplica en este indicador</div></article>';
+            const e = cnEstadoCelda(c);
+            return '<article class="cnv-sem" data-sem="' + sem + '"><header><h4>Semestre ' + sem + '</h4><span class="cnv-pill ' + e + '">' + CN_TXT[e] + '</span></header>' +
+                '<div class="cnv-duelo">' +
+                    '<div class="cnv-lado"><span class="cnv-t">Facultad</span>' + cnLadoHtml(f, sem, c, 'facultad', unidad) + '</div>' +
+                    '<div class="cnv-lado"><span class="cnv-t">Vicerrectoría</span>' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + '</div>' +
+                '</div>' +
+                '<div class="cnx-res" data-fac="' + f.facultad_id + '" data-sem="' + sem + '">' + cnResultadoHtml(f, sem, c, r.es_superadmin, unidad) + '</div></article>';
+        }
+
+        function cnDetalleHtml(r, f) {
+            return '<div class="cnv-dh"><h3>' + evalHtmlEscape(f.nombre) + '</h3><span>' + (f.propuesta > 0 ? 'Meta propuesta ' + cnFmt(f.propuesta, r.indicador.unidad) : 'Sin meta propuesta') + '</span></div>' +
+                   '<div class="cnv-sems">' + cnPanelHtml(r, f, 1) + cnPanelHtml(r, f, 2) + '</div>';
+        }
+
+        function cnTablaUnica(r) {
+            if (!r.facultades.length) return '<div class="cnx-nd cnx-sem-vacio">Ninguna facultad tiene meta ni seguimiento en este indicador.</div>';
+            if (!r.facultades.some(function(f) { return f.facultad_id == cnSel; })) cnSel = r.facultades[0].facultad_id;
+            const f = r.facultades.filter(function(x) { return x.facultad_id == cnSel; })[0];
+            const conRiel = r.facultades.length > 1;
+            return '<div class="cnv-body' + (conRiel ? '' : ' solo') + '">' +
+                (conRiel ? '<aside class="cnv-rail" id="cnRail">' + cnRailHtml(r) + '</aside>' : '') +
+                '<section class="cnv-det" id="cnDet">' + cnDetalleHtml(r, f) + '</section></div>';
+        }
+
+        // Tras guardar un valor: actualiza el estado y la acción del panel y el riel, sin tocar los campos
+        function cnRefrescarPanel(f, sem) {
+            const c = f.sem[sem], e = cnEstadoCelda(c);
+            const p = $('.cnv-sem[data-sem="' + sem + '"]');
+            p.find('.cnv-pill').attr('class', 'cnv-pill ' + e).text(CN_TXT[e]);
+            p.find('.cnx-res').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
+            $('#cnRail').html(cnRailHtml(cnDatos));
+        }
+        $(document).on('click', '#cnSemestres .cnv-fi', function() {
+            cnSel = parseInt($(this).data('fac'), 10);
+            const f = cnDatos.facultades.filter(function(x) { return x.facultad_id == cnSel; })[0];
+            if (!f) return;
+            $('#cnDet').html(cnDetalleHtml(cnDatos, f));
+            $('#cnRail').html(cnRailHtml(cnDatos));
+        });
 
         function cnActualizarLista(r) {
             const t = [0, 0, 0], ap = [0, 0, 0];
@@ -6430,8 +6520,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 if (esDescripcion) { if (lado === 'facultad') { c.df = texto; c.df_propia = true; } else { c.dv = texto; } return; }
                 if (lado === 'facultad') { c.vf = n === null ? c.hecha : n; c.vf_propio = n !== null; } else { c.vv = n; }
                 c.enviado = false; c.rechazado = false; // cambiar un valor obliga a concertar de nuevo
-                $('.cnx-res[data-fac="' + fac + '"][data-sem="' + sem + '"]').html(cnResultadoHtml(f, sem, c, cnDatos.es_superadmin, cnDatos.indicador.unidad));
-                $('.cnx-uh-sem[data-sem="' + sem + '"] .cnx-sem-cab').html(cnCabSemHtml(cnDatos, sem));
+                cnRefrescarPanel(f, sem);
                 cnActualizarLista(cnDatos);
             }, 'json').fail(function() { el.prop('disabled', false); $('#cnError').text('Error de conexión con el servidor').show(); });
         });
