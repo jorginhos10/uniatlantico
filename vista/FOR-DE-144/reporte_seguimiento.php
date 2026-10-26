@@ -63,10 +63,9 @@ foreach ($indicadores as $r) {
     ];
     // Por facultad: cuántos de sus indicadores hay en cada estado del seguimiento
     foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
-        if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => [], 'v' => []];
+        if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
         $porFacultad[$fx['id']]['total']++;
         $porFacultad[$fx['id']]['idx'][] = count($filas) - 1;
-        $porFacultad[$fx['id']]['v'][count($filas) - 1] = ['v1' => $fx['v1'], 'v2' => $fx['v2']]; // lo que reportó la propia facultad
         $porFacultad[$fx['id']][$estado]++;
     }
 }
@@ -177,7 +176,10 @@ tr:last-child td{border-bottom:0}
 .acc summary::before{content:'▸';position:absolute;left:11px;color:var(--muted)}
 .acc[open] summary::before{content:'▾'}
 .acc[open] summary{border-bottom:1px solid var(--line)}
-.acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}.acc-c{text-align:left}.falta{background:var(--amber-soft);color:var(--amber-fg);border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700}
+.acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}.acc-c{text-align:left}.trk.stk{display:flex;overflow:hidden}.trk.stk::after{display:none}
+.trk.stk i{border-radius:0;flex:none}
+.trk.stk .s-ok{background:var(--ok)}.trk.stk .s-rev{background:var(--amber)}.trk.stk .s-dev{background:var(--blue)}.trk.stk .s-con{background:#c3c9d6}
+tr.resalta td{background:var(--amber-soft)}
 .acc-c small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .acc-chips{display:flex;gap:4px}
 .acc .tw{padding:0 6px 6px}
@@ -202,8 +204,7 @@ tr:last-child td{border-bottom:0}
 
     <section class="kpis" aria-label="Resumen">
         <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">aprobados por la Oficina de Planeación</div></div>
-        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?> · <?php echo $pctDe($kpi['revision'], $kpi['total']); ?>%</span></div><div class="s">esperando aprobación en el semáforo · clic para verlos por dependencia</div></button>
-        <div class="kpi"><small>Con reporte</small><div class="v"><?php echo $kpi['s2']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?> · semestre 2</span></div><div class="s">semestre 1: <?php echo $kpi['s1']; ?> de <?php echo $kpi['total'] - $kpi['limite']; ?> (los de tipo Límite no lo registran)</div></div>
+        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?> · <?php echo $pctDe($kpi['revision'], $kpi['total']); ?>%</span></div><div class="s">esperando aprobación en el semáforo · clic para resaltarlos en el listado</div></button>
     </section>
 
     <nav class="tabs" role="tablist">
@@ -213,25 +214,19 @@ tr:last-child td{border-bottom:0}
 
     <?php
     // Desplegables: cada grupo muestra cuántos indicadores están aprobados y, al abrirlo, el detalle
-    $tiene = function ($v) { return $v !== null && trim((string)$v) !== ''; };
-    $desplegables = function ($grupos, $vacio) use ($h, $pctDe, $filas, $fmt, $tiene) {
+    $desplegables = function ($grupos, $vacio) use ($h, $pctDe, $filas, $fmt) {
         if (!$grupos) { echo '<p class="vacio">' . $h($vacio) . '</p>'; return; }
         foreach ($grupos as $g):
-            // Cobertura sobre TODOS los indicadores del grupo (no solo los que están en revisión): semestre 1 no aplica en los de tipo Límite
-            $c = ['s1' => 0, 't1' => 0, 's2' => 0, 't2' => 0];
-            foreach ($g['idx'] as $i) {
-                $f = $filas[$i]; $vv = $g['v'][$i] ?? ['v1' => $f['v1'], 'v2' => $f['v2']];
-                if (!$f['limite']) { $c['t1']++; if ($tiene($vv['v1'])) $c['s1']++; }
-                $c['t2']++; if ($tiene($vv['v2'])) $c['s2']++;
-            }
-            $cT = $c['t1'] + $c['t2']; $cR = $c['s1'] + $c['s2'];
-            $cPct = $pctDe($cR, $cT);
+            // Avance sobre TODOS los indicadores del grupo: reportado = seguimiento aprobado por la Oficina de Planeación
+            $cPct = $pctDe($g['publicado'], $g['total']);
         ?>
         <details class="acc">
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
-                <span class="acc-c" title="Casillas con reporte sobre las que corresponden a todos los indicadores de este grupo (<?php echo $g['total']; ?> indicadores)"><?php echo $cPct; ?>% con reporte<small>S1 <?php echo $c['s1']; ?>/<?php echo $c['t1']; ?> · S2 <?php echo $c['s2']; ?>/<?php echo $c['t2']; ?> · <?php echo $g['total']; ?> indicadores</small></span>
-                <span class="trk"><i style="width:<?php echo $cPct; ?>%"></i></span>
+                <span class="acc-c" title="Reportados = seguimiento aprobado por la Oficina de Planeación, sobre los <?php echo $g['total']; ?> indicadores de este grupo"><?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small></span>
+                <span class="trk stk" title="Aprobados · en revisión · devueltos · en construcción">
+                    <i class="s-ok" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['revision'], $g['total']); ?>%"></i><i class="s-dev" style="width:<?php echo $pctDe($g['devuelto'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['construccion'], $g['total']); ?>%"></i>
+                </span>
                 <span class="acc-chips">
                     <span class="chip c-revision" title="En revisión"><?php echo $g['revision']; ?></span>
                     <span class="chip c-devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
@@ -241,13 +236,12 @@ tr:last-child td{border-bottom:0}
             <div class="tw"><table>
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th></tr></thead>
                 <tbody>
-                <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : '';
-                    $vv = $g['v'][$i] ?? ['v1' => $f['v1'], 'v2' => $f['v2']]; ?>
+                <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
                 <tr data-estado="<?php echo $h($f['estado']); ?>">
                     <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
-                    <td class="sv"><?php echo $f['limite'] ? '<span class="nd">No aplica</span>' : ($tiene($vv['v1']) ? $h($fmt($vv['v1'])) . $pc : '<span class="falta">Falta</span>'); ?></td>
-                    <td class="sv"><?php echo $tiene($vv['v2']) ? $h($fmt($vv['v2'])) . $pc : '<span class="falta">Falta</span>'; ?></td>
+                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
+                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . $pc : '<span class="nd">—</span>'; ?></td>
                     <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
                 </tr>
                 <?php endforeach; ?>
@@ -259,13 +253,13 @@ tr:last-child td{border-bottom:0}
 
     <section class="box tp" id="tp-dep">
         <h2>Por dependencia</h2>
-        <p class="vacio acc-ayuda">Todos los indicadores de cada dependencia y qué semestres ya tienen reporte. Los números de colores son en revisión, devueltos y en construcción.</p>
+        <p class="vacio acc-ayuda">Avance de todos los indicadores de cada dependencia: reportado es el seguimiento aprobado por la Oficina de Planeación. La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris); los números de colores son en revisión, devueltos y en construcción.</p>
         <?php $desplegables($porDep, 'Todavía no hay indicadores aprobados.'); ?>
     </section>
 
     <section class="box tp" id="tp-fac" hidden>
         <h2>Facultades</h2>
-        <p class="vacio acc-ayuda">Indicadores con meta en cada facultad y qué semestres ya reportó la propia facultad. Los números de colores son en revisión, devueltos y en construcción.</p>
+        <p class="vacio acc-ayuda">Avance de los indicadores con meta en cada facultad, con el mismo criterio: reportado es el seguimiento aprobado. La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris).</p>
         <?php $desplegables($porFacultad, 'Ninguna facultad tiene metas en los indicadores aprobados.'); ?>
     </section>
 
@@ -280,11 +274,11 @@ tr:last-child td{border-bottom:0}
         Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
             var n = 0;
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
-                var ok = !on || r.getAttribute('data-estado') === 'revision';
-                r.hidden = !ok; if (ok) n++;
+                var rev = r.getAttribute('data-estado') === 'revision';
+                r.classList.toggle('resalta', on && rev);
+                if (rev) n++;
             });
-            d.hidden = on && n === 0;
-            d.open = on && n > 0;
+            d.open = on && n > 0; // se abren los grupos que tienen indicadores en revisión
         });
         if (on) { var t = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (t) t.click(); }
     }
