@@ -220,10 +220,10 @@ tr.resalta td{background:var(--amber-soft)}
             // Avance sobre TODOS los indicadores del grupo: reportado = seguimiento aprobado por la Oficina de Planeación
             $cPct = $pctDe($g['publicado'], $g['total']);
         ?>
-        <details class="acc">
+        <details class="acc" data-t="<?php echo (int)$g['total']; ?>" data-a="<?php echo (int)$g['publicado']; ?>" data-r="<?php echo (int)$g['revision']; ?>">
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
-                <span class="acc-c" title="Reportados = seguimiento aprobado por la Oficina de Planeación, sobre los <?php echo $g['total']; ?> indicadores de este grupo"><?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small></span>
+                <span class="acc-c" data-orig="<?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small>" title="Reportados = seguimiento aprobado por la Oficina de Planeación, sobre los <?php echo $g['total']; ?> indicadores de este grupo"><?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small></span>
                 <span class="trk stk" title="Aprobados · en revisión · devueltos · en construcción">
                     <i class="s-ok" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['revision'], $g['total']); ?>%"></i><i class="s-dev" style="width:<?php echo $pctDe($g['devuelto'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['construccion'], $g['total']); ?>%"></i>
                 </span>
@@ -269,18 +269,22 @@ tr.resalta td{background:var(--amber-soft)}
 (function () {
     // La tarjeta «En revisión» filtra las listas de abajo (Por dependencia y Facultades): solo ese estado, con los desplegables abiertos
     var kRev = document.getElementById('abrirRev');
+    // Con la tarjeta activa cada grupo muestra el avance en revisión sobre TODOS sus indicadores y queda cerrado,
+    // para ver de un vistazo cuántos han cumplido (aprobados) y cuántos no
     function filtrarRevision(on) {
         kRev.setAttribute('aria-pressed', on ? 'true' : 'false');
         Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
-            var n = 0;
-            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
-                var rev = r.getAttribute('data-estado') === 'revision';
-                r.classList.toggle('resalta', on && rev);
-                if (rev) n++;
+            var t = parseInt(d.getAttribute('data-t'), 10) || 0, a = parseInt(d.getAttribute('data-a'), 10) || 0, r = parseInt(d.getAttribute('data-r'), 10) || 0;
+            var c = d.querySelector('.acc-c');
+            c.innerHTML = on
+                ? (t ? Math.round(r / t * 100) : 0) + '% en revisión<small>' + r + ' en revisión · ' + a + ' aprobados · ' + (t - a) + ' sin aprobar · de ' + t + '</small>'
+                : c.getAttribute('data-orig');
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (row) {
+                row.classList.toggle('resalta', on && row.getAttribute('data-estado') === 'revision');
             });
-            d.open = on && n > 0; // se abren los grupos que tienen indicadores en revisión
+            d.open = false;
         });
-        if (on) { var t = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (t) t.click(); }
+        if (on) { var tab = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (tab) tab.click(); }
     }
     kRev.addEventListener('click', function () { filtrarRevision(kRev.getAttribute('aria-pressed') !== 'true'); });
     var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
