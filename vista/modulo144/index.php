@@ -1741,6 +1741,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $viewerCargoNombre = $viewer_dependencias ?? ($viewer_cargo_nombre ?? '');
         // Solo un administrador publica en bloque los borradores cargados por plantilla
         $esSuperSeg = (int)($_SESSION['usuario_id'] ?? 0) === 1; // solo el superadministrador publica un seguimiento sin esperar las etapas
+        // El superadministrador y los líderes de metas editan en cualquier estado (en construcción, solicitado, devuelto o aprobado)
+        $puedeEditarSiempre = $esSuperSeg || $miRolNormalizado === 'lider de meta';
         $esAdminPlan = (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
 
@@ -2103,8 +2105,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     // Enviado al Líder de Metas (siguiente etapa = L): los líderes pueden editarlo además de aprobar o rechazar
                                                     $puedeEditarComoLider = $solEstado === 1 && $puedeRechazarEtapa && ($etapaActual + 1) === 2
                                                         && $miRolNormalizado === m144_normalizarRol($semaforoEtapas[2]['rol']);
-                                                    if ($puedeEditarComoLider): ?>
-                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar (enviado al Líder de Metas)" aria-label="Editar">
+                                                    if ($puedeEditarComoLider || $puedeEditarSiempre): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar" aria-label="Editar">
                                                         <i class="fas fa-edit"></i>
                                                     </button>
                                                     <?php endif; ?>
@@ -2128,6 +2130,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $esEtapaFinalAdmin = ($etapaActual + 1) === 4;
                                                         $etapaPendiente = $semaforoEtapas[$etapaActual + 1]['titulo'] ?? '';
                                                     ?>
+                                                    <?php if ($puedeEditarSiempre): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar" aria-label="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <div class="dropdown">
                                                         <button type="button" class="m144-pendiente" data-bs-toggle="dropdown" aria-expanded="false"
                                                                 title="Pendiente de <?php echo htmlspecialchars($etapaPendiente); ?>">
@@ -2148,6 +2155,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         </ul>
                                                     </div>
                                                     <?php elseif ($solEstado === 1): ?>
+                                                    <?php if ($puedeEditarSiempre): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar" aria-label="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <span class="badge bg-warning text-dark align-self-center">Pendiente</span>
                                                     <?php else: ?>
                                                     <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)" title="Editar" aria-label="Editar">
@@ -2266,6 +2278,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php else: ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
                                                         <i class="fas fa-eye me-1"></i>Ver
+                                                    </button>
+                                                    <?php endif; ?>
+                                                    <?php if ($puedeEditarSiempre): ?>
+                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)" title="Editar" aria-label="Editar">
+                                                        <i class="fas fa-edit"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                     <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1): ?>
