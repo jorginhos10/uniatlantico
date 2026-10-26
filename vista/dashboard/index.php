@@ -50,27 +50,10 @@ function dbTrimestreAuto($anio) {
     if ($ahora >= strtotime($anio . '-04-01')) return 1;
     return 0;
 }
-// Fracción de la meta ANUAL que ya debería estar cumplida con el trimestre vigente $q (0 a 4). La meta se reparte entre los
-// trimestres: las que se suman, mitad por trimestre de cada semestre; las de nivel (promedio, último valor), del nivel del
-// semestre 1 al del semestre 2; y una meta solo anual, un Límite o un indicador sin metas, ¼ por trimestre (así nada se espera
-// únicamente al cuarto).
-function dbEsperadoFrac(array $r, int $q) {
-    $q = max(0, min(4, $q));
-    if ($q === 0) return 0.0;
-    $tipo = (string)($r['tipo_medicion'] ?? '');
-    $m1 = dbNum($r['meta_s1'] ?? null);
-    $m2 = dbNum($r['meta_s2'] ?? null);
-    if ($tipo === 'Límite' || $m1 === null || $m1 <= 0) return $q / 4;
-    $m2 = ($m2 !== null && $m2 > 0) ? $m2 : 0;
-    if ($tipo === 'Acumulado' || $tipo === 'Nuevo gestionado durante la vigencia') {
-        $base  = $tipo === 'Acumulado' ? (dbNum($r['linea_base_meta'] ?? null) ?? 0) : 0;
-        $total = $base + $m1 + $m2;
-        $acum  = [0, $m1 / 2, $m1, $m1 + $m2 / 2, $m1 + $m2][$q];
-        return $total > 0 ? max(0, min(1, ($base + $acum) / $total)) : $q / 4;
-    }
-    $fin   = $m2 > 0 ? $m2 : $m1;
-    $nivel = [0, $m1 / 2, $m1, $m1 + ($fin - $m1) / 2, $fin][$q];
-    return max(0, min(1, $nivel / $fin));
+// Avance esperado según el trimestre vigente $q (0 a 4): T1 30 %, T2 60 %, T3 80 % y T4 100 %.
+// Es el mismo para todos los indicadores y líneas.
+function dbEsperadoPct($q) {
+    return [0, 30, 60, 80, 100][max(0, min(4, (int)$q))];
 }
 function dbTono($p) {
     if ($p === null) return 'none';
@@ -318,8 +301,9 @@ $nRevision = count(array_filter($filas, fn($r) => $r['revision']));
 //  · aprobado: cuenta el avance de los seguimientos aprobados, los demás 0
 //  · con revisión: suma además lo registrado en los seguimientos en revisión (dato provisional)
 //  · esperado: lo que debería llevar cada indicador con el trimestre vigente
-$avance = $avanceRev = null; $esperado = 0;
-$infPorLinea = ['apr' => [], 'rev' => [], 'esp' => []];
+$avance = $avanceRev = null;
+$infPorLinea = ['apr' => [], 'rev' => []];
+$esperado = dbEsperadoPct($trimVigente);
 if ($pdo && $plan && $rows) {
     require_once __DIR__ . '/../../modelo/FORDE144Model.php';
     $modeloInforme = new FORDE144Model();
@@ -329,7 +313,6 @@ if ($pdo && $plan && $rows) {
     $informes = [
         'apr' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => (int)$r['estado_seguimiento'] === 2 ? $pa($r) : 0]),
         'rev' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => ((int)$r['estado_seguimiento'] === 2 || (int)$r['solicitud_estado_seguimiento'] === 1) ? $pa($r) : 0]),
-        'esp' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => dbEsperadoFrac($r, $trimVigente) * 100]),
     ];
     foreach ($informes as $k => $inf) {
         foreach ($inf['lineas'] ?? [] as $l) $infPorLinea[$k][(string)$l['codigo']] = (float)$l['cumplimiento'];
@@ -340,7 +323,6 @@ if ($pdo && $plan && $rows) {
     };
     $avance    = $total('apr');
     $avanceRev = $total('rev');
-    $esperado  = (int)round($total('esp') ?? 0);
 }
 
 // Cierre del formulario
@@ -367,7 +349,7 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
         'nombre' => $lineas[$cod],
         'pct'    => $infPorLinea['apr'][(string)$cod] ?? null,
         'rev'    => $infPorLinea['rev'][(string)$cod] ?? null,
-        'esp'    => (int)round($infPorLinea['esp'][(string)$cod] ?? 0),
+        'esp'    => $esperado,
     ];
 }
 
