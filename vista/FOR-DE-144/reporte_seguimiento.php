@@ -164,19 +164,17 @@ tr:last-child td{border-bottom:0}
 .kpi-btn:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(20,49,99,.12)}
 .kpi-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .kpi-btn[aria-pressed="true"]{border-color:var(--orange);box-shadow:0 0 0 2px rgba(216,88,25,.25)}
-.filtro-rev{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--amber-soft);color:var(--amber-fg);border:1px solid #f1d58f;border-radius:12px;padding:10px 16px;font-size:13px}
-.filtro-rev button{border:0;background:var(--amber-fg);color:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;border-bottom:2px solid var(--line)}
 .tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
 .tabs button.on{color:var(--navy);border-bottom-color:var(--orange)}
 .acc{border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:#fff}
-.acc summary{display:grid;grid-template-columns:minmax(160px,1.4fr) 60px minmax(80px,1fr) auto;gap:12px;align-items:center;padding:12px 14px 12px 28px;cursor:pointer;list-style:none;position:relative}
+.acc summary{display:grid;grid-template-columns:minmax(160px,1.4fr) 70px minmax(80px,1fr) auto;gap:12px;align-items:center;padding:12px 14px 12px 28px;cursor:pointer;list-style:none;position:relative}
 .acc summary::-webkit-details-marker{display:none}
 .acc summary::before{content:'▸';position:absolute;left:11px;color:var(--muted)}
 .acc[open] summary::before{content:'▾'}
 .acc[open] summary{border-bottom:1px solid var(--line)}
-.acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}
+.acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}.acc-c small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .acc-chips{display:flex;gap:4px}
 .acc .tw{padding:0 6px 6px}
 .acc-ayuda{margin:-4px 0 12px}
@@ -200,13 +198,9 @@ tr:last-child td{border-bottom:0}
 
     <section class="kpis" aria-label="Resumen">
         <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">aprobados por la Oficina de Planeación</div></div>
-        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo · clic para verlos por dependencia</div></button>
+        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?> · <?php echo $pctDe($kpi['revision'], $kpi['total']); ?>%</span></div><div class="s">esperando aprobación en el semáforo · clic para verlos por dependencia</div></button>
     </section>
 
-    <div class="filtro-rev" id="filtroRev" hidden>
-        <span>Mostrando solo los indicadores <b>en revisión</b>, con los avances registrados hasta ahora.</span>
-        <button type="button" id="quitarRev">Quitar filtro</button>
-    </div>
 
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
@@ -218,11 +212,11 @@ tr:last-child td{border-bottom:0}
     $desplegables = function ($grupos, $vacio) use ($h, $pctDe, $filas, $fmt) {
         if (!$grupos) { echo '<p class="vacio">' . $h($vacio) . '</p>'; return; }
         foreach ($grupos as $g): ?>
-        <details class="acc">
+        <details class="acc" data-total="<?php echo (int)$g['total']; ?>">
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
-                <span class="acc-c"><?php echo $g['publicado']; ?>/<?php echo $g['total']; ?></span>
-                <span class="trk"><i style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i></span>
+                <span class="acc-c" data-orig="<?php echo $g['publicado']; ?>/<?php echo $g['total']; ?>"><?php echo $g['publicado']; ?>/<?php echo $g['total']; ?></span>
+                <span class="trk"><i data-orig="<?php echo $pctDe($g['publicado'], $g['total']); ?>" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i></span>
                 <span class="acc-chips">
                     <span class="chip c-revision" title="En revisión"><?php echo $g['revision']; ?></span>
                     <span class="chip c-devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
@@ -264,10 +258,9 @@ tr:last-child td{border-bottom:0}
 <script>
 (function () {
     // La tarjeta «En revisión» filtra las listas de abajo (Por dependencia y Facultades): solo ese estado, con los desplegables abiertos
-    var kRev = document.getElementById('abrirRev'), aviso = document.getElementById('filtroRev');
+    var kRev = document.getElementById('abrirRev');
     function filtrarRevision(on) {
         kRev.setAttribute('aria-pressed', on ? 'true' : 'false');
-        aviso.hidden = !on;
         Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
             var n = 0;
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
@@ -276,11 +269,15 @@ tr:last-child td{border-bottom:0}
             });
             d.hidden = on && n === 0;
             d.open = on && n > 0;
+            // Filtrado: «en revisión / total» del grupo y qué porcentaje del total representa; sin filtro vuelve a «aprobados / total»
+            var c = d.querySelector('.acc-c'), b = d.querySelector('.trk i'), tot = parseInt(d.getAttribute('data-total'), 10) || 0;
+            var pct = tot ? Math.round(n / tot * 100) : 0;
+            c.innerHTML = on ? n + '/' + tot + '<small>' + pct + '% en revisión</small>' : c.getAttribute('data-orig');
+            b.style.width = (on ? pct : b.getAttribute('data-orig')) + '%';
         });
         if (on) { var t = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (t) t.click(); }
     }
     kRev.addEventListener('click', function () { filtrarRevision(kRev.getAttribute('aria-pressed') !== 'true'); });
-    document.getElementById('quitarRev').addEventListener('click', function () { filtrarRevision(false); });
     var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
     botones.forEach(function (b) {
         b.addEventListener('click', function () {
