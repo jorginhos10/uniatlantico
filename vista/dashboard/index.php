@@ -906,12 +906,12 @@ require_once __DIR__ . '/../complementos/header.php';
         <?php else: ?>
         <div class="pa-scroll">
             <div class="pa-grid">
-                <div class="pa-tr th"><span>Fórmula del indicador</span><span>L · M · P</span><span class="r">Meta</span><span class="r">Ejecutado</span><span class="r">Avance</span><span>Estado</span><span>Aprobación</span></div>
+                <div class="pa-tr th"><span>Indicador</span><span>L · M · P</span><span class="r">Meta</span><span class="r">Ejecutado</span><span class="r">Avance</span><span>Estado</span><span>Aprobación</span></div>
                 <?php foreach ($riesgo as $r):
                     $t = $TONO[dbTono($r['pct'])]; ?>
                 <div class="pa-tr">
                     <a class="f" href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $r['id'])); ?>" title="Abrir en el Módulo 144"><?php echo htmlspecialchars($r['texto']); ?>
-                        <small><?php echo htmlspecialchars($r['linea_estrategica'] ?: 'Sin línea'); ?> · ponderación <?php echo dbFmtNum($r['peso']); ?></small></a>
+                        <small><?php echo htmlspecialchars(($r['responsable_formulacion'] ?: 'Sin dependencia') . ' · ' . ($r['linea_estrategica'] ?: 'Sin línea')); ?></small></a>
                     <span class="pa-lmp"><?php echo htmlspecialchars($r['lmp']); ?></span>
                     <span class="r num" data-l="Meta"><?php echo dbFmtNum($r['meta']); ?></span>
                     <span class="r num" data-l="Ejecutado"><?php echo dbFmtNum($r['ejec']); ?></span>
