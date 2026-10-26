@@ -6393,7 +6393,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const esF = lado === 'facultad';
             const val = esF ? c.vf : c.vv;
             const desc = esF ? c.df : c.dv;
-            const puede = esF ? f.puede_f : f.puede_v;
+            const puede = (esF ? f.puede_f : f.puede_v) && !c.cerrado;
             const quien = esF ? (c.uf ? 'Puesto por ' + c.uf + (c.ff ? ' · ' + c.ff : '') : (c.vf_propio ? '' : 'Valor reportado en el seguimiento'))
                               : (c.uv ? 'Puesto por ' + c.uv + (c.fv ? ' · ' + c.fv : '') : '');
             const nombre = esF ? 'facultad' : 'vicerrectoría';
@@ -6408,6 +6408,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         function cnResultadoHtml(f, sem, c, esSuper, unidad) {
             const e = cnEstadoCelda(c);
+            // Semestre cerrado en el Plan de acción: la concertación también queda cerrada (solo se ve lo que ya está)
+            if (c.cerrado) {
+                return (e === 'aprobado'
+                    ? '<span class="cnx-estado fin"><i class="fas fa-check-circle"></i> Meta real <b>' + cnFmt(c.final, cnDatos ? cnDatos.indicador.unidad : '') + '</b></span>'
+                    : '<span class="cnx-estado"><i class="fas fa-lock"></i> Concertación cerrada</span>') +
+                    '<span class="cnx-hint">El semestre ' + sem + ' está cerrado en el Plan de acción</span>';
+            }
             const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
             const iguales = Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
             const hint = iguales ? 'Coinciden: al concertar pasa al seguimiento' : 'Difieren en ' + cnFmt(Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)), '') + ': decide el superadministrador';
@@ -6500,7 +6507,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 return '<div class="cnv-conc-v">—</div><small>Se asigna al concertar</small>' +
                        '<textarea class="cnx-txt" rows="2" disabled placeholder="Se habilita al concertar el valor" aria-label="Descripción del valor concertado"></textarea>';
             }
-            const puede = f.puede_f || f.puede_v;
+            const puede = (f.puede_f || f.puede_v) && !c.cerrado;
             return '<div class="cnv-conc-v ok">' + cnFmt(c.final, unidad) + '</div><small>Ya está en el seguimiento por facultades</small>' +
                 (puede
                     ? '<textarea class="cnx-txt" rows="2" ' + attrs + ' placeholder="Describe el valor concertado; es la descripción que queda en el seguimiento por facultades…" aria-label="Descripción del valor concertado">' + evalHtmlEscape(c.dc || '') + '</textarea>'
@@ -6511,7 +6518,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const c = f.sem[sem], unidad = r.indicador.unidad;
             if (!c.aplica) return '<article class="cnv-sem"><header><h4>Semestre ' + sem + '</h4></header><div class="cnx-nd cnv-na">No aplica en este indicador</div></article>';
             const e = cnEstadoCelda(c);
-            return '<article class="cnv-sem" data-sem="' + sem + '"><header><h4>Semestre ' + sem + '</h4><span class="cnv-pill ' + e + '">' + CN_TXT[e] + '</span></header>' +
+            return '<article class="cnv-sem" data-sem="' + sem + '"><header><h4>Semestre ' + sem + (c.cerrado ? ' <i class="fas fa-lock" title="Cerrado en el Plan de acción"></i>' : '') + '</h4><span class="cnv-pill ' + e + '">' + CN_TXT[e] + '</span></header>' +
                 '<div class="cnv-duelo">' +
                     '<div class="cnv-lado"><span class="cnv-t">Facultad</span>' + cnLadoHtml(f, sem, c, 'facultad', unidad) + cnEvBtn(f, sem, 'facultad') + '</div>' +
                     '<div class="cnv-lado"><span class="cnv-t">Vicerrectoría</span>' + cnLadoHtml(f, sem, c, 'vicerrectoria', unidad) + cnEvBtn(f, sem, 'vicerrectoria') + '</div>' +

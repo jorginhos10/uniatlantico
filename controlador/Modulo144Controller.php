@@ -1303,6 +1303,17 @@ class Modulo144Controller {
         return $b;
     }
 
+    // Concertaciones sigue el cierre del semestre del Plan de acción (Editar formulario → Campos): con el semestre cerrado
+    // no se colocan valores ni descripciones, no se concierta, no se aprueba y no se retira una aprobación.
+    // Responde el error y devuelve true si está cerrado.
+    private function concertacionCerrada($item, $sem) {
+        if (!$item || !in_array((int)$sem, [1, 2], true)) return false;
+        $bl = $this->semestresBloqueados($item);
+        if (empty($bl['sem' . (int)$sem])) return false;
+        echo json_encode(['success' => false, 'cerrado' => true, 'message' => 'El semestre ' . (int)$sem . ' está cerrado en el Plan de acción: la concertación también está cerrada']);
+        return true;
+    }
+
     // ───────── Concertaciones por facultad ─────────
     // Quién concierta cada valor: la dependencia responsable concierta el suyo y cada facultad el suyo.
     // Todos ven todos los valores; solo el superadministrador aprueba. El superadministrador también puede concertar por cualquiera.
@@ -1337,6 +1348,7 @@ class Modulo144Controller {
         $verTodas = $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
 
         $evid = $this->model->getResumenEvidencias($id)['facultades'];
+        $blq = $this->semestresBloqueados($item); // semestres cerrados en el Plan de acción
 
         $filas = [];
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
@@ -1352,6 +1364,7 @@ class Modulo144Controller {
                 if ($hecha !== null || $vf !== null || $vv !== null) $hay = true;
                 $sem[$s] = [
                     'aplica' => !($s === 1 && $esLimite),
+                    'cerrado' => !empty($blq['sem' . $s]),
                     'hecha' => $hecha,
                     'vf' => $vf !== null ? $vf : $hecha,   // mientras la facultad no cambie su valor, vale lo que reportó
                     'vf_propio' => $vf !== null,
@@ -1414,6 +1427,7 @@ class Modulo144Controller {
         $esConcertado = ($_POST['lado'] ?? '') === 'concertado';
         $lado = ($_POST['lado'] ?? '') === 'vicerrectoria' ? 'vicerrectoria' : (($_POST['lado'] ?? '') === 'facultad' ? 'facultad' : '');
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if ($this->concertacionCerrada($item, $sem)) return;
         // Descripción del valor concertado: la escribe quien concierta (facultad o vicerrectoría) una vez aprobado el valor
         if ($esConcertado && $item && $fac > 0 && in_array($sem, [1, 2], true)) {
             if (!($this->puedeConcertarFacultad($fac) || $this->puedeConcertarDependencia($item))) { echo json_encode(['success' => false, 'message' => 'Solo la facultad o la vicerrectoría pueden describir el valor concertado']); return; }
@@ -1456,6 +1470,7 @@ class Modulo144Controller {
         $sem = intval($_POST['semestre'] ?? 0);
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+        if ($this->concertacionCerrada($item, $sem)) return;
         if (!($this->puedeConcertarFacultad($fac) || $this->puedeConcertarDependencia($item))) {
             echo json_encode(['success' => false, 'message' => 'Solo la facultad o la vicerrectoría pueden concertar']); return;
         }
@@ -1495,6 +1510,7 @@ class Modulo144Controller {
         $rechazar = !empty($_POST['rechazar']) && $_POST['rechazar'] !== '0';
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
+        if ($this->concertacionCerrada($item, $sem)) return;
 
         if ($rechazar) {
             $ok = $this->model->rechazarConcertacion($id, $fac, $sem);
