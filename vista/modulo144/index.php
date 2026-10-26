@@ -1741,7 +1741,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $viewerCargoNombre = $viewer_dependencias ?? ($viewer_cargo_nombre ?? '');
         // Solo un administrador publica en bloque los borradores cargados por plantilla
         $esSuperSeg = (int)($_SESSION['usuario_id'] ?? 0) === 1; // solo el superadministrador publica un seguimiento sin esperar las etapas
-        // El superadministrador y los líderes de metas editan en cualquier estado (en construcción, solicitado, devuelto o aprobado)
+        // El superadministrador y los líderes de metas editan los borradores en cualquier estado del semáforo (en construcción, solicitado o devuelto); lo aprobado no se edita
         $puedeEditarSiempre = $esSuperSeg || $miRolNormalizado === 'lider de meta';
         $esAdminPlan = (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
@@ -2278,11 +2278,6 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php else: ?>
                                                     <button class="btn btn-sm btn-primary" onclick="verSeguimiento('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)">
                                                         <i class="fas fa-eye me-1"></i>Ver
-                                                    </button>
-                                                    <?php endif; ?>
-                                                    <?php if ($puedeEditarSiempre): ?>
-                                                    <button class="btn btn-sm btn-warning" onclick="editarBorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)" title="Editar" aria-label="Editar">
-                                                        <i class="fas fa-edit"></i>
                                                     </button>
                                                     <?php endif; ?>
                                                     <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1): ?>
