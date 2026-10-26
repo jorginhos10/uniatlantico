@@ -305,6 +305,8 @@ body{
     .micro-grid{grid-template-columns:1fr}
     .modal-content{max-height:calc(100vh - 24px);overflow-y:auto;padding:20px 16px}
 }
+.dep-tab{border:0;background:rgba(0,0,0,.05);padding:7px 14px;border-radius:9px;font-weight:600;font-size:.82rem;cursor:pointer;color:#3a3a3c}
+.dep-tab.on{background:#0071e3;color:#fff}
 </style>
 </head>
 <body>
@@ -398,7 +400,20 @@ body{
             <i class="fas fa-university" style="color:#0071e3;margin-right:8px"></i>
             Estadísticas por Dependencia · <?php echo $anio; ?>
         </div>
-        <div style="overflow-x:auto;max-height:60vh;overflow-y:auto">
+        <div class="dep-tabs" role="tablist" style="display:flex;gap:6px;margin:0 0 12px">
+            <button type="button" class="dep-tab on" data-dt="depWrap">Dependencias</button>
+            <button type="button" class="dep-tab" data-dt="facWrap">Facultades · seguimiento concertado</button>
+        </div>
+        <div id="facWrap" hidden style="overflow-x:auto;max-height:60vh;overflow-y:auto">
+            <table class="dep-table">
+                <thead>
+                    <tr><th>Facultad</th><th>Metas con distribución</th><th>Concertadas y aprobadas</th><th>≥80%</th><th>Cumplimiento (%)</th></tr>
+                </thead>
+                <tbody id="facBody"></tbody>
+            </table>
+            <p style="font-size:.78rem;color:rgba(0,0,0,.5);margin-top:10px">Se calcula con el valor concertado y aprobado de cada facultad frente a la meta que le corresponde. Lo que aún no está concertado y aprobado aporta 0 %.</p>
+        </div>
+        <div id="depWrap" style="overflow-x:auto;max-height:60vh;overflow-y:auto">
             <table class="dep-table">
                 <thead>
                     <tr>
@@ -422,6 +437,7 @@ body{
 /* ── Data from PHP ── */
 const lineasData   = <?php echo json_encode($informe['lineas'],       JSON_UNESCAPED_UNICODE); ?>;
 const depData      = <?php echo json_encode($informe['dependencias'],  JSON_UNESCAPED_UNICODE); ?>;
+const facData      = <?php echo json_encode($informe['facultades'] ?? [], JSON_UNESCAPED_UNICODE); ?>;
 
 /* ── Color palette ── */
 const LINEA_COLORS = ['#007AFF','#AF52DE','#34C759','#FF9500','#FF3B30','#32ADE6','#5856D6','#FF2D55'];
@@ -652,8 +668,33 @@ function renderDepTable() {
     tbody.innerHTML = html;
 }
 
+/* ── Facultades según lo concertado ── */
+function renderFacTable() {
+    var tbody = document.getElementById('facBody');
+    if (!facData || !facData.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:rgba(0,0,0,.35)">Todavía no hay metas distribuidas a las facultades.</td></tr>';
+        return;
+    }
+    var html = '';
+    facData.forEach(function(f) {
+        var p = parseFloat(f.cumplimiento || 0);
+        html += '<tr><td>' + esc(f.facultad) + '</td><td>' + f.metas + '</td><td>' + f.concertados + '</td>' +
+            '<td><span style="background:rgba(52,199,89,.15);color:#248a3d;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:700">' + f.indicadores_80 + '</span></td>' +
+            '<td><span class="cb ' + cbClass(p) + '">' + p.toFixed(2) + '%</span></td></tr>';
+    });
+    tbody.innerHTML = html;
+}
+Array.prototype.forEach.call(document.querySelectorAll('.dep-tab'), function(b) {
+    b.addEventListener('click', function() {
+        Array.prototype.forEach.call(document.querySelectorAll('.dep-tab'), function(x) { x.classList.toggle('on', x === b); });
+        document.getElementById('depWrap').hidden = b.getAttribute('data-dt') !== 'depWrap';
+        document.getElementById('facWrap').hidden = b.getAttribute('data-dt') !== 'facWrap';
+    });
+});
+
 document.getElementById('depBtn').addEventListener('click', function() {
     renderDepTable();
+    renderFacTable();
     document.getElementById('depModal').classList.add('active');
 });
 document.getElementById('depClose').addEventListener('click', function() {

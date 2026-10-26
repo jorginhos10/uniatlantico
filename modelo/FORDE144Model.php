@@ -214,6 +214,65 @@ class FORDE144Model {
     // Dentro de cada proyecto, los indicadores pesan según su "ponderación de actividades".
     // Criterio: se miden las METAS APROBADAS (estado_formulacion = 2, sin borradores) y solo cuenta el avance de los
     // seguimientos REPORTADOS, es decir aprobados por la Oficina de Planeación (estado_seguimiento = 2); el resto aporta 0.
+    // Seguimiento por facultades según lo CONCERTADO: por cada facultad con meta en las metas aprobadas, su logrado sale de los
+    // valores concertados y aprobados (Concertaciones) y se compara con la meta que le corresponde (distribución). Lo que
+    // todavía no está concertado y aprobado aporta 0 %. Devuelve [['facultad', 'metas', 'concertados', 'indicadores_80', 'cumplimiento']].
+    public function getInformeFacultades($formulario_id) {
+        try {
+            $stmt = $this->db->prepare(
+                "SELECT d.formulacion_id, d.facultad_id, fa.nombre AS facultad, d.distribucion, f.tipo_medicion,
+                        c1.valor_final AS v1, c2.valor_final AS v2
+                 FROM formulacion_distribucion_facultad_144 d
+                 JOIN formulacion_144 f ON f.id = d.formulacion_id AND f.formulario_id = :fid AND f.estado_formulacion = 2
+                 JOIN facultades fa ON fa.id = d.facultad_id
+                 LEFT JOIN concertaciones_144 c1 ON c1.formulacion_id = d.formulacion_id AND c1.facultad_id = d.facultad_id AND c1.semestre = 1 AND c1.aprobado = 1
+                 LEFT JOIN concertaciones_144 c2 ON c2.formulacion_id = d.formulacion_id AND c2.facultad_id = d.facultad_id AND c2.semestre = 2 AND c2.aprobado = 1
+                 WHERE d.distribucion > 0"
+            );
+            $stmt->execute([':fid' => (int)$formulario_id]);
+            $por = [];
+            foreach ($stmt->fetchAll() as $r) {
+                $v1 = $r['v1'] === null ? null : (float)$r['v1'];
+                $v2 = $r['v2'] === null ? null : (float)$r['v2'];
+                $meta = (float)$r['distribucion'];
+                $logrado = null;
+                if ($v1 !== null || $v2 !== null) {
+                    switch ($r['tipo_medicion']) {
+                        case 'Promedio':
+                            $vals = array_filter([$v1, $v2], function ($v) { return $v !== null; });
+                            $logrado = array_sum($vals) / count($vals);
+                            break;
+                        case 'Último valor reportado':
+                        case 'Límite':
+                            $logrado = $v2 !== null ? $v2 : $v1;
+                            break;
+                        default: // Acumulado y nuevo gestionado durante la vigencia: se suman los semestres
+                            $logrado = ($v1 ?? 0) + ($v2 ?? 0);
+                    }
+                }
+                if ($logrado === null) $pct = 0;
+                elseif ($r['tipo_medicion'] === 'Límite') $pct = $logrado <= $meta ? 100 : 0;
+                else $pct = min(100, $logrado / $meta * 100);
+                $k = (int)$r['facultad_id'];
+                if (!isset($por[$k])) $por[$k] = ['facultad' => $r['facultad'], 'metas' => 0, 'concertados' => 0, 'indicadores_80' => 0, 'suma' => 0.0];
+                $por[$k]['metas']++;
+                if ($logrado !== null) $por[$k]['concertados']++;
+                if ($pct >= 80) $por[$k]['indicadores_80']++;
+                $por[$k]['suma'] += $pct;
+            }
+            $res = [];
+            foreach ($por as $p) {
+                $res[] = ['facultad' => $p['facultad'], 'metas' => $p['metas'], 'concertados' => $p['concertados'],
+                          'indicadores_80' => $p['indicadores_80'], 'cumplimiento' => round($p['suma'] / $p['metas'], 2)];
+            }
+            usort($res, function ($a, $b) { return $b['cumplimiento'] <=> $a['cumplimiento']; });
+            return $res;
+        } catch (PDOException $e) {
+            error_log('Error getInformeFacultades: ' . $e->getMessage()); // p. ej. todavía no existe concertaciones_144
+            return [];
+        }
+    }
+
     // $opts (opcional):
     //   'soloAprobadas' => false     (por defecto true) incluir también lo que no está aprobado
     //   'ids'           => [int]     solo esos indicadores (lo que el usuario puede ver)
@@ -401,6 +460,7 @@ class FORDE144Model {
             $dependencias = $stmtD->fetchAll();
 
             return [
+                'facultades'          => $this->getInformeFacultades($formulario_id),
                 'global_cumplimiento' => round($global, 2),
                 'metas'               => count($rows),
                 'reportados'          => count(array_filter($rows, function ($r) { return (int)($r['estado_seguimiento'] ?? 0) === 2; })),
