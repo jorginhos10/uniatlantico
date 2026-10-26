@@ -350,6 +350,12 @@ body{
                 echo $n . ' línea' . ($n != 1 ? 's' : '') . ' estratégica' . ($n != 1 ? 's' : '') . ' · ' . $anio;
             ?>
         </div>
+        <div class="global-sub" style="margin-top:4px">
+            <?php
+                $metas = (int)($informe['metas'] ?? 0); $rep = (int)($informe['reportados'] ?? 0);
+                echo $rep . ' de ' . $metas . ' metas aprobadas con seguimiento reportado (aprobado por la Oficina de Planeación). Lo no reportado aporta 0 %.';
+            ?>
+        </div>
     </div>
 
     <!-- ── DB error banner (only shows when SQL fails) ── -->
@@ -397,8 +403,9 @@ body{
                 <thead>
                     <tr>
                         <th>Dependencia</th>
-                        <th>Total Indicadores</th>
-                        <th>Indicadores ≥80%</th>
+                        <th>Metas aprobadas</th>
+                        <th>Reportados</th>
+                        <th>Reportados ≥80%</th>
                         <th>Cumplimiento (%)</th>
                     </tr>
                 </thead>
@@ -615,19 +622,21 @@ document.getElementById('chartModal').addEventListener('click', function(e) {
 function renderDepTable() {
     var tbody = document.getElementById('depBody');
     if (!depData || !depData.length) {
-        tbody.innerHTML = '<tr><td colspan="4" style="padding:24px;text-align:center;color:rgba(0,0,0,.35)">No se encontraron registros por dependencia.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="padding:24px;text-align:center;color:rgba(0,0,0,.35)">No se encontraron registros por dependencia.</td></tr>';
         return;
     }
     var html = '';
-    var totInd = 0, tot80 = 0;
+    var totInd = 0, tot80 = 0, totRep = 0;
     depData.forEach(function(d) {
         var p  = parseFloat(d.cumplimiento || 0);
         var cb = cbClass(p);
         totInd += parseInt(d.total_indicadores || 0);
         tot80  += parseInt(d.indicadores_80  || 0);
+        totRep += parseInt(d.reportados || 0);
         html += '<tr>' +
             '<td>' + esc(d.dependencia) + '</td>' +
             '<td>' + (d.total_indicadores || 0) + '</td>' +
+            '<td>' + (d.reportados || 0) + '</td>' +
             '<td><span style="background:rgba(52,199,89,.15);color:#248a3d;padding:2px 10px;border-radius:20px;font-size:.78rem;font-weight:700">' + (d.indicadores_80 || 0) + '</span></td>' +
             '<td><span class="cb ' + cb + '">' + p.toFixed(2) + '%</span></td>' +
         '</tr>';
@@ -636,6 +645,7 @@ function renderDepTable() {
     html += '<tr class="total-row">' +
         '<td>TOTAL CONSOLIDADO</td>' +
         '<td>' + totInd + '</td>' +
+        '<td>' + totRep + '</td>' +
         '<td>' + tot80 + '</td>' +
         '<td><span class="cb ' + cbClass(parseFloat(totalPct)) + '">' + totalPct + '%</span></td>' +
     '</tr>';

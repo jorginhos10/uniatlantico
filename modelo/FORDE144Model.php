@@ -212,13 +212,16 @@ class FORDE144Model {
     // del año del formulario): cada nivel suma sus hijos por su peso. Un hijo con peso configurado pero
     // sin indicadores aporta 0. Si un nivel no tiene pesos configurados, se usa el promedio simple.
     // Dentro de cada proyecto, los indicadores pesan según su "ponderación de actividades".
-    // $opts (opcional, para el Dashboard; sin él el informe es el de siempre):
-    //   'soloAprobadas' => true      solo metas aprobadas (estado_formulacion = 2), sin borradores
+    // Criterio: se miden las METAS APROBADAS (estado_formulacion = 2, sin borradores) y solo cuenta el avance de los
+    // seguimientos REPORTADOS, es decir aprobados por la Oficina de Planeación (estado_seguimiento = 2); el resto aporta 0.
+    // $opts (opcional):
+    //   'soloAprobadas' => false     (por defecto true) incluir también lo que no está aprobado
     //   'ids'           => [int]     solo esos indicadores (lo que el usuario puede ver)
-    //   'avance'        => callable  recibe la fila del indicador y devuelve su avance (0-100) en lugar de porcentaje_avance
+    //   'avance'        => callable  recibe la fila del indicador y devuelve su avance (0-100) en lugar del criterio por defecto
     public function getInformeCompleto($formulario_id, array $opts = []) {
-        // porcentaje_avance (0-100) is the user-entered progress field in formulacion_144
-        $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
+        $opts += ['soloAprobadas' => true];
+        // porcentaje_avance (0-100) lo guarda el seguimiento; solo cuenta cuando el seguimiento está aprobado
+        $calc = "CASE WHEN f.estado_seguimiento = 2 THEN LEAST(COALESCE(f.porcentaje_avance, 0), 100) ELSE 0 END";
 
         try {
             $formulario = $this->getById($formulario_id);
@@ -385,11 +388,12 @@ class FORDE144Model {
                 "SELECT
                     COALESCE(fa.nombre, CONCAT('Dependencia #', f.facultad_id)) as dependencia,
                     COUNT(f.id) as total_indicadores,
+                    SUM(CASE WHEN f.estado_seguimiento = 2 THEN 1 ELSE 0 END) as reportados,
                     SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_80,
                     ROUND(AVG($calc),2) as cumplimiento
                  FROM formulacion_144 f
                  LEFT JOIN facultades fa ON f.facultad_id = fa.id
-                 WHERE f.formulario_id = :fid
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
                  GROUP BY f.facultad_id, fa.nombre
                  ORDER BY cumplimiento DESC"
             );
@@ -398,6 +402,8 @@ class FORDE144Model {
 
             return [
                 'global_cumplimiento' => round($global, 2),
+                'metas'               => count($rows),
+                'reportados'          => count(array_filter($rows, function ($r) { return (int)($r['estado_seguimiento'] ?? 0) === 2; })),
                 'lineas'              => $lineas,
                 'dependencias'        => $dependencias,
             ];
