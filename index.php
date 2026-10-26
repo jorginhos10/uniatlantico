@@ -415,6 +415,9 @@ switch ($action) {
             case 'publicarBorradores':
                 $modulo144Controller->publicarBorradores();
                 break;
+            case 'publicarSeguimiento':
+                $modulo144Controller->publicarSeguimiento();
+                break;
             case 'cambiarSolicitudEstado':
                 $modulo144Controller->cambiarSolicitudEstado();
                 break;

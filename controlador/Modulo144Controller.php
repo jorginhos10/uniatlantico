@@ -656,6 +656,32 @@ class Modulo144Controller {
         ]);
     }
 
+    // Publica el seguimiento de un indicador sin esperar las etapas del semáforo: solo el superadministrador
+    public function publicarSeguimiento() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        if ($uid !== 1) {
+            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar el seguimiento']);
+            return;
+        }
+        $id = intval($_POST['id'] ?? 0);
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item) {
+            echo json_encode(['success' => false, 'message' => 'Indicador no válido']);
+            return;
+        }
+        if ((int)($item['estado_seguimiento'] ?? 0) === 2) {
+            echo json_encode(['success' => false, 'message' => 'Este seguimiento ya está publicado']);
+            return;
+        }
+        $ok = $this->model->publicarSeguimientoIndicador($id, $uid, $_SESSION['usuario_nombre'] ?? '—', $_SESSION['usuario_rol'] ?? null);
+        echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento publicado' : 'No se pudo publicar (¿la formulación está publicada?)']);
+    }
+
     public function devolverTodosABorrador() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -829,6 +829,32 @@ class Modulo144Model {
         }
     }
 
+    // Publica el seguimiento de un indicador sin pasar por las etapas del semáforo que le faltan (superadministrador).
+    // Equivale a que Planeación lo apruebe: queda como reportado.
+    public function publicarSeguimientoIndicador($id, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
+        try {
+            $c = $this->modulos['seguimiento'];
+            $stmt = $this->db->prepare(
+                "UPDATE {$c['tabla']}
+                 SET {$c['campo_estado']} = 2,
+                     {$c['fecha_publicacion']} = NOW(),
+                     {$c['campo_solicitud']} = 1,
+                     {$c['campo_semaforo']} = 4,
+                     {$c['campo_semaforo_rechazo']} = 0,
+                     fecha_actualizacion = NOW()
+                 WHERE id = :id AND estado_formulacion = 2 AND {$c['campo_estado']} != 2"
+            );
+            $stmt->execute([':id' => (int)$id]);
+            if ($stmt->rowCount() === 0) return false;
+            $this->registrarHistorialSemaforo('seguimiento', (int)$id, 4, 'aprobado', $usuarioId, $usuarioNombre, $rol,
+                'Publicado por el superadministrador');
+            return true;
+        } catch (PDOException $e) {
+            error_log("Error publicarSeguimientoIndicador: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador = null) {
         try {
             $tabla = $this->modulos[$modulo]['tabla'];

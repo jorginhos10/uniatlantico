@@ -1740,6 +1740,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // Dependencias del usuario: la principal y las de "Responsable de" (en Usuarios)
         $viewerCargoNombre = $viewer_dependencias ?? ($viewer_cargo_nombre ?? '');
         // Solo un administrador publica en bloque los borradores cargados por plantilla
+        $esSuperSeg = (int)($_SESSION['usuario_id'] ?? 0) === 1; // solo el superadministrador publica un seguimiento sin esperar las etapas
         $esAdminPlan = (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
 
@@ -2116,6 +2117,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)" title="Rechazar y devolver al creador">
                                                         <i class="fas fa-times"></i>
                                                     </button>
+                                                    <?php if ($key === 'seguimiento' && $esSuperSeg): ?>
+                                                    <button class="btn btn-sm btn-success" onclick="publicarSeguimiento(<?php echo (int)$borrador['id']; ?>)" title="Publicar el seguimiento sin esperar las etapas" aria-label="Publicar">
+                                                        <i class="fas fa-bullhorn"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <?php endif; ?>
                                                     <?php elseif ($solEstado === 1 && $puedeRechazarEtapa):
                                                         // El creador es el superadministrador: "Pendiente" abre las opciones para aprobar en nombre de la etapa
@@ -2134,6 +2140,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                             <?php if ($key === 'formulacion' && !empty($esAdminPlan)): ?>
                                                             <li><button type="button" class="dropdown-item m144-ok" onclick="publicarIndicador(<?php echo (int)$borrador['id']; ?>)" title="Publica este indicador sin pasar por las etapas de aprobación"><i class="fas fa-globe"></i>Publicar</button></li>
                                                             <?php endif; ?>
+                                                            <?php if ($key === 'seguimiento' && $esSuperSeg): ?>
+                                                            <li><button type="button" class="dropdown-item m144-ok" onclick="publicarSeguimiento(<?php echo (int)$borrador['id']; ?>)" title="Publica este seguimiento sin esperar las etapas que le faltan"><i class="fas fa-bullhorn"></i>Publicar</button></li>
+                                                            <?php endif; ?>
                                                             <li><hr class="dropdown-divider"></li>
                                                             <li><button type="button" class="dropdown-item m144-danger" onclick="rechazarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"><i class="fas fa-times"></i>Rechazar</button></li>
                                                         </ul>
@@ -2147,6 +2156,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <button class="btn btn-sm btn-success" onclick="cambiarSolicitudEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, 1)" title="Solicitar aprobación" aria-label="Solicitar aprobación">
                                                         <i class="fas fa-paper-plane"></i>
                                                     </button>
+                                                    <?php if ($key === 'seguimiento' && $esSuperSeg): ?>
+                                                    <button class="btn btn-sm btn-success" onclick="publicarSeguimiento(<?php echo (int)$borrador['id']; ?>)" title="Publicar el seguimiento sin esperar las etapas" aria-label="Publicar">
+                                                        <i class="fas fa-bullhorn"></i>
+                                                    </button>
+                                                    <?php endif; ?>
                                                     <?php if ($key === 'formulacion'): ?>
                                                     <div class="dropdown">
                                                         <button type="button" class="m144-more" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones">
@@ -6006,6 +6020,29 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // Publica un solo indicador (administrador), sin pasar por las etapas de aprobación
+        // Solo superadministrador: publica el seguimiento sin pasar por las etapas del semáforo que le faltan
+        function publicarSeguimiento(id) {
+            Swal.fire({
+                title: '¿Publicar este seguimiento?',
+                html: 'Se publicará <strong>sin esperar las etapas de aprobación</strong> que le faltan y quedará como <strong>reportado</strong> (aprobado por la Oficina de Planeación).',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#34C759',
+                confirmButtonText: 'Sí, publicar',
+                cancelButtonText: 'Cancelar'
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                $.post(basePath + '/modulo144/publicarSeguimiento', { id: id }, function(r) {
+                    if (r.success) {
+                        Swal.fire({ icon: 'success', title: r.message, timer: 1200, showConfirmButton: false });
+                        setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                    } else {
+                        Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
+                    }
+                }, 'json').fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+            });
+        }
+
         function publicarIndicador(id) {
             Swal.fire({
                 title: '¿Publicar este indicador?',
