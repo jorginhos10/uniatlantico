@@ -11,6 +11,7 @@ $evidencias  = $reporte['evidencias'] ?? [];
 $facultadesRep = $reporte['facultades'] ?? [];
 $tituloF = $h($formulario['titulo'] ?? '');
 $anio    = $h($formulario['anio'] ?? date('Y'));
+$tituloAnio = (strpos($tituloF, (string)$anio) !== false) ? $tituloF : $tituloF . ' (' . $anio . ')'; // si el título ya trae el año, no se repite
 $META    = 80; // meta de cumplimiento (%)
 
 $etapas = [1 => 'Gestor de Metas', 2 => 'Líder de Metas', 3 => 'Vicerrectoría', 4 => 'Oficina de Planeación'];
@@ -95,7 +96,7 @@ $fmt = function ($v) { return rtrim(rtrim(number_format((float)$v, 2, ',', '.'),
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Reporte de seguimiento · <?php echo $tituloF; ?> · <?php echo $anio; ?></title>
+<title>Reporte de seguimiento · <?php echo $tituloAnio; ?></title>
 <style>
 :root{
     --navy:#143163; --navy-d:#0d2147; --blue:#1D71B8; --orange:#D85819; --amber:#F9B233; --grey:#706F6F;
@@ -110,7 +111,7 @@ a{color:inherit}
 .hero small{opacity:.8;letter-spacing:.08em;text-transform:uppercase;font-size:11px;font-weight:700}
 .hero h1{font-size:26px;margin-top:4px;line-height:1.2}
 .hero p{opacity:.85;margin-top:4px;font-size:13px}
-.hero .acc{display:flex;gap:8px;flex-wrap:wrap}
+.hero-acc{display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12);padding:8px 14px;border-radius:9px;font-weight:600;font-size:13px;text-decoration:none}
 .btn:hover{background:rgba(255,255,255,.22)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
@@ -159,6 +160,18 @@ tr:last-child td{border-bottom:0}
 @media print{.acc,.tools{display:none}body{background:#fff}}
 .fc{white-space:nowrap}.fcn{display:block;font-size:.82rem;color:var(--fg)}.fcn b{color:var(--navy);margin-right:4px}
 .tp[hidden]{display:none!important}
+.kpi-btn{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
+.kpi-btn:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(20,49,99,.12)}
+.kpi-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.dlg{border:0;border-radius:16px;padding:0;width:min(1180px,calc(100vw - 32px));max-height:calc(100vh - 32px);color:var(--fg);background:var(--panel);box-shadow:0 20px 60px rgba(13,33,71,.35)}
+.dlg::backdrop{background:rgba(13,33,71,.55)}
+.dlg[open]{display:flex;flex-direction:column}
+.dlg-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 20px;background:var(--navy);color:#fff}
+.dlg-h h2{font-size:18px}.dlg-h p{opacity:.85;font-size:13px;margin-top:2px}
+.dlg-x{border:0;background:none;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:0 4px}
+.dlg-ch{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 20px}
+.dlg-ch input{margin-left:auto;min-width:220px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;font:inherit}
+.dlg-t{margin:0 20px 20px;overflow:auto;min-height:0}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;border-bottom:2px solid var(--line)}
 .tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
@@ -182,19 +195,59 @@ tr:last-child td{border-bottom:0}
     <header class="hero">
         <div>
             <small>Reporte de seguimiento · FOR-DE-144</small>
-            <h1><?php echo $tituloF; ?> (<?php echo $anio; ?>)</h1>
+            <h1><?php echo $tituloAnio; ?></h1>
             <p>Estado actual de los indicadores aprobados · actualizado <?php echo date('d/m/Y H:i'); ?></p>
         </div>
-        <div class="acc">
+        <div class="hero-acc">
             <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144">‹ Volver</a>
             <a class="btn" href="<?php echo $basePath; ?>/modulo144?id=<?php echo (int)$formulario['id']; ?>">Plan de acción</a>
         </div>
     </header>
 
     <section class="kpis" aria-label="Resumen">
-        <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['total'] - $kpi['sinReporte']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">con al menos un semestre registrado</div></div>
-        <div class="kpi"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo</div></div>
+        <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">aprobados por la Oficina de Planeación</div></div>
+        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-haspopup="dialog"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo · ver avances</div></button>
     </section>
+
+    <?php
+    // Indicadores en revisión: avances con lo que ya hay en el sistema (desde la primera solicitud, antes de la aprobación final)
+    $enRevision = array_values(array_filter($filas, function ($f) { return $f['estado'] === 'revision'; }));
+    $porEtapa = [];
+    foreach ($enRevision as $f) { $n = $etapas[min(4, $f['etapa'] + 1)] ?? ''; $porEtapa[$n] = ($porEtapa[$n] ?? 0) + 1; }
+    ?>
+    <dialog id="dlgRev" class="dlg" aria-labelledby="dlgRevT">
+        <div class="dlg-h">
+            <div><h2 id="dlgRevT">Indicadores en revisión · <?php echo count($enRevision); ?></h2>
+                <p>Avances registrados hasta ahora. Todavía no tienen la aprobación final de la Oficina de Planeación.</p></div>
+            <button type="button" class="dlg-x" id="cerrarRev" aria-label="Cerrar">×</button>
+        </div>
+        <div class="dlg-ch">
+            <?php foreach ($porEtapa as $nom => $n): ?><span class="chip c-revision"><?php echo $h($nom); ?> · <?php echo $n; ?></span><?php endforeach; ?>
+            <input type="search" id="buscarRev" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en revisión">
+        </div>
+        <div class="tw dlg-t">
+            <?php if ($enRevision): ?>
+            <table>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th><th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Etapa</th><th>Semáforo</th></tr></thead>
+                <tbody>
+                <?php foreach ($enRevision as $f): $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
+                <tr data-buscar="<?php echo $h(mb_strtolower($f['nombre'] . ' ' . $f['responsable'] . ' ' . $f['lmp'], 'UTF-8')); ?>">
+                    <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
+                    <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
+                    <td><?php echo $h($f['responsable'] ?: '—'); ?></td>
+                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : 'Sin registrar') . '</span>'; ?></td>
+                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . $pc : '<span class="nd">Sin registrar</span>'; ?></td>
+                    <td><span class="ev"><span class="<?php echo $f['ev1'] ? '' : 'z'; ?>">S1 · <?php echo $f['ev1']; ?></span><span class="<?php echo $f['ev2'] ? '' : 'z'; ?>">S2 · <?php echo $f['ev2']; ?></span></span></td>
+                    <td><span class="chip c-revision"><?php echo $h($f['estadoTxt']); ?></span></td>
+                    <td><span class="sem-circ"><?php foreach (['G', 'L', 'V', 'P'] as $i => $letra): ?><i class="<?php echo $i < $f['etapa'] ? 'on' : ''; ?>"><?php echo $letra; ?></i><?php endforeach; ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+            <?php else: ?><p class="vacio">No hay indicadores en revisión.</p><?php endif; ?>
+            <p class="vacio" id="sinRev" hidden>Ningún indicador coincide con la búsqueda.</p>
+        </div>
+    </dialog>
 
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
@@ -251,6 +304,15 @@ tr:last-child td{border-bottom:0}
 </div>
 <script>
 (function () {
+    var dlg = document.getElementById('dlgRev');
+    document.getElementById('abrirRev').addEventListener('click', function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
+    document.getElementById('cerrarRev').addEventListener('click', function () { dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+    document.getElementById('buscarRev').addEventListener('input', function () {
+        var t = this.value.trim().toLowerCase(), n = 0;
+        Array.prototype.forEach.call(dlg.querySelectorAll('tbody tr'), function (r) { var ok = !t || r.getAttribute('data-buscar').indexOf(t) !== -1; r.hidden = !ok; if (ok) n++; });
+        document.getElementById('sinRev').hidden = n > 0;
+    });
     var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
     botones.forEach(function (b) {
         b.addEventListener('click', function () {
