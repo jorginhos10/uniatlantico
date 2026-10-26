@@ -41,6 +41,36 @@ function dbFmtNum($n) {
     if ($n === null) return '—';
     return dbFmt($n, floor($n) == $n ? 0 : 1);
 }
+// Trimestre vigente según el calendario (se reporta trimestre vencido); 0 = todavía no vence ninguno
+function dbTrimestreAuto($anio) {
+    $ahora = time();
+    if ($ahora >= strtotime(($anio + 1) . '-02-01')) return 4;
+    if ($ahora >= strtotime($anio . '-10-01')) return 3;
+    if ($ahora >= strtotime($anio . '-07-01')) return 2;
+    if ($ahora >= strtotime($anio . '-04-01')) return 1;
+    return 0;
+}
+// Fracción de la meta del semestre que ya debería estar cumplida con el trimestre vigente $q (0 a 4).
+// La meta se reparte entre los trimestres: cada semestre tiene dos; una meta anual (sin meta en el semestre 1) se reparte
+// en los cuatro, así no se espera todo hasta el cuarto. null = no hay nada que esperar (sin meta en el semestre o tipo Límite).
+function dbEsperadoFrac(array $r, int $sem, int $q) {
+    $tipo = (string)($r['tipo_medicion'] ?? '');
+    if ($tipo === 'Límite') return null; // se cumple o no se cumple, no tiene ritmo trimestral
+    $m1 = dbNum($r['meta_s1'] ?? null);
+    $m2 = dbNum($r['meta_s2'] ?? null);
+    $aditivo = in_array($tipo, ['Acumulado', 'Nuevo gestionado durante la vigencia'], true);
+    if ($m1 === null || $m1 <= 0) {
+        if ($sem === 1) return null;
+        return max(0, min(4, $q)) / 4; // meta anual: ¼ por trimestre
+    }
+    $k = max(0, min(2, $q - ($sem === 1 ? 0 : 2))); // trimestres vencidos dentro del semestre (0, 1 o 2)
+    if (!$aditivo && $sem === 2 && $m2 !== null && $m2 > 0) {
+        // Metas de nivel (promedio, último valor): del nivel del semestre 1 al del semestre 2, mitad en cada trimestre
+        $nivel = $k === 0 ? 0 : ($k === 1 ? $m1 + ($m2 - $m1) / 2 : $m2);
+        return max(0, min(1, $nivel / $m2));
+    }
+    return $k / 2; // metas que se suman: mitad por trimestre
+}
 function dbTono($p) {
     if ($p === null) return 'none';
     return $p >= 80 ? 'ok' : ($p >= 60 ? 'warn' : 'bad');
@@ -74,6 +104,7 @@ $miNivel = $semaforoRolNivel[$rolNorm] ?? 0;
 $sem   = isset($_GET['s']) && in_array((int)$_GET['s'], [1, 2], true) ? (int)$_GET['s'] : ((int)date('n') <= 6 ? 1 : 2);
 $linea = isset($_GET['l']) ? trim((string)$_GET['l']) : '';
 
+$trimManual  = 0; $trimAuto = 0; $trimVigente = 0; $anioPlan = (int)date("Y");
 $mensajesNl  = 0;
 $novedades   = [];
 $planes      = [];
@@ -130,6 +161,38 @@ if ($pdo) {
     }
     if (!$plan && !empty($planes)) $plan = $planes[0];
 
+    // ── Trimestre vigente ──
+    // El seguimiento es trimestral y se reporta trimestre vencido: T1 rige desde el 1 de abril, T2 desde el 1 de julio,
+    // T3 desde el 1 de octubre y T4 desde el 1 de febrero del año siguiente. Un administrador puede fijarlo a mano.
+    $anioPlan = (int)($plan['anio'] ?? date('Y')) ?: (int)date('Y');
+    if ($plan) {
+        if (empty($_SESSION['dash_csrf'])) $_SESSION['dash_csrf'] = bin2hex(random_bytes(16));
+        try {
+            $pdo->exec("CREATE TABLE IF NOT EXISTS dashboard_config_144 (
+                clave VARCHAR(80) PRIMARY KEY, valor VARCHAR(255) NULL,
+                actualizado TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+            $claveTrim = 'trimestre_vigente_' . (int)$plan['id'];
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'trimestre' && $veTodo
+                && hash_equals((string)$_SESSION['dash_csrf'], (string)($_POST['csrf'] ?? ''))) {
+                $t = (int)($_POST['trimestre'] ?? 0);
+                $t = ($t >= 0 && $t <= 4) ? $t : 0;
+                $s = $pdo->prepare("INSERT INTO dashboard_config_144 (clave, valor) VALUES (:c, :v) ON DUPLICATE KEY UPDATE valor = VALUES(valor)");
+                $s->execute([':c' => $claveTrim, ':v' => (string)$t]);
+                header('Location: ' . dbUrl($basePath, []));
+                exit;
+            }
+            $s = $pdo->prepare("SELECT valor FROM dashboard_config_144 WHERE clave = :c");
+            $s->execute([':c' => $claveTrim]);
+            $trimManual = (int)$s->fetchColumn();
+        } catch (PDOException $e) { error_log("Dash trimestre: " . $e->getMessage()); }
+    }
+    $trimAuto    = dbTrimestreAuto($anioPlan);
+    $trimManual  = ($trimManual >= 1 && $trimManual <= 4) ? $trimManual : 0;
+    $trimVigente = $trimManual ?: $trimAuto;
+    // Sin semestre elegido, se muestra el del trimestre vigente (T1-T2 → S1, T3-T4 → S2)
+    if (!isset($_GET['s']) || !in_array((int)$_GET['s'], [1, 2], true)) $sem = $trimVigente >= 3 ? 2 : 1;
+
     if ($plan) {
         $fid = (int)$plan['id'];
 
@@ -137,7 +200,7 @@ if ($pdo) {
         try {
             $s = $pdo->prepare(
                 "SELECT f.id, f.nombre_borrador, f.formula_medicion, f.linea_estrategica, f.motor_desarrollo, f.proyecto,
-                        f.ponderacion_actividades, f.meta_s1, f.meta_s2,
+                        f.ponderacion_actividades, f.meta_s1, f.meta_s2, f.tipo_medicion,
                         f.semestre1_seguimiento, f.semestre2_seguimiento, f.porcentaje_avance,
                         f.estado_formulacion, f.solicitud_estado_formulacion, f.semaforo_etapa_formulacion,
                         f.creado_por, f.fecha_creacion, f.responsable_formulacion,
@@ -242,6 +305,7 @@ foreach ($rows as &$r) {
     } elseif (($av = dbNum($r['porcentaje_avance'])) !== null) {
         $r['pct'] = min(max($av, 0), 100);
     }
+    $r['esp']   = dbEsperadoFrac($r, $sem, $trimVigente);
     $r['publicado'] = (int)$r['estado_formulacion'] === 2;
     $r['solicitud'] = (int)$r['solicitud_estado_formulacion'];
     // Igual que en el Módulo 144: si ya fue solicitado, la etapa nunca es menor al nivel del creador
@@ -258,7 +322,7 @@ $pubs  = array_values(array_filter($filas, fn($r) => $r['publicado']));
 
 // Avance ponderado (sin reporte cuenta como 0; si no hay ponderaciones, promedio simple)
 function dbPonderado(array $lista) {
-    $pub = array_filter($lista, fn($r) => $r['publicado']);
+    $pub = array_filter($lista, fn($r) => $r['publicado'] && $r['esp'] !== null);
     if (!$pub) return null;
     $W = array_sum(array_map(fn($r) => $r['peso'], $pub));
     if ($W > 0) {
@@ -268,11 +332,17 @@ function dbPonderado(array $lista) {
 }
 $avance = dbPonderado($filas);
 
-// Avance esperado según el calendario del semestre
-$anioPlan  = (int)($plan['anio'] ?? date('Y')) ?: (int)date('Y');
-$iniSem    = strtotime($anioPlan . ($sem === 1 ? '-01-01' : '-07-01'));
-$finSem    = strtotime($anioPlan . ($sem === 1 ? '-06-30 23:59:59' : '-12-31 23:59:59'));
-$esperado  = (int)round(max(0, min(1, (time() - $iniSem) / ($finSem - $iniSem))) * 100);
+// Avance esperado: lo que debería llevar cada indicador con el trimestre vigente, ponderado igual que el avance
+function dbEsperado(array $lista) {
+    $pub = array_filter($lista, fn($r) => $r['publicado'] && $r['esp'] !== null);
+    if (!$pub) return 0;
+    $W = array_sum(array_map(fn($r) => $r['peso'], $pub));
+    if ($W > 0) return array_sum(array_map(fn($r) => $r['peso'] * $r['esp'], $pub)) / $W * 100;
+    return array_sum(array_map(fn($r) => $r['esp'], $pub)) / count($pub) * 100;
+}
+
+// Avance esperado según el trimestre vigente
+$esperado = (int)round(dbEsperado($filas));
 
 // Cierre del formulario
 $cierreVal = '—'; $cierreUnidad = ''; $cierreNota = 'Formulario de tiempo libre';
@@ -298,6 +368,7 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
         'cod'    => $cod,
         'nombre' => $lineas[$cod],
         'pct'    => dbPonderado(array_filter($rows, fn($r) => $r['lcod'] === $cod)),
+        'esp'    => (int)round(dbEsperado(array_filter($rows, fn($r) => $r['lcod'] === $cod))),
     ];
 }
 
@@ -467,6 +538,13 @@ ob_start();
 @keyframes paMoonGlow { 0%,100% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); } 50% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 36px rgba(200,210,255,.45); } }
 .pa-star { position: absolute; border-radius: 50%; background: #fff; animation: paTwinkle ease-in-out infinite; }
 @keyframes paTwinkle { 0%,100% { opacity: .9; transform: scale(1); } 50% { opacity: .2; transform: scale(.6); } }
+.pa-conf { position: relative; }
+.pa-conf summary { cursor: pointer; list-style: none; display: inline-block; }
+.pa-conf summary::-webkit-details-marker { display: none; }
+.pa-conf form { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; width: 300px; background: var(--pa-card); border-radius: 14px; padding: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.18); display: flex; flex-direction: column; gap: 8px; }
+.pa-conf label { font-size: 12px; font-weight: 600; color: var(--pa-text-2); }
+.pa-conf p { margin: 0; font-size: 12px; color: var(--pa-text-2); line-height: 1.4; }
+.pa-conf-btn { border: 0; border-radius: 9px; background: #007AFF; color: #fff; font-weight: 600; padding: 8px 14px; cursor: pointer; }
 .pa-seg { display: inline-flex; flex-wrap: wrap; padding: 2px; border-radius: 9px; background: var(--pa-seg); gap: 2px; }
 .pa-seg a { padding: 6px 13px; border-radius: 7px; font-size: 13px; font-weight: 600; color: var(--pa-text-2); }
 .pa-seg a:hover { color: var(--pa-text); }
@@ -697,6 +775,22 @@ require_once __DIR__ . '/../complementos/header.php';
                 <a href="<?php echo htmlspecialchars(dbUrl($basePath, ['s' => $s])); ?>" class="<?php echo $sem === $s ? 'on' : ''; ?>" <?php echo $sem === $s ? 'aria-current="true"' : ''; ?>>Semestre <?php echo $s; ?></a>
                 <?php endforeach; ?>
             </nav>
+            <?php if ($veTodo && $plan): ?>
+            <details class="pa-conf">
+                <summary class="pa-select" title="Configuración del tablero">Trimestre vigente: T<?php echo $trimVigente ?: '—'; ?><?php echo $trimManual ? ' · manual' : ' · automático'; ?></summary>
+                <form method="post" action="<?php echo htmlspecialchars(dbUrl($basePath, [])); ?>">
+                    <input type="hidden" name="accion" value="trimestre">
+                    <input type="hidden" name="csrf" value="<?php echo htmlspecialchars((string)$_SESSION['dash_csrf']); ?>">
+                    <label for="paTrim">Trimestre vigente del seguimiento</label>
+                    <select id="paTrim" name="trimestre" class="pa-select">
+                        <option value="0" <?php echo !$trimManual ? 'selected' : ''; ?>>Automático (<?php echo $trimAuto ? 'T' . $trimAuto : 'ninguno todavía'; ?>)</option>
+                        <?php foreach ([1, 2, 3, 4] as $t): ?><option value="<?php echo $t; ?>" <?php echo $trimManual === $t ? 'selected' : ''; ?>>T<?php echo $t; ?></option><?php endforeach; ?>
+                    </select>
+                    <button type="submit" class="pa-conf-btn">Guardar</button>
+                    <p>Se reporta trimestre vencido: T1 rige desde el 1 de abril, T2 desde el 1 de julio, T3 desde el 1 de octubre y T4 desde el 1 de febrero del año siguiente.</p>
+                </form>
+            </details>
+            <?php endif; ?>
             <?php if (count($lineas) > 1): ?>
             <nav class="pa-seg" aria-label="Línea estratégica">
                 <a href="<?php echo htmlspecialchars(dbUrl($basePath, ['l' => null])); ?>" class="<?php echo $linea === '' ? 'on' : ''; ?>">Todas</a>
@@ -732,7 +826,7 @@ require_once __DIR__ . '/../complementos/header.php';
             <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
                 <span class="lbl">Avance ponderado · S<?php echo $sem; ?></span>
                 <span class="val num"><?php echo $avance === null ? '—' : dbFmt($avance); ?><small> %</small></span>
-                <span class="note">Esperado a la fecha: <?php echo $esperado; ?> %</span>
+                <span class="note"><?php echo $trimVigente ? 'Esperado al T' . $trimVigente . ($trimManual ? ' (manual)' : ' vencido') . ': ' . $esperado . ' %' : 'Aún no vence ningún trimestre'; ?></span>
                 <span class="pa-pill" style="margin-top:6px;background:<?php echo $TONO[$tonoAvance]['tint']; ?>;color:<?php echo $TONO[$tonoAvance]['ink']; ?>">
                     <?php echo $avance === null ? 'Sin indicadores publicados' : ($avance >= $esperado ? 'Por encima de lo esperado' : 'Avance en curso'); ?>
                 </span>
@@ -779,7 +873,7 @@ require_once __DIR__ . '/../complementos/header.php';
                     <div class="nm"><span class="pa-code"><?php echo htmlspecialchars($pl['cod']); ?></span><span><?php echo htmlspecialchars($pl['nombre']); ?></span></div>
                     <div class="pa-track" role="img" aria-label="<?php echo htmlspecialchars($pl['nombre']) . ': ' . ($pl['pct'] === null ? 'sin publicados' : dbFmt($pl['pct']) . ' %'); ?>">
                         <div class="fill" style="width:<?php echo round($pl['pct'] ?? 0, 1); ?>%;background:<?php echo $t['bar']; ?>"></div>
-                        <div class="goal" style="left:calc(<?php echo $esperado; ?>% - 1px)"></div>
+                        <div class="goal" style="left:calc(<?php echo (int)$pl['esp']; ?>% - 1px)"></div>
                     </div>
                     <span class="pct num" style="color:<?php echo $t['ink']; ?>"><?php echo $pl['pct'] === null ? '—' : dbFmt($pl['pct']) . ' %'; ?></span>
                 </a>
@@ -789,7 +883,7 @@ require_once __DIR__ . '/../complementos/header.php';
             <div class="pa-legend">
                 <span><i style="background:#34C759"></i>80 % o más</span>
                 <span><i style="background:#007AFF"></i>En progreso</span>
-                <span><i style="width:2px;height:12px;background:#1D1D1F;opacity:.5"></i>Avance esperado hoy</span>
+                <span><i style="width:2px;height:12px;background:#1D1D1F;opacity:.5"></i>Avance esperado al trimestre vigente</span>
             </div>
         </section>
 
