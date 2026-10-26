@@ -538,7 +538,7 @@ class FORDE144Model {
         // Facultades con meta en cada indicador: [formulacion_id => [[id, nombre], ...]]
         try {
             $q = $this->db->prepare(
-                "SELECT d.formulacion_id, fa.id AS facultad_id, fa.nombre
+                "SELECT d.formulacion_id, fa.id AS facultad_id, fa.nombre, d.seguimiento_sem1, d.seguimiento_sem2
                  FROM formulacion_distribucion_facultad_144 d
                  JOIN formulacion_144 f ON f.id = d.formulacion_id
                  JOIN facultades fa ON fa.id = d.facultad_id
@@ -546,7 +546,7 @@ class FORDE144Model {
             );
             $q->execute([':fid' => (int)$formulario_id]);
             foreach ($q->fetchAll() as $r) {
-                $res['facultades'][(int)$r['formulacion_id']][] = ['id' => (int)$r['facultad_id'], 'nombre' => $r['nombre']];
+                $res['facultades'][(int)$r['formulacion_id']][] = ['id' => (int)$r['facultad_id'], 'nombre' => $r['nombre'], 'v1' => $r['seguimiento_sem1'], 'v2' => $r['seguimiento_sem2']];
             }
         } catch (PDOException $e) {
             error_log('Error facultades del reporte: ' . $e->getMessage());
