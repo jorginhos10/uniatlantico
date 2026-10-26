@@ -977,7 +977,7 @@ class Modulo144Controller {
             return;
         }
 
-        // El valor de cada semestre es el concertado (pestaña Concertaciones): aquí nunca se cambia, solo la descripción
+        // El valor y la descripción de cada semestre son los concertados (pestaña Concertaciones): aquí nunca se cambian
         $bl = $this->semestresBloqueados($item);
         $actualFac = null;
         foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
@@ -985,8 +985,9 @@ class Modulo144Controller {
         }
         $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
         $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
-        if ($bl['sem1']) $descripcion = $actualFac['seguimiento_descripcion'] ?? null;
-        if ($bl['sem2']) $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
+        // La descripción de cada semestre tampoco se escribe aquí: es el texto del valor concertado (pestaña Concertaciones)
+        $descripcion  = $actualFac['seguimiento_descripcion'] ?? null;
+        $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
 
         $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion, $descripcion2);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);

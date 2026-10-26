@@ -3367,14 +3367,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <td><?php echo htmlspecialchars($fac['nombre']); ?></td>
                                             <td class="text-end seg-fac-distribucion">0</td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s1" step="0.01" min="0" placeholder="—" readonly tabindex="-1" title="Valor concertado (se asigna en Concertaciones)" style="background:#f1f3f8;cursor:not-allowed"></td>
-                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc1" maxlength="1000" placeholder="Descripción del semestre 1..."></td>
+                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc1" maxlength="1000" placeholder="—" readonly tabindex="-1" style="background:#f1f3f8;cursor:not-allowed" title="Descripción concertada (se escribe en Concertaciones)"></td>
                                             <td class="text-center">
                                                 <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 1)" title="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 1 de <?php echo htmlspecialchars($fac['nombre']); ?>">
                                                     <i class="fas fa-plus"></i><span class="ev-n" data-sem="1">0</span>
                                                 </button>
                                             </td>
                                             <td><input type="number" class="form-control form-control-sm seg-fac-s2" step="0.01" min="0" placeholder="—" readonly tabindex="-1" title="Valor concertado (se asigna en Concertaciones)" style="background:#f1f3f8;cursor:not-allowed"></td>
-                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc2" maxlength="1000" placeholder="Descripción del semestre 2..."></td>
+                                            <td><input type="text" class="form-control form-control-sm seg-fac-desc2" maxlength="1000" placeholder="—" readonly tabindex="-1" style="background:#f1f3f8;cursor:not-allowed" title="Descripción concertada (se escribe en Concertaciones)"></td>
                                             <td class="text-center">
                                                 <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(<?php echo (int)$fac['id']; ?>, 2)" title="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?> (hasta 5 archivos)" aria-label="Evidencias del semestre 2 de <?php echo htmlspecialchars($fac['nombre']); ?>">
                                                     <i class="fas fa-plus"></i><span class="ev-n" data-sem="2">0</span>
@@ -4330,8 +4330,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : 'Sin meta');
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
-                        fila.find('.seg-fac-desc1').val(d.seguimiento_descripcion || '');
-                        fila.find('.seg-fac-desc2').val(d.seguimiento_descripcion2 || '');
+                        // Descripciones bloqueadas: son el texto del valor concertado; el título muestra el texto completo
+                        fila.find('.seg-fac-desc1').val(d.seguimiento_descripcion || '').attr('title', d.seguimiento_descripcion || 'Descripción concertada (se escribe en Concertaciones)');
+                        fila.find('.seg-fac-desc2').val(d.seguimiento_descripcion2 || '').attr('title', d.seguimiento_descripcion2 || 'Descripción concertada (se escribe en Concertaciones)');
                         if (VIEWER_FACULTADES.includes(parseInt(d.facultad_id, 10))) fila.addClass('table-primary');
                         fila.show();
                         hay = true;
