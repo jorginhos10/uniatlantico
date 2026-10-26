@@ -212,7 +212,11 @@ class FORDE144Model {
     // del año del formulario): cada nivel suma sus hijos por su peso. Un hijo con peso configurado pero
     // sin indicadores aporta 0. Si un nivel no tiene pesos configurados, se usa el promedio simple.
     // Dentro de cada proyecto, los indicadores pesan según su "ponderación de actividades".
-    public function getInformeCompleto($formulario_id) {
+    // $opts (opcional, para el Dashboard; sin él el informe es el de siempre):
+    //   'soloAprobadas' => true      solo metas aprobadas (estado_formulacion = 2), sin borradores
+    //   'ids'           => [int]     solo esos indicadores (lo que el usuario puede ver)
+    //   'avance'        => callable  recibe la fila del indicador y devuelve su avance (0-100) en lugar de porcentaje_avance
+    public function getInformeCompleto($formulario_id, array $opts = []) {
         // porcentaje_avance (0-100) is the user-entered progress field in formulacion_144
         $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
 
@@ -221,6 +225,11 @@ class FORDE144Model {
             $anio = (int)($formulario['anio'] ?? 0);
 
             // Indicadores del formulario (sin cancelados)
+            $sqlIds = '';
+            if (isset($opts['ids']) && is_array($opts['ids'])) {
+                $ids = array_values(array_filter(array_map('intval', $opts['ids'])));
+                $sqlIds = $ids ? ' AND f.id IN (' . implode(',', $ids) . ')' : ' AND 1 = 0';
+            }
             $stmt = $this->db->prepare(
                 "SELECT f.id,
                         COALESCE(f.linea_estrategica,'Sin línea') AS linea,
@@ -230,15 +239,21 @@ class FORDE144Model {
                         COALESCE(f.proyecto,'Sin proyecto') AS proyecto,
                         p.id AS proyecto_id, p.codigo AS proyecto_codigo,
                         $calc AS avance,
-                        COALESCE(f.ponderacion_actividades, 0) AS ponderacion
+                        COALESCE(f.ponderacion_actividades, 0) AS ponderacion,
+                        f.tipo_medicion, f.meta_s1, f.meta_s2, f.linea_base_meta, f.porcentaje_avance,
+                        f.estado_seguimiento, f.solicitud_estado_seguimiento
                  FROM formulacion_144 f
                  LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
                  LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
                  LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
-                 WHERE f.formulario_id = :fid AND f.estado_formulacion != 1"
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion " . (!empty($opts['soloAprobadas']) ? '= 2' : '!= 1') . $sqlIds
             );
             $stmt->execute([':fid' => $formulario_id]);
             $rows = $stmt->fetchAll();
+            if (!empty($opts['avance']) && is_callable($opts['avance'])) {
+                foreach ($rows as &$rowAv) $rowAv['avance'] = max(0, min(100, (float)call_user_func($opts['avance'], $rowAv)));
+                unset($rowAv);
+            }
 
             // Pesos configurados para el año (solo los mayores a 0), con nombres para los que no tengan datos
             $pesosLinea = $pesosMotor = $pesosProyecto = [];

@@ -50,26 +50,27 @@ function dbTrimestreAuto($anio) {
     if ($ahora >= strtotime($anio . '-04-01')) return 1;
     return 0;
 }
-// Fracción de la meta del semestre que ya debería estar cumplida con el trimestre vigente $q (0 a 4).
-// La meta se reparte entre los trimestres: cada semestre tiene dos; una meta anual (sin meta en el semestre 1) se reparte
-// en los cuatro, así no se espera todo hasta el cuarto. null = no hay nada que esperar (sin meta en el semestre o tipo Límite).
-function dbEsperadoFrac(array $r, int $sem, int $q) {
+// Fracción de la meta ANUAL que ya debería estar cumplida con el trimestre vigente $q (0 a 4). La meta se reparte entre los
+// trimestres: las que se suman, mitad por trimestre de cada semestre; las de nivel (promedio, último valor), del nivel del
+// semestre 1 al del semestre 2; y una meta solo anual, un Límite o un indicador sin metas, ¼ por trimestre (así nada se espera
+// únicamente al cuarto).
+function dbEsperadoFrac(array $r, int $q) {
+    $q = max(0, min(4, $q));
+    if ($q === 0) return 0.0;
     $tipo = (string)($r['tipo_medicion'] ?? '');
-    if ($tipo === 'Límite') return null; // se cumple o no se cumple, no tiene ritmo trimestral
     $m1 = dbNum($r['meta_s1'] ?? null);
     $m2 = dbNum($r['meta_s2'] ?? null);
-    $aditivo = in_array($tipo, ['Acumulado', 'Nuevo gestionado durante la vigencia'], true);
-    if ($m1 === null || $m1 <= 0) {
-        if ($sem === 1) return null;
-        return max(0, min(4, $q)) / 4; // meta anual: ¼ por trimestre
+    if ($tipo === 'Límite' || $m1 === null || $m1 <= 0) return $q / 4;
+    $m2 = ($m2 !== null && $m2 > 0) ? $m2 : 0;
+    if ($tipo === 'Acumulado' || $tipo === 'Nuevo gestionado durante la vigencia') {
+        $base  = $tipo === 'Acumulado' ? (dbNum($r['linea_base_meta'] ?? null) ?? 0) : 0;
+        $total = $base + $m1 + $m2;
+        $acum  = [0, $m1 / 2, $m1, $m1 + $m2 / 2, $m1 + $m2][$q];
+        return $total > 0 ? max(0, min(1, ($base + $acum) / $total)) : $q / 4;
     }
-    $k = max(0, min(2, $q - ($sem === 1 ? 0 : 2))); // trimestres vencidos dentro del semestre (0, 1 o 2)
-    if (!$aditivo && $sem === 2 && $m2 !== null && $m2 > 0) {
-        // Metas de nivel (promedio, último valor): del nivel del semestre 1 al del semestre 2, mitad en cada trimestre
-        $nivel = $k === 0 ? 0 : ($k === 1 ? $m1 + ($m2 - $m1) / 2 : $m2);
-        return max(0, min(1, $nivel / $m2));
-    }
-    return $k / 2; // metas que se suman: mitad por trimestre
+    $fin   = $m2 > 0 ? $m2 : $m1;
+    $nivel = [0, $m1 / 2, $m1, $m1 + ($fin - $m1) / 2, $fin][$q];
+    return max(0, min(1, $nivel / $fin));
 }
 function dbTono($p) {
     if ($p === null) return 'none';
@@ -101,7 +102,6 @@ $etapaNombre = [1 => 'Gestor de Metas', 2 => 'Líder de Metas', 3 => 'Vicerrecto
 $miNivel = $semaforoRolNivel[$rolNorm] ?? 0;
 
 // ── Filtros (GET) ────────────────────────────────────────────────────────
-$sem   = isset($_GET['s']) && in_array((int)$_GET['s'], [1, 2], true) ? (int)$_GET['s'] : ((int)date('n') <= 6 ? 1 : 2);
 $linea = isset($_GET['l']) ? trim((string)$_GET['l']) : '';
 
 $trimManual  = 0; $trimAuto = 0; $trimVigente = 0; $anioPlan = (int)date("Y");
@@ -190,19 +190,17 @@ if ($pdo) {
     $trimAuto    = dbTrimestreAuto($anioPlan);
     $trimManual  = ($trimManual >= 1 && $trimManual <= 4) ? $trimManual : 0;
     $trimVigente = $trimManual ?: $trimAuto;
-    // Sin semestre elegido, se muestra el del trimestre vigente (T1-T2 → S1, T3-T4 → S2)
-    if (!isset($_GET['s']) || !in_array((int)$_GET['s'], [1, 2], true)) $sem = $trimVigente >= 3 ? 2 : 1;
 
     if ($plan) {
         $fid = (int)$plan['id'];
 
-        // Registros del plan (sin cancelados)
+        // Metas aprobadas del plan (formulación publicada) con el estado de su seguimiento
         try {
             $s = $pdo->prepare(
                 "SELECT f.id, f.nombre_borrador, f.formula_medicion, f.linea_estrategica, f.motor_desarrollo, f.proyecto,
-                        f.ponderacion_actividades, f.meta_s1, f.meta_s2, f.tipo_medicion,
-                        f.semestre1_seguimiento, f.semestre2_seguimiento, f.porcentaje_avance,
-                        f.estado_formulacion, f.solicitud_estado_formulacion, f.semaforo_etapa_formulacion,
+                        f.ponderacion_actividades, f.meta_s1, f.meta_s2, f.tipo_medicion, f.linea_base_meta,
+                        f.meta_programada, f.meta_ejecutada, f.porcentaje_avance,
+                        f.estado_seguimiento, f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento,
                         f.creado_por, f.fecha_creacion, f.responsable_formulacion,
                         le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo,
                         u.cargo_id AS creado_por_cargo_id, u.rol AS creado_por_rol
@@ -211,33 +209,33 @@ if ($pdo) {
                  LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
                  LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
                  LEFT JOIN usuarios u ON f.creado_por = u.id
-                 WHERE f.formulario_id = :fid AND f.estado_formulacion != 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
                  ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC"
             );
             $s->execute([':fid' => $fid]);
             $rows = $s->fetchAll();
         } catch (PDOException $e) { error_log("Dash rows: " . $e->getMessage()); }
 
-        // Última acción del semáforo por registro (para la antigüedad en la bandeja)
+        // Última acción del semáforo del seguimiento por registro (para la antigüedad en la bandeja)
         try {
             $s = $pdo->prepare(
                 "SELECT h.formulacion_id, MAX(h.fecha_creacion) AS ultima
                  FROM semaforo_historial_144 h
                  JOIN formulacion_144 f ON f.id = h.formulacion_id
-                 WHERE h.modulo = 'formulacion' AND f.formulario_id = :fid
+                 WHERE h.modulo = 'seguimiento' AND f.formulario_id = :fid
                  GROUP BY h.formulacion_id"
             );
             $s->execute([':fid' => $fid]);
             foreach ($s->fetchAll() as $r) $ultimaAccion[(int)$r['formulacion_id']] = $r['ultima'];
         } catch (PDOException $e) { error_log("Dash ultimaAccion: " . $e->getMessage()); }
 
-        // Actividad reciente del semáforo
+        // Actividad reciente del semáforo del seguimiento
         try {
             $s = $pdo->prepare(
                 "SELECT h.formulacion_id, h.etapa, h.accion, h.usuario_nombre, h.motivo, h.fecha_creacion
                  FROM semaforo_historial_144 h
                  JOIN formulacion_144 f ON f.id = h.formulacion_id
-                 WHERE h.modulo = 'formulacion' AND f.formulario_id = :fid
+                 WHERE h.modulo = 'seguimiento' AND f.formulario_id = :fid
                  ORDER BY h.fecha_creacion DESC
                  LIMIT 30"
             );
@@ -290,59 +288,60 @@ foreach ($rows as $r) {
 ksort($lineas);
 if ($linea !== '' && !isset($lineas[$linea])) $linea = '';
 
-// Enriquecer cada registro
+// Enriquecer cada registro (solo metas aprobadas: lo que se mide es el seguimiento)
 $idsVisibles = [];
 foreach ($rows as &$r) {
     $r['lcod']  = $r['linea_codigo'] ?: ($r['linea_estrategica'] ?: 'Sin línea');
     $r['lmp']   = implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])) ?: '—';
     $r['texto'] = trim((string)$r['formula_medicion']) !== '' ? $r['formula_medicion'] : $r['nombre_borrador'];
     $r['peso']  = (float)($r['ponderacion_actividades'] ?? 0);
-    $r['meta']  = dbNum($sem === 1 ? $r['meta_s1'] : $r['meta_s2']);
-    $r['ejec']  = dbNum($sem === 1 ? $r['semestre1_seguimiento'] : $r['semestre2_seguimiento']);
-    $r['pct']   = null;
-    if ($r['meta'] !== null && $r['meta'] > 0 && $r['ejec'] !== null) {
-        $r['pct'] = min($r['ejec'] / $r['meta'] * 100, 100);
-    } elseif (($av = dbNum($r['porcentaje_avance'])) !== null) {
-        $r['pct'] = min(max($av, 0), 100);
-    }
-    $r['esp']   = dbEsperadoFrac($r, $sem, $trimVigente);
-    $r['publicado'] = (int)$r['estado_formulacion'] === 2;
-    $r['solicitud'] = (int)$r['solicitud_estado_formulacion'];
-    // Igual que en el Módulo 144: si ya fue solicitado, la etapa nunca es menor al nivel del creador
-    $etapa = (int)$r['semaforo_etapa_formulacion'];
-    $nivelCreador = $semaforoRolNivel[dbNormRol($r['creado_por_rol'] ?? '')] ?? 0;
-    if ($r['solicitud'] === 1 && $etapa < $nivelCreador) $etapa = $nivelCreador;
-    $r['etapa'] = $r['publicado'] ? 4 : $etapa;
+    $r['meta']  = dbNum($r['meta_programada']);
+    $r['ejec']  = dbNum($r['meta_ejecutada']);
+    $av = dbNum($r['porcentaje_avance']);
+    $r['pct']   = $av === null ? null : min(max($av, 0), 100);
+    // Reportado = seguimiento aprobado por la Oficina de Planeación; en revisión = ya solicitado pero sin la aprobación final
+    $r['aprobado']  = (int)$r['estado_seguimiento'] === 2;
+    $r['solicitud'] = (int)$r['solicitud_estado_seguimiento'];
+    $r['revision']  = !$r['aprobado'] && $r['solicitud'] === 1;
+    $r['etapa']     = $r['aprobado'] ? 4 : (int)$r['semaforo_etapa_seguimiento'];
     $idsVisibles[(int)$r['id']] = $r;
 }
 unset($r);
 
-$filas = $linea === '' ? $rows : array_values(array_filter($rows, fn($r) => $r['lcod'] === $linea));
-$pubs  = array_values(array_filter($filas, fn($r) => $r['publicado']));
+$filas     = $linea === '' ? $rows : array_values(array_filter($rows, fn($r) => $r['lcod'] === $linea));
+$aprobados = array_values(array_filter($filas, fn($r) => $r['aprobado']));
+$nMetas    = count($filas);
+$nAprob    = count($aprobados);
+$nRevision = count(array_filter($filas, fn($r) => $r['revision']));
 
-// Avance ponderado (sin reporte cuenta como 0; si no hay ponderaciones, promedio simple)
-function dbPonderado(array $lista) {
-    $pub = array_filter($lista, fn($r) => $r['publicado'] && $r['esp'] !== null);
-    if (!$pub) return null;
-    $W = array_sum(array_map(fn($r) => $r['peso'], $pub));
-    if ($W > 0) {
-        return array_sum(array_map(fn($r) => $r['peso'] * ($r['pct'] ?? 0), $pub)) / $W;
+// Avance ponderado como el informe (pesos de Configuraciones por línea, motor y proyecto): solo metas aprobadas.
+//  · aprobado: cuenta el avance de los seguimientos aprobados, los demás 0
+//  · con revisión: suma además lo registrado en los seguimientos en revisión (dato provisional)
+//  · esperado: lo que debería llevar cada indicador con el trimestre vigente
+$avance = $avanceRev = null; $esperado = 0;
+$infPorLinea = ['apr' => [], 'rev' => [], 'esp' => []];
+if ($pdo && $plan && $rows) {
+    require_once __DIR__ . '/../../modelo/FORDE144Model.php';
+    $modeloInforme = new FORDE144Model();
+    $base = ['soloAprobadas' => true];
+    if (!$veTodo) $base['ids'] = array_keys($idsVisibles);
+    $pa = fn($r) => dbNum($r['porcentaje_avance']) ?? 0;
+    $informes = [
+        'apr' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => (int)$r['estado_seguimiento'] === 2 ? $pa($r) : 0]),
+        'rev' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => ((int)$r['estado_seguimiento'] === 2 || (int)$r['solicitud_estado_seguimiento'] === 1) ? $pa($r) : 0]),
+        'esp' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => dbEsperadoFrac($r, $trimVigente) * 100]),
+    ];
+    foreach ($informes as $k => $inf) {
+        foreach ($inf['lineas'] ?? [] as $l) $infPorLinea[$k][(string)$l['codigo']] = (float)$l['cumplimiento'];
     }
-    return array_sum(array_map(fn($r) => $r['pct'] ?? 0, $pub)) / count($pub);
+    $total = function ($k) use ($informes, $linea, $infPorLinea) {
+        if ($linea === '') return isset($informes[$k]['global_cumplimiento']) ? (float)$informes[$k]['global_cumplimiento'] : null;
+        return $infPorLinea[$k][$linea] ?? null;
+    };
+    $avance    = $total('apr');
+    $avanceRev = $total('rev');
+    $esperado  = (int)round($total('esp') ?? 0);
 }
-$avance = dbPonderado($filas);
-
-// Avance esperado: lo que debería llevar cada indicador con el trimestre vigente, ponderado igual que el avance
-function dbEsperado(array $lista) {
-    $pub = array_filter($lista, fn($r) => $r['publicado'] && $r['esp'] !== null);
-    if (!$pub) return 0;
-    $W = array_sum(array_map(fn($r) => $r['peso'], $pub));
-    if ($W > 0) return array_sum(array_map(fn($r) => $r['peso'] * $r['esp'], $pub)) / $W * 100;
-    return array_sum(array_map(fn($r) => $r['esp'], $pub)) / count($pub) * 100;
-}
-
-// Avance esperado según el trimestre vigente
-$esperado = (int)round(dbEsperado($filas));
 
 // Cierre del formulario
 $cierreVal = '—'; $cierreUnidad = ''; $cierreNota = 'Formulario de tiempo libre';
@@ -358,40 +357,39 @@ if ($plan && $plan['tipo_tiempo'] === 'rango' && !empty($plan['fecha_fin'])) {
     }
 }
 
-$conReporte = count(array_filter($pubs, fn($r) => $r['pct'] !== null));
-$enMeta     = count(array_filter($pubs, fn($r) => $r['pct'] !== null && $r['pct'] >= 80));
+$enMeta = count(array_filter($aprobados, fn($r) => $r['pct'] !== null && $r['pct'] >= 80));
 
-// Avance por línea
+// Avance por línea (mismo cálculo del informe)
 $porLinea = [];
 foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
     $porLinea[] = [
         'cod'    => $cod,
         'nombre' => $lineas[$cod],
-        'pct'    => dbPonderado(array_filter($rows, fn($r) => $r['lcod'] === $cod)),
-        'esp'    => (int)round(dbEsperado(array_filter($rows, fn($r) => $r['lcod'] === $cod))),
+        'pct'    => $infPorLinea['apr'][(string)$cod] ?? null,
+        'rev'    => $infPorLinea['rev'][(string)$cod] ?? null,
+        'esp'    => (int)round($infPorLinea['esp'][(string)$cod] ?? 0),
     ];
 }
 
-// Flujo de aprobación (C = en construcción o rechazado; G/L/V = aprobado hasta esa etapa; P = Planeación o publicado)
+// Flujo de aprobación del seguimiento (C = en construcción o devuelto; G/L/V = aprobado hasta esa etapa; P = aprobado por Planeación)
 $flujo = ['C' => 0, 'G' => 0, 'L' => 0, 'V' => 0, 'P' => 0];
 foreach ($filas as $r) {
-    if ($r['publicado'] || $r['etapa'] >= 4) { $flujo['P']++; continue; }
+    if ($r['aprobado']) { $flujo['P']++; continue; }
     if ($r['solicitud'] !== 1 || $r['etapa'] === 0) { $flujo['C']++; continue; }
-    $flujo[['', 'G', 'L', 'V'][$r['etapa']]]++;
+    $flujo[['', 'G', 'L', 'V', 'V'][min(4, $r['etapa'])]]++;
 }
 $flujoMax = max(1, max($flujo));
 $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
 
-// Avance de indicadores: publicados con reporte, mayor avance primero
-$riesgo = array_values(array_filter($pubs, fn($r) => $r['pct'] !== null));
-usort($riesgo, fn($a, $b) => $b['pct'] <=> $a['pct']);
-$riesgo = array_slice($riesgo, 0, 6);
-$sinReporte = count($pubs) - $conReporte;
+// Avance de indicadores: seguimientos aprobados y en revisión con avance; primero los aprobados y mayor avance
+$riesgo = array_values(array_filter($filas, fn($r) => ($r['aprobado'] || $r['revision']) && $r['pct'] !== null));
+usort($riesgo, fn($a, $b) => ($b['aprobado'] <=> $a['aprobado']) ?: ($b['pct'] <=> $a['pct']));
+$riesgo = array_slice($riesgo, 0, 8);
 
-// Mi bandeja
+// Mi bandeja: seguimientos que esperan tu aprobación
 $bandeja = [];
 foreach ($filas as $r) {
-    if ($r['publicado']) continue;
+    if ($r['aprobado']) continue;
     $item = null;
     if ($miNivel >= 2 && $r['solicitud'] === 1 && $r['etapa'] === $miNivel - 1
         && ($veTodo || $miNivel === 4 || dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre))) {
@@ -412,22 +410,6 @@ usort($bandeja, fn($a, $b) => $b['dias'] <=> $a['dias']);
 $bandejaTotal = count($bandeja);
 $bandeja = array_slice($bandeja, 0, 5);
 $rolEtiqueta = $miNivel ? ($etapaNombre[$miNivel] ?? $urol) : ($veTodo ? 'Administrador' : ucfirst($urol));
-
-// Ponderación por proyecto (suma de ponderacion_actividades por L-M-P, debe dar 100)
-$pondProy = [];
-foreach ($filas as $r) {
-    $k = $r['lmp'];
-    $pondProy[$k] = ($pondProy[$k] ?? 0) + $r['peso'];
-}
-$pondLista = [];
-foreach ($pondProy as $k => $v) {
-    $estado = abs($v - 100) < 0.01 ? 'ok' : ($v > 100 ? 'bad' : 'warn');
-    $pondLista[] = ['k' => $k, 'v' => $v, 'estado' => $estado];
-}
-// Primero los que tienen problema
-usort($pondLista, fn($a, $b) => ($a['estado'] === 'ok') <=> ($b['estado'] === 'ok') ?: strcmp($a['k'], $b['k']));
-$pondProblemas = count(array_filter($pondLista, fn($p) => $p['estado'] !== 'ok'));
-$pondLista = array_slice($pondLista, 0, 8);
 
 // Actividad: solo de registros visibles y de la línea filtrada
 $actividad = [];
@@ -458,20 +440,20 @@ $fechaLarga = ucfirst($dias[(int)date('w')]) . ', ' . (int)date('j') . ' de ' . 
 function dbPuedeAprobar(array $r, $uid, $rolNorm) {
     $rolesEtapa = [1 => 'gestor de metas', 2 => 'lider de meta', 3 => 'responsable de linea', 4 => 'sub administrador'];
     $siguiente = (int)$r['etapa'] + 1;
-    if ($r['publicado'] || $r['solicitud'] !== 1 || $siguiente < 1 || $siguiente > 4) return false;
+    if ($r['aprobado'] || $r['solicitud'] !== 1 || $siguiente < 1 || $siguiente > 4) return false;
     return $uid === 1
         || $rolNorm === $rolesEtapa[$siguiente]
         || ($siguiente === 4 && in_array($rolNorm, ['administrador', 'sub administrador'], true));
 }
 
 // Enlace al indicador dentro del Módulo 144 (lo abre en su pestaña y lo resalta)
-function dbVerUrl($moduloUrl, $id, $modulo = 'formulacion') {
+function dbVerUrl($moduloUrl, $id, $modulo = 'seguimiento') {
     return $moduloUrl . (strpos($moduloUrl, '?') === false ? '?' : '&') . http_build_query(['modulo' => $modulo, 'ver' => (int)$id]);
 }
 
 // URL con filtros
 function dbUrl($basePath, array $cambios) {
-    $q = array_merge(['f' => $_GET['f'] ?? null, 's' => $_GET['s'] ?? null, 'l' => $_GET['l'] ?? null], $cambios);
+    $q = array_merge(['f' => $_GET['f'] ?? null, 'l' => $_GET['l'] ?? null], $cambios);
     $q = array_filter($q, fn($v) => $v !== null && $v !== '');
     return $basePath . '/dashboard' . ($q ? '?' . http_build_query($q) : '');
 }
@@ -577,6 +559,7 @@ ob_start();
 .pa-code { flex: none; font-size: 12px; font-weight: 700; color: var(--pa-blue-ink); background: rgba(0,122,255,.10); padding: 3px 7px; border-radius: 6px; }
 .pa-track { position: relative; height: 10px; border-radius: 999px; background: var(--pa-track); }
 .pa-track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; }
+.pa-track .fill.rev { background: #99C8FF; }
 .pa-track .goal { position: absolute; top: -5px; bottom: -5px; width: 2px; border-radius: 1px; background: var(--pa-text); opacity: .5; }
 .pa-line .pct { text-align: right; font-size: 15px; font-weight: 600; }
 .pa-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--pa-sub); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--pa-sep-soft); }
@@ -770,11 +753,6 @@ require_once __DIR__ . '/../complementos/header.php';
                 <?php endforeach; ?>
             </select>
             <?php endif; ?>
-            <nav class="pa-seg" aria-label="Semestre">
-                <?php foreach ([1, 2] as $s): ?>
-                <a href="<?php echo htmlspecialchars(dbUrl($basePath, ['s' => $s])); ?>" class="<?php echo $sem === $s ? 'on' : ''; ?>" <?php echo $sem === $s ? 'aria-current="true"' : ''; ?>>Semestre <?php echo $s; ?></a>
-                <?php endforeach; ?>
-            </nav>
             <?php if ($veTodo && $plan): ?>
             <details class="pa-conf">
                 <summary class="pa-select" title="Configuración del tablero">Trimestre vigente: T<?php echo $trimVigente ?: '—'; ?><?php echo $trimManual ? ' · manual' : ' · automático'; ?></summary>
@@ -815,39 +793,42 @@ require_once __DIR__ . '/../complementos/header.php';
         <div class="pa-card pa-kpi hero">
             <?php
                 $C = 289.03;
-                $off = $C * (1 - (($avance ?? 0) / 100));
+                $off    = $C * (1 - (($avance ?? 0) / 100));
+                $offRev = $C * (1 - (($avanceRev ?? 0) / 100));
                 $offEsp = $C * (1 - $esperado / 100) + 1;
             ?>
             <svg width="112" height="112" viewBox="0 0 112 112" aria-hidden="true" style="flex:none">
                 <circle cx="56" cy="56" r="46" fill="none" stroke="#EEEEF2" stroke-width="12"/>
+                <circle cx="56" cy="56" r="46" fill="none" stroke="#99C8FF" stroke-width="12" stroke-linecap="round" stroke-dasharray="<?php echo $C; ?>" stroke-dashoffset="<?php echo round($offRev, 2); ?>" transform="rotate(-90 56 56)"/>
                 <circle cx="56" cy="56" r="46" fill="none" stroke="#007AFF" stroke-width="12" stroke-linecap="round" stroke-dasharray="<?php echo $C; ?>" stroke-dashoffset="<?php echo round($off, 2); ?>" transform="rotate(-90 56 56)"/>
                 <circle cx="56" cy="56" r="46" fill="none" stroke="#1D1D1F" stroke-width="12" stroke-dasharray="2 <?php echo $C - 2; ?>" stroke-dashoffset="<?php echo round($offEsp, 2); ?>" transform="rotate(-90 56 56)" opacity=".55"/>
             </svg>
             <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                <span class="lbl">Avance ponderado · S<?php echo $sem; ?></span>
+                <span class="lbl">Avance ponderado</span>
                 <span class="val num"><?php echo $avance === null ? '—' : dbFmt($avance); ?><small> %</small></span>
                 <span class="note"><?php echo $trimVigente ? 'Esperado al T' . $trimVigente . ($trimManual ? ' (manual)' : ' vencido') . ': ' . $esperado . ' %' : 'Aún no vence ningún trimestre'; ?></span>
+                <span class="note">Con lo registrado en revisión: <b class="num"><?php echo $avanceRev === null ? '—' : dbFmt($avanceRev) . ' %'; ?></b></span>
                 <span class="pa-pill" style="margin-top:6px;background:<?php echo $TONO[$tonoAvance]['tint']; ?>;color:<?php echo $TONO[$tonoAvance]['ink']; ?>">
-                    <?php echo $avance === null ? 'Sin indicadores publicados' : ($avance >= $esperado ? 'Por encima de lo esperado' : 'Avance en curso'); ?>
+                    <?php echo $avance === null ? 'Sin metas aprobadas' : ($avance >= $esperado ? 'Por encima de lo esperado' : 'Avance en curso'); ?>
                 </span>
             </div>
         </div>
-        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=publicados'); ?>" title="Ver los publicados en el Módulo 144">
-            <span class="lbl">Indicadores publicados</span>
-            <span class="val num"><?php echo count($pubs); ?><small> / <?php echo count($filas); ?></small></span>
-            <span class="note"><?php echo count($filas) - count($pubs); ?> en borrador</span>
-            <span class="go">Ver publicados →</span>
+        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=publicados'); ?>" title="Ver las metas aprobadas en el Módulo 144">
+            <span class="lbl">Metas aprobadas</span>
+            <span class="val num"><?php echo $nMetas; ?></span>
+            <span class="note">aprobadas por la Oficina de Planeación</span>
+            <span class="go">Ver metas →</span>
         </a>
-        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=borradores'); ?>" title="Ir al seguimiento en el Módulo 144">
-            <span class="lbl">Con seguimiento S<?php echo $sem; ?></span>
-            <span class="val num"><?php echo $conReporte; ?><small> / <?php echo count($pubs); ?></small></span>
-            <span class="note"><?php echo $sinReporte; ?> sin reporte</span>
+        <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=publicados'); ?>" title="Ir al seguimiento en el Módulo 144">
+            <span class="lbl">Reportados</span>
+            <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nMetas; ?></small></span>
+            <span class="note">seguimiento aprobado · <?php echo $nRevision; ?> en revisión</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
         <a class="pa-card pa-kpi" href="#atencion" title="Ver el avance de los indicadores">
             <span class="lbl">En meta</span>
             <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
-            <span class="note">80 % o más de la meta</span>
+            <span class="note">reportados con 80 % o más de la meta</span>
             <span class="go">Ver detalle →</span>
         </a>
         <div class="pa-card pa-kpi">
@@ -871,24 +852,26 @@ require_once __DIR__ . '/../complementos/header.php';
                    href="<?php echo htmlspecialchars(dbUrl($basePath, ['l' => $linea === (string)$pl['cod'] ? null : $pl['cod']])); ?>"
                    title="<?php echo $linea === (string)$pl['cod'] ? 'Quitar filtro de línea' : 'Filtrar el tablero por esta línea'; ?>">
                     <div class="nm"><span class="pa-code"><?php echo htmlspecialchars($pl['cod']); ?></span><span><?php echo htmlspecialchars($pl['nombre']); ?></span></div>
-                    <div class="pa-track" role="img" aria-label="<?php echo htmlspecialchars($pl['nombre']) . ': ' . ($pl['pct'] === null ? 'sin publicados' : dbFmt($pl['pct']) . ' %'); ?>">
+                    <div class="pa-track" role="img" aria-label="<?php echo htmlspecialchars($pl['nombre']) . ': ' . ($pl['pct'] === null ? 'sin avance' : dbFmt($pl['pct']) . ' %'); ?>">
+                        <div class="fill rev" style="width:<?php echo round(max($pl['rev'] ?? 0, $pl['pct'] ?? 0), 1); ?>%"></div>
                         <div class="fill" style="width:<?php echo round($pl['pct'] ?? 0, 1); ?>%;background:<?php echo $t['bar']; ?>"></div>
                         <div class="goal" style="left:calc(<?php echo (int)$pl['esp']; ?>% - 1px)"></div>
                     </div>
                     <span class="pct num" style="color:<?php echo $t['ink']; ?>"><?php echo $pl['pct'] === null ? '—' : dbFmt($pl['pct']) . ' %'; ?></span>
                 </a>
                 <?php endforeach; ?>
-                <?php if (!$porLinea): ?><div class="pa-empty-box">No hay indicadores en este plan.</div><?php endif; ?>
+                <?php if (!$porLinea): ?><div class="pa-empty-box">No hay metas aprobadas en este plan.</div><?php endif; ?>
             </div>
             <div class="pa-legend">
                 <span><i style="background:#34C759"></i>80 % o más</span>
-                <span><i style="background:#007AFF"></i>En progreso</span>
+                <span><i style="background:#007AFF"></i>Aprobado, en progreso</span>
+                <span><i style="background:#99C8FF"></i>Registrado en revisión</span>
                 <span><i style="width:2px;height:12px;background:#1D1D1F;opacity:.5"></i>Avance esperado al trimestre vigente</span>
             </div>
         </section>
 
         <section class="pa-card" style="flex:5 1 340px;display:flex;flex-direction:column">
-            <h2>Flujo de aprobación</h2>
+            <h2>Flujo de aprobación del seguimiento</h2>
             <div class="pa-flow">
                 <?php
                 $etapasFlujo = [
@@ -896,10 +879,10 @@ require_once __DIR__ . '/../complementos/header.php';
                     'G' => ['Aprobado por Gestor de Metas',          'rgba(0,122,255,.12)',  '#0066CC', '#5AC8FA'],
                     'L' => ['Aprobado por Líder de Metas',           'rgba(0,122,255,.12)',  '#0066CC', '#007AFF'],
                     'V' => ['Aprobado por Vicerrectoría',            'rgba(88,86,214,.14)',  '#4A48C8', '#5856D6'],
-                    'P' => ['Oficina de Planeación · publicado',     'rgba(52,199,89,.16)',  '#248A3D', '#34C759'],
+                    'P' => ['Oficina de Planeación · reportado',     'rgba(52,199,89,.16)',  '#248A3D', '#34C759'],
                 ];
                 foreach ($etapasFlujo as $k => [$nom, $tint, $ink, $bar]): ?>
-                <a class="pa-stage" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=' . ($k === 'P' ? 'publicados' : 'borradores')); ?>" title="Ver en el Módulo 144">
+                <a class="pa-stage" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=' . ($k === 'P' ? 'publicados' : 'borradores')); ?>" title="Ver en el Módulo 144">
                     <span class="dot" style="background:<?php echo $tint; ?>;color:<?php echo $ink; ?>"><?php echo $k; ?></span>
                     <div><span class="nm"><?php echo $nom; ?></span><div class="bar"><span style="width:<?php echo round($flujo[$k] / $flujoMax * 100); ?>%;background:<?php echo $bar; ?>"></span></div></div>
                     <span class="n num"><?php echo $flujo[$k]; ?></span>
@@ -916,10 +899,10 @@ require_once __DIR__ . '/../complementos/header.php';
     <section class="pa-card pa-table-card" id="atencion">
         <div class="pa-card-head">
             <h2>Avance de indicadores</h2>
-            <span class="pa-note">Publicados con seguimiento de S<?php echo $sem; ?></span>
+            <span class="pa-note">Seguimientos aprobados y en revisión</span>
         </div>
         <?php if (!$riesgo): ?>
-        <div class="pa-empty">Todavía no hay indicadores publicados con seguimiento del semestre <?php echo $sem; ?>.</div>
+        <div class="pa-empty">Todavía no hay seguimientos aprobados ni en revisión.</div>
         <?php else: ?>
         <div class="pa-scroll">
             <div class="pa-grid">
@@ -933,7 +916,7 @@ require_once __DIR__ . '/../complementos/header.php';
                     <span class="r num" data-l="Meta"><?php echo dbFmtNum($r['meta']); ?></span>
                     <span class="r num" data-l="Ejecutado"><?php echo dbFmtNum($r['ejec']); ?></span>
                     <span class="r num" data-l="Avance" style="font-weight:700;color:<?php echo $t['ink']; ?>"><?php echo dbFmt($r['pct'], 0); ?> %</span>
-                    <span class="pa-pill" style="background:<?php echo $t['tint']; ?>;color:<?php echo $t['ink']; ?>"><i class="dot" style="background:<?php echo $t['bar']; ?>"></i><?php echo $t['label']; ?></span>
+                    <span class="pa-pill" style="background:<?php echo $t['tint']; ?>;color:<?php echo $t['ink']; ?>"><i class="dot" style="background:<?php echo $t['bar']; ?>"></i><?php echo $r['aprobado'] ? $t['label'] : 'En revisión'; ?></span>
                     <span class="pa-steps" aria-label="Aprobado en <?php echo $r['etapa']; ?> de 4 etapas">
                         <?php foreach (['G', 'L', 'V', 'P'] as $i => $k): ?>
                         <span class="<?php echo $r['etapa'] > $i ? 'on' : ''; ?>" title="<?php echo $etapaNombre[$i + 1]; ?>"><?php echo $k; ?></span>
@@ -948,7 +931,7 @@ require_once __DIR__ . '/../complementos/header.php';
 
     <?php endif; ?>
 
-    <!-- ── Bandeja, ponderación, actividad, novedades ── -->
+    <!-- ── Bandeja, actividad, novedades ── -->
     <div class="pa-row">
         <?php if ($plan): ?>
         <section class="pa-card pa-col">
@@ -979,27 +962,9 @@ require_once __DIR__ . '/../complementos/header.php';
         </section>
 
         <section class="pa-card pa-col">
-            <div class="pa-card-head">
-                <h2>Ponderación por proyecto</h2>
-                <span class="pa-note"><?php echo $pondProblemas ? $pondProblemas . ' en ajuste' : 'Todas suman 100'; ?></span>
-            </div>
-            <div class="pa-weights">
-                <?php foreach ($pondLista as $p):
-                    $t = $TONO[$p['estado']]; ?>
-                <div class="pa-w">
-                    <div class="top"><span class="k"><?php echo htmlspecialchars($p['k']); ?></span><span class="v num" style="color:<?php echo $t['ink']; ?>"><?php echo dbFmtNum($p['v']); ?></span></div>
-                    <div class="bar"><span style="width:<?php echo min(100, round($p['v'])); ?>%;background:<?php echo $t['bar']; ?>"></span></div>
-                    <span class="lbl" style="color:<?php echo $t['ink']; ?>"><?php echo $p['estado'] === 'ok' ? 'Completo' : 'En ajuste · suma ' . dbFmtNum($p['v']) . ' de 100'; ?></span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-            <?php if (!$pondLista): ?><div class="pa-empty-box">Sin proyectos registrados.</div><?php endif; ?>
-        </section>
-
-        <section class="pa-card pa-col">
             <h2>Actividad reciente</h2>
             <?php if (!$actividad): ?>
-            <div class="pa-empty-box">Aún no hay aprobaciones ni rechazos en este plan.</div>
+            <div class="pa-empty-box">Aún no hay aprobaciones ni rechazos en el seguimiento de este plan.</div>
             <?php else: ?>
             <ul class="pa-feed">
                 <?php foreach ($actividad as $a):
@@ -1103,7 +1068,7 @@ function dbAprobar(boton, id, etapa) {
         confirmButtonText: 'Sí, aprobar',
         cancelButtonText: 'Cancelar'
     }).then(function (r) {
-        if (r.isConfirmed) dbEnviarSemaforo('avanzarSemaforo', { modulo: 'formulacion', id: id, etapa_actual: etapa }, boton);
+        if (r.isConfirmed) dbEnviarSemaforo('avanzarSemaforo', { modulo: 'seguimiento', id: id, etapa_actual: etapa }, boton);
     });
 }
 
@@ -1120,7 +1085,7 @@ function dbRechazar(boton, id, etapa) {
         confirmButtonText: 'Sí, rechazar',
         cancelButtonText: 'Cancelar'
     }).then(function (r) {
-        if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'formulacion', id: id, etapa_actual: etapa, motivo: r.value.trim() }, boton);
+        if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'seguimiento', id: id, etapa_actual: etapa, motivo: r.value.trim() }, boton);
     });
 }
 
