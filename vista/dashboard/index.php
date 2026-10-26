@@ -381,11 +381,6 @@ foreach ($filas as $r) {
 $flujoMax = max(1, max($flujo));
 $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
 
-// Avance de indicadores: seguimientos aprobados y en revisión con avance; primero los aprobados y mayor avance
-$riesgo = array_values(array_filter($filas, fn($r) => ($r['aprobado'] || $r['revision']) && $r['pct'] !== null));
-usort($riesgo, fn($a, $b) => ($b['aprobado'] <=> $a['aprobado']) ?: ($b['pct'] <=> $a['pct']));
-$riesgo = array_slice($riesgo, 0, 8);
-
 // Mi bandeja: seguimientos que esperan tu aprobación
 $bandeja = [];
 foreach ($filas as $r) {
@@ -825,12 +820,11 @@ require_once __DIR__ . '/../complementos/header.php';
             <span class="note">seguimiento aprobado · <?php echo $nRevision; ?> en revisión</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
-        <a class="pa-card pa-kpi" href="#atencion" title="Ver el avance de los indicadores">
+        <div class="pa-card pa-kpi">
             <span class="lbl">En meta</span>
             <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
             <span class="note">reportados con 80 % o más de la meta</span>
-            <span class="go">Ver detalle →</span>
-        </a>
+        </div>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
             <span class="val num"><?php echo $cierreVal; ?><small><?php echo $cierreUnidad; ?></small></span>
@@ -894,40 +888,6 @@ require_once __DIR__ . '/../complementos/header.php';
             </div>
         </section>
     </div>
-
-    <!-- ── Avance de indicadores ── -->
-    <section class="pa-card pa-table-card" id="atencion">
-        <div class="pa-card-head">
-            <h2>Avance de indicadores</h2>
-            <span class="pa-note">Seguimientos aprobados y en revisión</span>
-        </div>
-        <?php if (!$riesgo): ?>
-        <div class="pa-empty">Todavía no hay seguimientos aprobados ni en revisión.</div>
-        <?php else: ?>
-        <div class="pa-scroll">
-            <div class="pa-grid">
-                <div class="pa-tr th"><span>Indicador</span><span>L · M · P</span><span class="r">Meta</span><span class="r">Ejecutado</span><span class="r">Avance</span><span>Estado</span><span>Aprobación</span></div>
-                <?php foreach ($riesgo as $r):
-                    $t = $TONO[dbTono($r['pct'])]; ?>
-                <div class="pa-tr">
-                    <a class="f" href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $r['id'])); ?>" title="Abrir en el Módulo 144"><?php echo htmlspecialchars($r['texto']); ?>
-                        <small><?php echo htmlspecialchars(($r['responsable_formulacion'] ?: 'Sin dependencia') . ' · ' . ($r['linea_estrategica'] ?: 'Sin línea')); ?></small></a>
-                    <span class="pa-lmp"><?php echo htmlspecialchars($r['lmp']); ?></span>
-                    <span class="r num" data-l="Meta"><?php echo dbFmtNum($r['meta']); ?></span>
-                    <span class="r num" data-l="Ejecutado"><?php echo dbFmtNum($r['ejec']); ?></span>
-                    <span class="r num" data-l="Avance" style="font-weight:700;color:<?php echo $t['ink']; ?>"><?php echo dbFmt($r['pct'], 0); ?> %</span>
-                    <span class="pa-pill" style="background:<?php echo $t['tint']; ?>;color:<?php echo $t['ink']; ?>"><i class="dot" style="background:<?php echo $t['bar']; ?>"></i><?php echo $r['aprobado'] ? $t['label'] : 'En revisión'; ?></span>
-                    <span class="pa-steps" aria-label="Aprobado en <?php echo $r['etapa']; ?> de 4 etapas">
-                        <?php foreach (['G', 'L', 'V', 'P'] as $i => $k): ?>
-                        <span class="<?php echo $r['etapa'] > $i ? 'on' : ''; ?>" title="<?php echo $etapaNombre[$i + 1]; ?>"><?php echo $k; ?></span>
-                        <?php endforeach; ?>
-                    </span>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-    </section>
 
     <?php endif; ?>
 
