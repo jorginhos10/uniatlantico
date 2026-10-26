@@ -163,15 +163,9 @@ tr:last-child td{border-bottom:0}
 .kpi-btn{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
 .kpi-btn:hover{border-color:var(--blue);box-shadow:0 2px 10px rgba(20,49,99,.12)}
 .kpi-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.dlg{border:0;border-radius:16px;padding:0;width:min(1180px,calc(100vw - 32px));max-height:calc(100vh - 32px);color:var(--fg);background:var(--panel);box-shadow:0 20px 60px rgba(13,33,71,.35)}
-.dlg::backdrop{background:rgba(13,33,71,.55)}
-.dlg[open]{display:flex;flex-direction:column}
-.dlg-h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px 20px;background:var(--navy);color:#fff}
-.dlg-h h2{font-size:18px}.dlg-h p{opacity:.85;font-size:13px;margin-top:2px}
-.dlg-x{border:0;background:none;color:#fff;font-size:28px;line-height:1;cursor:pointer;padding:0 4px}
-.dlg-ch{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:12px 20px}
-.dlg-ch input{margin-left:auto;min-width:220px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;font:inherit}
-.dlg-t{margin:0 20px 20px;overflow:auto;min-height:0}
+.kpi-btn[aria-pressed="true"]{border-color:var(--orange);box-shadow:0 0 0 2px rgba(216,88,25,.25)}
+.filtro-rev{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--amber-soft);color:var(--amber-fg);border:1px solid #f1d58f;border-radius:12px;padding:10px 16px;font-size:13px}
+.filtro-rev button{border:0;background:var(--amber-fg);color:#fff;border-radius:8px;padding:6px 12px;font:inherit;font-weight:700;cursor:pointer}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px;border-bottom:2px solid var(--line)}
 .tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
 .tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
@@ -206,48 +200,13 @@ tr:last-child td{border-bottom:0}
 
     <section class="kpis" aria-label="Resumen">
         <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">aprobados por la Oficina de Planeación</div></div>
-        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-haspopup="dialog"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo · ver avances</div></button>
+        <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?></div><div class="s">esperando aprobación en el semáforo · clic para verlos por dependencia</div></button>
     </section>
 
-    <?php
-    // Indicadores en revisión: avances con lo que ya hay en el sistema (desde la primera solicitud, antes de la aprobación final)
-    $enRevision = array_values(array_filter($filas, function ($f) { return $f['estado'] === 'revision'; }));
-    $porEtapa = [];
-    foreach ($enRevision as $f) { $n = $etapas[min(4, $f['etapa'] + 1)] ?? ''; $porEtapa[$n] = ($porEtapa[$n] ?? 0) + 1; }
-    ?>
-    <dialog id="dlgRev" class="dlg" aria-labelledby="dlgRevT">
-        <div class="dlg-h">
-            <div><h2 id="dlgRevT">Indicadores en revisión · <?php echo count($enRevision); ?></h2>
-                <p>Avances registrados hasta ahora. Todavía no tienen la aprobación final de la Oficina de Planeación.</p></div>
-            <button type="button" class="dlg-x" id="cerrarRev" aria-label="Cerrar">×</button>
-        </div>
-        <div class="dlg-ch">
-            <?php foreach ($porEtapa as $nom => $n): ?><span class="chip c-revision"><?php echo $h($nom); ?> · <?php echo $n; ?></span><?php endforeach; ?>
-            <input type="search" id="buscarRev" placeholder="Buscar indicador o dependencia…" aria-label="Buscar en revisión">
-        </div>
-        <div class="tw dlg-t">
-            <?php if ($enRevision): ?>
-            <table>
-                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Responsable</th><th>Semestre 1</th><th>Semestre 2</th><th>Evidencias</th><th>Etapa</th><th>Semáforo</th></tr></thead>
-                <tbody>
-                <?php foreach ($enRevision as $f): $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
-                <tr data-buscar="<?php echo $h(mb_strtolower($f['nombre'] . ' ' . $f['responsable'] . ' ' . $f['lmp'], 'UTF-8')); ?>">
-                    <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
-                    <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
-                    <td><?php echo $h($f['responsable'] ?: '—'); ?></td>
-                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : 'Sin registrar') . '</span>'; ?></td>
-                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . $pc : '<span class="nd">Sin registrar</span>'; ?></td>
-                    <td><span class="ev"><span class="<?php echo $f['ev1'] ? '' : 'z'; ?>">S1 · <?php echo $f['ev1']; ?></span><span class="<?php echo $f['ev2'] ? '' : 'z'; ?>">S2 · <?php echo $f['ev2']; ?></span></span></td>
-                    <td><span class="chip c-revision"><?php echo $h($f['estadoTxt']); ?></span></td>
-                    <td><span class="sem-circ"><?php foreach (['G', 'L', 'V', 'P'] as $i => $letra): ?><i class="<?php echo $i < $f['etapa'] ? 'on' : ''; ?>"><?php echo $letra; ?></i><?php endforeach; ?></span></td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-            <?php else: ?><p class="vacio">No hay indicadores en revisión.</p><?php endif; ?>
-            <p class="vacio" id="sinRev" hidden>Ningún indicador coincide con la búsqueda.</p>
-        </div>
-    </dialog>
+    <div class="filtro-rev" id="filtroRev" hidden>
+        <span>Mostrando solo los indicadores <b>en revisión</b>, con los avances registrados hasta ahora.</span>
+        <button type="button" id="quitarRev">Quitar filtro</button>
+    </div>
 
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
@@ -274,7 +233,7 @@ tr:last-child td{border-bottom:0}
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th></tr></thead>
                 <tbody>
                 <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
-                <tr>
+                <tr data-estado="<?php echo $h($f['estado']); ?>">
                     <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
                     <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
@@ -304,15 +263,24 @@ tr:last-child td{border-bottom:0}
 </div>
 <script>
 (function () {
-    var dlg = document.getElementById('dlgRev');
-    document.getElementById('abrirRev').addEventListener('click', function () { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', ''); });
-    document.getElementById('cerrarRev').addEventListener('click', function () { dlg.close ? dlg.close() : dlg.removeAttribute('open'); });
-    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
-    document.getElementById('buscarRev').addEventListener('input', function () {
-        var t = this.value.trim().toLowerCase(), n = 0;
-        Array.prototype.forEach.call(dlg.querySelectorAll('tbody tr'), function (r) { var ok = !t || r.getAttribute('data-buscar').indexOf(t) !== -1; r.hidden = !ok; if (ok) n++; });
-        document.getElementById('sinRev').hidden = n > 0;
-    });
+    // La tarjeta «En revisión» filtra las listas de abajo (Por dependencia y Facultades): solo ese estado, con los desplegables abiertos
+    var kRev = document.getElementById('abrirRev'), aviso = document.getElementById('filtroRev');
+    function filtrarRevision(on) {
+        kRev.setAttribute('aria-pressed', on ? 'true' : 'false');
+        aviso.hidden = !on;
+        Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
+            var n = 0;
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                var ok = !on || r.getAttribute('data-estado') === 'revision';
+                r.hidden = !ok; if (ok) n++;
+            });
+            d.hidden = on && n === 0;
+            d.open = on && n > 0;
+        });
+        if (on) { var t = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (t) t.click(); }
+    }
+    kRev.addEventListener('click', function () { filtrarRevision(kRev.getAttribute('aria-pressed') !== 'true'); });
+    document.getElementById('quitarRev').addEventListener('click', function () { filtrarRevision(false); });
     var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
     botones.forEach(function (b) {
         b.addEventListener('click', function () {
