@@ -6422,7 +6422,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const quien = (c.apr_usuario ? 'Aprobó ' + c.apr_usuario : '') + (c.apr_fecha ? ' · ' + c.apr_fecha : '');
                 return '<span class="cnx-estado fin" title="' + evalHtmlEscape(quien) + '"><i class="fas fa-check-circle"></i> Meta real <b>' + cnFmt(c.final, cnDatos ? cnDatos.indicador.unidad : '') + '</b></span>' +
                        '<span class="cnx-hint">Ya está en el seguimiento por facultades</span>' +
-                       (esSuper ? '<button type="button" class="cnx-link" data-acc="quitar" ' + attrs + '>Quitar aprobación</button>' : '');
+                       (esSuper ? '<button type="button" class="cnx-link" data-acc="quitar" ' + attrs + '>Desconcertar</button>' : '');
             }
             if (e === 'enviado') {
                 let html = '<span class="cnx-estado env"><i class="fas fa-paper-plane"></i> Enviado al superadministrador</span>';
@@ -6679,6 +6679,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $(document).on('click', '#cnSemestres [data-acc]', function() {
             const btn = $(this);
             const acc = btn.data('acc');
+            if (acc === 'quitar' && !btn.data('confirmado')) {
+                Swal.fire({
+                    title: '¿Desconcertar este valor?',
+                    html: 'Se retira la concertación: el seguimiento de la facultad vuelve al valor que tenía antes y se debe concertar de nuevo.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d9534f',
+                    confirmButtonText: 'Sí, desconcertar',
+                    cancelButtonText: 'Cancelar'
+                }).then(function(r) { if (r.isConfirmed) { btn.data('confirmado', true).trigger('click'); } });
+                return;
+            }
             const fallo = function(m) { $('#cnError').text(m || 'No se pudo guardar').show(); btn.prop('disabled', false); };
             const post = function(ruta, datos) {
                 return $.post(basePath + '/modulo144/' + ruta, $.extend({ formulacion_id: cnIndicadorActual }, datos), null, 'json');

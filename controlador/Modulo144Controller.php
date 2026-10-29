@@ -1535,7 +1535,7 @@ class Modulo144Controller {
             }
         }
         $ok = $this->model->guardarAprobacion($id, $fac, $sem, $aprobar, $final, $_SESSION['usuario_id'] ?? 0);
-        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado: el valor pasó al seguimiento por facultades' : 'Aprobación retirada') : 'No se pudo guardar']);
+        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado: el valor pasó al seguimiento por facultades' : 'Desconcertado: se debe concertar de nuevo') : 'No se pudo guardar']);
     }
 }
 ?>

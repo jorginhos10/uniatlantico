@@ -48,6 +48,10 @@ ob_start();
         font-size: 15px; background: var(--ios-bg); outline: none;
     }
     .snap-form input:focus { border-color: var(--ios-blue); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,.15); }
+    .snap-sel { border: 1.5px solid var(--ios-sep); border-radius: 12px; padding: 10px 12px; font-size: 14px; background: var(--ios-bg); max-width: 220px; }
+    .snap-asig { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 0; }
+    .snap-asig .snap-sel { padding: 6px 8px; font-size: 13px; border-radius: 9px; max-width: 150px; }
+    .snap-tri { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 99px; background: rgba(52,199,89,.14); color: #1E7B34; margin-bottom: 4px; }
     .snap-btn { border: 0; border-radius: 12px; padding: 10px 20px; font-size: 15px; font-weight: 600; background: var(--ios-blue); color: #fff; cursor: pointer; }
     .snap-btn:hover { background: #0066CC; }
     .snap-btn:disabled { opacity: .6; cursor: wait; }
@@ -95,6 +99,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <form method="POST" action="<?php echo $basePath; ?>/snapshots" class="snap-form" id="snapFormCrear">
             <input type="hidden" name="accion" value="crear">
             <input type="text" name="nombre" maxlength="150" placeholder="Nombre (opcional). Ej: Cierre formulación 2026">
+            <?php if (!empty($formularios)): ?>
+            <select name="formulario_id" aria-label="Plan" class="snap-sel">
+                <?php foreach ($formularios as $f): ?><option value="<?php echo (int)$f['id']; ?>"><?php echo htmlspecialchars($f['titulo']); ?></option><?php endforeach; ?>
+            </select>
+            <select name="trimestre" aria-label="Trimestre al que corresponde" class="snap-sel">
+                <option value="0">Sin trimestre</option>
+                <option value="1">Trimestre 1</option><option value="2">Trimestre 2</option><option value="3">Trimestre 3</option><option value="4">Trimestre 4</option>
+            </select>
+            <?php endif; ?>
             <button type="submit" class="snap-btn" id="snapBtnCrear"><i class="fas fa-camera me-1"></i> Tomar snapshot</button>
         </form>
     </div>
@@ -112,6 +125,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <th>Nombre</th>
                         <th>Fecha</th>
                         <th>Creado por</th>
+                        <th>Trimestre</th>
                         <th>Tablas</th>
                         <th>Registros</th>
                         <th>Tamaño</th>
@@ -124,6 +138,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <td class="nombre"><?php echo htmlspecialchars($s['nombre']); ?></td>
                         <td class="sub"><?php echo date('d/m/Y H:i', strtotime($s['creado_en'])); ?></td>
                         <td class="sub"><?php echo htmlspecialchars($s['creado_por_nombre'] ?? '—'); ?></td>
+                        <td>
+                            <?php if (!empty($s['trimestre'])): ?>
+                            <div class="snap-tri">T<?php echo (int)$s['trimestre']; ?> · <?php echo htmlspecialchars($s['formulario_titulo'] ?? ''); ?></div>
+                            <?php endif; ?>
+                            <?php if (!empty($formularios)): ?>
+                            <form method="POST" action="<?php echo $basePath; ?>/snapshots" class="snap-asig">
+                                <input type="hidden" name="accion" value="asignar">
+                                <input type="hidden" name="id" value="<?php echo (int)$s['id']; ?>">
+                                <select name="formulario_id" class="snap-sel" aria-label="Plan">
+                                    <?php foreach ($formularios as $f): ?><option value="<?php echo (int)$f['id']; ?>" <?php echo (int)($s['formulario_id'] ?? 0) === (int)$f['id'] ? 'selected' : ''; ?>><?php echo htmlspecialchars($f['titulo']); ?></option><?php endforeach; ?>
+                                </select>
+                                <select name="trimestre" class="snap-sel" aria-label="Trimestre">
+                                    <option value="0">Sin trimestre</option>
+                                    <?php for ($t = 1; $t <= 4; $t++): ?><option value="<?php echo $t; ?>" <?php echo (int)($s['trimestre'] ?? 0) === $t ? 'selected' : ''; ?>>Trimestre <?php echo $t; ?></option><?php endfor; ?>
+                                </select>
+                                <button type="submit" class="snap-accion descargar">Asignar</button>
+                            </form>
+                            <?php endif; ?>
+                        </td>
                         <td class="num"><?php echo (int)$s['total_tablas']; ?></td>
                         <td class="num"><?php echo number_format((int)$s['total_filas'], 0, ',', '.'); ?></td>
                         <td class="num sub"><?php echo snap_tamano($s['bytes']); ?></td>
