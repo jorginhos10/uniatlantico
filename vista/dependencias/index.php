@@ -138,6 +138,10 @@ ob_start();
     .dep-table tbody tr:hover { background: rgba(255,149,0,.04); }
     .dep-table td { padding: 14px 16px; font-size: 14px; color: var(--ios-label); vertical-align: middle; }
     .badge-activo   { background: rgba(52,199,89,.15);  color: #1a7a3a; border: 1px solid rgba(52,199,89,.3); }
+    .badge-conexion { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-conexion i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .badge-conexion.conectada { background: rgba(52,199,89,.15); color: #1a7a3a; border: 1px solid rgba(52,199,89,.3); }
+    .badge-conexion.sin-conexion { background: rgba(255,59,48,.1); color: #c0392b; border: 1px solid rgba(255,59,48,.25); }
     .badge-inactivo { background: rgba(255,59,48,.1);   color: #c0392b; border: 1px solid rgba(255,59,48,.25); }
     .badge-estado {
         display: inline-flex; align-items: center; gap: 5px;
@@ -380,7 +384,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             html += `<tr>
                 <td><strong style="color:var(--ios-orange);">#${d.id}</strong></td>
                 <td><strong>${escHtml(d.nombre)}</strong></td>
-                <td style="color:var(--ios-label2);font-size:13px;">${d.reporta_a_nombre ? escHtml(d.reporta_a_nombre) : '—'}</td>
+                <td style="font-size:13px;">${d.reporta_a_nombre
+                    ? '<span class="badge-conexion conectada" title="Conectada al organigrama"><i></i>' + escHtml(d.reporta_a_nombre) + '</span>'
+                    : '<span class="badge-conexion sin-conexion" title="Sin dependencia superior: no está conectada al organigrama"><i></i>Sin conexión</span>'}</td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
                 <td style="color:var(--ios-label2);font-size:13px;">${fecha}</td>
                 <td>
