@@ -445,7 +445,7 @@ class FORDE144Model {
 
             $stmtD = $this->db->prepare(
                 "SELECT
-                    COALESCE(fa.nombre, CONCAT('Dependencia #', f.facultad_id)) as dependencia,
+                    COALESCE(NULLIF(TRIM(f.responsable_formulacion), ''), fa.nombre, 'Sin dependencia') as dependencia,
                     COUNT(f.id) as total_indicadores,
                     SUM(CASE WHEN f.estado_seguimiento = 2 THEN 1 ELSE 0 END) as reportados,
                     SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_80,
@@ -453,7 +453,7 @@ class FORDE144Model {
                  FROM formulacion_144 f
                  LEFT JOIN facultades fa ON f.facultad_id = fa.id
                  WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
-                 GROUP BY f.facultad_id, fa.nombre
+                 GROUP BY dependencia
                  ORDER BY cumplimiento DESC"
             );
             $stmtD->execute([':fid' => $formulario_id]);
@@ -474,12 +474,14 @@ class FORDE144Model {
     }
 
     public function getInforme($formulario_id) {
-        $calc = "LEAST(COALESCE(f.porcentaje_avance, 0), 100)";
+        // Mismo criterio que getInformeCompleto: solo indicadores con formulación publicada, y el avance solo cuenta
+        // cuando el seguimiento está aprobado (si no, este informe daba cifras distintas al de la página)
+        $calc = "CASE WHEN f.estado_seguimiento = 2 THEN LEAST(COALESCE(f.porcentaje_avance, 0), 100) ELSE 0 END";
 
         try {
             $stmtG = $this->db->prepare(
                 "SELECT COUNT(f.id) as total, ROUND(AVG($calc),2) as cumplimiento_global
-                 FROM formulacion_144 f WHERE f.formulario_id = :fid"
+                 FROM formulacion_144 f WHERE f.formulario_id = :fid AND f.estado_formulacion = 2"
             );
             $stmtG->execute([':fid' => $formulario_id]);
             $global = $stmtG->fetch();
@@ -492,7 +494,7 @@ class FORDE144Model {
                  FROM formulacion_144 f
                  LEFT JOIN lineas_estrategicas le
                         ON f.linea_estrategica = le.nombre AND le.activo = 1
-                 WHERE f.formulario_id = :fid
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
                  GROUP BY f.linea_estrategica, le.codigo
                  ORDER BY le.codigo ASC, f.linea_estrategica"
             );
@@ -500,14 +502,14 @@ class FORDE144Model {
             $lineas = $stmtL->fetchAll();
 
             $stmtD = $this->db->prepare(
-                "SELECT COALESCE(fa.nombre, CONCAT('Dependencia #', f.facultad_id)) as dependencia,
+                "SELECT COALESCE(NULLIF(TRIM(f.responsable_formulacion), ''), fa.nombre, 'Sin dependencia') as dependencia,
                         COUNT(f.id) as total_indicadores,
                         SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_alto,
                         ROUND(AVG($calc),2) as cumplimiento
                  FROM formulacion_144 f
                  LEFT JOIN facultades fa ON f.facultad_id = fa.id
-                 WHERE f.formulario_id = :fid
-                 GROUP BY f.facultad_id, fa.nombre
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
+                 GROUP BY dependencia
                  ORDER BY cumplimiento DESC"
             );
             $stmtD->execute([':fid' => $formulario_id]);

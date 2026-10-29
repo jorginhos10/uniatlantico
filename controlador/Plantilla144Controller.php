@@ -320,6 +320,15 @@ class Plantilla144Controller {
                 foreach ($errores as $e) $resumen['errores'][] = $pref . $e;
                 continue;
             }
+            // Archivo sin IDs (formato institucional): si el indicador ya existe se actualiza ese, no se crea otro
+            if ($id <= 0) {
+                $existente = $this->buscarExistente($registros, $datos);
+                if ($existente) {
+                    $id = (int)$existente['id'];
+                    $actual = $existente;
+                    if (!$this->puedeEditar($actual)) { $resumen['errores'][] = $pref . "el indicador ya existe (ID {$id}) y no tienes permiso para editarlo."; continue; }
+                }
+            }
             $this->calcularValorAnual($actual, $datos);
 
             // Facultades marcadas con X (o con un número = su distribución)
@@ -349,22 +358,30 @@ class Plantilla144Controller {
 
             if ($id <= 0) {
                 $nombre = $datos['nombre_indicador'] ?: ($datos['formula_medicion'] ?: 'Indicador importado');
+                // Todo o nada: si falla la actualización o la distribución no queda un borrador huérfano
+                $this->model->iniciarTransaccion();
                 $ok = $this->model->crearBorrador('formulacion', (int)$formulario['id'], mb_substr($nombre, 0, 250), (int)($_SESSION['usuario_id'] ?? 1));
                 $nuevoId = $ok ? $this->model->ultimoIdInsertado() : 0;
-                if ($nuevoId <= 0) { $resumen['errores'][] = $pref . 'no se pudo crear el registro.'; continue; }
+                if ($nuevoId <= 0) { $this->model->revertirTransaccion(); $resumen['errores'][] = $pref . 'no se pudo crear el registro.'; continue; }
                 $datos['nombre_borrador'] = mb_substr($nombre, 0, 250);
-                $this->model->actualizar('formulacion', $nuevoId, $datos);
-                if ($distNueva !== null) $this->guardarDistribucion($nuevoId, $distNueva);
+                $okDatos = $this->model->actualizar('formulacion', $nuevoId, $datos);
+                $okDist = $distNueva === null ? true : $this->guardarDistribucion($nuevoId, $distNueva);
+                if (!$okDatos || !$okDist) { $this->model->revertirTransaccion(); $resumen['errores'][] = $pref . 'no se pudo guardar la fila (no se creó nada).'; continue; }
+                $this->model->confirmarTransaccion();
                 $registros[$nuevoId] = ['id' => $nuevoId, 'estado_formulacion' => 0, 'creado_por' => $_SESSION['usuario_id'] ?? 0] + $datos;
                 $resumen['formulacion']['creados']++;
                 $resumen['ids_creados'][] = (int)$nuevoId;
             } else {
                 if ($this->sinCambios($registros[$id], $datos) && !$distCambia) { $resumen['formulacion']['sin_cambios']++; continue; }
-                if ($this->model->actualizar('formulacion', $id, $datos)) {
-                    if ($distCambia) $this->guardarDistribucion($id, $distNueva);
+                $this->model->iniciarTransaccion();
+                $okDatos = $this->model->actualizar('formulacion', $id, $datos);
+                $okDist = !$distCambia || $this->guardarDistribucion($id, $distNueva);
+                if ($okDatos && $okDist) {
+                    $this->model->confirmarTransaccion();
                     $registros[$id] = array_merge($registros[$id], $datos);
                     $resumen['formulacion']['actualizados']++;
                 } else {
+                    $this->model->revertirTransaccion();
                     $resumen['errores'][] = $pref . 'no se pudo guardar.';
                 }
             }
@@ -418,6 +435,10 @@ class Plantilla144Controller {
                 }
             }
             if ($errores) { foreach ($errores as $e) $resumen['errores'][] = $pref . $e; continue; }
+            // El % de avance, el cumplido y la meta anual los lee el informe: se calculan aquí igual que en la pantalla
+            if (isset($datos['semestre1_seguimiento']) || isset($datos['semestre2_seguimiento'])) {
+                $datos += $this->avanceSeguimiento(array_merge($actual, $datos));
+            }
             if ($this->sinCambios($actual, $datos)) { $resumen['seguimiento']['sin_cambios']++; continue; }
             if ($seguimientoCerrado) {
                 $resumen['errores'][] = $pref . "el seguimiento del ID {$id} ya está publicado; sus cambios no se aplicaron.";
@@ -767,12 +788,71 @@ class Plantilla144Controller {
 
     private function guardarDistribucion($id, array $nueva) {
         $actual = $this->distribucionActual($id);
+        $todoOk = true;
         foreach ($nueva as $facId => $valor) {
             $previo = (float)($actual[$facId]['distribucion'] ?? 0);
             if (abs($previo - $valor) <= 0.0001) continue;
             if ($valor <= 0 && !isset($actual[$facId])) continue;
-            $this->model->guardarDistribucionFacultad($id, $facId, $actual[$facId]['observacion'] ?? '', $valor);
+            if (!$this->model->guardarDistribucionFacultad($id, $facId, $actual[$facId]['observacion'] ?? '', $valor)) $todoOk = false;
         }
+        return $todoOk;
+    }
+
+    // Registro ya existente del formulario con la misma clave natural (proyecto + actividad + indicador). Evita que
+    // importar dos veces el mismo archivo (que no trae IDs del sistema) cree cada indicador otra vez.
+    private function buscarExistente(array $registros, array $datos) {
+        $clave = function ($r) {
+            $ind = trim((string)($r['nombre_indicador'] ?? '')) !== '' ? $r['nombre_indicador'] : ($r['formula_medicion'] ?? '');
+            return $this->normalizar($r['proyecto'] ?? '') . '|' . $this->normalizar($r['actividad_proyecto'] ?? '') . '|' . $this->normalizar($ind);
+        };
+        if (trim((string)($datos['proyecto'] ?? '')) === '' || trim((string)($datos['nombre_indicador'] ?? $datos['formula_medicion'] ?? '')) === '') return null;
+        $buscada = $clave($datos);
+        foreach ($registros as $r) {
+            if ((int)($r['estado_formulacion'] ?? 0) === 1) continue; // los cancelados no cuentan
+            if ($clave($r) === $buscada) return $r;
+        }
+        return null;
+    }
+
+    // Meta anual, cumplido y % de avance de un seguimiento: el mismo cálculo que hace la pantalla del seguimiento
+    // (calcularCumplimientoSeguimiento). Se hace aquí para que lo importado por plantilla también llegue a los informes.
+    private function avanceSeguimiento(array $r) {
+        $tipo = $r['tipo_medicion'] ?? '';
+        $lb = $this->numero($r['linea_base_meta'] ?? '');
+        $s1 = $this->numero($r['semestre1_seguimiento'] ?? '');
+        $s2 = $this->numero($r['semestre2_seguimiento'] ?? '');
+        $metaTxt = $this->valorAnual($tipo, $r['linea_base_meta'] ?? '', $r['meta_s1'] ?? '', $r['meta_s2'] ?? '');
+        $meta = $metaTxt === '' ? null : (float)$metaTxt;
+        if ($tipo === 'Límite') $s1 = null;
+
+        $logrado = null;
+        if ($tipo === 'Acumulado') {
+            $logrado = ($s1 === null && $s2 === null) ? 0 : ($lb ?? 0) + ($s1 ?? 0) + ($s2 ?? 0);
+        } elseif ($tipo === 'Nuevo gestionado durante la vigencia') {
+            $logrado = ($s1 ?? 0) + ($s2 ?? 0);
+        } elseif ($tipo === 'Promedio') {
+            $vals = array_filter([$s1, $s2], function ($v) { return $v !== null; });
+            $logrado = $vals ? array_sum($vals) / count($vals) : 0;
+        } elseif ($tipo === 'Último valor reportado') {
+            $logrado = $s2 ?? $s1;
+        } elseif ($tipo === 'Límite') {
+            $logrado = $s2;
+        }
+        $logradoNum = $logrado ?? 0;
+
+        if ($tipo === 'Límite') {
+            // Lo declarado no debe pasar el límite; un 0 es el mejor resultado posible
+            $pct = ($logrado !== null && $meta !== null && $logrado <= $meta) ? 100 : 0;
+        } else {
+            $pct = ($meta !== null && $meta > 0) ? ($logradoNum / $meta) * 100 : 0;
+        }
+        $res = [
+            'meta_ejecutada' => number_format($logradoNum, 2, '.', ''),
+            'porcentaje_avance' => number_format($pct, 2, '.', ''),
+        ];
+        // Sin meta anual no se escribe la columna (un texto vacío en una columna numérica puede fallar)
+        if ($metaTxt !== '') $res['meta_programada'] = $metaTxt;
+        return $res;
     }
 
     private function normalizarEncabezado($texto) {
@@ -815,7 +895,7 @@ class Plantilla144Controller {
     // ¿Las primeras N palabras (sin el número de la estrategia) son las mismas?
     private function mismoInicio($a, $b, $n) {
         $pal = function ($t) use ($n) {
-            $t = preg_replace('/^s*d+s*[.)-]?s*/u', '', $this->normalizar($t));
+            $t = preg_replace('/^\s*\d+\s*[.)-]?\s*/u', '', $this->normalizar($t));
             return array_slice(array_values(array_filter(preg_split('/[^a-z0-9]+/', $t))), 0, $n);
         };
         $x = $pal($a); $y = $pal($b);
@@ -882,8 +962,10 @@ class Plantilla144Controller {
     }
 
     private function normalizar($s) {
-        $s = mb_strtolower(trim((string)$s), 'UTF-8');
-        $s = strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n']);
-        return preg_replace('/\s+/', ' ', $s);
+        $s = (string)$s;
+        // Excel en Mac y algunos textos pegados traen las tildes descompuestas (a + ´) y espacios duros (NBSP)
+        if (class_exists('Normalizer')) { $c = Normalizer::normalize($s, Normalizer::FORM_C); if ($c !== false) $s = $c; }
+        $s = mb_strtolower(trim(preg_replace('/[\s\x{A0}]+/u', ' ', $s)), 'UTF-8');
+        return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n']);
     }
 }

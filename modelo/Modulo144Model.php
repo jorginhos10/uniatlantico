@@ -395,6 +395,7 @@ class Modulo144Model {
                 $res[] = [
                     'id' => (int)$f['id'],
                     'nombre' => (string)$f['nombre'],
+                    'dependencia_principal' => trim((string)$f['cargo']),
                     'rol' => strtr(mb_strtolower(trim((string)$f['rol']), 'UTF-8'), ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']),
                     'dependencias' => array_values(array_unique(array_filter(array_map('trim', array_map('strval', $deps)), 'strlen'))),
                 ];
@@ -406,19 +407,30 @@ class Modulo144Model {
         }
     }
 
-    // [nombre de dependencia en minúsculas => nombre de la dependencia a la que reporta] (organigrama, cargos.reporta_a_id)
+    // Nombre en minúsculas, sin tildes ni ü/ñ y con los espacios (incluido el duro) colapsados: para comparar nombres
+    private function normalizarNombre($s) {
+        $s = (string)$s;
+        if (class_exists('Normalizer')) { $c = Normalizer::normalize($s, Normalizer::FORM_C); if ($c !== false) $s = $c; }
+        $s = mb_strtolower(preg_replace('/[\s\x{A0}]+/u', ' ', $s), 'UTF-8');
+        return trim(strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n']));
+    }
+
+    // [nombre normalizado de la dependencia => nombre normalizado de la dependencia a la que reporta] (cargos.reporta_a_id).
+    // Se calcula una vez por petición: la lista de indicadores lo consulta por cada fila.
+    private $padresDependenciasCache = null;
     private function getPadresDependencias() {
+        if ($this->padresDependenciasCache !== null) return $this->padresDependenciasCache;
+        $map = [];
         try {
-            if ($this->db->query("SHOW COLUMNS FROM cargos LIKE 'reporta_a_id'")->rowCount() === 0) return [];
-            $map = [];
-            foreach ($this->db->query("SELECT c.nombre, p.nombre AS padre FROM cargos c JOIN cargos p ON p.id = c.reporta_a_id")->fetchAll() as $r) {
-                $map[mb_strtolower(trim($r['nombre']), 'UTF-8')] = mb_strtolower(trim($r['padre']), 'UTF-8');
+            if ($this->db->query("SHOW COLUMNS FROM cargos LIKE 'reporta_a_id'")->rowCount() > 0) {
+                foreach ($this->db->query("SELECT c.nombre, p.nombre AS padre FROM cargos c JOIN cargos p ON p.id = c.reporta_a_id")->fetchAll() as $r) {
+                    $map[$this->normalizarNombre($r['nombre'])] = $this->normalizarNombre($r['padre']);
+                }
             }
-            return $map;
         } catch (PDOException $e) {
             error_log('Error getPadresDependencias: ' . $e->getMessage());
-            return [];
         }
+        return $this->padresDependenciasCache = $map;
     }
 
     // Ids de los vicerrectores (rol "responsable de linea") que deben aprobar un indicador según el organigrama de dependencias:
@@ -428,13 +440,16 @@ class Modulo144Model {
     public function idsVicerrectoresDelIndicador(array $usuarios, $responsables, $creadorId) {
         $padres = $this->getPadresDependencias();
         if (!$padres) return null;
+        // "responsable_formulacion" separa las dependencias con ", " pero algunos nombres llevan coma ("Vice de Invest, Ext y
+        // Proy Social"): en vez de partir el texto, se busca cada dependencia conocida dentro de él
+        $lista = ', ' . $this->normalizarNombre($responsables) . ', ';
+        $conocidas = array_unique(array_merge(array_keys($padres), array_values($padres)));
         $dependencias = [];
-        foreach (explode(',', (string)$responsables) as $d) {
-            $d = mb_strtolower(trim($d), 'UTF-8');
-            if ($d !== '') $dependencias[$d] = true;
+        foreach ($conocidas as $nombre) {
+            if ($nombre !== '' && strpos($lista, ', ' . $nombre . ', ') !== false) $dependencias[$nombre] = true;
         }
         foreach ($usuarios as $u) {
-            if ($u['id'] === (int)$creadorId && !empty($u['dependencias'][0])) $dependencias[mb_strtolower($u['dependencias'][0], 'UTF-8')] = true;
+            if ($u['id'] === (int)$creadorId && !empty($u['dependencia_principal'])) $dependencias[$this->normalizarNombre($u['dependencia_principal'])] = true;
         }
         $superiores = [];
         foreach (array_keys($dependencias) as $d) {
@@ -444,7 +459,7 @@ class Modulo144Model {
         foreach ($usuarios as $u) {
             if ($u['rol'] !== 'responsable de linea') continue;
             foreach ($u['dependencias'] as $d) {
-                if (isset($superiores[mb_strtolower($d, 'UTF-8')])) { $vice[] = $u['id']; break; }
+                if (isset($superiores[$this->normalizarNombre($d)])) { $vice[] = $u['id']; break; }
             }
         }
         return $vice ?: null;
@@ -584,6 +599,19 @@ class Modulo144Model {
 
     public function ultimoIdInsertado() {
         return (int)$this->db->lastInsertId();
+    }
+
+    // Transacción para escrituras de varias partes (p. ej. una fila importada: registro + distribución por facultad)
+    public function iniciarTransaccion() {
+        if (!$this->db->inTransaction()) $this->db->beginTransaction();
+    }
+
+    public function confirmarTransaccion() {
+        if ($this->db->inTransaction()) $this->db->commit();
+    }
+
+    public function revertirTransaccion() {
+        if ($this->db->inTransaction()) $this->db->rollBack();
     }
 
     public function getAcumuladoProyecto($formulario_id, $proyecto, $excluir_id) {
@@ -789,18 +817,27 @@ class Modulo144Model {
             } elseif ($estado == 0) {
                 // Devolver a borrador: se reinicia el flujo de aprobación (semáforo y solicitud)
                 // para que el creador pueda editarlo y volver a solicitar aprobación.
+                // En formulación, un seguimiento que quedó cancelado junto con ella vuelve a borrador (si no, al
+                // republicar la formulación el seguimiento seguiría cancelado para siempre).
+                $reviveSeguimiento = $modulo === 'formulacion'
+                    ? ", estado_seguimiento = CASE WHEN estado_seguimiento = 1 THEN 0 ELSE estado_seguimiento END"
+                    : '';
                 $stmt = $this->db->prepare("UPDATE {$tabla}
                                             SET {$campo_estado} = 0,
                                                 {$modulo_config['campo_solicitud']} = 0,
                                                 {$modulo_config['campo_semaforo']} = 0,
-                                                {$modulo_config['campo_semaforo_rechazo']} = 0,
+                                                {$modulo_config['campo_semaforo_rechazo']} = 0{$reviveSeguimiento},
                                                 fecha_actualizacion = NOW()
                                             WHERE id = :id");
                 return $stmt->execute([':id' => $id]);
             } else {
+                // Publicar (2) deja el flujo completo y coherente: solicitado y con las 4 etapas aprobadas
                 $stmt = $this->db->prepare("UPDATE {$tabla}
                                             SET {$campo_estado} = :estado,
                                                 {$campo_fecha} = CASE WHEN :estado = 2 THEN NOW() ELSE {$campo_fecha} END,
+                                                {$modulo_config['campo_solicitud']} = CASE WHEN :estado = 2 THEN 1 ELSE {$modulo_config['campo_solicitud']} END,
+                                                {$modulo_config['campo_semaforo']} = CASE WHEN :estado = 2 THEN 4 ELSE {$modulo_config['campo_semaforo']} END,
+                                                {$modulo_config['campo_semaforo_rechazo']} = CASE WHEN :estado = 2 THEN 0 ELSE {$modulo_config['campo_semaforo_rechazo']} END,
                                                 fecha_actualizacion = NOW() 
                                             WHERE id = :id");
                 return $stmt->execute([
@@ -952,7 +989,9 @@ class Modulo144Model {
                     "UPDATE {$tabla} SET {$campo_solicitud} = :se, {$campo_rechazo} = 0, fecha_actualizacion = NOW() WHERE id = :id"
                 );
             } else {
-                $stmt = $this->db->prepare("UPDATE {$tabla} SET {$campo_solicitud} = :se, fecha_actualizacion = NOW() WHERE id = :id");
+                // Reiniciar la solicitud (0) deja el flujo limpio: sin etapas ya aprobadas ni marca de rechazo
+                $reinicio = (int)$solicitud_estado === 0 ? ", {$campo_semaforo} = 0, {$campo_rechazo} = 0" : '';
+                $stmt = $this->db->prepare("UPDATE {$tabla} SET {$campo_solicitud} = :se{$reinicio}, fecha_actualizacion = NOW() WHERE id = :id");
             }
             return $stmt->execute([':se' => $solicitud_estado, ':id' => $id]);
         } catch (PDOException $e) {
@@ -961,22 +1000,62 @@ class Modulo144Model {
         }
     }
 
-    public function avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual) {
+    // Estado del flujo de aprobación de un registro: estado, solicitud, etapa del semáforo y rol de quien lo creó.
+    // La etapa vigente nunca se toma de lo que mande el navegador: se calcula aquí a partir de estos datos.
+    public function getEstadoFlujo($modulo, $id) {
         try {
-            $tabla = $this->modulos[$modulo]['tabla'];
-            $campo_semaforo = $this->modulos[$modulo]['campo_semaforo'];
-            // Tolerante: avanza si la etapa guardada es MENOR a la nueva (no exige que coincida
-            // exacto con lo que mostraba la pantalla, así se autocorrige cualquier desfase previo).
-            // Si alguien más ya avanzó más allá mientras tanto, no se pisa ese progreso.
+            $c = $this->modulos[$modulo];
             $stmt = $this->db->prepare(
-                "UPDATE {$tabla} SET {$campo_semaforo} = :nueva, fecha_actualizacion = NOW()
-                 WHERE id = :id AND {$campo_semaforo} < :nueva2"
+                "SELECT f.{$c['campo_estado']} AS estado, f.{$c['campo_solicitud']} AS solicitud, f.{$c['campo_semaforo']} AS semaforo,
+                        u.rol AS creado_por_rol
+                 FROM {$c['tabla']} f LEFT JOIN usuarios u ON u.id = f.creado_por
+                 WHERE f.id = :id"
             );
-            $stmt->execute([':nueva' => $etapaNueva, ':id' => $id, ':nueva2' => $etapaNueva]);
-            return $stmt->rowCount() > 0;
+            $stmt->execute([':id' => (int)$id]);
+            return $stmt->fetch() ?: null;
         } catch (PDOException $e) {
-            error_log("Error avanzarSemaforo [{$modulo}]: " . $e->getMessage());
-            return false;
+            error_log("Error getEstadoFlujo [{$modulo}]: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    // Aprueba la etapa $etapaNueva solo si el registro es un borrador solicitado y la etapa vigente (la guardada,
+    // o el nivel de quien lo creó si es mayor) es exactamente la anterior. Todo bajo bloqueo de fila y en una
+    // transacción: la etapa 4 publica en el mismo UPDATE (semáforo, estado y fecha), sin estados intermedios.
+    // Devuelve ['ok' => bool, 'motivo' => string].
+    public function transicionarSemaforo($modulo, $id, $etapaNueva, $nivelCreador) {
+        try {
+            $c = $this->modulos[$modulo];
+            $this->db->beginTransaction();
+            $q = $this->db->prepare(
+                "SELECT {$c['campo_estado']} AS estado, {$c['campo_solicitud']} AS solicitud, {$c['campo_semaforo']} AS semaforo
+                 FROM {$c['tabla']} WHERE id = :id FOR UPDATE"
+            );
+            $q->execute([':id' => (int)$id]);
+            $r = $q->fetch();
+            if (!$r) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El registro no existe']; }
+            if ((int)$r['estado'] !== 0) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El registro ya no es un borrador']; }
+            if ((int)$r['solicitud'] !== 1) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'Primero se debe solicitar la aprobación']; }
+            $actual = max((int)$r['semaforo'], (int)$nivelCreador);
+            if ((int)$etapaNueva !== $actual + 1) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El indicador cambió de etapa: recarga la página']; }
+
+            if ((int)$etapaNueva === 4) {
+                $u = $this->db->prepare(
+                    "UPDATE {$c['tabla']} SET {$c['campo_semaforo']} = 4, {$c['campo_estado']} = 2, {$c['fecha_publicacion']} = NOW(),
+                            fecha_actualizacion = NOW() WHERE id = :id"
+                );
+            } else {
+                $u = $this->db->prepare(
+                    "UPDATE {$c['tabla']} SET {$c['campo_semaforo']} = " . (int)$etapaNueva . ", fecha_actualizacion = NOW() WHERE id = :id"
+                );
+            }
+            $u->execute([':id' => (int)$id]);
+            $this->db->commit();
+            return ['ok' => true, 'motivo' => ''];
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log("Error transicionarSemaforo [{$modulo}]: " . $e->getMessage());
+            return ['ok' => false, 'motivo' => 'No se pudo guardar'];
         }
     }
 
@@ -990,7 +1069,8 @@ class Modulo144Model {
             // que está rechazando (evita pisar una aprobación real que ya avanzó más).
             $stmt = $this->db->prepare(
                 "UPDATE {$tabla} SET {$campo_semaforo} = 0, {$campo_solicitud} = 2, {$campo_rechazo} = :rechazo, fecha_actualizacion = NOW()
-                 WHERE id = :id AND {$campo_semaforo} < :rechazo2"
+                 WHERE id = :id AND {$campo_semaforo} < :rechazo2
+                   AND {$this->modulos[$modulo]['campo_estado']} = 0 AND {$campo_solicitud} = 1"
             );
             $stmt->execute([':id' => $id, ':rechazo' => $etapaQueRechaza, ':rechazo2' => $etapaQueRechaza]);
             return $stmt->rowCount() > 0;
@@ -1116,10 +1196,7 @@ class Modulo144Model {
     }
 
     public function getFacultadIdPorNombre($nombre) {
-        $norm = function ($s) {
-            $s = mb_strtolower(trim((string)$s), 'UTF-8');
-            return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
-        };
+        $norm = function ($s) { return $this->normalizarNombre($s); };
         $buscado = $norm($nombre);
         if ($buscado === '') return 0;
         foreach ($this->getFacultades() as $fac) {
@@ -1147,6 +1224,7 @@ class Modulo144Model {
     }
 
     public function guardarDistribucionFacultad($formulacionId, $facultadId, $observacion, $distribucion) {
+        if (!is_finite((float)$distribucion) || (float)$distribucion < 0) return false;
         try {
             $stmt = $this->db->prepare(
                 "INSERT INTO formulacion_distribucion_facultad_144 (formulacion_id, facultad_id, observacion, distribucion)
@@ -1645,6 +1723,7 @@ class Modulo144Model {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
                 "SELECT c.facultad_id, c.semestre, c.valor_facultad, c.valor_vicerrectoria, c.valor_final, c.aprobado, c.fecha_aprobado, c.fecha_facultad, c.fecha_vice,
+                        c.usuario_facultad AS uf_id, c.usuario_vice AS uv_id,
                         c.descripcion_facultad, c.descripcion_vicerrectoria, c.descripcion_concertada, c.enviado, c.rechazado, c.fecha_envio, ue.nombre AS usuario_envio_nombre,
                         uf.nombre AS usuario_facultad, uv.nombre AS usuario_vice, ua.nombre AS aprobador
                  FROM concertaciones_144 c
@@ -1694,11 +1773,17 @@ class Modulo144Model {
         $fcol = $lado === 'facultad' ? 'fecha_facultad' : 'fecha_vice';
         try {
             $this->asegurarTablaConcertaciones();
-            // Si el valor cambia, lo enviado deja de valer: hay que volver a concertar
+            if ($valor !== null) $valor = round((float)$valor, 2);
+            // Si el valor cambia, lo enviado deja de valer: hay que volver a concertar. Si es el mismo, no se toca el
+            // estado (enviado/rechazado van antes de la columna del valor para comparar contra el valor anterior).
             $stmt = $this->db->prepare(
                 "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol}, enviado, rechazado)
                  VALUES (:f, :fac, :s, 0, :v, :u, NOW(), 0, 0)
-                 ON DUPLICATE KEY UPDATE {$col} = VALUES({$col}), {$ucol} = VALUES({$ucol}), {$fcol} = VALUES({$fcol}), enviado = 0, rechazado = 0"
+                 ON DUPLICATE KEY UPDATE enviado = IF({$col} <=> VALUES({$col}), enviado, 0),
+                                         rechazado = IF({$col} <=> VALUES({$col}), rechazado, 0),
+                                         {$ucol} = IF({$col} <=> VALUES({$col}), {$ucol}, VALUES({$ucol})),
+                                         {$fcol} = IF({$col} <=> VALUES({$col}), {$fcol}, VALUES({$fcol})),
+                                         {$col} = VALUES({$col})"
             );
             return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valor, ':u' => $usuarioId ?: null]);
         } catch (PDOException $e) {
@@ -1791,27 +1876,35 @@ class Modulo144Model {
         try {
             $this->asegurarTablaConcertaciones();
             $this->db->beginTransaction();
+            // Bloqueo de la fila: dos peticiones simultáneas no pueden aprobar (ni retirar) dos veces
+            $q = $this->db->prepare("SELECT aprobado, valor_previo, previo_existia, descripcion_previa FROM concertaciones_144
+                                     WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s FOR UPDATE");
+            $q->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            $r = $q->fetch();
+            $yaAprobado = $r && (int)$r['aprobado'] === 1;
+
             if ($aprobado) {
+                if ($yaAprobado) { $this->db->rollBack(); return false; }
+                $valorFinal = round((float)$valorFinal, 2);
                 $previo = $this->leerSeguimientoFacultad($formulacionId, $facultadId, $semestre);
                 $descPrevia = $this->leerDescripcionFacultad($formulacionId, $facultadId, $semestre);
                 $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, $valorFinal);
                 $stmt = $this->db->prepare(
                     "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, aprobado, valor_final, aprobado_por, fecha_aprobado, enviado, rechazado, valor_previo, previo_existia, descripcion_previa, descripcion_concertada)
-                     VALUES (:f, :fac, :s, 0, 1, :v, :u, NOW(), 0, 0, :pv, :pe, :dp, NULL)
-                     ON DUPLICATE KEY UPDATE aprobado = 1, valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = NOW(),
+                     VALUES (:f, :fac, :s, 1, 1, :v, :u, NOW(), 0, 0, :pv, :pe, :dp, NULL)
+                     ON DUPLICATE KEY UPDATE concertado = 1, aprobado = 1, valor_final = VALUES(valor_final), aprobado_por = VALUES(aprobado_por), fecha_aprobado = NOW(),
                                              enviado = 0, rechazado = 0, valor_previo = VALUES(valor_previo), previo_existia = VALUES(previo_existia),
                                              descripcion_previa = VALUES(descripcion_previa), descripcion_concertada = NULL"
                 );
                 $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valorFinal, ':u' => $usuarioId ?: null,
                                 ':pv' => $previo, ':pe' => $previo === null ? 0 : 1, ':dp' => $descPrevia]);
             } else {
-                $q = $this->db->prepare("SELECT valor_previo, previo_existia, descripcion_previa FROM concertaciones_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s");
-                $q->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
-                $r = $q->fetch();
-                if ($r) $this->escribirDescripcionFacultad($formulacionId, $facultadId, $semestre, $r['descripcion_previa']);
-                if ($r) $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, ((int)$r['previo_existia'] === 1 && $r['valor_previo'] !== null) ? (float)$r['valor_previo'] : null);
+                // Desconcertar solo tiene sentido sobre un valor aprobado: si no, se dejaría el seguimiento de la facultad en blanco
+                if (!$yaAprobado) { $this->db->rollBack(); return false; }
+                $this->escribirDescripcionFacultad($formulacionId, $facultadId, $semestre, $r['descripcion_previa']);
+                $this->escribirSeguimientoFacultad($formulacionId, $facultadId, $semestre, ((int)$r['previo_existia'] === 1 && $r['valor_previo'] !== null) ? (float)$r['valor_previo'] : null);
                 $stmt = $this->db->prepare(
-                    "UPDATE concertaciones_144 SET aprobado = 0, valor_final = NULL, aprobado_por = NULL, fecha_aprobado = NULL, enviado = 0, valor_previo = NULL, previo_existia = 0,
+                    "UPDATE concertaciones_144 SET concertado = 0, aprobado = 0, valor_final = NULL, aprobado_por = NULL, fecha_aprobado = NULL, enviado = 0, valor_previo = NULL, previo_existia = 0,
                             descripcion_concertada = NULL, descripcion_previa = NULL
                      WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s"
                 );
@@ -1834,7 +1927,8 @@ class Modulo144Model {
                 "UPDATE concertaciones_144 SET enviado = 1, rechazado = 0, fecha_envio = NOW(), usuario_envio = :u
                  WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s AND aprobado = 0"
             );
-            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':u' => $usuarioId ?: null]);
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':u' => $usuarioId ?: null]);
+            return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log('Error enviarConcertacion: ' . $e->getMessage());
             return false;
@@ -1846,9 +1940,10 @@ class Modulo144Model {
         try {
             $this->asegurarTablaConcertaciones();
             $stmt = $this->db->prepare(
-                "UPDATE concertaciones_144 SET enviado = 0, rechazado = 1 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s AND aprobado = 0"
+                "UPDATE concertaciones_144 SET enviado = 0, rechazado = 1 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :s AND aprobado = 0 AND enviado = 1"
             );
-            return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre]);
+            return $stmt->rowCount() > 0;
         } catch (PDOException $e) {
             error_log('Error rechazarConcertacion: ' . $e->getMessage());
             return false;

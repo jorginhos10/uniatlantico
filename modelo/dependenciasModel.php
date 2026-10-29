@@ -22,6 +22,9 @@ class DependenciasModel {
 
     // Organigrama: cada dependencia reporta a otra (cargos.reporta_a_id), por ejemplo una dirección a su vicerrectoría
     private function asegurarColumnaReportaA() {
+        static $verificada = false; // una sola vez por petición, no en cada consulta
+        if ($verificada) return;
+        $verificada = true;
         if ($this->db->query("SHOW COLUMNS FROM cargos LIKE 'reporta_a_id'")->rowCount() === 0) {
             $this->db->exec("ALTER TABLE cargos ADD COLUMN reporta_a_id INT NULL DEFAULT NULL");
         }
@@ -90,13 +93,28 @@ class DependenciasModel {
         try {
             $this->asegurarColumnaReportaA();
             if (!$this->reportaAValido($id, $reportaA)) return ['success' => false, 'message' => 'La dependencia superior no es válida: no puede reportarse a sí misma ni a una que depende de ella'];
+            $anterior = $this->getById($id);
+            $this->db->beginTransaction();
             $stmt = $this->db->prepare(
                 "UPDATE cargos SET nombre = ?, activo = ?, reporta_a_id = ?, fecha_actualizacion = NOW()
                  WHERE id = ?"
             );
             $stmt->execute([$nombre, $activo, $reportaA ?: null, $id]);
+            // Los indicadores guardan sus dependencias responsables por nombre (separadas por ", "): si se renombra, se renombra allí también
+            if ($anterior && $anterior['nombre'] !== $nombre) {
+                $sel = $this->db->prepare("SELECT id, responsable_formulacion FROM formulacion_144 WHERE responsable_formulacion LIKE ?");
+                $sel->execute(['%' . addcslashes($anterior['nombre'], '%_\\') . '%']);
+                $upd = $this->db->prepare("UPDATE formulacion_144 SET responsable_formulacion = ? WHERE id = ?");
+                foreach ($sel->fetchAll() as $r) {
+                    $lista = ', ' . $r['responsable_formulacion'] . ', ';
+                    $nueva = str_replace(', ' . $anterior['nombre'] . ', ', ', ' . $nombre . ', ', $lista);
+                    if ($nueva !== $lista) $upd->execute([substr($nueva, 2, -2), $r['id']]);
+                }
+            }
+            $this->db->commit();
             return ['success' => true, 'message' => 'Cargo actualizado exitosamente'];
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             error_log("Error actualizar cargo: " . $e->getMessage());
             return ['success' => false, 'message' => 'Error al actualizar el cargo'];
         }
@@ -105,9 +123,28 @@ class DependenciasModel {
     public function eliminar($id) {
         try {
             $this->asegurarColumnaReportaA();
+            $dep = $this->getById($id);
+            if (!$dep) return ['success' => false, 'message' => 'La dependencia no existe'];
+            // Una dependencia en uso no se borra: dejaría usuarios sin dependencia e indicadores con un responsable que ya no existe
+            $q = $this->db->prepare("SELECT COUNT(*) FROM usuarios WHERE cargo_id = ?");
+            $q->execute([$id]);
+            $usuarios = (int)$q->fetchColumn();
+            try {
+                $q = $this->db->prepare("SELECT COUNT(*) FROM usuario_dependencias WHERE cargo_id = ?");
+                $q->execute([$id]);
+                $usuarios += (int)$q->fetchColumn();
+            } catch (PDOException $e) { /* sin la tabla de dependencias adicionales todavía */ }
+            $q = $this->db->prepare("SELECT COUNT(*) FROM formulacion_144 WHERE CONCAT(', ', responsable_formulacion, ', ') LIKE ?");
+            $q->execute(['%, ' . addcslashes($dep['nombre'], '%_\\') . ', %']);
+            $indicadores = (int)$q->fetchColumn();
+            if ($usuarios > 0 || $indicadores > 0) {
+                return ['success' => false, 'message' => 'No se puede eliminar: la usan ' . $usuarios . ' usuario(s) y ' . $indicadores . ' indicador(es). Desactívala en su lugar.'];
+            }
+            $this->db->beginTransaction();
             $this->db->prepare("UPDATE cargos SET reporta_a_id = NULL WHERE reporta_a_id = ?")->execute([$id]);
             $stmt = $this->db->prepare("DELETE FROM cargos WHERE id = ?");
             $stmt->execute([$id]);
+            $this->db->commit();
             return ['success' => true, 'message' => 'Cargo eliminado exitosamente'];
         } catch (PDOException $e) {
             error_log("Error eliminar cargo: " . $e->getMessage());

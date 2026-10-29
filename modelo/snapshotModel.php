@@ -97,6 +97,7 @@ class SnapshotModel {
     // reemplaza al que tuviera. Trimestre 0 quita la asignación.
     public function asignarTrimestre($id, $formularioId, $trimestre) {
         try {
+            $this->db->beginTransaction();
             if ((int)$trimestre >= 1 && (int)$trimestre <= 4 && (int)$formularioId > 0) {
                 $this->db->prepare("UPDATE snapshots SET formulario_id = NULL, trimestre = NULL WHERE formulario_id = :f AND trimestre = :t AND id != :id")
                     ->execute([':f' => (int)$formularioId, ':t' => (int)$trimestre, ':id' => (int)$id]);
@@ -105,8 +106,11 @@ class SnapshotModel {
             } else {
                 $this->db->prepare("UPDATE snapshots SET formulario_id = NULL, trimestre = NULL WHERE id = :id")->execute([':id' => (int)$id]);
             }
+            $this->db->commit();
             return true;
         } catch (PDOException $e) {
+            // Sin esto, un fallo a medias dejaba al snapshot anterior sin trimestre y al nuevo sin asignar
+            if ($this->db->inTransaction()) $this->db->rollBack();
             error_log("Error asignarTrimestre: " . $e->getMessage());
             return false;
         }

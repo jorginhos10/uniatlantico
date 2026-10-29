@@ -597,31 +597,60 @@ class Modulo144Controller {
 
     public function cambiarEstado() {
         header('Content-Type: application/json');
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $modulo = $_POST['modulo'] ?? '';
-            $id = $_POST['id'] ?? 0;
-            $estado = $_POST['estado'] ?? 0;
-            
-            if (empty($modulo) || empty($id) || $id <= 0) {
-                echo json_encode(['success' => false, 'message' => 'Faltan datos']);
-                return;
-            }
-            
-            if ((int)$estado === 2 && $this->bloquearSeguimientoNoPublicado($modulo, (int)$id)) return;
-
-            // Devolver un publicado a borrador: solo el superadmin (id=1)
-            if ((int)$estado === 0 && (int)($_SESSION['usuario_id'] ?? 0) !== 1) {
-                echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
-                return;
-            }
-
-            $resultado = $this->model->cambiarEstado($modulo, $id, $estado);
-            $mensajes = [0 => 'Movido a Borrador', 1 => 'Cancelado', 2 => 'Publicado exitosamente'];
-            echo json_encode([
-                'success' => $resultado,
-                'message' => $resultado ? $mensajes[$estado] : 'Error al cambiar estado'
-            ]);
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
         }
+        $modulo = $_POST['modulo'] ?? '';
+        $id = intval($_POST['id'] ?? 0);
+        $estado = isset($_POST['estado']) ? (int)$_POST['estado'] : -1;
+
+        if (!$this->moduloValido($modulo)) return;
+        if ($id <= 0 || !in_array($estado, [0, 1, 2], true)) {
+            echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        $item = $this->model->getById($modulo, $id);
+        $flujo = $this->model->getEstadoFlujo($modulo, $id);
+        if (!$item || !$flujo) {
+            echo json_encode(['success' => false, 'message' => 'El registro no existe']);
+            return;
+        }
+        $esSuper = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+
+        if ($estado === 2) {
+            if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
+            // Publicar sin pasar por las 4 etapas del semáforo es exclusivo del superadministrador
+            if (!$esSuper) {
+                echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar sin pasar por el semáforo']);
+                return;
+            }
+        }
+
+        // Devolver un publicado a borrador: solo el superadmin (id=1)
+        if ($estado === 0 && !$esSuper) {
+            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
+            return;
+        }
+
+        // Cancelar: solo un borrador, y quien lo creó, la dependencia responsable o un administrador
+        if ($estado === 1) {
+            if ((int)$flujo['estado'] !== 0) {
+                echo json_encode(['success' => false, 'message' => 'Solo se puede cancelar un borrador']);
+                return;
+            }
+            if (!$this->puedeGestionarIndicador($item)) {
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para cancelar este indicador']);
+                return;
+            }
+        }
+
+        $resultado = $this->model->cambiarEstado($modulo, $id, $estado);
+        $mensajes = [0 => 'Movido a Borrador', 1 => 'Cancelado', 2 => 'Publicado exitosamente'];
+        echo json_encode([
+            'success' => $resultado,
+            'message' => $resultado ? $mensajes[$estado] : 'Error al cambiar estado'
+        ]);
     }
 
     // Devuelve a borrador todos los publicados de un módulo (formulación o seguimiento) del formulario.
@@ -716,7 +745,8 @@ class Modulo144Controller {
     }
 
     /**
-     * Cambia el estado de solicitud de un borrador (0=Construcción, 1=Solicitado, 2=Rechazado)
+     * Solicita aprobación de un borrador (1) o reinicia la solicitud (0). El rechazo (2) solo se hace desde
+     * rechazarSemaforo, que exige motivo, etapa y rol.
      */
     public function cambiarSolicitudEstado() {
         header('Content-Type: application/json');
@@ -728,12 +758,32 @@ class Modulo144Controller {
         $id = intval($_POST['id'] ?? 0);
         $solicitud_estado = intval($_POST['solicitud_estado'] ?? 0);
 
-        if (empty($modulo) || $id <= 0) {
+        if (!$this->moduloValido($modulo)) return;
+        if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Faltan datos']);
+            return;
+        }
+        if (!in_array($solicitud_estado, [0, 1], true)) {
+            echo json_encode(['success' => false, 'message' => 'Valor no válido: los rechazos se hacen desde el semáforo']);
             return;
         }
 
         if ($solicitud_estado === 1 && $this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
+
+        $item = $this->model->getById($modulo, $id);
+        $flujo = $this->model->getEstadoFlujo($modulo, $id);
+        if (!$item || !$flujo) {
+            echo json_encode(['success' => false, 'message' => 'El registro no existe']);
+            return;
+        }
+        if ((int)$flujo['estado'] !== 0) {
+            echo json_encode(['success' => false, 'message' => 'Solo se puede solicitar aprobación de un borrador']);
+            return;
+        }
+        if (!$this->puedeGestionarIndicador($item)) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para solicitar la aprobación de este indicador']);
+            return;
+        }
 
         // Al solicitar aprobación (1), el nivel del creador "pasa" automáticamente su propia
         // etapa del semáforo (para que la cascada de visibilidad la vea el siguiente rol).
@@ -741,10 +791,12 @@ class Modulo144Controller {
         if ($solicitud_estado === 1) {
             $rolActual = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
             $nivelCreador = $this->semaforoRolNivel[$rolActual] ?? 0;
+            // Un creador de nivel líder o superior deja el indicador listo para la vicerrectoría: ya debe estar concertado
+            if ($nivelCreador >= 2 && $this->bloquearSinConcertar($modulo, $id)) return;
         }
 
         $resultado = $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador);
-        $mensajes = [0 => 'Solicitud reiniciada', 1 => 'Solicitud de aprobación enviada', 2 => 'Solicitud rechazada'];
+        $mensajes = [0 => 'Solicitud reiniciada', 1 => 'Solicitud de aprobación enviada'];
         echo json_encode([
             'success' => $resultado,
             'message' => $resultado ? ($mensajes[$solicitud_estado] ?? 'Actualizado') : 'Error al actualizar'
@@ -793,6 +845,57 @@ class Modulo144Controller {
         return $ids !== null && !in_array((int)($_SESSION['usuario_id'] ?? 0), $ids, true);
     }
 
+    private function moduloValido($modulo) {
+        if (in_array($modulo, ['formulacion', 'seguimiento'], true)) return true;
+        echo json_encode(['success' => false, 'message' => 'Módulo no válido']);
+        return false;
+    }
+
+    // Quien creó el indicador, un administrador o un usuario de la dependencia responsable
+    private function puedeGestionarIndicador(array $item) {
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        if ($uid === 1 || in_array($rol, ['admin', 'administrador', 'sub administrador'], true)) return true;
+        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return true;
+        return $this->esResponsableDelItem($item);
+    }
+
+    // Etapa del semáforo en la que está un registro, calculada en el servidor: la guardada o, si es mayor, el nivel
+    // del rol de quien lo creó (esa etapa no le aplica). Devuelve [etapaVigente, nivelCreador].
+    private function etapaVigente(array $flujo) {
+        $nivel = $this->semaforoRolNivel[$this->normalizarRol($flujo['creado_por_rol'] ?? '')] ?? 0;
+        return [max((int)$flujo['semaforo'], $nivel), $nivel];
+    }
+
+    // Comprobaciones comunes de aprobar y rechazar: el registro existe, es un borrador solicitado y la pantalla
+    // que lo pide no está desactualizada. Devuelve [etapaVigente, nivelCreador] o null (ya respondió el error).
+    private function validarEtapaSemaforo($modulo, $id) {
+        $flujo = $this->model->getEstadoFlujo($modulo, $id);
+        if (!$flujo) {
+            echo json_encode(['success' => false, 'message' => 'El registro no existe']);
+            return null;
+        }
+        if ((int)$flujo['estado'] !== 0) {
+            echo json_encode(['success' => false, 'message' => 'El registro ya no es un borrador']);
+            return null;
+        }
+        if ((int)$flujo['solicitud'] !== 1) {
+            echo json_encode(['success' => false, 'message' => 'Primero se debe solicitar la aprobación']);
+            return null;
+        }
+        [$etapa, $nivel] = $this->etapaVigente($flujo);
+        if ($etapa >= 4) {
+            echo json_encode(['success' => false, 'message' => 'El indicador ya completó todas las etapas']);
+            return null;
+        }
+        // Si la pantalla mandó la etapa que mostraba y ya cambió, se pide recargar en vez de aprobar a ciegas
+        if (isset($_POST['etapa_actual']) && intval($_POST['etapa_actual']) !== $etapa) {
+            echo json_encode(['success' => false, 'message' => 'El indicador cambió de etapa: recarga la página']);
+            return null;
+        }
+        return [$etapa, $nivel];
+    }
+
     public function avanzarSemaforo() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -802,14 +905,18 @@ class Modulo144Controller {
 
         $modulo = $_POST['modulo'] ?? '';
         $id = intval($_POST['id'] ?? 0);
-        $etapaActual = intval($_POST['etapa_actual'] ?? 0);
 
-        if (empty($modulo) || $id <= 0 || $etapaActual < 0 || $etapaActual > 3) {
+        if (!$this->moduloValido($modulo)) return;
+        if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }
 
         if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
+
+        $vigente = $this->validarEtapaSemaforo($modulo, $id);
+        if ($vigente === null) return;
+        [$etapaActual, $nivelCreador] = $vigente;
 
         $etapaNueva = $etapaActual + 1;
         $rolEsperado = $this->semaforoRoles[$etapaNueva] ?? null;
@@ -823,14 +930,18 @@ class Modulo144Controller {
             return;
         }
 
+        // La etapa 2 (líder) entrega el indicador a la vicerrectoría: antes deben estar concertados los semestres reportados
+        if ($etapaNueva === 2 && $this->bloquearSinConcertar($modulo, $id)) return;
+
         if ($this->vicerrectorNoCorresponde($modulo, $id, $etapaNueva)) {
             echo json_encode(['success' => false, 'message' => 'Este indicador lo aprueba el vicerrector al que responde su dependencia (según el organigrama)']);
             return;
         }
 
-        $resultado = $this->model->avanzarSemaforo($modulo, $id, $etapaNueva, $etapaActual);
+        // Aprueba bajo bloqueo de fila y, en la etapa 4, publica en el mismo UPDATE
+        $res = $this->model->transicionarSemaforo($modulo, $id, $etapaNueva, $nivelCreador);
 
-        if ($resultado) {
+        if ($res['ok']) {
             $this->model->registrarHistorialSemaforo(
                 $modulo, $id, $etapaNueva, 'aprobado',
                 (int)($_SESSION['usuario_id'] ?? 0),
@@ -839,16 +950,11 @@ class Modulo144Controller {
             );
         }
 
-        if ($resultado && $etapaNueva === 4) {
-            // Sub Administrador es la última etapa: aprobar = publicar
-            $this->model->cambiarEstado($modulo, $id, 2);
-        }
-
         echo json_encode([
-            'success' => $resultado,
-            'message' => $resultado
+            'success' => $res['ok'],
+            'message' => $res['ok']
                 ? ($etapaNueva === 4 ? 'Etapa aprobada: publicado exitosamente' : 'Etapa aprobada')
-                : 'No se pudo actualizar (puede que ya haya avanzado)'
+                : ($res['motivo'] ?: 'No se pudo actualizar (puede que ya haya avanzado)')
         ]);
     }
 
@@ -861,10 +967,10 @@ class Modulo144Controller {
 
         $modulo = $_POST['modulo'] ?? '';
         $id = intval($_POST['id'] ?? 0);
-        $etapaActual = intval($_POST['etapa_actual'] ?? 0);
         $motivo = trim($_POST['motivo'] ?? '');
 
-        if (empty($modulo) || $id <= 0 || $etapaActual < 0 || $etapaActual > 3) {
+        if (!$this->moduloValido($modulo)) return;
+        if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }
@@ -873,6 +979,10 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Debes ingresar el motivo del rechazo']);
             return;
         }
+
+        $vigente = $this->validarEtapaSemaforo($modulo, $id);
+        if ($vigente === null) return;
+        [$etapaActual] = $vigente;
 
         // Quien puede aprobar la siguiente etapa también puede rechazarla
         $etapaSiguiente = $etapaActual + 1;
@@ -956,13 +1066,31 @@ class Modulo144Controller {
 
     public function guardarDistribucionFacultad() {
         header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
         $formulacionId = intval($_POST['formulacion_id'] ?? 0);
         $facultadId = intval($_POST['facultad_id'] ?? 0);
         $observacion = trim($_POST['observacion'] ?? '');
         $distribucion = floatval($_POST['distribucion'] ?? 0);
 
-        if ($formulacionId <= 0 || $facultadId <= 0) {
+        if ($formulacionId <= 0 || $facultadId <= 0 || !is_finite($distribucion) || $distribucion < 0) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        $item = $this->model->getById('formulacion', $formulacionId);
+        if (!$item) {
+            echo json_encode(['success' => false, 'message' => 'El indicador no existe']);
+            return;
+        }
+        // La meta propuesta por facultad la define quien creó el indicador, su dependencia responsable o un administrador
+        if (!$this->puedeGestionarIndicador($item)) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para cambiar la distribución de este indicador']);
+            return;
+        }
+        if (!in_array($facultadId, array_map(function ($f) { return (int)$f['id']; }, $this->model->getFacultades()), true)) {
+            echo json_encode(['success' => false, 'message' => 'La facultad no existe']);
             return;
         }
 
@@ -1002,19 +1130,9 @@ class Modulo144Controller {
             return;
         }
 
-        // El valor y la descripción de cada semestre son los concertados (pestaña Concertaciones): aquí nunca se cambian
-        $bl = $this->semestresBloqueados($item);
-        $actualFac = null;
-        foreach ($this->model->getDistribucionFacultades($formulacionId) as $d) {
-            if ((int)$d['facultad_id'] === $facultadId) { $actualFac = $d; break; }
-        }
-        $sem1 = isset($actualFac['seguimiento_sem1']) && $actualFac['seguimiento_sem1'] !== '' ? $actualFac['seguimiento_sem1'] : null;
-        $sem2 = isset($actualFac['seguimiento_sem2']) && $actualFac['seguimiento_sem2'] !== '' ? $actualFac['seguimiento_sem2'] : null;
-        // La descripción de cada semestre tampoco se escribe aquí: es el texto del valor concertado (pestaña Concertaciones)
-        $descripcion  = $actualFac['seguimiento_descripcion'] ?? null;
-        $descripcion2 = $actualFac['seguimiento_descripcion2'] ?? null;
-
-        $ok = $this->model->guardarSeguimientoFacultad($formulacionId, $facultadId, $sem1, $sem2, $descripcion, $descripcion2);
+        // El valor y la descripción de cada semestre son los concertados (pestaña Concertaciones): aquí nunca se cambian.
+        // Antes se releía la fila y se reescribía igual, lo que podía pisar un valor recién aprobado; ya no se escribe nada.
+        $ok = true;
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento guardado' : 'No se pudo guardar']);
     }
 
@@ -1036,7 +1154,8 @@ class Modulo144Controller {
         $modulo = $_GET['modulo'] ?? '';
         $id = intval($_GET['id'] ?? 0);
 
-        if (empty($modulo) || $id <= 0) {
+        if (!$this->moduloValido($modulo)) return;
+        if ($id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }
@@ -1350,9 +1469,63 @@ class Modulo144Controller {
         return $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
     }
 
-    private function puedeConcertarFacultad($facultadId) {
-        return $this->esSuperadminConcertacion()
-            || in_array((int)$facultadId, $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0), true);
+    private function puedeConcertarFacultad($facultadId, $propias = null) {
+        if ($this->esSuperadminConcertacion()) return true;
+        if ($propias === null) $propias = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
+        return in_array((int)$facultadId, $propias, true);
+    }
+
+    // Los valores se comparan en centésimas: abs($a - $b) < 0.01 con decimales binarios da falsos "iguales" (10.01 vs 10.00)
+    private function valoresIguales($a, $b) {
+        return round((float)$a * 100) === round((float)$b * 100);
+    }
+
+    // La fila a concertar debe existir en la distribución del indicador y el semestre debe aplicar (S1 no aplica en "Límite").
+    // Responde el error y devuelve false si no es válida.
+    private function filaConcertacionValida($item, $fac, $sem) {
+        if ($sem === 1 && ($item['tipo_medicion'] ?? '') === 'Límite') {
+            echo json_encode(['success' => false, 'message' => 'En este indicador el semestre 1 no aplica']);
+            return false;
+        }
+        foreach ($this->model->getDistribucionFacultades((int)$item['id']) as $d) {
+            if ((int)$d['facultad_id'] === (int)$fac) return true;
+        }
+        echo json_encode(['success' => false, 'message' => 'La facultad no pertenece a la distribución de este indicador']);
+        return false;
+    }
+
+    // Semestres con valores reportados que todavía no están concertados (aprobados): bloquean el envío a la vicerrectoría.
+    // Devuelve la lista de textos "S1 · Facultad X", vacía si todo lo reportado está concertado.
+    private function semestresSinConcertar($id, array $item) {
+        $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
+        $conc = $this->model->getConcertaciones($id);
+        $nombres = [];
+        foreach ($this->model->getFacultades() as $f) $nombres[(int)$f['id']] = $f['nombre'];
+        $faltan = [];
+        foreach ($this->model->getDistribucionFacultades($id) as $d) {
+            $fid = (int)$d['facultad_id'];
+            foreach ([1, 2] as $s) {
+                if ($s === 1 && $esLimite) continue;
+                $c = $conc[$fid][$s] ?? null;
+                $hecha = $d['seguimiento_sem' . $s] ?? null;
+                $reportado = ($hecha !== null && $hecha !== '') || ($c && ($c['valor_facultad'] !== null || $c['valor_vicerrectoria'] !== null));
+                if ($reportado && !($c && (int)$c['aprobado'] === 1)) $faltan[] = 'S' . $s . ' · ' . ($nombres[$fid] ?? ('Facultad ' . $fid));
+            }
+        }
+        return $faltan;
+    }
+
+    // Un seguimiento no se envía a la vicerrectoría mientras sus semestres reportados no estén concertados.
+    // Responde el error y devuelve true si debe bloquearse.
+    private function bloquearSinConcertar($modulo, $id) {
+        if ($modulo !== 'seguimiento') return false;
+        $item = $this->model->getById('seguimiento', $id);
+        if (!$item) return false;
+        $faltan = $this->semestresSinConcertar($id, $item);
+        if (!$faltan) return false;
+        $lista = implode('; ', array_slice($faltan, 0, 4)) . (count($faltan) > 4 ? '…' : '');
+        echo json_encode(['success' => false, 'message' => 'No se puede enviar a la vicerrectoría: faltan concertar los semestres reportados (' . $lista . ')']);
+        return true;
     }
 
     // Debate de la meta real: por cada semestre, la facultad y la vicerrectoría (dependencia responsable) colocan su valor.
@@ -1374,11 +1547,12 @@ class Modulo144Controller {
 
         $evid = $this->model->getResumenEvidencias($id)['facultades'];
         $blq = $this->semestresBloqueados($item); // semestres cerrados en el Plan de acción
+        $propiasUsuario = $this->esSuperadminConcertacion() ? [] : $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
 
         $filas = [];
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
             $fid = (int)$d['facultad_id'];
-            if (!$verTodas && !$this->puedeConcertarFacultad($fid)) continue;
+            if (!$verTodas && !$this->puedeConcertarFacultad($fid, $propiasUsuario)) continue;
             $sem = [];
             $hay = (float)$d['distribucion'] > 0;
             foreach ([1, 2] as $s) {
@@ -1414,9 +1588,9 @@ class Modulo144Controller {
                 'facultad_id' => $fid,
                 'nombre' => $nombres[$fid] ?? ('Facultad ' . $fid),
                 'propuesta' => (float)$d['distribucion'],
-                'puede_f' => $this->puedeConcertarFacultad($fid),
+                'puede_f' => $this->puedeConcertarFacultad($fid, $propiasUsuario),
                 'puede_v' => $puedeV,
-                'puede_enviar' => $puedeV || $this->puedeConcertarFacultad($fid), // cualquiera de los dos declarantes envía lo concertado
+                'puede_enviar' => $puedeV || $this->puedeConcertarFacultad($fid, $propiasUsuario), // cualquiera de los dos declarantes envía lo concertado
                 'ev_f' => [1 => (int)($evid[$fid][1] ?? 0), 2 => (int)($evid[$fid][2] ?? 0)],
                 'ev_v' => [1 => (int)($evid[-$fid][1] ?? 0), 2 => (int)($evid[-$fid][2] ?? 0)],
                 'sem' => $sem,
@@ -1462,7 +1636,7 @@ class Modulo144Controller {
             return;
         }
         if (!$item || $fac <= 0 || $lado === '' || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
-        if ($sem === 1 && ($item['tipo_medicion'] ?? '') === 'Límite') { echo json_encode(['success' => false, 'message' => 'En este indicador el semestre 1 no aplica']); return; }
+        if (!$this->filaConcertacionValida($item, $fac, $sem)) return;
 
         if ($lado === 'facultad' && !$this->puedeConcertarFacultad($fac)) { echo json_encode(['success' => false, 'message' => 'Solo la propia facultad coloca el valor de la facultad']); return; }
         if ($lado === 'vicerrectoria' && !$this->puedeConcertarDependencia($item)) { echo json_encode(['success' => false, 'message' => 'Solo la dependencia responsable coloca el valor de la vicerrectoría']); return; }
@@ -1482,6 +1656,7 @@ class Modulo144Controller {
         $v = trim((string)($_POST['valor'] ?? ''));
         $valor = $v === '' ? null : (float)str_replace(',', '.', $v);
         if ($valor !== null && !is_finite($valor)) { echo json_encode(['success' => false, 'message' => 'Valor no válido']); return; }
+        if ($valor !== null) $valor = round($valor, 2);
         $ok = $this->model->guardarPropuesta($id, $fac, $sem, $lado, $valor, $_SESSION['usuario_id'] ?? 0);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado' : 'No se pudo guardar']);
     }
@@ -1496,30 +1671,35 @@ class Modulo144Controller {
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
         if ($this->concertacionCerrada($item, $sem)) return;
+        if (!$this->filaConcertacionValida($item, $fac, $sem)) return;
         if (!($this->puedeConcertarFacultad($fac) || $this->puedeConcertarDependencia($item))) {
             echo json_encode(['success' => false, 'message' => 'Solo la facultad o la vicerrectoría pueden concertar']); return;
         }
         $conc = $this->model->getConcertaciones($id);
         $c = $conc[$fac][$sem] ?? null;
         if ($c && (int)$c['aprobado'] === 1) { echo json_encode(['success' => false, 'message' => 'Este valor ya fue aprobado']); return; }
-        $vf = $c && $c['valor_facultad'] !== null ? (float)$c['valor_facultad'] : null;
+        $vf = $c && $c['valor_facultad'] !== null ? round((float)$c['valor_facultad'], 2) : null;
         if ($vf === null) {
             foreach ($this->model->getDistribucionFacultades($id) as $d) {
-                if ((int)$d['facultad_id'] === $fac) { $h = $d['seguimiento_sem' . $sem] ?? null; $vf = ($h === null || $h === '') ? null : (float)$h; break; }
+                if ((int)$d['facultad_id'] === $fac) { $h = $d['seguimiento_sem' . $sem] ?? null; $vf = ($h === null || $h === '') ? null : round((float)$h, 2); break; }
             }
         }
-        $vv = $c && $c['valor_vicerrectoria'] !== null ? (float)$c['valor_vicerrectoria'] : null;
+        $vv = $c && $c['valor_vicerrectoria'] !== null ? round((float)$c['valor_vicerrectoria'], 2) : null;
         if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores: la facultad y la vicerrectoría deben colocar el suyo']); return; }
         // Si el valor de la facultad viene del seguimiento y nunca se guardó, se fija ahora para que lo enviado no cambie
         if ($c === null || $c['valor_facultad'] === null) $this->model->guardarPropuesta($id, $fac, $sem, 'facultad', $vf, $_SESSION['usuario_id'] ?? 0);
         // Valores iguales: queda concertado y pasa directo al seguimiento por facultades; distintos: decide el superadministrador
-        if (abs($vf - $vv) < 0.01) {
+        // Si una sola persona puso los dos lados no hay verdadera concertación: no se auto-aprueba (salvo el superadministrador)
+        $mismaPersona = $c && !empty($c['uf_id']) && !empty($c['uv_id']) && (int)$c['uf_id'] === (int)$c['uv_id'];
+        if ($this->valoresIguales($vf, $vv) && (!$mismaPersona || $this->esSuperadminConcertacion())) {
             $ok = $this->model->guardarAprobacion($id, $fac, $sem, true, $vf, $_SESSION['usuario_id'] ?? 0);
             echo json_encode(['success' => $ok, 'auto' => true, 'message' => $ok ? 'Concertado: el valor pasó al seguimiento por facultades' : 'No se pudo concertar']);
             return;
         }
         $ok = $this->model->enviarConcertacion($id, $fac, $sem, $_SESSION['usuario_id'] ?? 0);
-        echo json_encode(['success' => $ok, 'message' => $ok ? 'Los valores difieren: enviado al superadministrador para que decida' : 'No se pudo enviar']);
+        echo json_encode(['success' => $ok, 'message' => $ok
+            ? ($this->valoresIguales($vf, $vv) ? 'Los dos valores los puso la misma persona: enviado al superadministrador para que lo apruebe' : 'Los valores difieren: enviado al superadministrador para que decida')
+            : 'No se pudo enviar']);
     }
 
     // Solo el superadministrador decide lo enviado: aprueba (el valor pasa al seguimiento por facultades), rechaza (se sigue concertando)
@@ -1536,10 +1716,11 @@ class Modulo144Controller {
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item || $fac <= 0 || !in_array($sem, [1, 2], true)) { echo json_encode(['success' => false, 'message' => 'Datos no válidos']); return; }
         if ($this->concertacionCerrada($item, $sem)) return;
+        if (!$this->filaConcertacionValida($item, $fac, $sem)) return;
 
         if ($rechazar) {
             $ok = $this->model->rechazarConcertacion($id, $fac, $sem);
-            echo json_encode(['success' => $ok, 'message' => $ok ? 'Rechazado: se debe seguir concertando' : 'No se pudo rechazar']);
+            echo json_encode(['success' => $ok, 'message' => $ok ? 'Rechazado: se debe seguir concertando' : 'No hay nada enviado para rechazar']);
             return;
         }
 
@@ -1548,19 +1729,27 @@ class Modulo144Controller {
             $conc = $this->model->getConcertaciones($id);
             $c = $conc[$fac][$sem] ?? null;
             if (!$c || (int)$c['enviado'] !== 1) { echo json_encode(['success' => false, 'message' => 'Primero la facultad o la vicerrectoría deben concertar y enviarlo']); return; }
-            $vf = $c['valor_facultad'] !== null ? (float)$c['valor_facultad'] : null;
-            $vv = $c['valor_vicerrectoria'] !== null ? (float)$c['valor_vicerrectoria'] : null;
+            $vf = $c['valor_facultad'] !== null ? round((float)$c['valor_facultad'], 2) : null;
+            $vv = $c['valor_vicerrectoria'] !== null ? round((float)$c['valor_vicerrectoria'], 2) : null;
             if ($vf === null || $vv === null) { echo json_encode(['success' => false, 'message' => 'Faltan valores']); return; }
-            if (abs($vf - $vv) < 0.01) $final = $vf;
+            if ($this->valoresIguales($vf, $vv)) $final = $vf;
             else {
                 $eleccion = $_POST['elige'] ?? '';
                 if ($eleccion === 'facultad') $final = $vf;
                 elseif ($eleccion === 'vicerrectoria') $final = $vv;
                 else { echo json_encode(['success' => false, 'message' => 'Los valores difieren: elige cuál se aprueba']); return; }
             }
+            // El valor que el superadministrador vio en el botón debe seguir siendo el que se aprueba
+            // (la facultad pudo cambiarlo y reenviarlo mientras tanto)
+            if (isset($_POST['esperado']) && $_POST['esperado'] !== '' && !$this->valoresIguales((float)str_replace(',', '.', $_POST['esperado']), $final)) {
+                echo json_encode(['success' => false, 'message' => 'El valor cambió mientras lo revisabas: recarga y vuelve a decidir']);
+                return;
+            }
         }
         $ok = $this->model->guardarAprobacion($id, $fac, $sem, $aprobar, $final, $_SESSION['usuario_id'] ?? 0);
-        echo json_encode(['success' => $ok, 'message' => $ok ? ($aprobar ? 'Aprobado: el valor pasó al seguimiento por facultades' : 'Desconcertado: se debe concertar de nuevo') : 'No se pudo guardar']);
+        echo json_encode(['success' => $ok, 'message' => $ok
+            ? ($aprobar ? 'Aprobado: el valor pasó al seguimiento por facultades' : 'Desconcertado: se debe concertar de nuevo')
+            : ($aprobar ? 'No se pudo aprobar (¿ya estaba aprobado?)' : 'Solo se puede desconcertar un valor que esté aprobado')]);
     }
 }
 ?>

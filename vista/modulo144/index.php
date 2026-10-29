@@ -2088,7 +2088,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $rechazadaAqui = $etapaNum === $rechazoEtapa;
                                                         $activo = $etapaNum <= $etapaActual;
                                                         $esSiguiente = $etapaNum === $etapaActual + 1;
-                                                        $puedeAprobar = !$noAplica && !$soloPorFacultadFila && $esSiguiente && (
+                                                        // Solo se aprueba un indicador ya solicitado (el servidor lo exige igual)
+                                                        $puedeAprobar = $solEstado === 1 && !$noAplica && !$soloPorFacultadFila && $esSiguiente && (
                                                             m144_normalizarRol($etapaInfo['rol']) === $miRolNormalizado
                                                             || (($esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true)) && $etapaNum === 4)
                                                             // El superadministrador puede aprobar cualquier etapa en nombre del rol que corresponde,
@@ -5892,7 +5893,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
                                 setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                            } else {
+                                Swal.fire('Error', response.message || 'No se pudo cambiar el estado', 'error');
                             }
+                        },
+                        error: function() {
+                            Swal.fire('Error', 'Error de conexión con el servidor', 'error');
                         }
                     });
                 }
@@ -6438,6 +6444,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                    (desc ? '<div class="cnx-desc-ro">' + evalHtmlEscape(desc) + '</div>' : '<div class="cnx-desc-ro cnx-nd">Sin descripción</div>');
         }
 
+        // Dos valores son iguales si coinciden en centésimas (evita falsos "iguales" por decimales: 10.01 vs 10.00)
+        function cnIguales(a, b) {
+            return Math.round((cnNum(a) || 0) * 100) === Math.round((cnNum(b) || 0) * 100);
+        }
+
         function cnResultadoHtml(f, sem, c, esSuper, unidad) {
             const e = cnEstadoCelda(c);
             // Semestre cerrado en el Plan de acción: la concertación también queda cerrada (solo se ve lo que ya está)
@@ -6448,7 +6459,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     '<span class="cnx-hint">El semestre ' + sem + ' está cerrado en el Plan de acción</span>';
             }
             const attrs = 'data-fac="' + f.facultad_id + '" data-sem="' + sem + '"';
-            const iguales = Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
+            const iguales = cnIguales(c.vf, c.vv);
             const hint = iguales ? 'Coinciden: al concertar pasa al seguimiento' : 'Difieren en ' + cnFmt(Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)), '') + ': decide el superadministrador';
             if (e === 'aprobado') {
                 const quien = (c.apr_usuario ? 'Aprobó ' + c.apr_usuario : '') + (c.apr_fecha ? ' · ' + c.apr_fecha : '');
@@ -6460,10 +6471,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 let html = '<span class="cnx-estado env"><i class="fas fa-paper-plane"></i> Enviado al superadministrador</span>';
                 if (esSuper) {
                     html += iguales
-                        ? '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" ' + attrs + '>Aprobar ' + cnFmt(c.vf, cnDatos.indicador.unidad) + '</button>' +
+                        ? '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" data-esperado="' + c.vf + '" ' + attrs + '>Aprobar ' + cnFmt(c.vf, cnDatos.indicador.unidad) + '</button>' +
                           '<button type="button" class="cnx-btn sec" data-acc="rechazar" ' + attrs + '>Rechazar</button></span>'
-                        : '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="facultad" ' + attrs + '>Aprobar la de la facultad (' + cnFmt(c.vf, cnDatos.indicador.unidad) + ')</button>' +
-                          '<button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="vicerrectoria" ' + attrs + '>Aprobar la de la vicerrectoría (' + cnFmt(c.vv, cnDatos.indicador.unidad) + ')</button>' +
+                        : '<span class="cnx-acciones"><button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="facultad" data-esperado="' + c.vf + '" ' + attrs + '>Aprobar la de la facultad (' + cnFmt(c.vf, cnDatos.indicador.unidad) + ')</button>' +
+                          '<button type="button" class="cnx-btn verde" data-acc="aprobar" data-elige="vicerrectoria" data-esperado="' + c.vv + '" ' + attrs + '>Aprobar la de la vicerrectoría (' + cnFmt(c.vv, cnDatos.indicador.unidad) + ')</button>' +
                           '<button type="button" class="cnx-btn sec" data-acc="rechazar" ' + attrs + '>Rechazar</button></span>';
                 } else {
                     html += '<span class="cnx-hint">' + hint + '</span>';
@@ -6487,7 +6498,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const e = cnEstadoCelda(c);
                 if (e === 'vacio') return;
                 o.total++; o[e]++;
-                if (e === 'enviado' && Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01) o.iguales++;
+                if (e === 'enviado' && cnIguales(c.vf, c.vv)) o.iguales++;
             });
             return o;
         }
@@ -6732,11 +6743,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 const sem = btn.data('sem');
                 const pend = cnDatos.facultades.filter(function(f) {
                     const c = f.sem[sem];
-                    return c.aplica && cnEstadoCelda(c) === 'enviado' && Math.abs((cnNum(c.vf) || 0) - (cnNum(c.vv) || 0)) < 0.01;
+                    return c.aplica && cnEstadoCelda(c) === 'enviado' && cnIguales(c.vf, c.vv);
                 });
                 (function siguiente(i) {
                     if (i >= pend.length) { cnCargar(); return; }
-                    post('aprobarConcertacion', { facultad_id: pend[i].facultad_id, semestre: sem, aprobado: 1 }).done(function(r) { if (!r.success) { fallo(r.message); return; } siguiente(i + 1); })
+                    post('aprobarConcertacion', { facultad_id: pend[i].facultad_id, semestre: sem, aprobado: 1, esperado: cnNum(pend[i].sem[sem].vf) }).done(function(r) { if (!r.success) { fallo(r.message); return; } siguiente(i + 1); })
                         .fail(function() { fallo('Error de conexión con el servidor'); });
                 })(0);
                 return;
@@ -6744,7 +6755,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const fac = btn.data('fac'), sem = btn.data('sem');
             let req;
             if (acc === 'enviar') req = post('enviarConcertacion', { facultad_id: fac, semestre: sem });
-            else if (acc === 'aprobar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, aprobado: 1, elige: btn.data('elige') || '' });
+            else if (acc === 'aprobar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, aprobado: 1, elige: btn.data('elige') || '', esperado: btn.attr('data-esperado') || '' });
             else if (acc === 'rechazar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, rechazar: 1 });
             else if (acc === 'quitar') req = post('aprobarConcertacion', { facultad_id: fac, semestre: sem, aprobado: 0 });
             else { btn.prop('disabled', false); return; }

@@ -370,12 +370,18 @@ class UsuarioController {
         }
         
         $id = $input['id'] ?? 0;
+        // Lo que no llega en la petición conserva su valor actual (antes el rol caía a 'cocina' y el usuario quedaba inactivo)
+        $existente = $this->usuarioModel->obtenerUsuarioPorId($id);
+        if (!$existente) {
+            echo json_encode(['success' => false, 'message' => 'El usuario no existe']);
+            exit;
+        }
         $datos = [
             'nombre'   => trim($input['nombre'] ?? ''),
             'email'    => trim($input['email'] ?? ''),
-            'rol'      => $input['rol'] ?? 'cocina',
-            'activo'   => isset($input['activo']) ? (int)$input['activo'] : 0,
-            'cargo_id' => !empty($input['cargo_id']) ? (int)$input['cargo_id'] : null,
+            'rol'      => $input['rol'] ?? $existente['rol'],
+            'activo'   => isset($input['activo']) ? (int)$input['activo'] : (int)$existente['activo'],
+            'cargo_id' => array_key_exists('cargo_id', $input) ? (!empty($input['cargo_id']) ? (int)$input['cargo_id'] : null) : ($existente['cargo_id'] ?: null),
         ];
 
         // Validaciones
@@ -423,10 +429,8 @@ class UsuarioController {
         }
 
         // Actualizar usuario
-        if ($this->usuarioModel->actualizarUsuario($id, $datos)) {
-            if (array_key_exists('dependencias', $input)) {
-                $this->usuarioModel->guardarDependenciasUsuario($id, $this->dependenciasEnviadas($input));
-            }
+        $cargoIds = array_key_exists('dependencias', $input) ? $this->dependenciasEnviadas($input) : null;
+        if ($this->usuarioModel->actualizarUsuarioCompleto($id, $datos, $cargoIds)) {
             echo json_encode([
                 'success' => true,
                 'message' => 'Usuario actualizado exitosamente'

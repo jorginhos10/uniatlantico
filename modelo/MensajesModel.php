@@ -161,6 +161,19 @@ class MensajesModel {
         }
     }
 
+    // ¿Puede este usuario abrir el mensaje? Quien lo envió o a quien va dirigido (él, su rol o su dependencia).
+    // Es la misma regla con la que se arma su bandeja de recibidos.
+    public function puedeVer(array $mensaje, int $userId, string $userRol, int $cargoId): bool {
+        if ((int)$mensaje['remitente_id'] === $userId) return true;
+        $dest = (string)$mensaje['destinatario_id'];
+        switch ($mensaje['tipo_destinatario']) {
+            case 'usuario':     return (int)$dest === $userId;
+            case 'rol':         return $dest === $userRol;
+            case 'dependencia': return $cargoId > 0 && (int)$dest === $cargoId;
+            default:            return false;
+        }
+    }
+
     // ── MARCAR LEÍDO ───────────────────────────────────────────────────────
     public function marcarLeido(int $mensajeId, int $userId): void {
         try {

@@ -261,6 +261,27 @@ class UsuarioModel {
         }
     }
 
+    // Datos del usuario y sus dependencias adicionales en una sola transacción (o todo, o nada).
+    // $cargoIds null = no tocar las dependencias adicionales.
+    public function actualizarUsuarioCompleto($id, array $datos, $cargoIds = null) {
+        try {
+            $this->db->beginTransaction();
+            if (!$this->actualizarUsuario($id, $datos)) { $this->db->rollBack(); return false; }
+            if ($cargoIds !== null) {
+                $cargoIds = array_values(array_unique(array_filter(array_map('intval', $cargoIds))));
+                $this->db->prepare("DELETE FROM usuario_dependencias WHERE usuario_id = :id")->execute([':id' => (int)$id]);
+                $ins = $this->db->prepare("INSERT INTO usuario_dependencias (usuario_id, cargo_id) VALUES (:u, :c)");
+                foreach ($cargoIds as $c) $ins->execute([':u' => (int)$id, ':c' => $c]);
+            }
+            $this->db->commit();
+            return true;
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log("Error actualizarUsuarioCompleto: " . $e->getMessage());
+            return false;
+        }
+    }
+
     public function eliminarUsuario($id) {
         $sql = "DELETE FROM usuarios WHERE id = :id";
         

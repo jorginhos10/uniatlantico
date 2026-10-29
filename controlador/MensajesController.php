@@ -85,6 +85,12 @@ class MensajesController {
             return;
         }
 
+        // Un mensaje solo lo abre quien lo envió o a quien va dirigido (los rechazos incluyen datos de indicadores)
+        if (!$this->model->puedeVer($mensaje, $uid, $this->urol(), (int)($_SESSION['usuario_cargo_id'] ?? 0))) {
+            echo json_encode(['success' => false, 'message' => 'Mensaje no encontrado']);
+            return;
+        }
+
         // Marcar leído si no es propio
         if ((int)$mensaje['remitente_id'] !== $uid) {
             $this->model->marcarLeido($id, $uid);

@@ -304,10 +304,6 @@ switch ($action) {
                 $forde144Controller->reporteSeguimientoPage($id);
                 break;
 
-            case 'verificarDisponibilidad':
-                $forde144Controller->verificarDisponibilidad();
-                break;
-
             case 'getAdministradores':
                 $forde144Controller->getAdministradores();
                 break;
@@ -343,44 +339,10 @@ switch ($action) {
     // SECCIÓN PARA FORMULACIÓN 144 (Borradores y Productivos)
     // ====================================================
     case 'formulacion144':
-        require_once 'config/security.php';
-        require_once 'controlador/Formulacion144Controller.php';
-        $formulacion144Controller = new Formulacion144Controller();
-        
-        if (isset($_GET['action'])) {
-            $actionParam = $_GET['action'];
-        } else {
-            $actionParam = isset($urlParts[1]) ? $urlParts[1] : 'index';
-        }
-        
-        switch ($actionParam) {
-            case 'crearBorrador':
-                $formulacion144Controller->crearBorrador();
-                break;
-            case 'getBorrador':
-                $formulacion144Controller->getBorrador();
-                break;
-            case 'guardar':
-                $formulacion144Controller->guardar();
-                break;
-            case 'cambiarEstado':
-                $formulacion144Controller->cambiarEstado();
-                break;
-            case 'eliminar':
-                $formulacion144Controller->eliminar();
-                break;
-            case 'duplicar':
-                $formulacion144Controller->duplicar();
-                break;
-            case 'test':
-                $formulacion144Controller->test();
-                break;
-            case 'index':
-            default:
-                $formulacion144Controller->index();
-                break;
-        }
-        break;
+        // Ruta heredada: su controlador ya no existe (la clase Formulacion144Controller se llama Seguimiento144Controller y
+        // no implementa estas acciones), así que abrirla daba un error fatal. La formulación vive en el Plan de Acción.
+        header('Location: ' . $basePath . '/FOR-DE-144');
+        exit();
 
     // ====================================================
     // SECCIÓN PARA MÓDULO 144 (MÚLTIPLES MÓDULOS EN ACORDEÓN)
