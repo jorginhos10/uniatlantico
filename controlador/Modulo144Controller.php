@@ -36,6 +36,10 @@ class Modulo144Controller {
         // Todas las dependencias de las que el usuario es responsable (principal + "Responsable de")
         $viewer_dependencias = $this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
         $usuarios_aprobadores = $this->model->getUsuariosAprobadores();
+        // Vicerrectores que aprueban un indicador según el organigrama (null = organigrama sin configurar)
+        $vicerrectores_de = function ($responsables, $creadorId) use ($usuarios_aprobadores) {
+            return $this->model->idsVicerrectoresDelIndicador($usuarios_aprobadores, $responsables, $creadorId);
+        };
         // Si la dependencia del usuario es una facultad, ve en Seguimiento los indicadores donde su facultad tiene distribución
         // Facultades del usuario (por su dependencia principal o por cualquiera de las asociadas en "Responsable de")
         $viewer_facultades = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
@@ -779,6 +783,16 @@ class Modulo144Controller {
         return strtr($s, ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']);
     }
 
+    // Etapa V (vicerrectoría): según el organigrama solo aprueba el vicerrector al que responde la dependencia del indicador.
+    // El superadministrador siempre puede; si el organigrama no está configurado, aprueba cualquiera con el rol.
+    private function vicerrectorNoCorresponde($modulo, $id, $etapa) {
+        if ($etapa !== 3 || (int)($_SESSION['usuario_id'] ?? 0) === 1) return false;
+        $item = $this->model->getById($modulo, $id);
+        if (!$item) return false;
+        $ids = $this->model->idsVicerrectoresDelIndicador($this->model->getUsuariosAprobadores(), $item['responsable_formulacion'] ?? '', (int)($item['creado_por'] ?? 0));
+        return $ids !== null && !in_array((int)($_SESSION['usuario_id'] ?? 0), $ids, true);
+    }
+
     public function avanzarSemaforo() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -806,6 +820,11 @@ class Modulo144Controller {
 
         if (!$esSuperAdmin && !$esAdminEtapaFinal && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
             echo json_encode(['success' => false, 'message' => 'Tu rol no puede aprobar esta etapa']);
+            return;
+        }
+
+        if ($this->vicerrectorNoCorresponde($modulo, $id, $etapaNueva)) {
+            echo json_encode(['success' => false, 'message' => 'Este indicador lo aprueba el vicerrector al que responde su dependencia (según el organigrama)']);
             return;
         }
 
@@ -865,6 +884,11 @@ class Modulo144Controller {
 
         if (!$esSuperAdmin && !$esAdminEtapaFinal && (!$rolEsperado || $this->normalizarRol($rolEsperado) !== $rolUsuario)) {
             echo json_encode(['success' => false, 'message' => 'Tu rol no puede rechazar esta etapa']);
+            return;
+        }
+
+        if ($this->vicerrectorNoCorresponde($modulo, $id, $etapaSiguiente)) {
+            echo json_encode(['success' => false, 'message' => 'Este indicador lo decide el vicerrector al que responde su dependencia (según el organigrama)']);
             return;
         }
 

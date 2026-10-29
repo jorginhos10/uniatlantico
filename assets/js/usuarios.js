@@ -290,6 +290,14 @@ class UsuariosManager {
                                 </div>
 
                                 <div class="form-group">
+                                    <label for="modalReportaA" class="form-label">Reporta a</label>
+                                    <select id="modalReportaA" name="reporta_a" class="form-select">
+                                        <option value="">— Nadie (cabeza del organigrama) —</option>
+                                    </select>
+                                    <small class="usr-deps-ayuda">Su superior en el organigrama: es quien aprueba los indicadores de este usuario en la etapa de Vicerrectoría.</small>
+                                </div>
+
+                                <div class="form-group">
                                     <label class="form-label">Responsable de (dependencias)</label>
                                     <div class="usr-deps" id="modalDependencias">
                                         <input type="text" class="usr-deps-buscar" placeholder="Buscar dependencia..." autocomplete="off">
@@ -330,6 +338,7 @@ class UsuariosManager {
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
             this.prepararListaDependencias('modalDependencias');
+            this.poblarReportaA('modalReportaA');
 
             // Poblar select de cargos en modal crear
             const createCargoSelect = document.getElementById('modalCargo');
@@ -433,6 +442,14 @@ class UsuariosManager {
                                 </div>
 
                                 <div class="form-group">
+                                    <label for="editReportaA" class="form-label">Reporta a</label>
+                                    <select id="editReportaA" name="reporta_a" class="form-select">
+                                        <option value="">— Nadie (cabeza del organigrama) —</option>
+                                    </select>
+                                    <small class="usr-deps-ayuda">Su superior en el organigrama: es quien aprueba los indicadores de este usuario en la etapa de Vicerrectoría.</small>
+                                </div>
+
+                                <div class="form-group">
                                     <label class="form-label">Responsable de (dependencias)</label>
                                     <div class="usr-deps" id="editDependencias">
                                         <input type="text" class="usr-deps-buscar" placeholder="Buscar dependencia..." autocomplete="off">
@@ -485,6 +502,7 @@ class UsuariosManager {
             }
 
             this.prepararListaDependencias('editDependencias');
+            this.poblarReportaA('editReportaA');
 
             // Poblar select de cargos desde datos PHP
             const cargoSelect = document.getElementById('editCargo');
@@ -730,6 +748,13 @@ class UsuariosManager {
             cargoSelect.value = userData.cargo_id || '';
         }
 
+        // Superior en el organigrama (no puede reportarse a sí mismo)
+        const reportaSelect = document.getElementById('editReportaA');
+        if (reportaSelect) {
+            Array.from(reportaSelect.options).forEach(o => { o.hidden = o.disabled = (o.value !== '' && o.value == userData.id); });
+            reportaSelect.value = userData.reporta_a || '';
+        }
+
         // Dependencias de las que es responsable
         this.marcarDependencias('editDependencias', userData.dependencias || []);
 
@@ -780,6 +805,18 @@ class UsuariosManager {
     
     // Método para enviar formulario
     // Lista con casillas y buscador para "Responsable de (dependencias)"
+    // Select "Reporta a": todos los usuarios, para armar el organigrama
+    poblarReportaA(idSelect) {
+        const sel = document.getElementById(idSelect);
+        if (!sel || !window.USUARIOS_LIST) return;
+        window.USUARIOS_LIST.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.nombre;
+            sel.appendChild(opt);
+        });
+    }
+
     prepararListaDependencias(idContenedor) {
         const contenedor = document.getElementById(idContenedor);
         if (!contenedor || !window.CARGOS_LIST) return;

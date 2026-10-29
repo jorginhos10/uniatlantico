@@ -1765,10 +1765,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // responsable del indicador (la Oficina de Planeación, etapa final, no depende de la dependencia).
         // Si ninguno coincide con la dependencia, se listan todos los del rol.
         if (!function_exists('m144_nombresAprobadores')) {
-            function m144_nombresAprobadores($usuarios, $rolEtapa, $responsables, $etapaNum) {
+            function m144_nombresAprobadores($usuarios, $rolEtapa, $responsables, $etapaNum, $idsPermitidos = null) {
                 $roles = $etapaNum === 4 ? ['sub administrador', 'administrador'] : [$rolEtapa];
                 $delRol = array_values(array_filter((array)$usuarios, function ($u) use ($roles) { return in_array($u['rol'], $roles, true); }));
-                if ($etapaNum !== 4) {
+                if ($etapaNum === 3 && $idsPermitidos !== null) {
+                    // Organigrama configurado: solo el vicerrector al que responde la dependencia
+                    $delRol = array_values(array_filter($delRol, function ($u) use ($idsPermitidos) { return in_array($u['id'], $idsPermitidos, true); }));
+                } elseif ($etapaNum !== 4) {
                     $deDep = array_values(array_filter($delRol, function ($u) use ($responsables) { return m144_esDependenciaResponsable($responsables, $u['dependencias']); }));
                     if ($deDep) $delRol = $deDep;
                 }
@@ -2078,6 +2081,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <div class="semaforo-row">
                                                     <?php
                                                     $puedeRechazarEtapa = false;
+                                                    // Vicerrectores que aprueban este indicador según el organigrama (null = sin configurar)
+                                                    $idsVice = isset($vicerrectores_de) ? $vicerrectores_de($borrador['responsable_formulacion'] ?? '', (int)($borrador['creado_por'] ?? 0)) : null;
                                                     foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
                                                         $noAplica = $etapaNum <= $creadorNivel;
                                                         $rechazadaAqui = $etapaNum === $rechazoEtapa;
@@ -2090,6 +2095,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                             // una vez el indicador fue enviado a aprobación
                                                             || ($esSuperAdminSem && $solEstado === 1)
                                                         );
+                                                        // Etapa V: con el organigrama configurado, solo el vicerrector correspondiente (o el superadministrador)
+                                                        if ($puedeAprobar && $etapaNum === 3 && $idsVice !== null && !$esSuperAdminSem && !in_array($viewerId, $idsVice, true)) $puedeAprobar = false;
                                                         if ($puedeAprobar) $puedeRechazarEtapa = true;
                                                         $clases = 'semaforo-circle';
                                                         if ($rechazadaAqui) $clases .= ' rechazado';
@@ -2101,7 +2108,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         elseif ($noAplica) $tituloCirculo .= ' — No aplica (creado por un rol superior)';
                                                         elseif ($activo) $tituloCirculo .= ' — Aprobado';
                                                         else {
-                                                            $quienAprueba = m144_nombresAprobadores($usuarios_aprobadores ?? [], m144_normalizarRol($etapaInfo['rol']), $borrador['responsable_formulacion'] ?? '', $etapaNum);
+                                                            $quienAprueba = m144_nombresAprobadores($usuarios_aprobadores ?? [], m144_normalizarRol($etapaInfo['rol']), $borrador['responsable_formulacion'] ?? '', $etapaNum, $idsVice);
                                                             if ($quienAprueba !== '') $tituloCirculo .= ' (' . $quienAprueba . ')';
                                                         }
                                                     ?>
