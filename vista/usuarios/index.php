@@ -40,7 +40,6 @@ require_once __DIR__ . '/../complementos/header.php';
 <meta name="current-user-id" content="<?php echo $_SESSION['usuario_id'] ?? '0'; ?>">
 <script>
     window.CARGOS_LIST = <?php echo json_encode($cargos ?? [], JSON_UNESCAPED_UNICODE); ?>;
-    window.USUARIOS_LIST = <?php echo json_encode(array_map(function ($u) { return ['id' => (int)$u['id'], 'nombre' => $u['nombre']]; }, $usuarios ?? []), JSON_UNESCAPED_UNICODE); ?>;
     window.ROLES_LIST  = <?php echo json_encode($roles  ?? [], JSON_UNESCAPED_UNICODE); ?>;
 </script>
 

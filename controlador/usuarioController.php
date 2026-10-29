@@ -273,7 +273,6 @@ class UsuarioController {
         // Crear usuario
         if ($this->usuarioModel->crearUsuario($datos)) {
             $this->usuarioModel->guardarDependenciasUsuario($this->usuarioModel->ultimoIdCreado, $this->dependenciasEnviadas($_POST));
-            if (!empty($_POST['reporta_a'])) $this->usuarioModel->guardarReportaA($this->usuarioModel->ultimoIdCreado, (int)$_POST['reporta_a']);
             echo json_encode([
                 'success' => true,
                 'message' => 'Usuario creado exitosamente'
@@ -301,7 +300,6 @@ class UsuarioController {
         
         if ($usuario) {
             $usuario['dependencias'] = $this->usuarioModel->obtenerDependenciasUsuario($id);
-            $usuario['reporta_a'] = $this->usuarioModel->obtenerReportaA($id);
             echo json_encode([
                 'success' => true,
                 'data' => $usuario
@@ -428,10 +426,6 @@ class UsuarioController {
         if ($this->usuarioModel->actualizarUsuario($id, $datos)) {
             if (array_key_exists('dependencias', $input)) {
                 $this->usuarioModel->guardarDependenciasUsuario($id, $this->dependenciasEnviadas($input));
-            }
-            if (array_key_exists('reporta_a', $input) && !$this->usuarioModel->guardarReportaA($id, !empty($input['reporta_a']) ? (int)$input['reporta_a'] : null)) {
-                echo json_encode(['success' => false, 'message' => 'Usuario actualizado, pero "Reporta a" no es válido (no puede reportarse a sí mismo ni a alguien que le reporta)']);
-                exit;
             }
             echo json_encode([
                 'success' => true,

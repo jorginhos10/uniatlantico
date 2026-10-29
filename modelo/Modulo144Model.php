@@ -378,11 +378,8 @@ class Modulo144Model {
     // quién debe aprobar cada etapa del semáforo: [['nombre' => , 'rol' => , 'dependencias' => []], ...]
     public function getUsuariosAprobadores() {
         try {
-            if ($this->db->query("SHOW COLUMNS FROM usuarios LIKE 'reporta_a'")->rowCount() === 0) {
-                $this->db->exec("ALTER TABLE usuarios ADD COLUMN reporta_a INT NULL DEFAULT NULL");
-            }
             $filas = $this->db->query(
-                "SELECT u.id, u.nombre, u.rol, u.reporta_a, c.nombre AS cargo FROM usuarios u LEFT JOIN cargos c ON c.id = u.cargo_id WHERE u.activo = 1"
+                "SELECT u.id, u.nombre, u.rol, c.nombre AS cargo FROM usuarios u LEFT JOIN cargos c ON c.id = u.cargo_id WHERE u.activo = 1"
             )->fetchAll();
             $extra = [];
             try {
@@ -397,7 +394,6 @@ class Modulo144Model {
                 $deps = array_merge([$f['cargo']], $extra[(int)$f['id']] ?? []);
                 $res[] = [
                     'id' => (int)$f['id'],
-                    'reporta_a' => $f['reporta_a'] ? (int)$f['reporta_a'] : null,
                     'nombre' => (string)$f['nombre'],
                     'rol' => strtr(mb_strtolower(trim((string)$f['rol']), 'UTF-8'), ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']),
                     'dependencias' => array_values(array_unique(array_filter(array_map('trim', array_map('strval', $deps)), 'strlen'))),
@@ -410,31 +406,48 @@ class Modulo144Model {
         }
     }
 
-    // Ids de los vicerrectores (rol "responsable de linea") que deben aprobar un indicador según el organigrama:
-    // los superiores (usuarios.reporta_a, hacia arriba) de quienes pertenecen a la dependencia responsable o lo crearon.
-    // Devuelve null si el organigrama no llega a ningún vicerrector (aún sin configurar): ahí aprueba cualquiera con el rol.
-    public function idsVicerrectoresDelIndicador(array $usuarios, $responsables, $creadorId) {
-        $porId = [];
-        foreach ($usuarios as $u) $porId[$u['id']] = $u;
-        $lista = ', ' . mb_strtolower(trim((string)$responsables), 'UTF-8') . ', ';
-        $semilla = [];
-        foreach ($usuarios as $u) {
-            $deDep = false;
-            foreach ($u['dependencias'] as $d) {
-                $d = mb_strtolower(trim($d), 'UTF-8');
-                if ($d !== '' && mb_strpos($lista, ', ' . $d . ', ', 0, 'UTF-8') !== false) { $deDep = true; break; }
+    // [nombre de dependencia en minúsculas => nombre de la dependencia a la que reporta] (organigrama, cargos.reporta_a_id)
+    private function getPadresDependencias() {
+        try {
+            if ($this->db->query("SHOW COLUMNS FROM cargos LIKE 'reporta_a_id'")->rowCount() === 0) return [];
+            $map = [];
+            foreach ($this->db->query("SELECT c.nombre, p.nombre AS padre FROM cargos c JOIN cargos p ON p.id = c.reporta_a_id")->fetchAll() as $r) {
+                $map[mb_strtolower(trim($r['nombre']), 'UTF-8')] = mb_strtolower(trim($r['padre']), 'UTF-8');
             }
-            if ($deDep || $u['id'] === (int)$creadorId) $semilla[] = $u['id'];
+            return $map;
+        } catch (PDOException $e) {
+            error_log('Error getPadresDependencias: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Ids de los vicerrectores (rol "responsable de linea") que deben aprobar un indicador según el organigrama de dependencias:
+    // los usuarios de las dependencias superiores (cargos.reporta_a_id, hacia arriba) de las dependencias responsables del
+    // indicador y de la de quien lo creó. Devuelve null si el organigrama no llega a ningún vicerrector (aún sin configurar):
+    // ahí aprueba cualquiera con el rol.
+    public function idsVicerrectoresDelIndicador(array $usuarios, $responsables, $creadorId) {
+        $padres = $this->getPadresDependencias();
+        if (!$padres) return null;
+        $dependencias = [];
+        foreach (explode(',', (string)$responsables) as $d) {
+            $d = mb_strtolower(trim($d), 'UTF-8');
+            if ($d !== '') $dependencias[$d] = true;
+        }
+        foreach ($usuarios as $u) {
+            if ($u['id'] === (int)$creadorId && !empty($u['dependencias'][0])) $dependencias[mb_strtolower($u['dependencias'][0], 'UTF-8')] = true;
+        }
+        $superiores = [];
+        foreach (array_keys($dependencias) as $d) {
+            for ($i = 0, $cur = $padres[$d] ?? null; $cur && $i < 50; $i++, $cur = $padres[$cur] ?? null) $superiores[$cur] = true;
         }
         $vice = [];
-        foreach ($semilla as $id) {
-            $cur = $porId[$id]['reporta_a'] ?? null;
-            for ($i = 0; $cur && isset($porId[$cur]) && $i < 50; $i++) {
-                if ($porId[$cur]['rol'] === 'responsable de linea') $vice[$cur] = true;
-                $cur = $porId[$cur]['reporta_a'];
+        foreach ($usuarios as $u) {
+            if ($u['rol'] !== 'responsable de linea') continue;
+            foreach ($u['dependencias'] as $d) {
+                if (isset($superiores[mb_strtolower($d, 'UTF-8')])) { $vice[] = $u['id']; break; }
             }
         }
-        return $vice ? array_keys($vice) : null;
+        return $vice ?: null;
     }
 
     public function getPlanesInstitucionales() {

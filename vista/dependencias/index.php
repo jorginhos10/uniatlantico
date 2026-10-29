@@ -244,6 +244,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <tr>
                         <th>#</th>
                         <th>Nombre</th>
+                        <th>Reporta a</th>
                         <th>Estado</th>
                         <th>Creado</th>
                         <th>Acciones</th>
@@ -251,7 +252,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </thead>
                 <tbody id="tablaDepsBody">
                     <tr class="empty-row">
-                        <td colspan="5">
+                        <td colspan="6">
                             <div class="empty-icon"><i class="fas fa-spinner fa-spin"></i></div>
                             <div>Cargando...</div>
                         </td>
@@ -278,6 +279,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         <label class="form-label">Nombre *</label>
                         <input type="text" class="form-control" name="nombre" id="dep_nombre" required
                                placeholder="Ej: Facultad de Ingeniería">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reporta a</label>
+                        <select class="form-select" name="reporta_a_id" id="dep_reporta_a">
+                            <option value="">— Ninguna (cabeza del organigrama) —</option>
+                        </select>
+                        <small class="text-muted">Dependencia superior en el organigrama (por ejemplo, su vicerrectoría). Quien aprueba la etapa de Vicerrectoría de sus indicadores es el vicerrector de esa dependencia.</small>
                     </div>
                     <div class="mb-1">
                         <div class="form-check">
@@ -359,7 +367,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     function renderTabla(deps) {
         if (deps.length === 0) {
-            $('#tablaDepsBody').html(`<tr class="empty-row"><td colspan="5"><div class="empty-icon"><i class="fas fa-user-tie"></i></div><div>No hay dependencias registradas</div></td></tr>`);
+            $('#tablaDepsBody').html(`<tr class="empty-row"><td colspan="6"><div class="empty-icon"><i class="fas fa-user-tie"></i></div><div>No hay dependencias registradas</div></td></tr>`);
             return;
         }
         let html = '';
@@ -372,6 +380,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             html += `<tr>
                 <td><strong style="color:var(--ios-orange);">#${d.id}</strong></td>
                 <td><strong>${escHtml(d.nombre)}</strong></td>
+                <td style="color:var(--ios-label2);font-size:13px;">${d.reporta_a_nombre ? escHtml(d.reporta_a_nombre) : '—'}</td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
                 <td style="color:var(--ios-label2);font-size:13px;">${fecha}</td>
                 <td>
@@ -396,7 +405,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     function mostrarError() {
-        $('#tablaDepsBody').html('<tr class="empty-row"><td colspan="5"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los datos</div></td></tr>');
+        $('#tablaDepsBody').html('<tr class="empty-row"><td colspan="6"><div class="empty-icon" style="color:var(--ios-red);"><i class="fas fa-exclamation-circle"></i></div><div>Error al cargar los datos</div></td></tr>');
+    }
+
+    // Select "Reporta a": todas las dependencias menos la que se edita
+    function poblarReportaA(excluirId, seleccionada) {
+        let opts = '<option value="">— Ninguna (cabeza del organigrama) —</option>';
+        todasLasDeps.forEach(function(d) {
+            if (d.id == excluirId) return;
+            opts += '<option value="' + d.id + '">' + escHtml(d.nombre) + '</option>';
+        });
+        $('#dep_reporta_a').html(opts).val(seleccionada || '');
     }
 
     function abrirModalCrear() {
@@ -404,6 +423,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#dep_id').val('');
         $('#formDep')[0].reset();
         $('#dep_activo').prop('checked', true);
+        poblarReportaA(0, '');
         $('#modalDep').modal('show');
     }
 
@@ -418,6 +438,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     $('#dep_id').val(d.id);
                     $('#dep_nombre').val(d.nombre);
                     $('#dep_activo').prop('checked', d.activo == 1);
+                    poblarReportaA(d.id, d.reporta_a_id);
                     $('#modalDep').modal('show');
                 } else { Swal.fire('Error', res.message, 'error'); }
             },
@@ -429,7 +450,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         e.preventDefault();
         const id  = $('#dep_id').val();
         const url = id ? basePath + '/dependencias/actualizar' : basePath + '/dependencias/crear';
-        const data = { id: id, nombre: $('#dep_nombre').val(), activo: $('#dep_activo').is(':checked') ? 1 : 0 };
+        const data = { id: id, nombre: $('#dep_nombre').val(), activo: $('#dep_activo').is(':checked') ? 1 : 0, reporta_a_id: $('#dep_reporta_a').val() };
 
         $('#btnGuardar').prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Guardando...');
         $.ajax({

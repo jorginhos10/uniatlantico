@@ -20,12 +20,32 @@ class DependenciasModel {
         }
     }
 
+    // Organigrama: cada dependencia reporta a otra (cargos.reporta_a_id), por ejemplo una dirección a su vicerrectoría
+    private function asegurarColumnaReportaA() {
+        if ($this->db->query("SHOW COLUMNS FROM cargos LIKE 'reporta_a_id'")->rowCount() === 0) {
+            $this->db->exec("ALTER TABLE cargos ADD COLUMN reporta_a_id INT NULL DEFAULT NULL");
+        }
+    }
+
+    // El superior debe existir y no puede ser la misma dependencia ni una que ya le reporta (evita ciclos)
+    public function reportaAValido($id, $reportaA) {
+        if (!$reportaA) return true;
+        $id = (int)$id; $cur = (int)$reportaA;
+        if ($cur === $id || !$this->getById($cur)) return false;
+        for ($i = 0; $cur && $i < 50; $i++) {
+            if ($cur === $id) return false;
+            $cur = (int)($this->getById($cur)['reporta_a_id'] ?? 0);
+        }
+        return true;
+    }
+
     public function getAll() {
         try {
+            $this->asegurarColumnaReportaA();
             $stmt = $this->db->prepare(
-                "SELECT id, nombre, activo, fecha_creacion
-                 FROM cargos
-                 ORDER BY nombre ASC"
+                "SELECT c.id, c.nombre, c.activo, c.fecha_creacion, c.reporta_a_id, p.nombre AS reporta_a_nombre
+                 FROM cargos c LEFT JOIN cargos p ON p.id = c.reporta_a_id
+                 ORDER BY c.nombre ASC"
             );
             $stmt->execute();
             return $stmt->fetchAll();
@@ -37,8 +57,9 @@ class DependenciasModel {
 
     public function getById($id) {
         try {
+            $this->asegurarColumnaReportaA();
             $stmt = $this->db->prepare(
-                "SELECT id, nombre, activo, fecha_creacion
+                "SELECT id, nombre, activo, fecha_creacion, reporta_a_id
                  FROM cargos WHERE id = ?"
             );
             $stmt->execute([$id]);
@@ -49,13 +70,15 @@ class DependenciasModel {
         }
     }
 
-    public function crear($nombre, $activo) {
+    public function crear($nombre, $activo, $reportaA = null) {
         try {
+            $this->asegurarColumnaReportaA();
+            if ($reportaA && !$this->reportaAValido(0, $reportaA)) return ['success' => false, 'message' => 'La dependencia superior no es válida'];
             $stmt = $this->db->prepare(
-                "INSERT INTO cargos (nombre, activo, fecha_creacion)
-                 VALUES (?, ?, NOW())"
+                "INSERT INTO cargos (nombre, activo, reporta_a_id, fecha_creacion)
+                 VALUES (?, ?, ?, NOW())"
             );
-            $stmt->execute([$nombre, $activo]);
+            $stmt->execute([$nombre, $activo, $reportaA ?: null]);
             return ['success' => true, 'message' => 'Cargo creado exitosamente', 'id' => $this->db->lastInsertId()];
         } catch (PDOException $e) {
             error_log("Error crear cargo: " . $e->getMessage());
@@ -63,13 +86,15 @@ class DependenciasModel {
         }
     }
 
-    public function actualizar($id, $nombre, $activo) {
+    public function actualizar($id, $nombre, $activo, $reportaA = null) {
         try {
+            $this->asegurarColumnaReportaA();
+            if (!$this->reportaAValido($id, $reportaA)) return ['success' => false, 'message' => 'La dependencia superior no es válida: no puede reportarse a sí misma ni a una que depende de ella'];
             $stmt = $this->db->prepare(
-                "UPDATE cargos SET nombre = ?, activo = ?, fecha_actualizacion = NOW()
+                "UPDATE cargos SET nombre = ?, activo = ?, reporta_a_id = ?, fecha_actualizacion = NOW()
                  WHERE id = ?"
             );
-            $stmt->execute([$nombre, $activo, $id]);
+            $stmt->execute([$nombre, $activo, $reportaA ?: null, $id]);
             return ['success' => true, 'message' => 'Cargo actualizado exitosamente'];
         } catch (PDOException $e) {
             error_log("Error actualizar cargo: " . $e->getMessage());
@@ -79,6 +104,8 @@ class DependenciasModel {
 
     public function eliminar($id) {
         try {
+            $this->asegurarColumnaReportaA();
+            $this->db->prepare("UPDATE cargos SET reporta_a_id = NULL WHERE reporta_a_id = ?")->execute([$id]);
             $stmt = $this->db->prepare("DELETE FROM cargos WHERE id = ?");
             $stmt->execute([$id]);
             return ['success' => true, 'message' => 'Cargo eliminado exitosamente'];

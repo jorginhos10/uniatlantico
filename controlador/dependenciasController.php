@@ -30,12 +30,13 @@ class DependenciasController {
             $filas[] = [
                 count($filas) + 1,
                 (string)($d['nombre'] ?? ''),
+                (string)($d['reporta_a_nombre'] ?? ''),
                 (int)($d['activo'] ?? 0) === 1 ? 'Activo' : 'Inactivo',
                 !empty($d['fecha_creacion']) ? date('d/m/Y', strtotime($d['fecha_creacion'])) : ''
             ];
         }
 
-        ExcelExport::descargar('dependencias_' . date('Y-m-d'), 'Dependencias', ['#', 'Nombre', 'Estado', 'Creado'], $filas, [6, 60, 14, 14]);
+        ExcelExport::descargar('dependencias_' . date('Y-m-d'), 'Dependencias', ['#', 'Nombre', 'Reporta a', 'Estado', 'Creado'], $filas, [6, 60, 40, 14, 14]);
     }
 
     public function crear() {
@@ -54,7 +55,7 @@ class DependenciasController {
             return;
         }
 
-        $resultado = $this->model->crear($nombre, $activo);
+        $resultado = $this->model->crear($nombre, $activo, intval($_POST['reporta_a_id'] ?? 0));
         echo json_encode($resultado);
     }
 
@@ -97,7 +98,7 @@ class DependenciasController {
             return;
         }
 
-        $resultado = $this->model->actualizar($id, $nombre, $activo);
+        $resultado = $this->model->actualizar($id, $nombre, $activo, intval($_POST['reporta_a_id'] ?? 0));
         echo json_encode($resultado);
     }
 

@@ -261,53 +261,6 @@ class UsuarioModel {
         }
     }
 
-    // ── Organigrama: a quién le reporta cada usuario (usuarios.reporta_a = id del superior) ──
-
-    private function asegurarColumnaReportaA() {
-        if ($this->db->query("SHOW COLUMNS FROM usuarios LIKE 'reporta_a'")->rowCount() === 0) {
-            $this->db->exec("ALTER TABLE usuarios ADD COLUMN reporta_a INT NULL DEFAULT NULL");
-        }
-    }
-
-    public function obtenerReportaA($usuarioId) {
-        try {
-            $this->asegurarColumnaReportaA();
-            $stmt = $this->db->prepare("SELECT reporta_a FROM usuarios WHERE id = :id");
-            $stmt->execute([':id' => (int)$usuarioId]);
-            $v = $stmt->fetchColumn();
-            return $v ? (int)$v : null;
-        } catch (PDOException $e) {
-            error_log("Error obtenerReportaA: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    // El superior debe existir y no puede ser el mismo usuario ni alguien que ya le reporta (evita ciclos)
-    public function guardarReportaA($usuarioId, $jefeId) {
-        $usuarioId = (int)$usuarioId;
-        $jefeId = $jefeId ? (int)$jefeId : null;
-        try {
-            $this->asegurarColumnaReportaA();
-            if ($jefeId !== null) {
-                if ($jefeId === $usuarioId) return false;
-                $cur = $jefeId;
-                for ($i = 0; $cur && $i < 50; $i++) {
-                    if ($cur === $usuarioId) return false;
-                    $q = $this->db->prepare("SELECT reporta_a FROM usuarios WHERE id = :id");
-                    $q->execute([':id' => $cur]);
-                    $cur = (int)$q->fetchColumn();
-                }
-            }
-            $stmt = $this->db->prepare("UPDATE usuarios SET reporta_a = :j WHERE id = :id");
-            $stmt->bindValue(':j', $jefeId, $jefeId === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
-            $stmt->bindValue(':id', $usuarioId, PDO::PARAM_INT);
-            return $stmt->execute();
-        } catch (PDOException $e) {
-            error_log("Error guardarReportaA: " . $e->getMessage());
-            return false;
-        }
-    }
-
     public function eliminarUsuario($id) {
         $sql = "DELETE FROM usuarios WHERE id = :id";
         
