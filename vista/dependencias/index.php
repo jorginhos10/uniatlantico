@@ -139,6 +139,8 @@ ob_start();
     .dep-table td { padding: 14px 16px; font-size: 14px; color: var(--ios-label); vertical-align: middle; }
     .badge-activo   { background: rgba(52,199,89,.15);  color: #1a7a3a; border: 1px solid rgba(52,199,89,.3); }
     .badge-conexion { display: inline-flex; align-items: center; gap: 7px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+    .badge-conexion { cursor: pointer; }
+    .badge-conexion:hover { filter: brightness(.95); }
     .badge-conexion i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
     .badge-conexion.conectada { background: rgba(52,199,89,.15); color: #1a7a3a; border: 1px solid rgba(52,199,89,.3); }
     .badge-conexion.sin-conexion { background: rgba(255,59,48,.1); color: #c0392b; border: 1px solid rgba(255,59,48,.25); }
@@ -385,8 +387,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <td><strong style="color:var(--ios-orange);">#${d.id}</strong></td>
                 <td><strong>${escHtml(d.nombre)}</strong></td>
                 <td style="font-size:13px;">${d.reporta_a_nombre
-                    ? '<span class="badge-conexion conectada" title="Conectada al organigrama"><i></i>' + escHtml(d.reporta_a_nombre) + '</span>'
-                    : '<span class="badge-conexion sin-conexion" title="Sin dependencia superior: no está conectada al organigrama"><i></i>Sin conexión</span>'}</td>
+                    ? '<span class="badge-conexion conectada" title="Clic para cambiar la dependencia superior" onclick="conectarDep(${d.id})"><i></i>' + escHtml(d.reporta_a_nombre) + '</span>'
+                    : '<span class="badge-conexion sin-conexion" title="Sin dependencia superior: clic para conectarla" onclick="conectarDep(${d.id})"><i></i>Sin conexión</span>'}</td>
                 <td><span class="badge-estado ${estadoClass}">${estadoText}</span></td>
                 <td style="color:var(--ios-label2);font-size:13px;">${fecha}</td>
                 <td>
@@ -422,6 +424,37 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             opts += '<option value="' + d.id + '">' + escHtml(d.nombre) + '</option>';
         });
         $('#dep_reporta_a').html(opts).val(seleccionada || '');
+    }
+
+    // Pop up para conectar la dependencia con su superior en el organigrama
+    function conectarDep(id) {
+        const dep = todasLasDeps.find(d => d.id == id);
+        if (!dep) return;
+        const opciones = { '': '— Ninguna (sin conexión) —' };
+        todasLasDeps.filter(d => d.id != id).forEach(d => { opciones[d.id] = d.nombre; });
+        Swal.fire({
+            title: 'Conectar dependencia',
+            html: '<strong>' + escHtml(dep.nombre) + '</strong> reporta a:',
+            input: 'select',
+            inputOptions: opciones,
+            inputValue: dep.reporta_a_id ? String(dep.reporta_a_id) : '',
+            showCancelButton: true,
+            confirmButtonText: 'Guardar',
+            cancelButtonText: 'Cancelar'
+        }).then(function(r) {
+            if (!r.isConfirmed) return;
+            $.ajax({
+                url: basePath + '/dependencias/actualizar', type: 'POST', dataType: 'json',
+                data: { id: dep.id, nombre: dep.nombre, activo: dep.activo, reporta_a_id: r.value },
+                success: function(res) {
+                    if (res.success) {
+                        Swal.fire({ icon: 'success', title: r.value ? 'Conectada' : 'Desconectada', timer: 1200, showConfirmButton: false });
+                        cargarDependencias();
+                    } else { Swal.fire('Error', res.message, 'error'); }
+                },
+                error: function() { Swal.fire('Error', 'No se pudo guardar', 'error'); }
+            });
+        });
     }
 
     function abrirModalCrear() {
