@@ -374,6 +374,37 @@ class Modulo144Model {
         return array_values(array_unique(array_filter(array_map('trim', $nombres), 'strlen')));
     }
 
+    // Usuarios activos con su rol y todas sus dependencias (principal + "Responsable de"), para mostrar
+    // quién debe aprobar cada etapa del semáforo: [['nombre' => , 'rol' => , 'dependencias' => []], ...]
+    public function getUsuariosAprobadores() {
+        try {
+            $filas = $this->db->query(
+                "SELECT u.id, u.nombre, u.rol, c.nombre AS cargo FROM usuarios u LEFT JOIN cargos c ON c.id = u.cargo_id WHERE u.activo = 1"
+            )->fetchAll();
+            $extra = [];
+            try {
+                foreach ($this->db->query("SELECT ud.usuario_id, c.nombre FROM usuario_dependencias ud JOIN cargos c ON c.id = ud.cargo_id")->fetchAll() as $r) {
+                    $extra[(int)$r['usuario_id']][] = $r['nombre'];
+                }
+            } catch (PDOException $e) {
+                // Sin la migración todavía: solo la dependencia principal
+            }
+            $res = [];
+            foreach ($filas as $f) {
+                $deps = array_merge([$f['cargo']], $extra[(int)$f['id']] ?? []);
+                $res[] = [
+                    'nombre' => (string)$f['nombre'],
+                    'rol' => strtr(mb_strtolower(trim((string)$f['rol']), 'UTF-8'), ['á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u']),
+                    'dependencias' => array_values(array_unique(array_filter(array_map('trim', array_map('strval', $deps)), 'strlen'))),
+                ];
+            }
+            return $res;
+        } catch (PDOException $e) {
+            error_log('Error getUsuariosAprobadores: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getPlanesInstitucionales() {
         try {
             $stmt = $this->db->prepare("SELECT id, nombre FROM planes_institucionales WHERE activo = 1 ORDER BY nombre");

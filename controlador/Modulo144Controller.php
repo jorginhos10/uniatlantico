@@ -35,6 +35,7 @@ class Modulo144Controller {
         $viewer_cargo_nombre = $this->model->getCargoNombre($_SESSION['usuario_cargo_id'] ?? 0);
         // Todas las dependencias de las que el usuario es responsable (principal + "Responsable de")
         $viewer_dependencias = $this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
+        $usuarios_aprobadores = $this->model->getUsuariosAprobadores();
         // Si la dependencia del usuario es una facultad, ve en Seguimiento los indicadores donde su facultad tiene distribución
         // Facultades del usuario (por su dependencia principal o por cualquiera de las asociadas en "Responsable de")
         $viewer_facultades = $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);

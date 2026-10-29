@@ -1052,6 +1052,7 @@ ob_start();
         .cnx-item { display: grid; grid-template-columns: minmax(0, 1fr) 118px 118px 124px 18px; gap: 18px; align-items: center; background: #fff; border: 1px solid #E8EAF0; border-radius: 12px; padding: 12px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
         .cnx-item:hover, .cnx-item:focus-visible { border-color: #143163; box-shadow: 0 2px 10px rgba(20,49,99,.08); outline: none; }
         .cnx-nombre { font-weight: 600; color: #1d1d1f; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .cnx-formula { margin-top: 2px; font-size: .72rem; line-height: 1.3; color: #6E6E73; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .cnx-sub { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 4px; font-size: .8rem; color: #6E6E73; }
         .cnx-prog { display: grid; grid-template-columns: 22px minmax(0, 1fr) 34px; gap: 6px; align-items: center; font-size: .78rem; color: #6E6E73; }
         .cnx-prog b { text-align: right; color: #424245; font-variant-numeric: tabular-nums; font-weight: 600; }
@@ -1760,6 +1761,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
         }
 
+        // Nombres de quienes deben aprobar una etapa: usuarios con el rol de la etapa que pertenecen a la dependencia
+        // responsable del indicador (la Oficina de Planeación, etapa final, no depende de la dependencia).
+        // Si ninguno coincide con la dependencia, se listan todos los del rol.
+        if (!function_exists('m144_nombresAprobadores')) {
+            function m144_nombresAprobadores($usuarios, $rolEtapa, $responsables, $etapaNum) {
+                $roles = $etapaNum === 4 ? ['sub administrador', 'administrador'] : [$rolEtapa];
+                $delRol = array_values(array_filter((array)$usuarios, function ($u) use ($roles) { return in_array($u['rol'], $roles, true); }));
+                if ($etapaNum !== 4) {
+                    $deDep = array_values(array_filter($delRol, function ($u) use ($responsables) { return m144_esDependenciaResponsable($responsables, $u['dependencias']); }));
+                    if ($deDep) $delRol = $deDep;
+                }
+                $nombres = array_values(array_unique(array_column($delRol, 'nombre')));
+                if (count($nombres) > 3) $nombres = array_merge(array_slice($nombres, 0, 3), ['…']);
+                return implode(', ', $nombres);
+            }
+        }
+
         // Ven el indicador: admin / sub administrador, quien lo creó y todos los usuarios
         // de las dependencias responsables (sin importar quién lo haya creado).
         if (!function_exists('m144_filtrarBorradoresVisibles')) {
@@ -2082,6 +2100,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         if ($rechazadaAqui) $tituloCirculo .= ' — Rechazó';
                                                         elseif ($noAplica) $tituloCirculo .= ' — No aplica (creado por un rol superior)';
                                                         elseif ($activo) $tituloCirculo .= ' — Aprobado';
+                                                        else {
+                                                            $quienAprueba = m144_nombresAprobadores($usuarios_aprobadores ?? [], m144_normalizarRol($etapaInfo['rol']), $borrador['responsable_formulacion'] ?? '', $etapaNum);
+                                                            if ($quienAprueba !== '') $tituloCirculo .= ' (' . $quienAprueba . ')';
+                                                        }
                                                     ?>
                                                     <span class="<?php echo $clases; ?>"
                                                           title="<?php echo htmlspecialchars($tituloCirculo); ?>"
@@ -2594,6 +2616,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                              onclick="abrirConcertacion(<?php echo $id; ?>)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();abrirConcertacion(<?php echo $id; ?>);}">
                             <div class="cnx-main">
                                 <div class="cnx-nombre"><?php echo htmlspecialchars($nombre); ?></div>
+                                <?php $cnFormula = trim((string)($cnR['formula_medicion'] ?? '')); if ($cnFormula !== '' && $cnFormula !== $nombre): ?>
+                                <div class="cnx-formula" title="<?php echo htmlspecialchars($cnFormula); ?>"><?php echo htmlspecialchars($cnFormula); ?></div>
+                                <?php endif; ?>
                                 <div class="cnx-sub"><span class="cn-lmp"><?php echo htmlspecialchars($lmp ?: '—'); ?></span><span><?php echo htmlspecialchars($cnR['responsable_formulacion'] ?: '—'); ?></span></div>
                             </div>
                             <?php foreach ([1, 2] as $sem): $rep = $inf['t' . $sem]; $con = $inf['d' . $sem]; ?>
