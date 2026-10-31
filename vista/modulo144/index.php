@@ -1784,7 +1784,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // Ven el indicador: admin / sub administrador, quien lo creó y todos los usuarios
         // de las dependencias responsables (sin importar quién lo haya creado).
         if (!function_exists('m144_filtrarBorradoresVisibles')) {
-            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $facultadesPorItem = [], $viewerFacultades = []) {
+            // $vicerrectoresDe + $campos: el vicerrector al que, según el organigrama de dependencias, le corresponde aprobar
+            // el indicador también lo ve (si no, un indicador de una dependencia que reporta a otra nunca le llegaba), pero
+            // solo cuando ya se solicitó su aprobación o está publicado, no mientras la dependencia lo construye.
+            function m144_filtrarBorradoresVisibles($borradores, $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $facultadesPorItem = [], $viewerFacultades = [], $vicerrectoresDe = null, $campos = []) {
                 $visibles = [];
                 foreach ($borradores as $b) {
                     $esCreador = $viewerId > 0 && $viewerId === (int)($b['creado_por'] ?? 0);
@@ -1793,6 +1796,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     if ($puedeVerTodoElSemaforo || $esCreador || $esFacultadConValor
                         || m144_esDependenciaResponsable($b['responsable_formulacion'] ?? '', $viewerCargoNombre)) {
                         $visibles[] = $b;
+                        continue;
+                    }
+                    if ($vicerrectoresDe && $campos) {
+                        $solicitado = (int)($b[$campos['solicitud']] ?? 0) >= 1 || (int)($b[$campos['estado']] ?? 0) !== 0;
+                        if ($solicitado) {
+                            $ids = $vicerrectoresDe($b['responsable_formulacion'] ?? '', (int)($b['creado_por'] ?? 0));
+                            if ($ids !== null && in_array($viewerId, $ids, true)) $visibles[] = $b;
+                        }
                     }
                 }
                 return $visibles;
@@ -1808,11 +1819,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             // Solo en Seguimiento las facultades nombradas en la distribución ven el indicador
             $_facPorItem = $_dmKey === 'seguimiento' ? ($facultades_por_item ?? []) : [];
             $_viewerFac  = $_dmKey === 'seguimiento' ? ($viewer_facultades ?? []) : [];
+            // Solo quien tiene el rol de vicerrector (responsable de línea) entra por la regla del organigrama
+            $_viceDe = ($miRolNormalizado === 'responsable de linea' && isset($vicerrectores_de)) ? $vicerrectores_de : null;
+            $_camposVice = ['solicitud' => $_dmModulo['config']['campo_solicitud'], 'estado' => $_dmModulo['config']['campo_estado']];
             $borradoresVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
-                $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac
+                $_dmModulo['borradores'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac, $_viceDe, $_camposVice
             );
             $publicadosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
-                $_dmModulo['publicados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac
+                $_dmModulo['publicados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo, $_facPorItem, $_viewerFac, $_viceDe, $_camposVice
             );
             $canceladosVisiblesPorModulo[$_dmKey] = m144_filtrarBorradoresVisibles(
                 $_dmModulo['cancelados'], $viewerId, $viewerCargoNombre, $puedeVerTodoElSemaforo
@@ -2035,7 +2049,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             && m144_esDependenciaResponsable($borrador['responsable_formulacion'] ?? '', $viewerCargoNombre)
                                         );
                                         // Visible solo porque su facultad tiene distribución: registra su seguimiento, pero no aprueba etapas
-                                        $soloPorFacultadFila = !$puedeVerTodoElSemaforo && !$esCreadorFila
+                                        // El vicerrector al que le corresponde el indicador por el organigrama también lo gestiona
+                                        $idsViceFila = isset($vicerrectores_de) ? $vicerrectores_de($borrador['responsable_formulacion'] ?? '', (int)($borrador['creado_por'] ?? 0)) : null;
+                                        $esViceDelItem = $idsViceFila !== null && in_array($viewerId, $idsViceFila, true);
+                                        $soloPorFacultadFila = !$puedeVerTodoElSemaforo && !$esCreadorFila && !$esViceDelItem
                                             && !m144_esDependenciaResponsable($borrador['responsable_formulacion'] ?? '', $viewerCargoNombre);
                                     ?>
                                     <div class="lista-item" data-item-id="<?php echo $borrador['id']; ?>" data-ponderacion="<?php echo (float)($borrador['ponderacion_actividades'] ?? 0); ?>" data-linea-item="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-item="<?php echo htmlspecialchars($borrador['motor_id_num'] ?? ''); ?>" data-proyecto-item="<?php echo htmlspecialchars($p ?? ''); ?>" data-modulo="<?php echo $key; ?>" data-creado-por="<?php echo (int)($borrador['creado_por'] ?? 0); ?>" data-creado-por-nombre="<?php echo htmlspecialchars($borrador['creado_por_nombre'] ?? ''); ?>" data-cargo-id="<?php echo (int)($borrador['creado_por_cargo_id'] ?? 0); ?>" data-cargo-nombre="<?php echo htmlspecialchars($borrador['creado_por_cargo_nombre'] ?? ''); ?>" data-responsable="<?php echo htmlspecialchars($borrador['responsable_formulacion'] ?? ''); ?>" data-linea-filtro="<?php echo htmlspecialchars($borrador['linea_estrategica'] ?? ''); ?>" data-motor-filtro="<?php echo htmlspecialchars($borrador['motor_desarrollo'] ?? ''); ?>" data-proyecto-filtro="<?php echo htmlspecialchars($borrador['proyecto'] ?? ''); ?>" data-linea-codigo="<?php echo htmlspecialchars($l ?? ''); ?>" data-motor-codigo="<?php echo htmlspecialchars($m ?? ''); ?>" data-proyecto-codigo="<?php echo htmlspecialchars($p ?? ''); ?>" data-nombre-borrador="<?php echo htmlspecialchars(strtolower($borrador['nombre_borrador'] ?? '')); ?>" data-tiene-seguimiento="<?php echo $tiene_seg_b ? '1' : '0'; ?>">
@@ -2082,7 +2099,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                     <?php
                                                     $puedeRechazarEtapa = false;
                                                     // Vicerrectores que aprueban este indicador según el organigrama (null = sin configurar)
-                                                    $idsVice = isset($vicerrectores_de) ? $vicerrectores_de($borrador['responsable_formulacion'] ?? '', (int)($borrador['creado_por'] ?? 0)) : null;
+                                                    $idsVice = $idsViceFila;
                                                     foreach ($semaforoEtapas as $etapaNum => $etapaInfo):
                                                         $noAplica = $etapaNum <= $creadorNivel;
                                                         $rechazadaAqui = $etapaNum === $rechazoEtapa;
