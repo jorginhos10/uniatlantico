@@ -734,6 +734,40 @@ class Modulo144Controller {
         echo json_encode(['success' => true, 'message' => count($publicados) === 1 ? 'Trimestre ' . $publicados[0] . ' publicado' : 'Trimestres ' . implode(', ', $publicados) . ' publicados']);
     }
 
+    // Publica los trimestres elegidos en todos los indicadores del formulario, sin esperar las etapas: solo el superadministrador
+    public function publicarSeguimientoTodos() {
+        header('Content-Type: application/json');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['success' => false, 'message' => 'Método no permitido']);
+            return;
+        }
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        if ($uid !== 1) {
+            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar el seguimiento']);
+            return;
+        }
+        $formularioId = intval($_POST['formulario_id'] ?? 0);
+        if ($formularioId <= 0 || !$this->model->verificarFormulario($formularioId)) {
+            echo json_encode(['success' => false, 'message' => 'Formulario no válido']);
+            return;
+        }
+        $trimestres = array_values(array_filter(array_map('intval', (array)($_POST['trimestres'] ?? [])), function ($t) { return $t >= 1 && $t <= 4; }));
+        if (!$trimestres) {
+            echo json_encode(['success' => false, 'message' => 'Elige al menos un trimestre para publicar']);
+            return;
+        }
+        $res = $this->model->publicarTrimestresFormulario($formularioId, $trimestres, $uid, $_SESSION['usuario_nombre'] ?? '—', $_SESSION['usuario_rol'] ?? null);
+        if ($res === false) {
+            echo json_encode(['success' => false, 'message' => 'Error al publicar el seguimiento']);
+            return;
+        }
+        $msg = $res['trimestres'] === 0
+            ? 'No había trimestres para publicar'
+            : $res['trimestres'] . ' trimestre(s) publicados en ' . $res['indicadores'] . ' indicador(es)';
+        if ($res['sin_valor'] > 0) $msg .= ' · ' . $res['sin_valor'] . ' sin valor registrado quedaron sin publicar';
+        echo json_encode(['success' => true, 'message' => $msg]);
+    }
+
     public function devolverTodosABorrador() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

@@ -432,6 +432,15 @@ if ($pdo && $plan && $filas) {
 // (trimestres aprobados, acumulados a T4) llega al 80 % de la meta anual
 $nTrimAprob = 0;
 foreach ($filas as $fila) foreach ($trimFlujo[(int)$fila['id']] ?? [] as $x) if ($x['estado'] === 2) $nTrimAprob++;
+// «Reportados» depende del trimestre vigente (el del selector): los indicadores con ese trimestre aprobado por la Oficina de Planeación;
+// «en revisión», los que lo tienen esperando aprobación. Si aún no vence ningún trimestre se toma el T1.
+$trimRep = $trimVigente ?: 1;
+$nAprob = $nRevision = 0;
+foreach ($filas as $fila) {
+    $x = $trimFlujo[(int)$fila['id']][$trimRep] ?? ['estado' => 0, 'solicitud' => 0];
+    if ($x['estado'] === 2) $nAprob++;
+    elseif ($x['estado'] === 0 && $x['solicitud'] === 1) $nRevision++;
+}
 if ($trimFlujo) {
     try {
         $enMeta = 0;
@@ -900,7 +909,7 @@ require_once __DIR__ . '/../complementos/header.php';
         <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=publicados'); ?>" title="Ir al seguimiento en el Módulo 144">
             <span class="lbl">Reportados</span>
             <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nMetas; ?></small></span>
-            <span class="note">indicadores con los 4 trimestres aprobados · <?php echo $nTrimAprob; ?> trimestres aprobados · <?php echo $nRevision; ?> en revisión</span>
+            <span class="note">con el T<?php echo $trimRep; ?> aprobado · <?php echo $nRevision; ?> en revisión · <?php echo $nTrimAprob; ?> trimestres aprobados en total</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
         <div class="pa-card pa-kpi">

@@ -1905,9 +1905,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <i class="fas fa-file-download me-2"></i>Exportar plantilla</a></li>
                                         <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla()" title="Sube la plantilla de Excel llena">
                                             <i class="fas fa-file-upload me-2"></i>Importar plantilla</button></li>
-                                        <?php if ($puedePublicarLote || $puedeDevolverTodos): ?>
+                                        <?php $puedePublicarSeg = $key === 'seguimiento' && (int)($_SESSION['usuario_id'] ?? 0) === 1 && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
+                                        <?php if ($puedePublicarLote || $puedePublicarSeg || $puedeDevolverTodos): ?>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><h6 class="dropdown-header">Solo administrador</h6></li>
+                                        <?php endif; ?>
+                                        <?php if ($puedePublicarSeg): ?>
+                                        <li><button type="button" class="dropdown-item text-success" onclick="publicarSeguimientoTodos(<?php echo count($borradoresVisiblesPorModulo[$key]); ?>)" title="Publica el seguimiento de todos los indicadores en los trimestres que elijas, sin pasar por el semáforo">
+                                            <i class="fas fa-bullhorn me-2"></i>Publicar todos</button></li>
                                         <?php endif; ?>
                                         <?php if ($puedePublicarLote): ?>
                                         <li><button type="button" class="dropdown-item text-success" onclick="publicarBorradores(<?php echo count($borradoresVisiblesPorModulo[$key]); ?>)" title="Publica todos los borradores completos sin pasar por el semáforo">
@@ -6215,6 +6220,39 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     enviarPublicarSeguimiento(id, result.value);
                 });
             }).fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+        }
+
+        // Publica el seguimiento de TODOS los indicadores del formulario en los trimestres que se elijan (solo superadministrador)
+        function publicarSeguimientoTodos(total) {
+            const opciones = [1, 2, 3, 4].map(function(t) {
+                return '<label class="d-flex align-items-center gap-2 py-1" style="cursor:pointer"><input type="checkbox" class="form-check-input mt-0 pub-trim" value="' + t + '"> Trimestre ' + t + '</label>';
+            }).join('');
+            Swal.fire({
+                title: '¿En qué trimestre publicar todos?',
+                html: 'Se publicará el seguimiento de <strong>' + total + '</strong> indicador(es) <strong>sin pasar por las etapas de aprobación</strong>: '
+                    + 'los trimestres elegidos quedarán aprobados por la Oficina de Planeación. Los trimestres sin valor registrado no se publican.'
+                    + '<div class="text-start mt-3 mx-auto" style="max-width:300px">' + opciones + '</div>',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#34C759',
+                confirmButtonText: 'Publicar todos',
+                cancelButtonText: 'Cancelar',
+                preConfirm: function() {
+                    const ts = $('.pub-trim:checked').map(function() { return this.value; }).get();
+                    if (!ts.length) { Swal.showValidationMessage('Elige al menos un trimestre'); return false; }
+                    return ts;
+                }
+            }).then(function(result) {
+                if (!result.isConfirmed) return;
+                $.post(basePath + '/modulo144/publicarSeguimientoTodos', { formulario_id: formularioId, trimestres: result.value }, function(r) {
+                    if (r.success) {
+                        Swal.fire({ icon: 'success', title: r.message, timer: 2200, showConfirmButton: false });
+                        setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 2200);
+                    } else {
+                        Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
+                    }
+                }, 'json').fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+            });
         }
 
         function enviarPublicarSeguimiento(id, trimestres) {

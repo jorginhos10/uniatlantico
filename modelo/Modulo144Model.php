@@ -1293,6 +1293,37 @@ class Modulo144Model {
         }
     }
 
+    // Publica los trimestres indicados en TODOS los indicadores del formulario (superadministrador). Se omiten los trimestres que no
+    // aplican (T1 y T2 de «Límite»), los ya aprobados y los que no tienen ningún valor registrado.
+    // Devuelve ['indicadores' => n, 'trimestres' => n, 'sin_valor' => n] o false.
+    public function publicarTrimestresFormulario($formularioId, array $trimestres, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
+        try {
+            $this->asegurarColumnasDescripcionSemestres();
+            $q = $this->db->prepare("SELECT id, tipo_medicion, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
+                                     FROM formulacion_144 WHERE formulario_id = :f AND estado_formulacion = 2 AND estado_seguimiento != 1");
+            $q->execute([':f' => (int)$formularioId]);
+            $res = ['indicadores' => 0, 'trimestres' => 0, 'sin_valor' => 0];
+            foreach ($q->fetchAll() as $r) {
+                $flujo = $this->getFlujoTrimestres((int)$r['id']);
+                $validos = [];
+                foreach (array_unique(array_map('intval', $trimestres)) as $t) {
+                    if ($t < 1 || $t > 4 || ($flujo[$t]['estado'] ?? 0) !== 0) continue;
+                    if ($r['tipo_medicion'] === 'Límite' && $t <= 2) continue;
+                    $v = $r['trimestre' . $t . '_seguimiento'];
+                    if ($v === null || trim((string)$v) === '') { $res['sin_valor']++; continue; }
+                    $validos[] = $t;
+                }
+                if (!$validos) continue;
+                $pub = $this->publicarTrimestres((int)$r['id'], $validos, $usuarioId, $usuarioNombre, $rol);
+                if ($pub) { $res['indicadores']++; $res['trimestres'] += count($pub); }
+            }
+            return $res;
+        } catch (PDOException $e) {
+            error_log('Error publicarTrimestresFormulario: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // Resume los cuatro trimestres en las columnas de seguimiento del indicador:
     //  · estado: 2 (reportado) solo con los cuatro aprobados; un cancelado (1) se mantiene
     //  · solicitud: 1 si algún trimestre está en revisión, si no 2 si alguno está devuelto, si no 0

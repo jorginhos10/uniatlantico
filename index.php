@@ -385,6 +385,9 @@ switch ($action) {
             case 'publicarSeguimiento':
                 $modulo144Controller->publicarSeguimiento();
                 break;
+            case 'publicarSeguimientoTodos':
+                $modulo144Controller->publicarSeguimientoTodos();
+                break;
             case 'cambiarSolicitudEstado':
                 $modulo144Controller->cambiarSolicitudEstado();
                 break;
