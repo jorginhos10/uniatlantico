@@ -826,6 +826,9 @@ ob_start();
         .seg-tri { background: #FAFBFC; border: 1px solid #E5E5EA; border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; min-width: 0; align-content: start; }
         .seg-tri .form-label { font-size: 12px; }
         .seg-input-tri { font-size: 18px; }
+        .trim-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+        .trim-chip { font-size: 12px; font-weight: 800; border-radius: 99px; padding: 3px 9px; background: #EEEEF2; color: #8E8E93; }
+        .trim-chip.ok { background: #E3F4EA; color: #1F8A4C; }
         .seg-tri-est { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
         .seg-tri-est:empty { display: none; }
         .seg-tri-est.apr { background: #E3F4EA; color: #1F8A4C; } .seg-tri-est.rev { background: #FDF1D6; color: #8A5A00; } .seg-tri-est.dev { background: #FDE5E3; color: #C0392B; }
@@ -2279,7 +2282,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <div class="col-md-4">Nombre</div>
                                             <div class="col-md-2">L - M - P</div>
                                             <div class="col-md-2">Meta / Medición</div>
-                                            <div class="col-md-2">Fecha de publicación</div>
+                                            <div class="col-md-2"><?php echo $key === 'seguimiento' ? 'Trimestres aprobados' : 'Fecha de publicación'; ?></div>
                                             <div class="col-md-2">Acciones</div>
                                         </div>
                                     </div>
@@ -2333,9 +2336,20 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <?php echo m144_cumplidoMetaHtml($publicado); ?>
                                             </div>
                                             <div class="col-md-2">
+                                                <?php if ($key === 'seguimiento'):
+                                                    // Cada trimestre se aprueba por separado: se marcan los aprobados (los demás quedan en gris)
+                                                    $trAprob = array_map('intval', array_filter(explode(',', (string)($publicado['trimestres_aprobados'] ?? '')), 'strlen'));
+                                                    if ((int)($publicado['estado_seguimiento'] ?? 0) === 2) $trAprob = [1, 2, 3, 4]; ?>
+                                                <div class="trim-chips" title="<?php echo count($trAprob); ?> de 4 trimestres aprobados">
+                                                    <?php foreach ([1, 2, 3, 4] as $tn): ?>
+                                                    <span class="trim-chip<?php echo in_array($tn, $trAprob, true) ? ' ok' : ''; ?>">T<?php echo $tn; ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                                <?php else: ?>
                                                 <div class="lista-item-fecha">
                                                     <i class="far fa-calendar-alt me-1"></i><?php echo date('d/m/Y H:i', strtotime($publicado['fecha_creacion'])); ?>
                                                 </div>
+                                                <?php endif; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="lista-item-actions">

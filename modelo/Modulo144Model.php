@@ -521,13 +521,18 @@ class Modulo144Model {
         }
     }
 
-    public function getByEstado($modulo, $formulario_id, $estado) {
+    // $porTrimestre (solo seguimiento, estado 2): en vez de exigir los cuatro trimestres aprobados, trae los indicadores con ALGÚN
+    // trimestre aprobado y en trimestres_aprobados los lista (p. ej. "1,3")
+    public function getByEstado($modulo, $formulario_id, $estado, $porTrimestre = false) {
         try {
             $modulo_config = $this->modulos[$modulo];
             $tabla = $modulo_config['tabla'];
             $campo_estado = $modulo_config['campo_estado'];
+            $porTrimestre = $porTrimestre && $modulo === 'seguimiento' && (int)$estado === 2;
+            if ($porTrimestre) $this->asegurarTablaTrimestres();
+            $subAprobados = "SELECT GROUP_CONCAT(t.trimestre ORDER BY t.trimestre) FROM seguimiento_trimestres_144 t WHERE t.formulacion_id = f.id AND t.estado = 2";
 
-            $stmt = $this->db->prepare("SELECT f.*,
+            $stmt = $this->db->prepare("SELECT f.*" . ($porTrimestre ? ", ({$subAprobados}) AS trimestres_aprobados" : "") . ",
                                         le.codigo  AS linea_codigo,
                                         m.id       AS motor_id_num,
                                         m.codigo   AS motor_codigo,
@@ -542,13 +547,14 @@ class Modulo144Model {
                                         LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
                                         LEFT JOIN usuarios u ON f.creado_por = u.id
                                         LEFT JOIN cargos c ON u.cargo_id = c.id
-                                        WHERE f.formulario_id = :formulario_id AND f.{$campo_estado} = :estado
+                                        WHERE f.formulario_id = :formulario_id AND " . ($porTrimestre
+                                            ? "(f.{$campo_estado} = 2 OR EXISTS (SELECT 1 FROM seguimiento_trimestres_144 t2 WHERE t2.formulacion_id = f.id AND t2.estado = 2))"
+                                            : "f.{$campo_estado} = :estado") . "
                                         " . ($modulo === 'seguimiento' ? "AND f.estado_formulacion = 2" : "") . "
                                         ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
-            $stmt->execute([
-                ':formulario_id' => $formulario_id,
-                ':estado' => $estado
-            ]);
+            $params = [':formulario_id' => $formulario_id];
+            if (!$porTrimestre) $params[':estado'] = $estado;
+            $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log("Error getByEstado [{$modulo}]: " . $e->getMessage());
@@ -648,7 +654,7 @@ class Modulo144Model {
     }
 
     public function getPublicados($modulo, $formulario_id) {
-        return $this->getByEstado($modulo, $formulario_id, 2);
+        return $this->getByEstado($modulo, $formulario_id, 2, true);
     }
 
     public function getCancelados($modulo, $formulario_id) {
