@@ -370,10 +370,12 @@ if ($pdo && $plan && $rows) {
 
 // Cierre del formulario
 $cierreVal = '—'; $cierreUnidad = ''; $cierreNota = 'Formulario de tiempo libre';
+$cierreFin = 0; // marca de tiempo del cierre: el reloj de la tarjeta corre en vivo con ella
 if ($plan && $plan['tipo_tiempo'] === 'rango' && !empty($plan['fecha_fin'])) {
     $finTs = strtotime($plan['fecha_fin']);
     if ($finTs > time()) {
-        $cierreVal = (string)(int)ceil(($finTs - time()) / 86400);
+        $cierreFin = $finTs;
+        $cierreVal = (string)(int)floor(($finTs - time()) / 86400);
         $cierreUnidad = ' días';
         $cierreNota = date('d/m/Y H:i', $finTs);
     } else {
@@ -885,7 +887,8 @@ require_once __DIR__ . '/../complementos/header.php';
         </div>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
-            <span class="val num"><?php echo $cierreVal; ?><small><?php echo $cierreUnidad; ?></small></span>
+            <span class="val num" id="cierreDias"><?php echo $cierreVal; ?><small><?php echo $cierreUnidad; ?></small></span>
+            <?php if ($cierreFin): ?><span class="note num" id="cierreReloj" style="font-size:18px;font-weight:600;color:var(--pa-text)">--:--:--</span><?php endif; ?>
             <span class="note"><?php echo htmlspecialchars($cierreNota); ?></span>
         </div>
     </section>
@@ -1135,6 +1138,25 @@ function dbRechazar(boton, id, etapa, trimestre) {
         if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'seguimiento', id: id, trimestre: trimestre, etapa_actual: etapa, motivo: r.value.trim() }, boton);
     });
 }
+
+<?php if ($cierreFin): ?>
+// Cuenta regresiva en vivo del cierre del formulario: días y reloj de horas, minutos y segundos
+(function () {
+    var fin = <?php echo (int)$cierreFin; ?> * 1000;
+    var desfase = <?php echo time(); ?> * 1000 - Date.now(); // hora del servidor, no la del equipo
+    var dias = document.getElementById('cierreDias'), reloj = document.getElementById('cierreReloj');
+    function dos(n) { return (n < 10 ? '0' : '') + n; }
+    function pintar() {
+        var seg = Math.floor((fin - (Date.now() + desfase)) / 1000);
+        if (seg <= 0) { dias.textContent = 'Cerrado'; reloj.textContent = ''; clearInterval(t); return; }
+        var d = Math.floor(seg / 86400), r = seg % 86400;
+        dias.innerHTML = d + '<small> ' + (d === 1 ? 'día' : 'días') + '</small>';
+        reloj.textContent = dos(Math.floor(r / 3600)) + ':' + dos(Math.floor(r % 3600 / 60)) + ':' + dos(r % 60);
+    }
+    var t = setInterval(pintar, 1000);
+    pintar();
+})();
+<?php endif; ?>
 
 // Carrusel de novedades
 (function() {
