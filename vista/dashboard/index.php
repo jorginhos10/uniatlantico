@@ -360,11 +360,18 @@ if ($pdo && $plan && $rows) {
                 $inf = $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['trimestres' => true, 'avance' => function ($r) use ($k, $t) {
                     return dbPctAcumTrim($r, $t, $k === 'rev');
                 }]);
+                if ($t === 4) { // lo acumulado a T4 es todo lo aprobado hasta hoy: alimenta también el avance por línea
+                    $infPorLinea[$k] = [];
+                    foreach ($inf['lineas'] ?? [] as $l) $infPorLinea[$k][(string)$l['codigo']] = (float)$l['cumplimiento'];
+                }
                 if ($linea === '') { $celda[$k] = isset($inf['global_cumplimiento']) ? (float)$inf['global_cumplimiento'] : null; continue; }
                 foreach ($inf['lineas'] ?? [] as $l) if ((string)$l['codigo'] === $linea) $celda[$k] = (float)$l['cumplimiento'];
             }
             $porTrim[$t] = $celda;
         }
+        // Avance ponderado = todo lo aprobado, trimestre a trimestre (no solo los indicadores con los cuatro aprobados)
+        $avance    = $porTrim[4]['apr'];
+        $avanceRev = $porTrim[4]['rev'];
     } catch (Throwable $e) { error_log('Dash trimestres: ' . $e->getMessage()); $porTrim = []; }
 }
 
@@ -419,6 +426,22 @@ if ($pdo && $plan && $filas) {
             $trimFlujo[(int)$x['formulacion_id']][(int)$x['trimestre']] = ['estado' => (int)$x['estado'], 'solicitud' => (int)$x['solicitud'], 'etapa' => (int)$x['semaforo_etapa']];
         }
     } catch (Throwable $e) { error_log('Dash trimFlujo: ' . $e->getMessage()); }
+}
+
+// Trimestres aprobados (suma de los indicadores visibles) y «En meta»: indicadores cuyo cumplimiento con lo aprobado hasta hoy
+// (trimestres aprobados, acumulados a T4) llega al 80 % de la meta anual
+$nTrimAprob = 0;
+foreach ($filas as $fila) foreach ($trimFlujo[(int)$fila['id']] ?? [] as $x) if ($x['estado'] === 2) $nTrimAprob++;
+if ($trimFlujo) {
+    try {
+        $enMeta = 0;
+        $idsFilas = implode(',', array_map('intval', array_column($filas, 'id')));
+        foreach ($pdo->query("SELECT id, tipo_medicion, linea_base_meta, meta_programada, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
+                              FROM formulacion_144 WHERE id IN ($idsFilas)") as $x) {
+            foreach ([1, 2, 3, 4] as $i) $x['t' . $i . '_estado'] = $trimFlujo[(int)$x['id']][$i]['estado'] ?? 0;
+            if (dbPctAcumTrim($x, 4, false) >= 80) $enMeta++;
+        }
+    } catch (Throwable $e) { error_log('Dash enMeta: ' . $e->getMessage()); }
 }
 
 // Mi bandeja: trimestres del seguimiento que esperan tu aprobación (cada trimestre tiene su propio semáforo)
@@ -877,13 +900,13 @@ require_once __DIR__ . '/../complementos/header.php';
         <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=publicados'); ?>" title="Ir al seguimiento en el Módulo 144">
             <span class="lbl">Reportados</span>
             <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nMetas; ?></small></span>
-            <span class="note">seguimiento aprobado · <?php echo $nRevision; ?> en revisión</span>
+            <span class="note">indicadores con los 4 trimestres aprobados · <?php echo $nTrimAprob; ?> trimestres aprobados · <?php echo $nRevision; ?> en revisión</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
         <div class="pa-card pa-kpi">
             <span class="lbl">En meta</span>
             <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
-            <span class="note">reportados con 80 % o más de la meta</span>
+            <span class="note">con 80 % o más de la meta con lo aprobado hasta hoy</span>
         </div>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
