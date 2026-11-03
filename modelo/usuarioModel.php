@@ -393,35 +393,7 @@ class UsuarioModel {
         }
     }
 
-    public function obtenerUsuarioPorUsername($username) {
-        $sql = "SELECT id, username, nombre, email, rol, avatar, activo FROM usuarios WHERE username = :username";
-        
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':username', $username);
-            $stmt->execute();
-            
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en obtenerUsuarioPorUsername: " . $e->getMessage());
-            return false;
-        }
-    }
 
-    public function obtenerUsuarioPorEmail($email) {
-        $sql = "SELECT id, username, nombre, email, rol, avatar, activo FROM usuarios WHERE email = :email";
-        
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':email', $email);
-            $stmt->execute();
-            
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error en obtenerUsuarioPorEmail: " . $e->getMessage());
-            return false;
-        }
-    }
 
     public function actualizarContrasena($id, $nuevaContrasena) {
         $sql = "UPDATE usuarios SET password = :password WHERE id = :id";
@@ -454,29 +426,6 @@ class UsuarioModel {
         }
     }
 
-    public function obtenerEstadisticas() {
-        $sql = "SELECT 
-                COUNT(*) as total,
-                SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) as activos,
-                SUM(CASE WHEN rol = 'admin' THEN 1 ELSE 0 END) as administradores,
-                SUM(CASE WHEN rol = 'cocina' THEN 1 ELSE 0 END) as cocina,
-                SUM(CASE WHEN rol = 'inventario' THEN 1 ELSE 0 END) as inventario
-                FROM usuarios";
-        
-        try {
-            $stmt = $this->db->query($sql);
-            return $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error obteniendo estadísticas: " . $e->getMessage());
-            return [
-                'total' => 0,
-                'activos' => 0,
-                'administradores' => 0,
-                'cocina' => 0,
-                'inventario' => 0
-            ];
-        }
-    }
 
     public function buscarUsuarios($termino) {
         $sql = "SELECT id, username, nombre, email, rol, avatar, activo 
@@ -499,38 +448,7 @@ class UsuarioModel {
         }
     }
 
-    public function contarUsuariosPorRol($rol) {
-        $sql = "SELECT COUNT(*) FROM usuarios WHERE rol = :rol AND activo = 1";
-        
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':rol', $rol);
-            $stmt->execute();
-            
-            return $stmt->fetchColumn();
-        } catch (PDOException $e) {
-            error_log("Error contando usuarios por rol: " . $e->getMessage());
-            return 0;
-        }
-    }
 
-    public function obtenerUsuariosRecientes($limite = 5) {
-        $sql = "SELECT id, username, nombre, email, rol, avatar, fecha_creacion 
-                FROM usuarios 
-                ORDER BY fecha_creacion DESC 
-                LIMIT :limite";
-        
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':limite', $limite, PDO::PARAM_INT);
-            $stmt->execute();
-            
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error obteniendo usuarios recientes: " . $e->getMessage());
-            return [];
-        }
-    }
 
     public function verificarContrasena($id, $contrasena) {
         $sql = "SELECT password FROM usuarios WHERE id = :id";

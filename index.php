@@ -120,11 +120,6 @@ switch ($action) {
         }
         break;
 
-    case 'menu':
-        require_once 'config/security.php';
-        require_once 'vista/menu/index.php';
-        break;
-
     case 'configuraciones':
         require_once 'config/security.php';
         
@@ -132,8 +127,9 @@ switch ($action) {
         
         switch ($subaction) {
             case 'config-formularios':
-                require_once 'vista/configuraciones/config-formularios.php';
-                break;
+                // La vista config-formularios.php no existe (daba un error fatal): la ruta real es /config-formularios
+                header('Location: ' . $basePath . '/config-formularios');
+                exit;
             case 'proveedores':
                 require_once 'vista/configuraciones/proveedores.php';
                 break;
@@ -176,12 +172,6 @@ switch ($action) {
                 break;
             case 'impersonar':
                 $usuarioController->impersonar();
-                break;
-            case 'get-stats':
-                $usuarioController->getStats();
-                break;
-            case 'get-realtime-stats':
-                $usuarioController->getRealTimeStats();
                 break;
             case 'getPendientesRegistro':
                 $usuarioController->getPendientesRegistro();
@@ -452,9 +442,6 @@ switch ($action) {
                 break;
             case 'duplicar':
                 $modulo144Controller->duplicar();
-                break;
-            case 'test':
-                $modulo144Controller->test();
                 break;
             case 'getEstrategiasPorLinea':
                 $modulo144Controller->getEstrategiasPorLinea();
@@ -932,10 +919,6 @@ switch ($action) {
         }
         break;
 
-    case 'publica':
-        require_once 'vista/publica/index.php';
-        break;
-        
     case '':
         if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true) {
             header("Location: {$basePath}/dashboard");
@@ -945,47 +928,7 @@ switch ($action) {
         exit;
         
     default:
-        // Verificar si es una ruta de API o archivo estático
-        if (strpos($action, 'assets/') === 0) {
-            // Servir archivos estáticos
-            $filePath = $action;
-            if (file_exists($filePath)) {
-                $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-                $mimeTypes = [
-                    'css' => 'text/css',
-                    'js' => 'application/javascript',
-                    'png' => 'image/png',
-                    'jpg' => 'image/jpeg',
-                    'jpeg' => 'image/jpeg',
-                    'gif' => 'image/gif',
-                    'ico' => 'image/x-icon',
-                    'svg' => 'image/svg+xml'
-                ];
-                
-                if (isset($mimeTypes[$extension])) {
-                    header('Content-Type: ' . $mimeTypes[$extension]);
-                }
-                
-                readfile($filePath);
-                exit;
-            }
-        }
-        
-        // Si no es un archivo estático, mostrar 404
         require_once 'vista/complementos/404.php';
         break;
-}
-
-// Función de ayuda para depuración (opcional)
-function debug_log($message, $data = null) {
-    $logFile = 'debug.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "[$timestamp] $message";
-    
-    if ($data !== null) {
-        $logMessage .= " - " . print_r($data, true);
-    }
-    
-    file_put_contents($logFile, $logMessage . PHP_EOL, FILE_APPEND);
 }
 ?>

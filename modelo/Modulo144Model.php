@@ -548,7 +548,7 @@ class Modulo144Model {
                                         LEFT JOIN usuarios u ON f.creado_por = u.id
                                         LEFT JOIN cargos c ON u.cargo_id = c.id
                                         WHERE f.formulario_id = :formulario_id AND " . ($porTrimestre
-                                            ? "(f.{$campo_estado} = 2 OR EXISTS (SELECT 1 FROM seguimiento_trimestres_144 t2 WHERE t2.formulacion_id = f.id AND t2.estado = 2))"
+                                            ? "(f.{$campo_estado} = 2 OR (f.{$campo_estado} != 1 AND EXISTS (SELECT 1 FROM seguimiento_trimestres_144 t2 WHERE t2.formulacion_id = f.id AND t2.estado = 2)))"
                                             : "f.{$campo_estado} = :estado") . "
                                         " . ($modulo === 'seguimiento' ? "AND f.estado_formulacion = 2" : "") . "
                                         ORDER BY le.codigo ASC, m.id ASC, p.codigo ASC, f.fecha_creacion DESC");
@@ -586,6 +586,7 @@ class Modulo144Model {
     // Suma la ponderacion_actividades de un proyecto excluyendo un id dado
     // Todos los registros no cancelados del formulario, para la plantilla de importación/exportación
     public function getRegistrosParaPlantilla($formulario_id) {
+        $this->asegurarColumnasDescripcionSemestres(); // las columnas de trimestre deben existir antes de exportar o importar
         try {
             $stmt = $this->db->prepare(
                 "SELECT f.*, le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo
@@ -801,7 +802,17 @@ class Modulo144Model {
             $sql = "UPDATE {$tabla} SET " . implode(', ', $sets) . " WHERE id = :id";
             
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute($params);
+            $ok = $stmt->execute($params);
+            // Al tocar un trimestre, los semestres, la meta ejecutada y el % de avance se recalculan aquí con lo guardado
+            if ($ok && $modulo === 'seguimiento') {
+                foreach ([1, 2, 3, 4] as $t) {
+                    if (array_key_exists('trimestre' . $t . '_seguimiento', $data)) {
+                        $this->recalcularSeguimientoDesdeTrimestres($id);
+                        break;
+                    }
+                }
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Error actualizar [{$modulo}]: " . $e->getMessage());
             return false;
@@ -869,11 +880,24 @@ class Modulo144Model {
         try {
             $c = $this->modulos[$modulo];
             if ($modulo === 'seguimiento') {
-                // Los trimestres de los seguimientos publicados vuelven a borrador junto con el resumen del indicador
+                // Se devuelven todos los indicadores con ALGÚN trimestre aprobado (no solo los de los cuatro): los que aparecen en
+                // «Aprobados». Sus trimestres vuelven a borrador junto con el resumen del indicador. Los cancelados no se tocan.
                 $this->asegurarTablaTrimestres();
-                $this->db->prepare("UPDATE seguimiento_trimestres_144 t JOIN formulacion_144 f ON f.id = t.formulacion_id
-                                    SET t.estado = 0, t.solicitud = 0, t.semaforo_etapa = 0, t.semaforo_rechazo_etapa = 0, t.fecha_actualizacion = NOW()
-                                    WHERE f.formulario_id = :fid AND f.estado_seguimiento = 2")->execute([':fid' => $formulario_id]);
+                $q = $this->db->prepare("SELECT f.id FROM formulacion_144 f
+                                         WHERE f.formulario_id = :fid AND f.estado_seguimiento != 1
+                                           AND (f.estado_seguimiento = 2 OR EXISTS (SELECT 1 FROM seguimiento_trimestres_144 t WHERE t.formulacion_id = f.id AND t.estado = 2))");
+                $q->execute([':fid' => $formulario_id]);
+                $ids = array_map('intval', $q->fetchAll(PDO::FETCH_COLUMN));
+                if (!$ids) return 0;
+                $lista = implode(',', $ids);
+                $this->db->exec("UPDATE seguimiento_trimestres_144
+                                 SET estado = 0, solicitud = 0, semaforo_etapa = 0, semaforo_rechazo_etapa = 0, fecha_publicacion = NULL, fecha_actualizacion = NOW()
+                                 WHERE formulacion_id IN ($lista)");
+                $this->db->exec("UPDATE formulacion_144
+                                 SET estado_seguimiento = 0, solicitud_estado_seguimiento = 0, semaforo_etapa_seguimiento = 0,
+                                     semaforo_rechazo_etapa_seguimiento = 0, fecha_actualizacion = NOW()
+                                 WHERE id IN ($lista)");
+                return count($ids);
             }
             $stmt = $this->db->prepare("UPDATE {$c['tabla']}
                                         SET {$c['campo_estado']} = 0,
@@ -1162,16 +1186,19 @@ class Modulo144Model {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
                 $listo = true; // evita volver a entrar mientras se migra
                 try {
-                    // Lo que ya había (en construcción, en revisión, devuelto o aprobado) pasa al primer trimestre de cada semestre
-                    // (T1 y T3), igual que los valores y las evidencias; T2 y T4 empiezan en construcción. Un cancelado lo queda en los cuatro.
+                    // Lo que ya había pasa a los trimestres así:
+                    //  · un seguimiento APROBADO (o cancelado) queda igual en los cuatro: era el indicador completo, y no debe perder
+                    //    su condición de reportado por la migración;
+                    //  · uno en construcción, en revisión o devuelto pasa al primer trimestre de cada semestre (T1 y T3), igual que
+                    //    los valores y las evidencias; T2 y T4 empiezan en construcción.
                     $this->db->exec("INSERT INTO seguimiento_trimestres_144
                             (formulacion_id, trimestre, estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa, fecha_publicacion, fecha_actualizacion)
                         SELECT f.id, t.n,
-                               CASE WHEN f.estado_seguimiento = 1 THEN 1 WHEN t.n IN (1, 3) THEN f.estado_seguimiento ELSE 0 END,
-                               CASE WHEN t.n IN (1, 3) THEN f.solicitud_estado_seguimiento ELSE 0 END,
-                               CASE WHEN t.n IN (1, 3) THEN f.semaforo_etapa_seguimiento ELSE 0 END,
-                               CASE WHEN t.n IN (1, 3) THEN f.semaforo_rechazo_etapa_seguimiento ELSE 0 END,
-                               CASE WHEN t.n IN (1, 3) THEN f.fecha_publicacion_seguimiento ELSE NULL END,
+                               CASE WHEN f.estado_seguimiento IN (1, 2) THEN f.estado_seguimiento WHEN t.n IN (1, 3) THEN f.estado_seguimiento ELSE 0 END,
+                               CASE WHEN f.estado_seguimiento = 2 OR t.n IN (1, 3) THEN f.solicitud_estado_seguimiento ELSE 0 END,
+                               CASE WHEN f.estado_seguimiento = 2 OR t.n IN (1, 3) THEN f.semaforo_etapa_seguimiento ELSE 0 END,
+                               CASE WHEN f.estado_seguimiento = 2 OR t.n IN (1, 3) THEN f.semaforo_rechazo_etapa_seguimiento ELSE 0 END,
+                               CASE WHEN f.estado_seguimiento = 2 OR t.n IN (1, 3) THEN f.fecha_publicacion_seguimiento ELSE NULL END,
                                NOW()
                         FROM formulacion_144 f
                         JOIN (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) t");
@@ -1193,6 +1220,101 @@ class Modulo144Model {
         } catch (PDOException $e) {
             error_log('Error asegurarTablaTrimestres: ' . $e->getMessage());
         }
+    }
+
+    // ───────────────────────── Cálculo del seguimiento (única fuente: servidor) ─────────────────────────
+    // El valor de cada semestre sale de sus dos trimestres según el tipo de medición, y el cumplimiento de los semestres frente a la
+    // meta anual de la formulación. Es la misma regla que muestra la pantalla (calcularCumplimientoSeguimiento en el JS), pero aquí
+    // se aplica al guardar: así el semestre nunca queda distinto de sus trimestres (dos pestañas, un trimestre aprobado que no se
+    // puede cambiar, una importación...).
+    private static function numero($v) {
+        if ($v === null) return null;
+        $v = str_replace(',', '.', trim((string)$v));
+        return ($v !== '' && is_numeric($v)) ? (float)$v : null;
+    }
+
+    // Combina los dos trimestres de un semestre: Promedio → promedio de los reportados; Último valor y Límite → el del último con dato;
+    // Acumulado y Nuevo gestionado → suma. Sin ninguno reportado: null.
+    public static function combinarTrimestres($a, $b, $tipo) {
+        if ($a === null && $b === null) return null;
+        if ($tipo === 'Promedio') {
+            $vals = array_values(array_filter([$a, $b], function ($x) { return $x !== null; }));
+            return array_sum($vals) / count($vals);
+        }
+        if ($tipo === 'Último valor reportado' || $tipo === 'Límite') return $b !== null ? $b : $a;
+        return ($a ?? 0) + ($b ?? 0);
+    }
+
+    // Meta anual del indicador según su tipo de medición y las metas de formulación (lo que la pantalla llama «valor anual»)
+    public static function metaAnual(array $f) {
+        $tipo = (string)($f['tipo_medicion'] ?? '');
+        $lb = self::numero($f['linea_base_meta'] ?? null);
+        $m1 = self::numero($f['meta_s1'] ?? null);
+        $m2 = self::numero($f['meta_s2'] ?? null);
+        if ($tipo === 'Acumulado') return ($lb ?? 0) + ($m1 ?? 0) + ($m2 ?? 0);
+        if ($tipo === 'Nuevo gestionado durante la vigencia') return ($m1 ?? 0) + ($m2 ?? 0);
+        if ($tipo === 'Promedio') {
+            $vals = array_values(array_filter([$m1, $m2], function ($x) { return $x !== null; }));
+            return $vals ? array_sum($vals) / count($vals) : 0.0;
+        }
+        if ($tipo === 'Último valor reportado') return $m2 ?? ($m1 ?? $lb);
+        if ($tipo === 'Límite') return $m2;
+        return null;
+    }
+
+    // ['s1', 's2' (null si no hay dato), 'logrado', 'meta', 'pct'] de una fila con tipo_medicion, linea_base_meta, meta_s1/s2 y trimestre1..4_seguimiento
+    public static function calcularSeguimiento(array $f) {
+        $tipo = (string)($f['tipo_medicion'] ?? '');
+        $t = [];
+        foreach ([1, 2, 3, 4] as $i) $t[$i] = self::numero($f['trimestre' . $i . '_seguimiento'] ?? null);
+        $s1 = $tipo === 'Límite' ? null : self::combinarTrimestres($t[1], $t[2], $tipo); // en «Límite» no se registra el semestre 1
+        $s2 = self::combinarTrimestres($t[3], $t[4], $tipo);
+        $lb = self::numero($f['linea_base_meta'] ?? null);
+
+        $logrado = null;
+        if ($tipo === 'Acumulado') {
+            $logrado = ($s1 === null && $s2 === null) ? 0.0 : ($lb ?? 0) + ($s1 ?? 0) + ($s2 ?? 0); // la línea base sola no cuenta como avance
+        } elseif ($tipo === 'Nuevo gestionado durante la vigencia') {
+            $logrado = ($s1 ?? 0) + ($s2 ?? 0);
+        } elseif ($tipo === 'Promedio') {
+            $vals = array_values(array_filter([$s1, $s2], function ($x) { return $x !== null; }));
+            $logrado = $vals ? array_sum($vals) / count($vals) : 0.0;
+        } elseif ($tipo === 'Último valor reportado') {
+            $logrado = $s2 !== null ? $s2 : $s1;
+        } elseif ($tipo === 'Límite') {
+            $logrado = $s2;
+        }
+        $logradoNum = $logrado ?? 0.0;
+
+        $meta = self::metaAnual($f);
+        if ($tipo === 'Límite') {
+            // Lo declarado (semestre 2) no debe pasar el límite: igual o por debajo cumple; un 0 es el mejor resultado
+            $pct = ($logrado !== null && $meta !== null && $logrado <= $meta) ? 100.0 : 0.0;
+        } else {
+            $pct = ($meta !== null && $meta > 0) ? ($logradoNum / $meta) * 100 : 0.0;
+        }
+        return ['s1' => $s1, 's2' => $s2, 'logrado' => $logradoNum, 'meta' => $meta, 'pct' => $pct];
+    }
+
+    // Recalcula y guarda semestre 1 y 2, meta ejecutada y % de avance a partir de los trimestres guardados
+    public function recalcularSeguimientoDesdeTrimestres($id) {
+        $q = $this->db->prepare("SELECT tipo_medicion, linea_base_meta, meta_s1, meta_s2,
+                                        trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
+                                 FROM formulacion_144 WHERE id = :id");
+        $q->execute([':id' => (int)$id]);
+        $f = $q->fetch();
+        if (!$f) return false;
+        $c = self::calcularSeguimiento($f);
+        $u = $this->db->prepare("UPDATE formulacion_144
+                                 SET semestre1_seguimiento = :s1, semestre2_seguimiento = :s2, meta_ejecutada = :me, porcentaje_avance = :pct
+                                 WHERE id = :id");
+        return $u->execute([
+            ':s1' => $c['s1'] === null ? null : round($c['s1'], 2),
+            ':s2' => $c['s2'] === null ? null : round($c['s2'], 2),
+            ':me' => round($c['logrado'], 2),
+            ':pct' => round($c['pct'], 2),
+            ':id' => (int)$id,
+        ]);
     }
 
     // Trimestre vigente del plan (0 a 4): el que fijó a mano un administrador en el Dashboard o, si no, el del calendario. El seguimiento
@@ -1365,9 +1487,13 @@ class Modulo144Model {
     public function recalcularAgregadoSeguimiento($id) {
         $t = $this->leerTrimestres($id);
         // En «Límite» el semestre 1 (T1 y T2) no aplica: basta con T3 y T4
-        $q = $this->db->prepare("SELECT tipo_medicion FROM formulacion_144 WHERE id = :id");
+        $q = $this->db->prepare("SELECT tipo_medicion, estado_seguimiento FROM formulacion_144 WHERE id = :id");
         $q->execute([':id' => (int)$id]);
-        $aplican = $q->fetchColumn() === 'Límite' ? [3, 4] : [1, 2, 3, 4];
+        $fila = $q->fetch();
+        if (!$fila) return;
+        // Un seguimiento cancelado se queda cancelado: aunque sus trimestres lleguen a 2 no pasa a «reportado»
+        if ((int)$fila['estado_seguimiento'] === 1) return;
+        $aplican = $fila['tipo_medicion'] === 'Límite' ? [3, 4] : [1, 2, 3, 4];
         $todos = count(array_filter($t, function ($x, $n) use ($aplican) { return in_array($n, $aplican, true) && $x['estado'] === 2; }, ARRAY_FILTER_USE_BOTH)) === count($aplican);
         $enRev = array_filter($t, function ($x) { return $x['estado'] === 0 && $x['solicitud'] === 1; });
         $dev   = array_filter($t, function ($x) { return $x['estado'] === 0 && $x['solicitud'] === 2; });
@@ -1390,8 +1516,17 @@ class Modulo144Model {
     public function actualizarSolicitudTrimestre($id, $trimestre, $solicitud, $nivelCreador = null) {
         try {
             $this->asegurarTablaTrimestres();
-            $s = $this->leerTrimestres($id)[(int)$trimestre];
-            $s['solicitud'] = (int)$solicitud;
+            // Lectura y escritura bajo bloqueo de fila: si otro usuario aprueba este trimestre justo ahora, no se le pisa
+            $this->db->beginTransaction();
+            $this->db->prepare("INSERT IGNORE INTO seguimiento_trimestres_144 (formulacion_id, trimestre) VALUES (:id, :t)")
+                     ->execute([':id' => (int)$id, ':t' => (int)$trimestre]);
+            $q = $this->db->prepare("SELECT estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa, fecha_publicacion
+                                     FROM seguimiento_trimestres_144 WHERE formulacion_id = :id AND trimestre = :t FOR UPDATE");
+            $q->execute([':id' => (int)$id, ':t' => (int)$trimestre]);
+            $r = $q->fetch();
+            if (!$r || (int)$r['estado'] !== 0) { $this->db->rollBack(); return false; } // solo un trimestre sin aprobar se solicita o reinicia
+            $s = ['estado' => 0, 'solicitud' => (int)$solicitud, 'semaforo' => (int)$r['semaforo_etapa'],
+                  'rechazo' => (int)$r['semaforo_rechazo_etapa'], 'fecha_publicacion' => $r['fecha_publicacion']];
             if ((int)$solicitud === 1) {
                 $s['rechazo'] = 0;
                 if ($nivelCreador !== null && $nivelCreador > 0) $s['semaforo'] = max($s['semaforo'], (int)$nivelCreador);
@@ -1400,9 +1535,11 @@ class Modulo144Model {
                 $s['rechazo'] = 0;
             }
             $this->guardarTrimestre($id, $trimestre, $s);
+            $this->db->commit();
             $this->recalcularAgregadoSeguimiento($id);
             return true;
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
             error_log('Error actualizarSolicitudTrimestre: ' . $e->getMessage());
             return false;
         }
@@ -2140,11 +2277,11 @@ class Modulo144Model {
             $stmt = $this->db->prepare(
                 "INSERT INTO concertaciones_144 (formulacion_id, facultad_id, semestre, concertado, {$col}, {$ucol}, {$fcol}, enviado, rechazado)
                  VALUES (:f, :fac, :s, 0, :v, :u, NOW(), 0, 0)
-                 ON DUPLICATE KEY UPDATE enviado = IF({$col} <=> VALUES({$col}), enviado, 0),
-                                         rechazado = IF({$col} <=> VALUES({$col}), rechazado, 0),
-                                         {$ucol} = IF({$col} <=> VALUES({$col}), {$ucol}, VALUES({$ucol})),
-                                         {$fcol} = IF({$col} <=> VALUES({$col}), {$fcol}, VALUES({$fcol})),
-                                         {$col} = VALUES({$col})"
+                 ON DUPLICATE KEY UPDATE enviado = IF(aprobado = 1 OR {$col} <=> VALUES({$col}), enviado, 0),
+                                         rechazado = IF(aprobado = 1 OR {$col} <=> VALUES({$col}), rechazado, 0),
+                                         {$ucol} = IF(aprobado = 1 OR {$col} <=> VALUES({$col}), {$ucol}, VALUES({$ucol})),
+                                         {$fcol} = IF(aprobado = 1 OR {$col} <=> VALUES({$col}), {$fcol}, VALUES({$fcol})),
+                                         {$col} = IF(aprobado = 1, {$col}, VALUES({$col}))"
             );
             return $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':s' => (int)$semestre, ':v' => $valor, ':u' => $usuarioId ?: null]);
         } catch (PDOException $e) {

@@ -243,7 +243,7 @@ class UsuariosManager {
                                                name="password" 
                                                class="form-control" 
                                                required
-                                               placeholder="Mínimo 6 caracteres">
+                                               placeholder="Mínimo 8 caracteres">
                                         <button type="button" class="password-toggle">
                                             <i class="fas fa-eye"></i>
                                         </button>
@@ -930,8 +930,8 @@ class UsuariosManager {
         // Validar contraseña solo para crear
         if (type === 'crear') {
             const passwordField = document.getElementById('modalPassword');
-            if (passwordField && passwordField.value && passwordField.value.length < 6) {
-                this.showFieldError(passwordField, 'La contraseña debe tener al menos 6 caracteres', type);
+            if (passwordField && passwordField.value && passwordField.value.length < 8) {
+                this.showFieldError(passwordField, 'La contraseña debe tener al menos 8 caracteres', type);
                 isValid = false;
             }
             
@@ -1413,7 +1413,7 @@ class UsuariosManager {
                     <div class="rp-campo">
                         <label for="newPassword">Nueva contraseña</label>
                         <div class="rp-input-wrap">
-                            <input type="password" id="newPassword" class="rp-input" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                            <input type="password" id="newPassword" class="rp-input" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
                             <button type="button" class="rp-ojo" data-objetivo="newPassword" aria-label="Mostrar u ocultar la contraseña" title="Mostrar u ocultar"><i class="fas fa-eye"></i></button>
                         </div>
                     </div>
@@ -1423,7 +1423,7 @@ class UsuariosManager {
                             <input type="password" id="confirmPassword" class="rp-input" placeholder="Repite la contraseña" autocomplete="new-password">
                             <button type="button" class="rp-ojo" data-objetivo="confirmPassword" aria-label="Mostrar u ocultar la confirmación" title="Mostrar u ocultar"><i class="fas fa-eye"></i></button>
                         </div>
-                        <small class="rp-ayuda" id="rpAyuda">Usa al menos 6 caracteres.</small>
+                        <small class="rp-ayuda" id="rpAyuda">Usa al menos 8 caracteres.</small>
                     </div>
                 </div>
             `,
@@ -1439,7 +1439,7 @@ class UsuariosManager {
                 const ayuda = popup.querySelector('#rpAyuda');
                 const revisar = () => {
                     ayuda.classList.remove('rp-ok', 'rp-mal');
-                    if (!conf.value) { ayuda.textContent = 'Usa al menos 6 caracteres.'; return; }
+                    if (!conf.value) { ayuda.textContent = 'Usa al menos 8 caracteres.'; return; }
                     if (nueva.value === conf.value) { ayuda.textContent = 'Las contraseñas coinciden.'; ayuda.classList.add('rp-ok'); }
                     else { ayuda.textContent = 'Las contraseñas no coinciden todavía.'; ayuda.classList.add('rp-mal'); }
                 };
@@ -1465,8 +1465,8 @@ class UsuariosManager {
                     return false;
                 }
                 
-                if (newPassword.length < 6) {
-                    Swal.showValidationMessage('La contraseña debe tener al menos 6 caracteres');
+                if (newPassword.length < 8) {
+                    Swal.showValidationMessage('La contraseña debe tener al menos 8 caracteres');
                     return false;
                 }
                 

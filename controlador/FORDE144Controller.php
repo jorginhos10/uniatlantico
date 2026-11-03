@@ -195,7 +195,15 @@ class FORDE144Controller {
             exit;
         }
         $reporte = $this->model->getReporteSeguimiento($id);
+        $trimestre = $this->trimestreDelReporte($formulario);
         require_once 'vista/FOR-DE-144/reporte_seguimiento.php';
+    }
+
+    // Trimestre al que se refiere un reporte: el de ?t=1..4 o, si no viene, el vigente del plan (T1 si aún no vence ninguno)
+    private function trimestreDelReporte(array $formulario) {
+        $t = (int)($_GET['t'] ?? 0);
+        if ($t >= 1 && $t <= 4) return $t;
+        return $this->model->getTrimestreVigente((int)$formulario['id'], $formulario['anio'] ?? date('Y')) ?: 1;
     }
 
     // Landing compacta: dependencias con indicadores reportados, completos y aprobados
@@ -210,6 +218,7 @@ class FORDE144Controller {
             exit;
         }
         $reporte = $this->model->getReporteSeguimiento($id);
+        $trimestre = $this->trimestreDelReporte($formulario);
         require_once 'vista/FOR-DE-144/reporte_cumplidos.php';
     }
 

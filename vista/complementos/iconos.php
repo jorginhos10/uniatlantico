@@ -41,7 +41,7 @@ if (!function_exists('icono_de_pagina')) {
         if (strpos($pagina, 'configuraciones') === 0) return 'configuracion';
         $mapa = [
             'dashboard' => 'dashboard', 'usuarios' => 'usuarios', 'for-de-144' => 'plan', 'formatos' => 'plan',
-            'modulo144' => 'plan', 'formulacion144' => 'plan', 'mensajes' => 'mensajes', 'organigrama' => 'organigrama',
+            'modulo144' => 'plan', 'mensajes' => 'mensajes', 'organigrama' => 'organigrama',
             'configuraciones' => 'configuracion', 'config144' => 'configuracion', 'dependencias' => 'dependencias',
             'catalogos144' => 'catalogo', 'facultades' => 'facultades', 'novedades' => 'novedades',
             'almacenamiento' => 'almacenamiento', 'roles' => 'roles', 'snapshots' => 'snapshot', 'perfil' => 'perfil',

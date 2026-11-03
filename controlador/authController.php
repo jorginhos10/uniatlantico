@@ -14,7 +14,6 @@ class AuthController {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $username = trim($_POST['username'] ?? '');
             $password = $_POST['password'] ?? '';
-            $remember = isset($_POST['remember']);
 
             if (empty($username) || empty($password)) {
                 $_SESSION['error'] = 'Por favor, complete todos los campos';
@@ -25,6 +24,8 @@ class AuthController {
             $usuario = $this->usuarioModel->verificarUsuario($username, $password);
 
             if ($usuario) {
+                // Sesión nueva al iniciar: evita que una sesión fijada de antemano (session fixation) siga valiendo
+                session_regenerate_id(true);
                 $_SESSION['usuario_id'] = $usuario['id'];
                 $_SESSION['usuario_username'] = $usuario['username'];
                 $_SESSION['usuario_nombre'] = $usuario['nombre'];
@@ -34,11 +35,7 @@ class AuthController {
                 $_SESSION['usuario_avatar'] = $usuario['avatar'];
                 $_SESSION['logged_in'] = true;
                 $_SESSION['last_activity'] = time();
-
-                if ($remember) {
-                    $token = bin2hex(random_bytes(32));
-                    setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/');
-                }
+                $_SESSION['rol_revisado'] = time();
 
                 $redirect_url = $_SESSION['redirect_url'] ?? Config::getBasePath() . '/dashboard';
                 unset($_SESSION['redirect_url']);
@@ -56,8 +53,7 @@ class AuthController {
     public function logout() {
         session_unset();
         session_destroy();
-        setcookie('remember_token', '', time() - 3600, '/');
-        
+
         header("Location: " . Config::getBasePath() . "/login");
         exit;
     }

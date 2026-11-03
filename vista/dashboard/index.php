@@ -62,6 +62,7 @@ function dbEsperadoPct($q) {
 // también los que están en revisión (tN_sol = 1): cada trimestre se aprueba por separado.
 function dbPctAcumTrim($r, $k, $conRevision = false) {
     $tipo = (string)($r['tipo_medicion'] ?? '');
+    if ($tipo === 'Límite' && $k < 3) return null; // en «Límite» T1 y T2 no se registran: no cuentan ni como 0 ni en el promedio
     $meta = dbNum($r['meta_programada'] ?? null);
     $vals = [];
     for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
@@ -332,43 +333,28 @@ $esperado = dbEsperadoPct($trimVigente);
 if ($pdo && $plan && $rows) {
     require_once __DIR__ . '/../../modelo/FORDE144Model.php';
     $modeloInforme = new FORDE144Model();
-    $base = ['soloAprobadas' => true];
-    if (!$veTodo) $base['ids'] = array_keys($idsVisibles);
-    $pa = fn($r) => dbNum($r['porcentaje_avance']) ?? 0;
-    $informes = [
-        'apr' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => (int)$r['estado_seguimiento'] === 2 ? $pa($r) : 0]),
-        'rev' => $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['avance' => fn($r) => ((int)$r['estado_seguimiento'] === 2 || (int)$r['solicitud_estado_seguimiento'] === 1) ? $pa($r) : 0]),
-    ];
-    foreach ($informes as $k => $inf) {
-        foreach ($inf['lineas'] ?? [] as $l) $infPorLinea[$k][(string)$l['codigo']] = (float)$l['cumplimiento'];
-    }
-    $total = function ($k) use ($informes, $linea, $infPorLinea) {
-        if ($linea === '') return isset($informes[$k]['global_cumplimiento']) ? (float)$informes[$k]['global_cumplimiento'] : null;
-        return $infPorLinea[$k][$linea] ?? null;
-    };
-    $avance    = $total('apr');
-    $avanceRev = $total('rev');
+    $opcionesInforme = $veTodo ? [] : ['ids' => array_keys($idsVisibles)];
 
-    // Cumplimiento acumulado de T1 a T4 (mismo ponderado del informe, con lo acumulado hasta cada trimestre):
-    // 'apr' cuenta solo seguimientos aprobados; 'rev' suma además los que están en revisión
+    // Cumplimiento acumulado de T1 a T4 (mismo ponderado del informe) con lo APROBADO ('apr') y, además, lo que está en revisión ('rev').
+    // Las 8 combinaciones salen de una sola lectura de los indicadores y de los pesos.
+    $variantes = [];
+    foreach ([1, 2, 3, 4] as $t) {
+        $variantes['apr' . $t] = function ($r) use ($t) { return dbPctAcumTrim($r, $t, false); };
+        $variantes['rev' . $t] = function ($r) use ($t) { return dbPctAcumTrim($r, $t, true); };
+    }
     try {
-        require_once __DIR__ . '/../../modelo/Modulo144Model.php';
-        (new Modulo144Model())->asegurarColumnasDescripcionSemestres(); // crea las columnas de trimestre si aún no existen
+        $cumplVar = $modeloInforme->getCumplimientosPorVariante((int)$plan['id'], $variantes, $opcionesInforme);
         foreach ([1, 2, 3, 4] as $t) {
             $celda = ['esp' => dbEsperadoPct($t), 'apr' => null, 'rev' => null];
             foreach (['apr', 'rev'] as $k) {
-                $inf = $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['trimestres' => true, 'avance' => function ($r) use ($k, $t) {
-                    return dbPctAcumTrim($r, $t, $k === 'rev');
-                }]);
-                if ($t === 4) { // lo acumulado a T4 es todo lo aprobado hasta hoy: alimenta también el avance por línea
-                    $infPorLinea[$k] = [];
-                    foreach ($inf['lineas'] ?? [] as $l) $infPorLinea[$k][(string)$l['codigo']] = (float)$l['cumplimiento'];
-                }
-                if ($linea === '') { $celda[$k] = isset($inf['global_cumplimiento']) ? (float)$inf['global_cumplimiento'] : null; continue; }
-                foreach ($inf['lineas'] ?? [] as $l) if ((string)$l['codigo'] === $linea) $celda[$k] = (float)$l['cumplimiento'];
+                $c = $cumplVar[$k . $t] ?? null;
+                if (!$c) continue;
+                $celda[$k] = $linea === '' ? $c['global'] : ($c['lineas'][$linea] ?? null);
             }
             $porTrim[$t] = $celda;
         }
+        // Avance por línea: lo acumulado a T4 es todo lo aprobado hasta hoy
+        foreach (['apr', 'rev'] as $k) $infPorLinea[$k] = $cumplVar[$k . '4']['lineas'] ?? [];
         // Avance ponderado = todo lo aprobado, trimestre a trimestre (no solo los indicadores con los cuatro aprobados)
         $avance    = $porTrim[4]['apr'];
         $avanceRev = $porTrim[4]['rev'];
@@ -435,20 +421,27 @@ foreach ($filas as $fila) foreach ($trimFlujo[(int)$fila['id']] ?? [] as $x) if 
 // «Reportados» depende del trimestre vigente (el del selector): los indicadores con ese trimestre aprobado por la Oficina de Planeación;
 // «en revisión», los que lo tienen esperando aprobación. Si aún no vence ningún trimestre se toma el T1.
 $trimRep = $trimVigente ?: 1;
-$nAprob = $nRevision = 0;
+$nAprob = $nRevision = $nAplican = 0;
 foreach ($filas as $fila) {
+    if (($fila['tipo_medicion'] ?? '') === 'Límite' && $trimRep <= 2) continue; // en «Límite» T1 y T2 no se registran: no entran ni en el total
+    $nAplican++;
     $x = $trimFlujo[(int)$fila['id']][$trimRep] ?? ['estado' => 0, 'solicitud' => 0];
     if ($x['estado'] === 2) $nAprob++;
     elseif ($x['estado'] === 0 && $x['solicitud'] === 1) $nRevision++;
 }
+// «En meta»: indicadores cuyo cumplimiento con lo aprobado, acumulado al trimestre vigente, llega a lo esperado para ese trimestre
+// (30, 60, 80 y 100 %). Se muestra «N de M», con M los indicadores a los que aplica el trimestre.
+$enMeta = 0; $enMetaDe = 0;
 if ($trimFlujo) {
     try {
-        $enMeta = 0;
         $idsFilas = implode(',', array_map('intval', array_column($filas, 'id')));
         foreach ($pdo->query("SELECT id, tipo_medicion, linea_base_meta, meta_programada, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
                               FROM formulacion_144 WHERE id IN ($idsFilas)") as $x) {
             foreach ([1, 2, 3, 4] as $i) $x['t' . $i . '_estado'] = $trimFlujo[(int)$x['id']][$i]['estado'] ?? 0;
-            if (dbPctAcumTrim($x, 4, false) >= 80) $enMeta++;
+            $p = dbPctAcumTrim($x, $trimRep, false);
+            if ($p === null) continue;
+            $enMetaDe++;
+            if ($p >= dbEsperadoPct($trimRep)) $enMeta++;
         }
     } catch (Throwable $e) { error_log('Dash enMeta: ' . $e->getMessage()); }
 }
@@ -499,12 +492,6 @@ foreach ($historial as $h) {
 // Saludo
 $minTotal = (int)date('G') * 60 + (int)date('i');
 $saludo = ($minTotal >= 360 && $minTotal < 720) ? 'Buenos días' : (($minTotal >= 720 && $minTotal < 1140) ? 'Buenas tardes' : 'Buenas noches');
-// Tema del banner según la hora: 6:00–16:29 día | 16:30–18:59 atardecer | resto noche
-$temaCielo = ($minTotal >= 360 && $minTotal < 990) ? 'dia' : (($minTotal >= 990 && $minTotal < 1140) ? 'atardecer' : 'noche');
-$estrellas = [];
-for ($i = 0; $i < 28; $i++) {
-    $estrellas[] = ['x' => mt_rand(2, 96), 'y' => mt_rand(5, 80), 'size' => mt_rand(1, 3), 'delay' => mt_rand(0, 3000) / 1000, 'dur' => mt_rand(15, 35) / 10];
-}
 $dias   = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
 $meses  = ['','enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 $fechaLarga = ucfirst($dias[(int)date('w')]) . ', ' . (int)date('j') . ' de ' . $meses[(int)date('n')] . ' de ' . date('Y');
@@ -563,38 +550,13 @@ ob_start();
 .pa-head p { margin: 0; color: var(--pa-sub); }
 .pa-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 10px; margin-left: auto; }
 
-/* ── Banner con cielo según la hora (día / atardecer / noche) ── */
+/* ── Banner ── */
 .pa-hero { position: relative; overflow: hidden; border-radius: 18px; padding: 26px 30px; min-height: 132px; align-items: center; color: #fff; }
-.pa-hero.dia       { background: linear-gradient(160deg, #1E88E5 0%, #42A5F5 45%, #81D4FA 100%); box-shadow: 0 4px 20px rgba(66,165,245,.35); }
-.pa-hero.atardecer { background: linear-gradient(160deg, #3d1c72 0%, #9b3a6a 28%, #e8563a 58%, #f4913a 80%, #ffd060 100%); box-shadow: 0 4px 20px rgba(232,86,58,.35); }
-.pa-hero.noche     { background: linear-gradient(160deg, #0d1b3e 0%, #1a2d5a 50%, #0f2347 100%); box-shadow: 0 4px 20px rgba(13,27,62,.45); }
+.pa-hero { background: linear-gradient(135deg, #143163 0%, #1D4E8F 100%); box-shadow: 0 4px 20px rgba(20,49,99,.25); }
 .pa-hero-text { position: relative; z-index: 2; max-width: 70%; text-shadow: 0 1px 2px rgba(0,0,0,.18); }
 .pa-hero .pa-eyebrow { color: rgba(255,255,255,.88); }
 .pa-hero h1 { color: #fff; }
 .pa-hero p { color: rgba(255,255,255,.92); }
-.pa-sky { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-.pa-sky-set { display: none; position: absolute; inset: 0; }
-.pa-hero.dia .pa-sky-dia, .pa-hero.atardecer .pa-sky-atardecer, .pa-hero.noche .pa-sky-noche { display: block; }
-.pa-sun { position: absolute; right: 110px; top: -18px; width: 78px; height: 78px; border-radius: 50%; background: radial-gradient(circle, #FFE066 30%, #FFD000 70%, #FFA500 100%); box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10); animation: paSunPulse 4s ease-in-out infinite; }
-.pa-sun-tard { position: absolute; right: 100px; bottom: -22px; width: 72px; height: 72px; border-radius: 50%; background: radial-gradient(circle, #fff5b0 15%, #FFD000 45%, #FF6B00 80%); box-shadow: 0 0 0 14px rgba(255,160,0,.20), 0 0 0 34px rgba(255,100,0,.12); animation: paSunPulse 4s ease-in-out infinite; }
-@keyframes paSunPulse { 0%,100% { box-shadow: 0 0 0 12px rgba(255,220,0,.18), 0 0 0 28px rgba(255,200,0,.10); } 50% { box-shadow: 0 0 0 18px rgba(255,220,0,.22), 0 0 0 40px rgba(255,200,0,.12); } }
-.pa-cloud { position: absolute; background: rgba(255,255,255,.82); border-radius: 50px; animation: paFloat linear infinite; }
-.pa-cloud::before, .pa-cloud::after { content: ''; position: absolute; background: inherit; border-radius: 50%; }
-.pa-cloud-1 { width: 80px; height: 28px; top: 30px; right: 190px; animation-duration: 18s; }
-.pa-cloud-1::before { width: 36px; height: 36px; top: -18px; left: 12px; }
-.pa-cloud-1::after  { width: 26px; height: 26px; top: -13px; left: 34px; }
-.pa-cloud-2 { width: 56px; height: 20px; top: 56px; right: 290px; opacity: .65; animation-duration: 25s; animation-delay: -8s; }
-.pa-cloud-2::before { width: 26px; height: 26px; top: -14px; left: 8px; }
-.pa-cloud-2::after  { width: 18px; height: 18px; top: -10px; left: 26px; }
-.pa-cloud-3 { width: 44px; height: 16px; bottom: 22px; right: 40px; opacity: .5; animation-duration: 30s; animation-delay: -14s; }
-.pa-cloud-3::before { width: 22px; height: 22px; top: -12px; left: 6px; }
-.pa-cloud-3::after  { width: 16px; height: 16px; top: -9px; left: 20px; }
-.pa-cloud-tard { background: rgba(255,180,120,.75); }
-@keyframes paFloat { 0%,100% { transform: translateX(0); } 50% { transform: translateX(-14px); } }
-.pa-moon { position: absolute; right: 100px; top: 50%; margin-top: -28px; width: 56px; height: 56px; border-radius: 50%; background: #E8EBF4; box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); animation: paMoonGlow 5s ease-in-out infinite; }
-@keyframes paMoonGlow { 0%,100% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 20px rgba(200,210,255,.25); } 50% { box-shadow: -10px -4px 0 2px #0d1b3e, 0 0 36px rgba(200,210,255,.45); } }
-.pa-star { position: absolute; border-radius: 50%; background: #fff; animation: paTwinkle ease-in-out infinite; }
-@keyframes paTwinkle { 0%,100% { opacity: .9; transform: scale(1); } 50% { opacity: .2; transform: scale(.6); } }
 .pa-conf { position: relative; }
 .pa-conf summary { cursor: pointer; list-style: none; display: inline-block; }
 .pa-conf summary::-webkit-details-marker { display: none; }
@@ -747,8 +709,6 @@ a.pa-stage:hover { background: var(--pa-fill); }
     .pa-head h1 { font-size: 28px; }
     .pa-hero { padding: 22px 20px; }
     .pa-hero-text { max-width: 100%; }
-    .pa-sun, .pa-sun-tard, .pa-moon { right: 18px; opacity: .55; }
-    .pa-cloud { display: none; }
     .pa-line { grid-template-columns: minmax(0, 1fr) 64px; }
     .pa-line .pa-track { grid-column: 1 / -1; grid-row: 2; }
     .pa-kpi.hero { flex-direction: column; align-items: flex-start; }
@@ -774,7 +734,6 @@ a.pa-stage:hover { background: var(--pa-fill); }
 }
 @media (prefers-reduced-motion: reduce) {
     .nov-track, .nov-popup, .nov-popup-ov { transition: none; }
-    .pa-sun, .pa-sun-tard, .pa-moon, .pa-cloud, .pa-star { animation: none; }
 }
 </style>
 <?php
@@ -785,28 +744,7 @@ require_once __DIR__ . '/../complementos/header.php';
 <div class="pa">
 
     <!-- ── Encabezado ── -->
-    <header class="pa-head pa-hero <?php echo $temaCielo; ?>" id="paHero">
-        <!-- Cielo decorativo: se muestra el conjunto que corresponde a la hora -->
-        <div class="pa-sky" aria-hidden="true">
-            <div class="pa-sky-set pa-sky-dia">
-                <div class="pa-sun"></div>
-                <div class="pa-cloud pa-cloud-1"></div>
-                <div class="pa-cloud pa-cloud-2"></div>
-                <div class="pa-cloud pa-cloud-3"></div>
-            </div>
-            <div class="pa-sky-set pa-sky-atardecer">
-                <div class="pa-sun-tard"></div>
-                <div class="pa-cloud pa-cloud-tard pa-cloud-1"></div>
-                <div class="pa-cloud pa-cloud-tard pa-cloud-2"></div>
-                <div class="pa-cloud pa-cloud-tard pa-cloud-3"></div>
-            </div>
-            <div class="pa-sky-set pa-sky-noche">
-                <div class="pa-moon"></div>
-                <?php foreach ($estrellas as $e): ?>
-                <div class="pa-star" style="left:<?php echo $e['x']; ?>%;top:<?php echo $e['y']; ?>%;width:<?php echo $e['size']; ?>px;height:<?php echo $e['size']; ?>px;animation-duration:<?php echo $e['dur']; ?>s;animation-delay:-<?php echo $e['delay']; ?>s;"></div>
-                <?php endforeach; ?>
-            </div>
-        </div>
+    <header class="pa-head pa-hero" id="paHero">
         <div class="pa-hero-text">
             <div class="pa-eyebrow"><?php echo htmlspecialchars($fechaLarga); ?></div>
             <h1><?php echo $plan ? htmlspecialchars($plan['titulo']) : 'Plan de Acción'; ?></h1>
@@ -814,13 +752,9 @@ require_once __DIR__ . '/../complementos/header.php';
         </div>
     </header>
     <script>
-    // Ajusta tema y saludo a la hora local del navegador (el reloj del servidor puede estar en otra zona)
+    // El saludo sigue la hora local del navegador (el reloj del servidor puede estar en otra zona)
     (function () {
         var d = new Date(), m = d.getHours() * 60 + d.getMinutes();
-        var tema = (m >= 360 && m < 990) ? 'dia' : ((m >= 990 && m < 1140) ? 'atardecer' : 'noche');
-        var hero = document.getElementById('paHero');
-        hero.classList.remove('dia', 'atardecer', 'noche');
-        hero.classList.add(tema);
         document.getElementById('paSaludo').textContent = (m >= 360 && m < 720) ? 'Buenos días' : ((m >= 720 && m < 1140) ? 'Buenas tardes' : 'Buenas noches');
     })();
     </script>
@@ -896,7 +830,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <span class="note"><?php echo $trimVigente ? 'Esperado al T' . $trimVigente . ($trimManual ? ' (manual)' : ' vencido') . ': ' . $esperado . ' %' : 'Aún no vence ningún trimestre'; ?></span>
                 <span class="note">Con lo registrado en revisión: <b class="num"><?php echo $avanceRev === null ? '—' : dbFmt($avanceRev) . ' %'; ?></b></span>
                 <span class="pa-pill" style="margin-top:6px;background:<?php echo $TONO[$tonoAvance]['tint']; ?>;color:<?php echo $TONO[$tonoAvance]['ink']; ?>">
-                    <?php echo $avance === null ? 'Sin metas aprobadas' : ($avance >= $esperado ? 'Por encima de lo esperado' : 'Avance en curso'); ?>
+                    <?php echo $avance === null ? 'Sin metas aprobadas' : ($esperado <= 0 ? 'Aún sin trimestre vencido' : ($avance >= $esperado ? 'En lo esperado o por encima' : 'Avance en curso')); ?>
                 </span>
             </div>
         </div>
@@ -908,14 +842,14 @@ require_once __DIR__ . '/../complementos/header.php';
         </a>
         <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=publicados'); ?>" title="Ir al seguimiento en el Módulo 144">
             <span class="lbl">Reportados</span>
-            <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nMetas; ?></small></span>
+            <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nAplican; ?></small></span>
             <span class="note">con el T<?php echo $trimRep; ?> aprobado · <?php echo $nRevision; ?> en revisión · <?php echo $nTrimAprob; ?> trimestres aprobados en total</span>
             <span class="go">Ir al seguimiento →</span>
         </a>
         <div class="pa-card pa-kpi">
             <span class="lbl">En meta</span>
-            <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?></span>
-            <span class="note">con 80 % o más de la meta con lo aprobado hasta hoy</span>
+            <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?><small> / <?php echo $enMetaDe; ?></small></span>
+            <span class="note">con lo esperado al T<?php echo $trimRep; ?> (<?php echo dbEsperadoPct($trimRep); ?> %) con lo aprobado</span>
         </div>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
@@ -934,7 +868,8 @@ require_once __DIR__ . '/../complementos/header.php';
         </div>
         <div class="pa-trims">
             <?php foreach ($porTrim as $t => $c):
-                $tt = $TONO[dbTono($c['apr'])]; ?>
+                // El color compara con lo ESPERADO de ese trimestre (T1 en 30 % va bien; T4 en 80 % todavía no)
+                $tt = $TONO[$c['apr'] === null ? 'none' : ($c['apr'] >= $c['esp'] ? 'ok' : ($c['apr'] >= $c['esp'] * 0.75 ? 'warn' : 'bad'))]; ?>
             <div class="pa-trim<?php echo $trimVigente === $t ? ' on' : ''; ?>">
                 <div class="pa-trim-head">
                     <span class="pa-trim-t">Acumulado a T<?php echo $t; ?></span>

@@ -1,7 +1,19 @@
 # .htaccess
+Options -Indexes
 RewriteEngine On
+
+# Código, configuración y documentos no se sirven directamente: todo pasa por index.php
+RewriteRule ^(vista|modelo|controlador|config|database|documentacion|\.claude|\.git)(/|$) - [F,L]
+RewriteRule ^[^/]+\.(sql|xlsx|docx|pdf|log|javb)$ - [F,L]
+RewriteRule (^|/)(debug\.log|error_log)$ - [F,L]
 
 # Redirigir todas las solicitudes a index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

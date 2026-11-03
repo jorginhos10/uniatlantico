@@ -827,7 +827,11 @@ ob_start();
         .seg-tri .form-label { font-size: 12px; }
         .seg-input-tri { font-size: 18px; }
         .semaforo-trim { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #1D71B8; background: #E4EEF8; border-radius: 99px; padding: 2px 9px; margin-bottom: 6px; }
-        .semaforo-trim.sin { color: #6E6E73; background: #EEEEF2; }
+        .semaforo-trim.t-aprobado { color: #1F8A4C; background: #E3F4EA; }
+        .semaforo-trim.t-en-revisión { color: #8A5A00; background: #FDF1D6; }
+        .semaforo-trim.t-devuelto { color: #A3201A; background: #FDE5E3; }
+        .semaforo-trim.t-en-construcción { color: #6E6E73; background: #EEEEF2; }
+        .semaforo-trim-sec { font-size: 11px; color: #6E6E73; margin: -2px 0 6px; }
         .trim-chips { display: flex; gap: 5px; flex-wrap: wrap; }
         .trim-chip { font-size: 12px; font-weight: 800; border-radius: 99px; padding: 3px 9px; background: #EEEEF2; color: #8E8E93; }
         .trim-chip.ok { background: #E3F4EA; color: #1F8A4C; }
@@ -2059,16 +2063,19 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_excedida = $suma_linea > 100.01;
                                         $tiene_seg_b = !empty($borrador['fecha_seguimiento']) || !empty($borrador['porcentaje_avance']) || !empty($borrador['indicador']);
                                         $campoSolicitud = $modulo['config']['campo_solicitud'];
-                                        // En el seguimiento el semáforo y el estado de la fila son los del último trimestre reportado (aprobado);
-                                        // sin ninguno aprobado, los del T1. Cada trimestre se aprueba por separado
-                                        $trimFila = 0; $trimReportado = false;
+                                        // En el seguimiento el semáforo y el estado de la fila son los del trimestre que ESPERA ACCIÓN: el que está en revisión,
+                                        // si no el devuelto, si no el primero sin aprobar (con todos aprobados, el último). Cada trimestre se aprueba por separado.
+                                        $trimFila = 0; $trimEstadoTxt = ''; $trimUltimoAprobado = 0;
                                         if ($key === 'seguimiento') {
                                             $flujoFila = ($flujoTrimSeg ?? [])[(int)$borrador['id']] ?? [];
-                                            $trimFila = 1;
-                                            foreach ([4, 3, 2, 1] as $tn) {
-                                                if (($flujoFila[$tn]['estado'] ?? 0) === 2) { $trimFila = $tn; $trimReportado = true; break; }
-                                            }
+                                            $aplican = (($borrador['tipo_medicion'] ?? '') === 'Límite') ? [3, 4] : [1, 2, 3, 4]; // en «Límite» T1 y T2 no se registran
+                                            foreach ($aplican as $tn) { if (($flujoFila[$tn]['estado'] ?? 0) === 2) $trimUltimoAprobado = $tn; }
+                                            foreach ($aplican as $tn) { $f_ = $flujoFila[$tn] ?? []; if (($f_['estado'] ?? 0) === 0 && ($f_['solicitud'] ?? 0) === 1) { $trimFila = $tn; break; } }
+                                            if (!$trimFila) foreach ($aplican as $tn) { $f_ = $flujoFila[$tn] ?? []; if (($f_['estado'] ?? 0) === 0 && ($f_['solicitud'] ?? 0) === 2) { $trimFila = $tn; break; } }
+                                            if (!$trimFila) foreach ($aplican as $tn) { if (($flujoFila[$tn]['estado'] ?? 0) !== 2) { $trimFila = $tn; break; } }
+                                            if (!$trimFila) $trimFila = end($aplican);
                                             $tf = $flujoFila[$trimFila] ?? ['estado' => 0, 'solicitud' => 0, 'semaforo' => 0, 'rechazo' => 0];
+                                            $trimEstadoTxt = $tf['estado'] === 2 ? 'aprobado' : ($tf['solicitud'] === 1 ? 'en revisión' : ($tf['solicitud'] === 2 ? 'devuelto' : 'en construcción'));
                                             $borrador[$campoSolicitud] = $tf['solicitud'];
                                             $borrador[$campoSemaforo] = $tf['estado'] === 2 ? 4 : $tf['semaforo'];
                                             $borrador[$campoSemaforoRechazo] = $tf['rechazo'];
@@ -2141,7 +2148,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             </div>
                                             <div class="col-md-2">
                                                 <?php if ($trimFila): ?>
-                                                <div class="semaforo-trim<?php echo $trimReportado ? '' : ' sin'; ?>" title="<?php echo $trimReportado ? 'Último trimestre reportado (aprobado): el semáforo es el de este trimestre' : 'Ningún trimestre reportado todavía: se muestra el trimestre 1'; ?>. Cada trimestre se aprueba por separado."><?php echo $trimReportado ? 'Trimestre ' . $trimFila . ' · reportado' : 'Trimestre ' . $trimFila . ' · sin reportar'; ?></div>
+                                                <div class="semaforo-trim t-<?php echo $h_ = str_replace(' ', '-', $trimEstadoTxt); ?>" title="El semáforo es el del trimestre que espera acción. Cada trimestre se aprueba por separado."><?php echo 'T' . $trimFila . ' · ' . $trimEstadoTxt; ?></div>
+                                                <?php if ($trimUltimoAprobado && $trimUltimoAprobado !== $trimFila): ?><div class="semaforo-trim-sec">Último aprobado: T<?php echo $trimUltimoAprobado; ?></div><?php endif; ?>
                                                 <?php endif; ?>
                                                 <div class="semaforo-row">
                                                     <?php
@@ -6468,7 +6476,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     else if (x.estado === 0 && x.solicitud === 1) { clase = 'rev'; texto = 'En revisión'; }
                     else if (x.estado === 0 && x.solicitud === 2) { clase = 'dev'; texto = 'Devuelto'; }
                     $('#segTriEst' + t).text(texto).attr('class', 'seg-tri-est' + (clase ? ' ' + clase : ''));
-                    if (x.estado === 2) $('#seguimiento_trimestre' + t).prop('disabled', true).attr('title', 'Trimestre aprobado: ya no se modifica');
+                    if (x.bloqueado) $('#seguimiento_trimestre' + t).prop('disabled', true).attr('title', x.estado === 2 ? 'Trimestre aprobado: ya no se modifica' : 'Trimestre en revisión: lo ajusta quien debe aprobarlo');
                 });
             });
         }

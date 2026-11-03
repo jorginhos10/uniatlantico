@@ -215,7 +215,7 @@ $baseUrl  = Config::getBaseUrl();
                 <label class="form-label">Contraseña *</label>
                 <div class="input-icon-wrap">
                     <i class="fas fa-lock"></i>
-                    <input type="password" class="form-control" id="password" name="password" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
                     <button type="button" class="toggle-pass" onclick="togglePass('password', this)"><i class="fas fa-eye"></i></button>
                 </div>
                 <div class="field-error" id="err-password"></div>
@@ -288,7 +288,7 @@ document.getElementById('formRegistro').addEventListener('submit', function(e) {
     if (!email)    { setError('email',  'El correo es obligatorio');  ok = false; }
     if (!username) { setError('username','El usuario es obligatorio'); ok = false; }
     if (!password) { setError('password','La contraseña es obligatoria'); ok = false; }
-    else if (password.length < 6) { setError('password','Mínimo 6 caracteres'); ok = false; }
+    else if (password.length < 8) { setError('password','Mínimo 8 caracteres'); ok = false; }
     if (password !== confirm) { setError('password_confirmation','Las contraseñas no coinciden'); ok = false; }
     if (!ok) return;
 

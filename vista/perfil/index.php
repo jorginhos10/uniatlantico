@@ -397,8 +397,8 @@ require_once __DIR__ . '/../complementos/header.php';
             Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Completa todos los campos', confirmButtonColor: '#0071e3' });
             return;
         }
-        if (nueva.length < 6) {
-            Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'Mínimo 6 caracteres', confirmButtonColor: '#0071e3' });
+        if (nueva.length < 8) {
+            Swal.fire({ icon: 'warning', title: 'Contraseña muy corta', text: 'Mínimo 8 caracteres', confirmButtonColor: '#0071e3' });
             return;
         }
         if (nueva !== confirmar) {

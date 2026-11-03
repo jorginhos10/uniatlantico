@@ -20,12 +20,10 @@ class PermisosManager {
         // Configurar botones de permisos
         this.configurarBotonesPermisos();
         
-        console.log('✅ PermisosManager inicializado correctamente');
     }
     
     // Configurar botones de permisos en la tabla de usuarios
     configurarBotonesPermisos() {
-        console.log('🔧 Configurando botones de permisos...');
         
         // Usar delegación de eventos para manejar clics dinámicos
         document.addEventListener('click', (e) => {
@@ -35,7 +33,6 @@ class PermisosManager {
                 e.preventDefault();
                 e.stopPropagation();
                 
-                console.log('🖱️ Botón de permisos clickeado:', permisoBtn);
                 
                 const userId = permisoBtn.getAttribute('data-user-id');
                 const userName = permisoBtn.getAttribute('data-user-name');
@@ -51,7 +48,6 @@ class PermisosManager {
                     return;
                 }
                 
-                console.log(`👤 Usuario seleccionado: ID=${userId}, Nombre=${userName}`);
                 
                 // Verificar si es el usuario actual
                 if (userId === this.currentUserId) {
@@ -85,7 +81,6 @@ class PermisosManager {
     crearPopupHTML() {
         if (document.getElementById('permisosPopup')) return;
         
-        console.log('🛠️ Creando HTML del popup de permisos...');
         
         const popupHTML = `
             <div class="popup-overlay" id="permisosPopupOverlay"></div>
@@ -171,12 +166,10 @@ class PermisosManager {
         `;
         
         document.body.insertAdjacentHTML('beforeend', popupHTML);
-        console.log('✅ HTML del popup creado correctamente');
     }
     
     // Configurar event listeners del popup
     configurarEventListeners() {
-        console.log('🔧 Configurando event listeners del popup...');
         
         // Cerrar popup
         document.addEventListener('click', (e) => {
@@ -198,7 +191,6 @@ class PermisosManager {
     
     // Abrir popup de permisos
     async abrirPopupPermisos(userId, userName, userAvatar) {
-        console.log(`🔓 Abriendo popup de permisos para usuario ID: ${userId}`);
         
         this.currentUsuarioId = userId;
         this.currentUsuarioNombre = userName;
@@ -229,12 +221,10 @@ class PermisosManager {
         // Ocultar loading
         this.mostrarLoading(false);
         
-        console.log('✅ Popup abierto correctamente');
     }
     
     // Cerrar popup
     cerrarPopupPermisos() {
-        console.log('🔒 Cerrando popup de permisos');
         
         const popup = document.getElementById('permisosPopup');
         const overlay = document.getElementById('permisosPopupOverlay');
@@ -254,7 +244,6 @@ class PermisosManager {
     
     // Actualizar información del usuario en el popup
     actualizarInfoUsuarioPopup(userName, userAvatar) {
-        console.log('👤 Actualizando info del usuario en popup:', userName);
         
         const nombreElement = document.getElementById('popupUsuarioNombre');
         const nombreCompletoElement = document.getElementById('popupUsuarioNombreCompleto');
@@ -287,11 +276,9 @@ class PermisosManager {
     
     // Cargar permisos del usuario
     async cargarPermisosUsuario(userId) {
-        console.log(`📋 Cargando permisos ACTIVOS para usuario ID: ${userId}`);
         
         try {
             const url = `${this.baseUrl}/permisos/popup-get/${userId}`;
-            console.log('🌐 URL de solicitud:', url);
             
             const response = await fetch(url);
             
@@ -300,7 +287,6 @@ class PermisosManager {
             }
             
             const result = await response.json();
-            console.log('📦 Respuesta del servidor:', result);
             
             if (result.success) {
                 this.renderizarPermisos(result.permisos, result.usuario, result.estadisticas, result.subpermisos || []);
@@ -316,15 +302,11 @@ class PermisosManager {
         } catch (error) {
             console.error('❌ Error cargando permisos:', error);
             this.mostrarMensajePopup('Error de conexión: ' + error.message, 'error');
-            
-            // Mostrar datos de ejemplo para debugging
-            this.mostrarDatosEjemplo();
         }
     }
     
     // Renderizar permisos en el popup
     renderizarPermisos(permisos, usuarioInfo, estadisticas, subpermisos = []) {
-        console.log('🎨 Renderizando permisos ACTIVOS:', permisos);
 
         this.actualizarEstadisticas(estadisticas);
 
@@ -422,12 +404,10 @@ class PermisosManager {
         this.configurarSwitchesPermisos();
         this.configurarCheckboxesGrupo();
 
-        console.log(`✅ ${todos.length} permisos + ${subpermisos.length} sub-permisos FOR-DE-144`);
     }
     
     // Actualizar estadísticas
     actualizarEstadisticas(estadisticas) {
-        console.log('📊 Actualizando estadísticas:', estadisticas);
         
         const asignadosElement = document.getElementById('permisosAsignadosCount');
         const totalesElement = document.getElementById('totalPermisosCount');
@@ -444,7 +424,6 @@ class PermisosManager {
     // Configurar switches de permisos
     configurarSwitchesPermisos() {
         const switches = document.querySelectorAll('.permiso-switch-popup input');
-        console.log(`🔧 Configurando ${switches.length} switches de permisos...`);
         
         switches.forEach(switchEl => {
             switchEl.addEventListener('change', async (e) => {
@@ -452,7 +431,6 @@ class PermisosManager {
                 const nuevoEstado = e.target.checked ? 1 : 0;
                 const permisoItem = e.target.closest('.permiso-item-popup');
                 
-                console.log(`🔄 Alternando permiso ID: ${permisoId} a estado: ${nuevoEstado}`);
                 
                 if (!this.currentUsuarioId) {
                     console.error('❌ No hay usuario seleccionado');
@@ -467,7 +445,6 @@ class PermisosManager {
                 
                 try {
                     const url = `${this.baseUrl}/permisos/popup-toggle`;
-                    console.log('🌐 URL de toggle:', url);
                     
                     const response = await fetch(url, {
                         method: 'POST',
@@ -483,7 +460,6 @@ class PermisosManager {
                     });
                     
                     const result = await response.json();
-                    console.log('📦 Respuesta del toggle:', result);
                     
                     if (result.success) {
                         // Actualizar estadísticas
@@ -512,7 +488,6 @@ class PermisosManager {
                             permisoItem.classList.remove('changed');
                         }, 1000);
 
-                        console.log(`✅ Permiso ${nuevoEstado ? 'asignado' : 'removido'} correctamente`);
                     } else {
                         // Revertir switch
                         e.target.checked = !nuevoEstado;
@@ -685,33 +660,9 @@ class PermisosManager {
     actualizarBadgeGrupo() {
         // Solo actualiza el contador global de estadísticas (no hay badge separado)
     }
-
-    // Método para debugging - mostrar datos de ejemplo
-    mostrarDatosEjemplo() {
-        console.log('🛠️ Mostrando datos de ejemplo para debugging');
-        
-        const permisosEjemplo = [
-            { id: 1, nombre: 'crear_usuarios', activo: 1, fecha_asignacion: '2024-01-15', nombre_formateado: 'Crear Usuarios', descripcion: 'Permite crear nuevos usuarios en el sistema' },
-            { id: 2, nombre: 'editar_usuarios', activo: 1, fecha_asignacion: '2024-01-15', nombre_formateado: 'Editar Usuarios', descripcion: 'Permite editar información de usuarios existentes' },
-            { id: 3, nombre: 'eliminar_usuarios', activo: 0, fecha_asignacion: null, nombre_formateado: 'Eliminar Usuarios', descripcion: 'Permite eliminar usuarios del sistema' },
-            { id: 4, nombre: 'ver_reportes', activo: 1, fecha_asignacion: '2024-02-20', nombre_formateado: 'Ver Reportes', descripcion: 'Permite ver reportes y estadísticas del sistema' },
-            { id: 5, nombre: 'gestionar_inventario', activo: 0, fecha_asignacion: null, nombre_formateado: 'Gestionar Inventario', descripcion: 'Permite gestionar el inventario de productos' },
-            { id: 6, nombre: 'ver_dashboard', activo: 1, fecha_asignacion: '2024-01-10', nombre_formateado: 'Ver Dashboard', descripcion: 'Permite ver el panel principal de control' },
-            { id: 7, nombre: 'configurar_sistema', activo: 0, fecha_asignacion: null, nombre_formateado: 'Configurar Sistema', descripcion: 'Permite configurar ajustes del sistema' }
-        ];
-        
-        const estadisticasEjemplo = {
-            permisos_asignados: 4,
-            total_permisos_disponibles: 7
-        };
-        
-        this.renderizarPermisos(permisosEjemplo, null, estadisticasEjemplo);
-        this.mostrarMensajePopup('⚠️ Mostrando datos de ejemplo - Verifica la conexión con el servidor', 'error');
-    }
 }
 
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando PermisosManager...');
     window.permisosManager = new PermisosManager();
 });

@@ -1,6 +1,7 @@
 <?php
 // controlador/Modulo144Controller.php
 require_once 'modelo/Modulo144Model.php';
+require_once __DIR__ . '/../config/roles_helper.php';
 
 class Modulo144Controller {
     private $model;
@@ -208,110 +209,6 @@ class Modulo144Controller {
         ]);
     }
 
-    public function test() {
-        $id = $_GET['id'] ?? 0;
-        
-        if (empty($id) || !is_numeric($id) || $id <= 0) {
-            $this->mostrarErrorTest('ID de formulario no válido para test', $id);
-            return;
-        }
-
-        $formulario = $this->model->verificarFormulario($id);
-        
-        if (!$formulario) {
-            $this->mostrarErrorTest('El formulario con ID ' . $id . ' NO EXISTE', $id);
-            return;
-        }
-
-        $modulos = $this->model->getModulos();
-        $datos_modulos = [];
-        $resultados_tests = [];
-        
-        foreach ($modulos as $key => $modulo) {
-            $tabla_existe = $this->model->verificarTabla($key);
-            $datos_modulos[$key] = [
-                'config' => $modulo,
-                'tabla_existe' => $tabla_existe,
-                'borradores' => $this->model->getBorradores($key, $id),
-                'publicados' => $this->model->getPublicados($key, $id),
-                'cancelados' => $this->model->getCancelados($key, $id)
-            ];
-            
-            $resultados_tests[] = [
-                'modulo' => $modulo['nombre'],
-                'tabla' => $modulo['tabla'],
-                'tabla_existe' => $tabla_existe,
-                'borradores' => count($datos_modulos[$key]['borradores']),
-                'publicados' => count($datos_modulos[$key]['publicados']),
-                'cancelados' => count($datos_modulos[$key]['cancelados'])
-            ];
-        }
-
-        $vistaTestPath = 'vista/modulo144/test.php';
-        if (!file_exists($vistaTestPath)) {
-            die("Error crítico: No se encuentra la vista de test en: " . $vistaTestPath);
-        }
-
-        require_once $vistaTestPath;
-    }
-
-    private function mostrarErrorTest($mensaje, $id = null) {
-        ?>
-        <!DOCTYPE html>
-        <html lang="es">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Error - Test Sistema 144</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-            <style>
-                body {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    font-family: 'Segoe UI', sans-serif;
-                    min-height: 100vh;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }
-                .error-card {
-                    background: white;
-                    border-radius: 20px;
-                    padding: 40px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-                    max-width: 600px;
-                    width: 100%;
-                    border-left: 5px solid #E74C3C;
-                }
-                .btn-primary { background: #2C3E50; border: none; }
-            </style>
-        </head>
-        <body>
-            <div class="error-card">
-                <div class="text-center mb-4">
-                    <i class="fas fa-exclamation-triangle fa-4x" style="color: #E74C3C;"></i>
-                </div>
-                <h2 class="text-center mb-3">Error en Test</h2>
-                <p class="lead text-center mb-4"><?php echo htmlspecialchars($mensaje); ?></p>
-                <div class="alert alert-info">
-                    <strong>ID solicitado:</strong> <?php echo $id ?? 'No proporcionado'; ?>
-                </div>
-                <div class="text-center mt-4">
-                    <a href="<?php echo Config::getBasePath(); ?>/modulo144?id=<?php echo $id; ?>" class="btn btn-primary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver al módulo
-                    </a>
-                    <a href="<?php echo Config::getBasePath(); ?>/FOR-DE-144" class="btn btn-secondary ms-2">
-                        <i class="fas fa-folder me-2"></i>Ver formularios
-                    </a>
-                </div>
-            </div>
-        </body>
-        </html>
-        <?php
-        exit;
-    }
-
     private function mostrarError($mensaje, $id = null) {
         $formularios = $this->model->obtenerTodosLosFormularios();
         ?>
@@ -483,9 +380,11 @@ class Modulo144Controller {
                 $bl = $this->semestresBloqueados($itemActual);
                 if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento'], $_POST['descripcion_sem1'],
                     $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
-                // Un trimestre ya aprobado no se modifica
+                // Un trimestre aprobado no se modifica; uno en revisión solo lo edita quien debe decidir su etapa (el líder de metas
+                // puede ajustarlo antes de aprobar) o un administrador
+                $nivelCreadorG = Roles::nivel(($this->model->getEstadoFlujoTrimestre($id, 1)['creado_por_rol'] ?? ''));
                 foreach ($this->model->getFlujoTrimestres($id) as $tNum => $tFlujo) {
-                    if (($tFlujo['estado'] ?? 0) === 2) unset($_POST['trimestre' . $tNum . '_seguimiento']);
+                    if ($this->trimestreBloqueado($tFlujo, $nivelCreadorG)) unset($_POST['trimestre' . $tNum . '_seguimiento']);
                 }
                 if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['trimestre3_seguimiento'], $_POST['trimestre4_seguimiento'], $_POST['descripcion_sem2'],
                     $_POST['logros_sem2'], $_POST['limites_sem2'], $_POST['observacion_estado_sem2'], $_POST['acciones_fortalecimiento_sem2']);
@@ -567,6 +466,12 @@ class Modulo144Controller {
             return;
         }
 
+        $itemGestion = $this->model->getById('seguimiento', $formulacion_id);
+        if (!$itemGestion || !$this->puedeVerIndicador($itemGestion)) {
+            echo json_encode(['success' => false, 'message' => 'No tienes acceso a este indicador']);
+            return;
+        }
+
         $gestion = $this->model->getGestionFacultad($formulacion_id, $facultad_id);
         echo json_encode(['success' => true, 'gestion' => $gestion ?: null]);
     }
@@ -583,6 +488,12 @@ class Modulo144Controller {
 
         if ($formulacion_id <= 0 || $facultad_id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
+            return;
+        }
+        // Antes cualquier usuario podía escribir la gestión de cualquier facultad
+        $itemGestion = $this->model->getById('seguimiento', $formulacion_id);
+        if (!$itemGestion || !$this->puedeRegistrarSeguimientoFacultad($itemGestion, $facultad_id)) {
+            echo json_encode(['success' => false, 'message' => 'No tienes permiso para registrar la gestión de esta facultad']);
             return;
         }
 
@@ -856,7 +767,7 @@ class Modulo144Controller {
             $rolActual = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
             $nivelCreador = $this->semaforoRolNivel[$rolActual] ?? 0;
             // Un creador de nivel líder o superior deja el indicador listo para la vicerrectoría: ya debe estar concertado
-            if ($nivelCreador >= 2 && $this->bloquearSinConcertar($modulo, $id)) return;
+            if ($nivelCreador >= 2 && $this->bloquearSinConcertar($modulo, $id, $trim)) return;
         }
 
         $resultado = $trim
@@ -941,9 +852,28 @@ class Modulo144Controller {
     private function trimestreDelFlujo($modulo, $origen) {
         if ($modulo !== 'seguimiento') return 0;
         $t = (int)($origen['trimestre'] ?? 0);
-        if ($t >= 1 && $t <= 4) return $t;
-        echo json_encode(['success' => false, 'message' => 'Indica el trimestre: el seguimiento se aprueba por trimestre']);
-        return null;
+        if ($t < 1 || $t > 4) {
+            echo json_encode(['success' => false, 'message' => 'Indica el trimestre: el seguimiento se aprueba por trimestre']);
+            return null;
+        }
+        // En «Límite» el semestre 1 (T1 y T2) no se registra: no tiene nada que enviar ni aprobar
+        $item = $this->model->getById('seguimiento', (int)($origen['id'] ?? 0));
+        if ($item && ($item['tipo_medicion'] ?? '') === 'Límite' && $t <= 2) {
+            echo json_encode(['success' => false, 'message' => 'En los indicadores de tipo Límite no se registra el trimestre ' . $t]);
+            return null;
+        }
+        return $t;
+    }
+
+    // ¿El usuario NO puede modificar los valores de este trimestre? Aprobado: nadie. En revisión: solo quien puede decidir la etapa
+    // que le toca (o un administrador).
+    private function trimestreBloqueado(array $flujo, $nivelCreador) {
+        if (($flujo['estado'] ?? 0) === 2) return true;
+        if (($flujo['estado'] ?? 0) === 0 && ($flujo['solicitud'] ?? 0) === 1) {
+            $siguiente = max((int)($flujo['semaforo'] ?? 0), (int)$nivelCreador) + 1;
+            return !(Roles::esAdmin() || Roles::puedeAprobar($siguiente));
+        }
+        return false;
     }
 
     private function trimestreTieneValor(array $item, $t) {
@@ -1016,7 +946,7 @@ class Modulo144Controller {
         }
 
         // La etapa 2 (líder) entrega el indicador a la vicerrectoría: antes deben estar concertados los semestres reportados
-        if ($etapaNueva === 2 && $this->bloquearSinConcertar($modulo, $id)) return;
+        if ($etapaNueva === 2 && $this->bloquearSinConcertar($modulo, $id, $trim)) return;
 
         if ($this->vicerrectorNoCorresponde($modulo, $id, $etapaNueva)) {
             echo json_encode(['success' => false, 'message' => 'Este indicador lo aprueba el vicerrector al que responde su dependencia (según el organigrama)']);
@@ -1068,6 +998,8 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Debes ingresar el motivo del rechazo']);
             return;
         }
+
+        if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
         $trim = $this->trimestreDelFlujo($modulo, $_POST);
         if ($trim === null) return;
@@ -1154,6 +1086,31 @@ class Modulo144Controller {
         $lista = ', ' . mb_strtolower(trim((string)($item['responsable_formulacion'] ?? '')), 'UTF-8') . ', ';
         foreach ($this->model->getNombresDependenciasUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0) as $dep) {
             if (mb_strpos($lista, ', ' . mb_strtolower(trim($dep), 'UTF-8') . ', ', 0, 'UTF-8') !== false) return true;
+        }
+        return false;
+    }
+
+    // ¿El usuario puede ver este indicador? Misma regla de la lista (m144_filtrarBorradoresVisibles): administradores, quien lo creó,
+    // la dependencia responsable, una facultad con distribución en él y el vicerrector que según el organigrama lo aprueba.
+    // Se usa para no entregar historial, flujo ni evidencias de indicadores ajenos con solo conocer su id.
+    private function puedeVerIndicador(array $item) {
+        if (Roles::puedeVerTodo144()) return true;
+        $uid = Roles::usuarioId();
+        if ($uid > 0 && $uid === (int)($item['creado_por'] ?? 0)) return true;
+        if ($this->esResponsableDelItem($item)) return true;
+
+        $propias = $this->model->getFacultadesDelUsuario($uid, $_SESSION['usuario_cargo_id'] ?? 0);
+        if ($propias) {
+            foreach ($this->model->getDistribucionFacultades((int)$item['id']) as $d) {
+                if (in_array((int)$d['facultad_id'], array_map('intval', $propias), true)) return true;
+            }
+        }
+
+        if (Roles::rolActual() === 'responsable de linea') {
+            $solicitado = (int)($item['solicitud_estado_seguimiento'] ?? 0) >= 1 || (int)($item['estado_seguimiento'] ?? 0) !== 0
+                || (int)($item['solicitud_estado_formulacion'] ?? 0) >= 1 || (int)($item['estado_formulacion'] ?? 0) !== 0;
+            $ids = $this->model->idsVicerrectoresDelIndicador($this->model->getUsuariosAprobadores(), $item['responsable_formulacion'] ?? '', (int)($item['creado_por'] ?? 0));
+            if ($solicitado && $ids !== null && in_array($uid, $ids, true)) return true;
         }
         return false;
     }
@@ -1254,6 +1211,12 @@ class Modulo144Controller {
             return;
         }
 
+        $item = $this->model->getById('seguimiento', $id); // misma tabla para formulación y seguimiento
+        if (!$item || !$this->puedeVerIndicador($item)) {
+            echo json_encode(['success' => false, 'message' => 'No tienes acceso a este indicador']);
+            return;
+        }
+
         $historial = $this->model->getHistorialSemaforo($modulo, $id);
         echo json_encode(['success' => true, 'historial' => $historial]);
     }
@@ -1265,6 +1228,7 @@ class Modulo144Controller {
         $id = intval($_GET['id'] ?? 0);
         $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
         if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+        if (!$this->puedeVerIndicador($item)) { echo json_encode(['success' => false, 'message' => 'No tienes acceso a este indicador']); return; }
 
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         $rolUsuario = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
@@ -1299,6 +1263,7 @@ class Modulo144Controller {
                 'espera_a'       => $enRevision && $siguiente <= 4 ? $nombres[$siguiente] : '',
                 'puede_solicitar' => $aplica && $puedeGestionar && $f['estado'] === 0 && $f['solicitud'] !== 1 && $this->trimestreTieneValor($item, $t),
                 'puede_decidir'  => $puedeDecidir,
+                'bloqueado'      => $this->trimestreBloqueado($f, $nivelCreador),
                 'siguiente'      => $siguiente,
                 'es_final'       => $siguiente === 4,
             ];
@@ -1342,13 +1307,25 @@ class Modulo144Controller {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $modulo = $_POST['modulo'] ?? '';
-            $id = $_POST['id'] ?? 0;
-            
-            if (empty($modulo) || empty($id) || $id <= 0) {
+            $id = (int)($_POST['id'] ?? 0);
+
+            if (empty($modulo) || $id <= 0) {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
             }
-            
+            if (!$this->moduloValido($modulo)) return;
+
+            // Solo quien puede gestionar el indicador (creador, dependencia responsable o administrador) lo elimina
+            $item = $this->model->getById($modulo, $id);
+            if (!$item) {
+                echo json_encode(['success' => false, 'message' => 'El registro no existe']);
+                return;
+            }
+            if (!$this->puedeGestionarIndicador($item)) {
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar este registro']);
+                return;
+            }
+
             $resultado = $this->model->eliminar($modulo, $id);
             echo json_encode([
                 'success' => $resultado,
@@ -1369,7 +1346,13 @@ class Modulo144Controller {
                 echo json_encode(['success' => false, 'message' => 'Faltan datos']);
                 return;
             }
-            
+            if (!$this->moduloValido($modulo)) return;
+            $original = $this->model->getById($modulo, (int)$id);
+            if (!$original || !$this->puedeVerIndicador($original)) {
+                echo json_encode(['success' => false, 'message' => 'No tienes acceso a este registro']);
+                return;
+            }
+
             $resultado = $this->model->duplicar($modulo, $id, $nombre, $creado_por);
             echo json_encode([
                 'success' => $resultado,
@@ -1427,10 +1410,16 @@ class Modulo144Controller {
 
     // Quién puede cargar/quitar: evidencias del indicador → administradores, creador y dependencia responsable;
     // evidencias de una facultad → quien puede registrar el seguimiento de esa facultad.
-    private function puedeEditarEvidencias(array $item, $facultadId, $semestre = 1) {
+    private function puedeEditarEvidencias(array $item, $facultadId, $semestre = 1, $trimestre = 0) {
         // Un semestre bloqueado (Editar formulario → Campos) tampoco admite cambios en sus evidencias
         $bl = $this->semestresBloqueados($item);
         if (!empty($bl[(int)$semestre === 2 ? 'sem2' : 'sem1'])) return false;
+        // Las evidencias de un trimestre aprobado (o en revisión, salvo para quien decide) tampoco se tocan
+        if ((int)$facultadId === 0 && (int)$trimestre >= 1 && (int)$trimestre <= 4) {
+            $flujoT = $this->model->getFlujoTrimestres((int)$item['id'])[(int)$trimestre] ?? null;
+            $nivelC = Roles::nivel($this->model->getEstadoFlujoTrimestre((int)$item['id'], 1)['creado_por_rol'] ?? '');
+            if ($flujoT && $this->trimestreBloqueado($flujoT, $nivelC)) return false;
+        }
         // facultad_id negativo: evidencias del lado de la vicerrectoría en la concertación de esa facultad
         if ($facultadId < 0) return $this->puedeConcertarDependencia($item);
         if ($facultadId > 0) return $this->puedeRegistrarSeguimientoFacultad($item, $facultadId);
@@ -1440,6 +1429,7 @@ class Modulo144Controller {
 
     // Quién puede consultar: cualquiera con acceso al indicador; las evidencias de otra facultad solo su facultad
     private function puedeVerEvidencias(array $item, $facultadId) {
+        if (!$this->puedeVerIndicador($item)) return false; // antes bastaba con conocer el id del indicador
         if ($facultadId == 0) return true;
         $propias = $this->facultadesRestringidas($item);
         return !$propias || in_array(abs((int)$facultadId), $propias, true);
@@ -1511,7 +1501,7 @@ class Modulo144Controller {
             'maximo' => self::EVIDENCIAS_MAX,
             'semestre' => $sem,
             'trimestre' => $tri,
-            'puede_editar' => $this->puedeEditarEvidencias($item, $fac, $sem),
+            'puede_editar' => $this->puedeEditarEvidencias($item, $fac, $sem, $tri),
             'carpeta' => $this->carpetaEvidencias($item, $fac, $sem, $tri) . '/',
         ]);
     }
@@ -1524,7 +1514,9 @@ class Modulo144Controller {
         if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
         $sem = $this->semestreEvidencias($_POST);
         $tri = $this->trimestreEvidencias($_POST, $fac);
-        if (!$this->puedeEditarEvidencias($item, $fac, $sem)) { echo json_encode(['success' => false, 'message' => 'No puedes cargar evidencias aquí (¿el semestre está bloqueado?)']); return; }
+        // Las evidencias del indicador (facultad 0) son por trimestre: sin un trimestre válido no se sabría a cuál pertenecen
+        if ((int)$fac === 0 && $tri < 1) { echo json_encode(['success' => false, 'message' => 'Indica el trimestre de la evidencia']); return; }
+        if (!$this->puedeEditarEvidencias($item, $fac, $sem, $tri)) { echo json_encode(['success' => false, 'message' => 'No puedes cargar evidencias aquí (¿el trimestre está aprobado o el semestre bloqueado?)']); return; }
 
         $f = $_FILES['archivo'] ?? null;
         if (!$f || $f['error'] !== UPLOAD_ERR_OK) {
@@ -1568,7 +1560,7 @@ class Modulo144Controller {
         $ev = $this->model->getEvidencia((int)($_POST['id'] ?? 0));
         $item = $ev ? $this->model->getById('seguimiento', (int)$ev['formulacion_id']) : null;
         if (!$ev || !$item) { echo json_encode(['success' => false, 'message' => 'Evidencia no encontrada']); return; }
-        if (!$this->puedeEditarEvidencias($item, (int)$ev['facultad_id'], (int)($ev['semestre'] ?? 1))) { echo json_encode(['success' => false, 'message' => 'No puedes quitar esta evidencia (¿el semestre está bloqueado?)']); return; }
+        if (!$this->puedeEditarEvidencias($item, (int)$ev['facultad_id'], (int)($ev['semestre'] ?? 1), (int)($ev['trimestre'] ?? 0))) { echo json_encode(['success' => false, 'message' => 'No puedes quitar esta evidencia (¿el trimestre está aprobado o el semestre bloqueado?)']); return; }
         $ok = $this->model->eliminarEvidencia((int)$ev['id']);
         if ($ok) @unlink(dirname(__DIR__) . '/' . $ev['ruta']);
         echo json_encode(['success' => $ok]);
@@ -1650,7 +1642,7 @@ class Modulo144Controller {
 
     // Semestres con valores reportados que todavía no están concertados (aprobados): bloquean el envío a la vicerrectoría.
     // Devuelve la lista de textos "S1 · Facultad X", vacía si todo lo reportado está concertado.
-    private function semestresSinConcertar($id, array $item) {
+    private function semestresSinConcertar($id, array $item, array $semestres = [1, 2]) {
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
         $conc = $this->model->getConcertaciones($id);
         $nombres = [];
@@ -1658,7 +1650,7 @@ class Modulo144Controller {
         $faltan = [];
         foreach ($this->model->getDistribucionFacultades($id) as $d) {
             $fid = (int)$d['facultad_id'];
-            foreach ([1, 2] as $s) {
+            foreach ($semestres as $s) {
                 if ($s === 1 && $esLimite) continue;
                 $c = $conc[$fid][$s] ?? null;
                 $hecha = $d['seguimiento_sem' . $s] ?? null;
@@ -1671,11 +1663,18 @@ class Modulo144Controller {
 
     // Un seguimiento no se envía a la vicerrectoría mientras sus semestres reportados no estén concertados.
     // Responde el error y devuelve true si debe bloquearse.
-    private function bloquearSinConcertar($modulo, $id) {
+    // $trim (1 a 4): el seguimiento se aprueba por trimestre, así que solo cuenta el semestre de ese trimestre, y únicamente cuando es el que
+    // lo cierra (T2 y T4): T1 y T3 son parciales y el semestre aún no se concerta.
+    private function bloquearSinConcertar($modulo, $id, $trim = 0) {
         if ($modulo !== 'seguimiento') return false;
         $item = $this->model->getById('seguimiento', $id);
         if (!$item) return false;
-        $faltan = $this->semestresSinConcertar($id, $item);
+        if ($trim) {
+            if ($trim % 2 === 1) return false;
+            $faltan = $this->semestresSinConcertar($id, $item, [(int)($trim / 2)]);
+        } else {
+            $faltan = $this->semestresSinConcertar($id, $item);
+        }
         if (!$faltan) return false;
         $lista = implode('; ', array_slice($faltan, 0, 4)) . (count($faltan) > 4 ? '…' : '');
         echo json_encode(['success' => false, 'message' => 'No se puede enviar a la vicerrectoría: faltan concertar los semestres reportados (' . $lista . ')']);

@@ -236,7 +236,7 @@ function esJavb(nombre) {
 }
 
 function mostrarArchivo(file) {
-    document.getElementById('nombreArchivo').textContent = file.name;
+    document.getElementById('nombreArchivo').textContent = file.name; // textContent: el nombre no se interpreta como HTML
     document.getElementById('nombreArchivo').style.display = 'block';
     document.getElementById('btnRestaurar').disabled = false;
 }
@@ -297,11 +297,15 @@ let _droppedFile = null; // fallback cuando DataTransfer no está disponible
 function confirmarRestauraur() {
     const file = document.getElementById('archivoJavb').files[0] || _droppedFile;
     if (!file) return;
+    const nombreSeguro = $('<div>').text(file.name).html();
 
     Swal.fire({
         title: '¿Restaurar base de datos?',
-        html: `Se reemplazarán <strong>todos los datos actuales</strong> con los del archivo <em>${file.name}</em>.<br><br>Esta acción no se puede deshacer.`,
+        html: `Se reemplazarán <strong>todos los datos actuales</strong> con los del archivo <em>${nombreSeguro}</em>.<br>Antes se guarda una copia de lo que hay ahora en el servidor. Los archivos de evidencias no forman parte del respaldo.<br><br>Escribe <strong>RESTAURAR</strong> para confirmar.`,
         icon: 'warning',
+        input: 'text',
+        inputPlaceholder: 'RESTAURAR',
+        inputValidator: v => ((v || '').trim().toUpperCase() !== 'RESTAURAR') ? 'Escribe RESTAURAR para confirmar' : undefined,
         showCancelButton: true,
         confirmButtonColor: '#FF3B30',
         cancelButtonColor: '#8E8E93',
@@ -312,6 +316,7 @@ function confirmarRestauraur() {
 
         const formData = new FormData();
         formData.append('archivo', file);
+        formData.append('confirmacion', 'RESTAURAR');
 
         document.getElementById('btnRestaurar').disabled = true;
         document.getElementById('btnRestaurar').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Restaurando...';

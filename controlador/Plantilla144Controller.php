@@ -52,7 +52,7 @@ class Plantilla144Controller {
     const GRUPO_FACULTADES = '22. GESTIÓN POR FACULTADES';
 
     // Formato institucional de la hoja Seguimiento. Lo sombreado viene de la formulación (solo lectura);
-    // se llenan Semestre 1, Semestre 2 y Estado de proyectos.
+    // se llenan los cuatro trimestres y el Estado de proyectos (el semestre se calcula con sus trimestres).
     private $colsSeguimiento = [
         'id'                       => ['N°', 8, ['sombreado' => true]],
         'anio'                     => ['AÑO', 9, ['sombreado' => true]],
@@ -75,8 +75,10 @@ class Plantilla144Controller {
         'tipo_medicion'            => ['TIPO DE MEDICIÓN', 15, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
         'anio_base_meta'           => ['META P.A.', 10, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
         'linea_base_meta'          => ['LÍNEA BASE', 13, ['sombreado' => true, 'grupo' => 'INDICADOR DE RESULTADO']],
-        'semestre1_seguimiento'    => ['SEMESTRE 1', 16, ['grupo' => 'REPORTE DE LA META']],
-        'semestre2_seguimiento'    => ['SEMESTRE 2', 15, ['grupo' => 'REPORTE DE LA META']],
+        'trimestre1_seguimiento'   => ['TRIMESTRE 1', 14, ['grupo' => 'REPORTE DE LA META']],
+        'trimestre2_seguimiento'   => ['TRIMESTRE 2', 14, ['grupo' => 'REPORTE DE LA META']],
+        'trimestre3_seguimiento'   => ['TRIMESTRE 3', 14, ['grupo' => 'REPORTE DE LA META']],
+        'trimestre4_seguimiento'   => ['TRIMESTRE 4', 14, ['grupo' => 'REPORTE DE LA META']],
         'reporte_anio'             => ['AÑO', 10, ['sombreado' => true, 'grupo' => 'REPORTE DE LA META']],
         'seg_fac'                  => ['SEG. FAC', 11, ['sombreado' => true]],
         'logros'                   => ['LOGROS', 60, ['grupo' => 'ESTADO DE PROYECTOS', 'encabezadoClaro' => true]],
@@ -167,7 +169,7 @@ class Plantilla144Controller {
                         case 'motor_desarrollo':  $filaS[] = $conCodigo($r['motor_codigo'] ?? '', $r[$k] ?? ''); break;
                         case 'proyecto':          $filaS[] = $conCodigo($r['proyecto_codigo'] ?? '', $r[$k] ?? ''); break;
                         case 'responsable_formulacion': $filaS[] = implode('; ', $this->separarResponsables($r[$k] ?? '')); break;
-                        case 'anio_base_meta': case 'linea_base_meta': case 'semestre1_seguimiento': case 'semestre2_seguimiento':
+                        case 'anio_base_meta': case 'linea_base_meta': case 'trimestre1_seguimiento': case 'trimestre2_seguimiento': case 'trimestre3_seguimiento': case 'trimestre4_seguimiento':
                             $filaS[] = ['v' => $r[$k] ?? '', 'formato' => $fmtMeta]; break;
                         case 'reporte_anio':
                             $filaS[] = ['v' => $this->cumplidoAnual($r), 'formato' => $fmtMeta]; break;
@@ -399,7 +401,8 @@ class Plantilla144Controller {
             $resumen['errores'][] = 'Hoja Seguimiento: no se encontró la columna ID. Usa la plantilla exportada.';
             return;
         }
-        $editables = ['semestre1_seguimiento', 'semestre2_seguimiento', 'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'];
+        $trimestres = ['trimestre1_seguimiento', 'trimestre2_seguimiento', 'trimestre3_seguimiento', 'trimestre4_seguimiento'];
+        $editables = array_merge($trimestres, ['logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento']);
 
         foreach ($filas as $numFila => $fila) {
             if ($numFila < $filaInicio) continue;
@@ -412,39 +415,44 @@ class Plantilla144Controller {
             if (!$actual) { $resumen['errores'][] = $pref . "el ID {$id} no pertenece a este formulario."; continue; }
             if ((int)$actual['estado_formulacion'] !== 2) { $resumen['errores'][] = $pref . "el ID {$id} aún no tiene la formulación publicada."; continue; }
             if (!$this->puedeEditar($actual)) { $resumen['errores'][] = $pref . "no tienes permiso para editar el ID {$id}."; continue; }
-            $seguimientoCerrado = (int)($actual['estado_seguimiento'] ?? 0) !== 0;
+            // El seguimiento se aprueba por trimestre: un trimestre aprobado (o en revisión) no se sobrescribe con una importación
+            $flujo = $this->model->getFlujoTrimestres($id);
 
             $datos = [];
             $errores = [];
-            // Semestres bloqueados en Editar formulario → Campos
+            // Semestres bloqueados en Editar formulario → Campos (T1 y T2 son del semestre 1; T3 y T4, del semestre 2)
             $bloqueo = $this->model->getBloqueosSemestres((int)($actual['formulario_id'] ?? 0));
             if ($bloqueo['excepto_admin'] && $this->esAdmin()) $bloqueo = ['sem1' => false, 'sem2' => false];
+            $esLimite = ($actual['tipo_medicion'] ?? '') === 'Límite';
             foreach ($editables as $k) {
                 if (!isset($mapa[$k])) continue;
-                if ($k === 'semestre1_seguimiento' && $bloqueo['sem1']) continue;
-                if ($k === 'semestre2_seguimiento' && $bloqueo['sem2']) continue;
                 $v = trim((string)($fila[$mapa[$k]] ?? ''));
-                if (in_array($k, ['semestre1_seguimiento', 'semestre2_seguimiento'], true)) {
+                if (in_array($k, $trimestres, true)) {
+                    $t = (int)substr($k, 9, 1);
+                    // En "Límite" el semestre 1 (T1 y T2) no se registra (igual que en la pantalla)
+                    if ($esLimite && $t <= 2) continue;
+                    if ($bloqueo[$t <= 2 ? 'sem1' : 'sem2']) continue;
                     $n = $this->numero($v);
                     if ($v !== '' && $n === null) { $errores[] = "\"" . $this->colsSeguimiento[$k][0] . "\" debe ser un número."; continue; }
-                    // En "Límite" el semestre 1 no se registra (igual que en la pantalla)
-                    if ($k === 'semestre1_seguimiento' && ($actual['tipo_medicion'] ?? '') === 'Límite') continue;
-                    $datos[$k] = $n === null ? '' : (string)$n;
+                    $nuevo = $n === null ? '' : (string)$n;
+                    // Trimestre aprobado o en revisión: solo se avisa si el archivo trae un valor distinto del guardado
+                    $f = $flujo[$t] ?? ['estado' => 0, 'solicitud' => 0];
+                    $bloqueado = $f['estado'] === 2 || ($f['estado'] === 0 && $f['solicitud'] === 1 && !$this->esAdmin());
+                    if ($bloqueado) {
+                        $a = $actual[$k] ?? '';
+                        $igual = (is_numeric($a) && is_numeric($nuevo) && (float)$a == (float)$nuevo) || (string)$a === (string)$nuevo;
+                        if (!$igual) $resumen['errores'][] = $pref . "el trimestre {$t} del ID {$id} está " . ($f['estado'] === 2 ? 'aprobado' : 'en revisión') . "; no se modificó.";
+                        continue;
+                    }
+                    $datos[$k] = $nuevo;
                 } else {
                     $datos[$k] = $v;
                 }
             }
             if ($errores) { foreach ($errores as $e) $resumen['errores'][] = $pref . $e; continue; }
-            // El % de avance, el cumplido y la meta anual los lee el informe: se calculan aquí igual que en la pantalla
-            if (isset($datos['semestre1_seguimiento']) || isset($datos['semestre2_seguimiento'])) {
-                $datos += $this->avanceSeguimiento(array_merge($actual, $datos));
-            }
             if ($this->sinCambios($actual, $datos)) { $resumen['seguimiento']['sin_cambios']++; continue; }
-            if ($seguimientoCerrado) {
-                $resumen['errores'][] = $pref . "el seguimiento del ID {$id} ya está publicado; sus cambios no se aplicaron.";
-                continue;
-            }
 
+            // Al guardar trimestres, el modelo recalcula semestres, meta ejecutada y % de avance con lo guardado
             if ($this->model->actualizar('seguimiento', $id, $datos)) {
                 $resumen['seguimiento']['actualizados']++;
             } else {

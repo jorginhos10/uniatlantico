@@ -27,6 +27,15 @@ class PerfilController {
         require_once 'vista/perfil/index.php';
     }
 
+    // Mientras el superadministrador ve la cuenta de otro usuario no puede cambiarle la foto, los datos ni la contraseña
+    private function bloqueadoPorImpersonacion() {
+        if (!empty($_SESSION['impersonador'])) {
+            echo json_encode(['success' => false, 'message' => 'No disponible mientras ves la cuenta de otro usuario']);
+            return true;
+        }
+        return false;
+    }
+
     public function updateAvatar() {
         header('Content-Type: application/json');
 
@@ -35,28 +44,33 @@ class PerfilController {
             echo json_encode(['success' => false, 'message' => 'No autenticado']);
             return;
         }
+        if ($this->bloqueadoPorImpersonacion()) return;
 
         if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
             echo json_encode(['success' => false, 'message' => 'No se recibió ninguna imagen']);
             return;
         }
 
-        $file         = $_FILES['avatar'];
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        $maxSize      = 2 * 1024 * 1024;
-
-        if (!in_array($file['type'], $allowedTypes)) {
-            echo json_encode(['success' => false, 'message' => 'Formato no permitido. Use JPG, PNG, GIF o WebP']);
-            return;
-        }
+        $file    = $_FILES['avatar'];
+        $maxSize = 2 * 1024 * 1024;
 
         if ($file['size'] > $maxSize) {
             echo json_encode(['success' => false, 'message' => 'La imagen no puede superar 2 MB']);
             return;
         }
 
-        $ext       = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $filename  = 'avatar_' . $id . '_' . time() . '.' . $ext;
+        // El tipo y la extensión salen del CONTENIDO del archivo, no de lo que declara el navegador: un .php con
+        // «Content-Type: image/png» ya no pasa
+        $tipos = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mime  = $finfo->file($file['tmp_name']);
+        if (!isset($tipos[$mime]) || @getimagesize($file['tmp_name']) === false) {
+            echo json_encode(['success' => false, 'message' => 'Formato no permitido. Use JPG, PNG, GIF o WebP']);
+            return;
+        }
+
+        $ext       = $tipos[$mime];
+        $filename  = 'avatar_' . (int)$id . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $uploadDir = 'assets/media/users/';
 
         if (!is_dir($uploadDir)) {
@@ -90,6 +104,7 @@ class PerfilController {
             echo json_encode(['success' => false, 'message' => 'No autenticado']);
             return;
         }
+        if ($this->bloqueadoPorImpersonacion()) return;
 
         $input  = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $nombre = trim($input['nombre'] ?? '');
@@ -133,9 +148,10 @@ class PerfilController {
             echo json_encode(['success' => false, 'message' => 'No autenticado']);
             return;
         }
+        if ($this->bloqueadoPorImpersonacion()) return;
 
         $input     = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-        $actual    = $input['password_actual']    ?? '';
+        $actual   = $input['password_actual']    ?? '';
         $nueva     = $input['password_nueva']     ?? '';
         $confirmar = $input['password_confirmar'] ?? '';
 
@@ -144,8 +160,8 @@ class PerfilController {
             return;
         }
 
-        if (strlen($nueva) < 6) {
-            echo json_encode(['success' => false, 'message' => 'La nueva contraseña debe tener al menos 6 caracteres']);
+        if (strlen($nueva) < 8) {
+            echo json_encode(['success' => false, 'message' => 'La nueva contraseña debe tener al menos 8 caracteres']);
             return;
         }
 

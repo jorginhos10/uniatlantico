@@ -1,5 +1,6 @@
 <?php
-// vista/FOR-DE-144/reporte_seguimiento.php — landing con el estado actual de los indicadores del Plan de Acción
+// vista/FOR-DE-144/reporte_seguimiento.php — estado de los indicadores del Plan de Acción AL TRIMESTRE elegido.
+// El seguimiento se aprueba por trimestre: aquí «Aprobado» es el trimestre aprobado por la Oficina de Planeación.
 if (!isset($formulario)) {
     header('Location: ' . Config::getBasePath() . '/FOR-DE-144');
     exit;
@@ -7,61 +8,52 @@ if (!isset($formulario)) {
 $h = function ($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
 $basePath = Config::getBasePath();
 $indicadores = $reporte['indicadores'] ?? [];
-$evidencias  = $reporte['evidencias'] ?? [];
 $facultadesRep = $reporte['facultades'] ?? [];
 $tituloF = $h($formulario['titulo'] ?? '');
 $anio    = $h($formulario['anio'] ?? date('Y'));
 $tituloAnio = (strpos($tituloF, (string)$anio) !== false) ? $tituloF : $tituloF . ' (' . $anio . ')'; // si el título ya trae el año, no se repite
-$META    = 80; // meta de cumplimiento (%)
+$trimestre = isset($trimestre) ? max(1, min(4, (int)$trimestre)) : 1;
 
 $etapas = [1 => 'Gestor de Metas', 2 => 'Líder de Metas', 3 => 'Vicerrectoría', 4 => 'Oficina de Planeación'];
 $tieneValor = function ($v) { return $v !== null && trim((string)$v) !== ''; };
 
 $filas = [];
-$kpi = ['total' => 0, 's1' => 0, 's2' => 0, 'sinReporte' => 0, 'enMeta' => 0, 'enCamino' => 0, 'publicados' => 0, 'revision' => 0, 'devueltos' => 0, 'construccion' => 0];
+$kpi = ['total' => 0, 'publicados' => 0, 'revision' => 0, 'devueltos' => 0, 'construccion' => 0];
 $porFacultad = []; // id => ['nombre', 'total', y un conteo por estado]
-$kpi['limite'] = 0;
-$porLinea = []; // código => ['nombre' =>, 'n' =>, 'suma' =>, 'con' =>]
 foreach ($indicadores as $r) {
     $esLimite = ($r['tipo_medicion'] ?? '') === 'Límite';
-    $s1 = !$esLimite && $tieneValor($r['semestre1_seguimiento'] ?? null);
-    $s2 = $tieneValor($r['semestre2_seguimiento'] ?? null);
-    $reportado = $s1 || $s2;
-    $pct = $tieneValor($r['porcentaje_avance'] ?? null) ? min(100.0, max(0.0, (float)$r['porcentaje_avance'])) : null;
+    if ($esLimite && $trimestre <= 2) continue; // en «Límite» el semestre 1 (T1 y T2) no se registra: no entra en este trimestre
 
-    $sol = (int)($r['solicitud_estado_seguimiento'] ?? 0);
-    $etapa = (int)($r['semaforo_etapa_seguimiento'] ?? 0);
-    if ((int)($r['estado_seguimiento'] ?? 0) === 2) { $estado = 'publicado'; $estadoTxt = 'Aprobado'; $kpi['publicados']++; }
-    elseif ($sol === 1) { $estado = 'revision'; $estadoTxt = 'En revisión · ' . ($etapas[min(4, $etapa + 1)] ?? ''); $kpi['revision']++; }
-    elseif ($sol === 2) { $estado = 'devuelto'; $estadoTxt = 'Devuelto para ajustes'; $kpi['devueltos']++; }
-    else { $estado = 'construccion'; $estadoTxt = $reportado ? 'En construcción' : 'Sin iniciar'; $kpi['construccion']++; }
+    // Estado de cada trimestre del indicador: ap = aprobado, rev = en revisión, dev = devuelto, con = en construcción, na = no aplica
+    $tri = [];
+    foreach ([1, 2, 3, 4] as $n) {
+        $e = (int)($r['t' . $n . '_estado'] ?? 0); $s = (int)($r['t' . $n . '_sol'] ?? 0);
+        $v = $r['trimestre' . $n . '_seguimiento'] ?? null;
+        $tri[$n] = [
+            'v' => $tieneValor($v) ? $v : null,
+            'e' => ($esLimite && $n <= 2) ? 'na' : ($e === 2 ? 'ap' : ($s === 1 ? 'rev' : ($s === 2 ? 'dev' : 'con'))),
+        ];
+    }
+    $etapa = (int)($r['t' . $trimestre . '_etapa'] ?? 0);
+    $conValor = $tri[$trimestre]['v'] !== null;
 
+    switch ($tri[$trimestre]['e']) {
+        case 'ap':  $estado = 'publicado';    $estadoTxt = 'Aprobado';                          $kpi['publicados']++;   break;
+        case 'rev': $estado = 'revision';     $estadoTxt = 'En revisión · ' . ($etapas[min(4, $etapa + 1)] ?? ''); $kpi['revision']++; break;
+        case 'dev': $estado = 'devuelto';     $estadoTxt = 'Devuelto para ajustes';             $kpi['devueltos']++;    break;
+        default:    $estado = 'construccion'; $estadoTxt = $conValor ? 'En construcción' : 'Sin iniciar'; $kpi['construccion']++;
+    }
     $kpi['total']++;
-    if ($esLimite) $kpi['limite']++;
-    if ($s1) $kpi['s1']++;
-    if ($s2) $kpi['s2']++;
-    if (!$reportado) $kpi['sinReporte']++;
-    elseif ($pct !== null && $pct >= $META) $kpi['enMeta']++;
-    elseif ($reportado) $kpi['enCamino']++;
 
-    $cod = $r['linea_codigo'] ?: '—';
-    if (!isset($porLinea[$cod])) $porLinea[$cod] = ['nombre' => (string)($r['linea_estrategica'] ?? ''), 'n' => 0, 'suma' => 0.0, 'con' => 0];
-    $porLinea[$cod]['n']++;
-    if ($reportado && $pct !== null) { $porLinea[$cod]['suma'] += $pct; $porLinea[$cod]['con']++; }
-
-    $ev = $evidencias[(int)$r['id']] ?? [];
     $nombre = trim((string)($r['formula_medicion'] ?? '')) !== '' ? $r['formula_medicion'] : ($r['nombre_indicador'] ?: $r['nombre_borrador']);
     $filas[] = [
-        'id' => (int)$r['id'], 'nombre' => $nombre, 'indicador' => $r['nombre_indicador'] ?: $r['nombre_borrador'],
+        'id' => (int)$r['id'], 'nombre' => $nombre,
         'lmp' => implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])),
-        'linea' => $cod, 'responsable' => $r['responsable_formulacion'] ?? '',
-        's1' => $s1, 's2' => $s2, 'limite' => $esLimite,
-        'v1' => $s1 ? $r['semestre1_seguimiento'] : null, 'v2' => $s2 ? $r['semestre2_seguimiento'] : null,
-        'ev1' => (int)($ev[1] ?? 0), 'ev2' => (int)($ev[2] ?? 0),
-        'pct' => $reportado ? $pct : null, 'estado' => $estado, 'estadoTxt' => $estadoTxt, 'etapa' => $etapa, 'sol' => $sol,
+        'responsable' => $r['responsable_formulacion'] ?? '', 'tri' => $tri,
+        'estado' => $estado, 'estadoTxt' => $estadoTxt,
         'unidad' => $r['unidad_medida'] ?? '',
     ];
-    // Por facultad: cuántos de sus indicadores hay en cada estado del seguimiento
+    // Por facultad: cuántos de sus indicadores hay en cada estado del trimestre
     foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
         if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
         $porFacultad[$fx['id']]['total']++;
@@ -69,7 +61,6 @@ foreach ($indicadores as $r) {
         $porFacultad[$fx['id']][$estado]++;
     }
 }
-ksort($porLinea);
 uasort($porFacultad, function ($a, $b) { return strcoll($a['nombre'], $b['nombre']); });
 // Dependencias responsables (un indicador puede tener varias separadas por coma o punto y coma)
 $dependencias = [];
@@ -88,10 +79,9 @@ foreach ($filas as $i => $f) {
     }
 }
 uasort($porDep, function ($a, $b) { return strcoll($a['nombre'], $b['nombre']); });
-$cumpl = array_filter(array_map(function ($f) { return $f['pct']; }, $filas), function ($v) { return $v !== null; });
-$promedio = $cumpl ? array_sum($cumpl) / count($cumpl) : 0;
 $pctDe = function ($n, $t) { return $t > 0 ? round($n / $t * 100) : 0; };
 $fmt = function ($v) { return rtrim(rtrim(number_format((float)$v, 2, ',', '.'), '0'), ','); };
+$urlTrim = function ($t) use ($basePath, $formulario) { return $basePath . '/FOR-DE-144?action=reporteSeguimiento&id=' . (int)$formulario['id'] . '&t=' . (int)$t; };
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -130,7 +120,14 @@ a{color:inherit}
 .trk{height:12px;background:var(--soft);border-radius:99px;position:relative}
 .trk i{display:block;height:100%;border-radius:99px;background:var(--blue)}
 .trk i.cam{background:var(--amber)}
-.trk::after{content:"";position:absolute;left:<?php echo $META; ?>%;top:-4px;bottom:-4px;width:2px;background:var(--orange)}
+.trk::after{content:"";position:absolute;left:80%;top:-4px;bottom:-4px;width:2px;background:var(--orange)}
+.tsel{display:flex;gap:4px;background:rgba(255,255,255,.12);border-radius:10px;padding:3px}
+.tsel a{color:#fff;text-decoration:none;font-weight:700;font-size:13px;padding:5px 11px;border-radius:8px;opacity:.8}
+.tsel a:hover{opacity:1}.tsel a.on{background:#fff;color:var(--navy);opacity:1}
+.tc{font-variant-numeric:tabular-nums;font-weight:700;white-space:nowrap}
+.tc i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#c3c9d6}
+.tc.ap i{background:var(--ok)}.tc.rev i{background:var(--amber)}.tc.dev i{background:var(--blue)}
+.tc.na{color:var(--muted);font-weight:500}.tc.na i{display:none}
 .bar-row b{text-align:right;font-variant-numeric:tabular-nums}
 .leg{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:6px}
 .leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
@@ -194,17 +191,20 @@ tr.resalta td{background:var(--amber-soft)}
         <div>
             <small>Reporte de seguimiento · FOR-DE-144</small>
             <h1><?php echo $tituloAnio; ?></h1>
-            <p>Estado actual de los indicadores aprobados · actualizado <?php echo date('d/m/Y H:i'); ?></p>
+            <p>Estado del trimestre <?php echo $trimestre; ?> · actualizado <?php echo date('d/m/Y H:i'); ?></p>
         </div>
         <div class="hero-acc">
+            <nav class="tsel" aria-label="Trimestre">
+                <?php foreach ([1, 2, 3, 4] as $tn): ?><a href="<?php echo $urlTrim($tn); ?>" class="<?php echo $tn === $trimestre ? 'on' : ''; ?>"<?php echo $tn === $trimestre ? ' aria-current="page"' : ''; ?>>T<?php echo $tn; ?></a><?php endforeach; ?>
+            </nav>
             <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144">‹ Volver</a>
-            <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144?action=reporteCumplidos&id=<?php echo (int)$formulario['id']; ?>">Cumplimiento aprobado</a>
+            <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144?action=reporteCumplidos&id=<?php echo (int)$formulario['id']; ?>&t=<?php echo $trimestre; ?>">Estado por dependencia</a>
             <a class="btn" href="<?php echo $basePath; ?>/modulo144?id=<?php echo (int)$formulario['id']; ?>">Plan de acción</a>
         </div>
     </header>
 
     <section class="kpis" aria-label="Resumen">
-        <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">aprobados por la Oficina de Planeación</div></div>
+        <div class="kpi b"><small>Reportados</small><div class="v"><?php echo $kpi['publicados']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?></span></div><div class="s">con el T<?php echo $trimestre; ?> aprobado por la Oficina de Planeación</div></div>
         <button type="button" class="kpi kpi-btn" id="abrirRev" aria-pressed="false"><small>En revisión</small><div class="v"><?php echo $kpi['revision']; ?> <span style="font-size:.5em;font-weight:600;color:var(--muted)">de <?php echo $kpi['total']; ?> · <?php echo $pctDe($kpi['revision'], $kpi['total']); ?>%</span></div><div class="s">esperando aprobación en el semáforo · clic para resaltarlos en el listado</div></button>
     </section>
 
@@ -235,14 +235,15 @@ tr.resalta td{background:var(--amber-soft)}
                 </span>
             </summary>
             <div class="tw"><table>
-                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th></tr></thead>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>Estado T<?php echo (int)$trimestre; ?></th></tr></thead>
                 <tbody>
                 <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
                 <tr data-estado="<?php echo $h($f['estado']); ?>">
                     <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
-                    <td class="sv"><?php echo $f['s1'] ? $h($fmt($f['v1'])) . $pc : '<span class="nd">' . ($f['limite'] ? 'No aplica' : '—') . '</span>'; ?></td>
-                    <td class="sv"><?php echo $f['s2'] ? $h($fmt($f['v2'])) . $pc : '<span class="nd">—</span>'; ?></td>
+                    <?php foreach ([1, 2, 3, 4] as $tn): $c = $f['tri'][$tn]; ?>
+                    <td class="tc <?php echo $h($c['e']); ?>" title="<?php echo ['ap' => 'Aprobado', 'rev' => 'En revisión', 'dev' => 'Devuelto', 'con' => 'En construcción', 'na' => 'No aplica'][$c['e']]; ?>"><i></i><?php echo $c['e'] === 'na' ? 'No aplica' : ($c['v'] !== null ? $h($fmt($c['v'])) . $pc : '—'); ?></td>
+                    <?php endforeach; ?>
                     <td><span class="chip c-<?php echo $h($f['estado']); ?>"><?php echo $h($f['estadoTxt']); ?></span></td>
                 </tr>
                 <?php endforeach; ?>
@@ -254,17 +255,15 @@ tr.resalta td{background:var(--amber-soft)}
 
     <section class="box tp" id="tp-dep">
         <h2>Por dependencia</h2>
-        <p class="vacio acc-ayuda">Avance de todos los indicadores de cada dependencia: reportado es el seguimiento aprobado por la Oficina de Planeación. La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris); los números de colores son en revisión, devueltos y en construcción.</p>
-        <?php $desplegables($porDep, 'Todavía no hay indicadores aprobados.'); ?>
+        <?php $desplegables($porDep, 'Todavía no hay indicadores en este trimestre.'); ?>
     </section>
 
     <section class="box tp" id="tp-fac" hidden>
         <h2>Facultades</h2>
-        <p class="vacio acc-ayuda">Avance de los indicadores con meta en cada facultad, con el mismo criterio: reportado es el seguimiento aprobado. La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris).</p>
         <?php $desplegables($porFacultad, 'Ninguna facultad tiene metas en los indicadores aprobados.'); ?>
     </section>
 
-    <p class="pie">Los indicadores sin reporte no cuentan en el avance promedio. Para cambiar un dato, ábrelo en el Plan de acción.</p>
+    <p class="pie">La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris) del T<?php echo $trimestre; ?>. Para cambiar un dato, ábrelo en el Plan de acción.</p>
 </div>
 <script>
 (function () {

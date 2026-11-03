@@ -80,7 +80,7 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
             
             <!-- Formato FOR-DE-144 - Permiso ID: 2 -->
             <?php if (tienePermisoPorId(PERMISO_FOR144_ID, $permisosActivosIds ?? [], $esAdmin)): ?>
-                <li class="navItem <?php echo in_array(strtolower($paginaActual ?? ''), ['for-de-144', 'formatos', 'modulo144', 'formulacion144'], true) ? 'active' : ''; ?>">
+                <li class="navItem <?php echo in_array(strtolower($paginaActual ?? ''), ['for-de-144', 'formatos', 'modulo144'], true) ? 'active' : ''; ?>">
                     <a href="<?php echo $basePath; ?>/FOR-DE-144" class="navLink" data-tooltip="Plan de Acción">
                         <?php echo icono('plan'); ?>
                         <span>Plan de Acción</span>

@@ -1,2 +1,17 @@
 evidencias/*
 !evidencias/.gitkeep
+
+# Secretos y datos locales: nunca al repositorio
+config/config.local.php
+debug.log
+error_log
+*.javb
+.claude/
+~$*
+assets/media/users/*
+!assets/media/users/default.png
+!assets/media/users/.htaccess
+
+# Cargas con datos reales y documentos de trabajo
+database/carga_*.sql
+*.xlsx

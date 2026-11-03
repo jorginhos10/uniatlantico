@@ -22,15 +22,15 @@ $baseUrl = Config::getBaseUrl();
 
     <div class="loginContainer">
         <div class="containerDivIdentidad">
-            <img src="assets/media/src/logo.png">
+            <img src="<?php echo $baseUrl; ?>/assets/media/src/logo.png" alt="Logo">
         </div>
         
         
         <?php if (isset($_SESSION['error'])): ?>
             <div class="alert alertError">
                 <?php 
-                echo $_SESSION['error']; 
-                unset($_SESSION['error']); 
+                echo htmlspecialchars($_SESSION['error'], ENT_QUOTES, 'UTF-8');
+                unset($_SESSION['error']);
                 ?>
             </div>
         <?php endif; ?>
@@ -38,8 +38,8 @@ $baseUrl = Config::getBaseUrl();
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alertSuccess">
                 <?php 
-                echo $_SESSION['success']; 
-                unset($_SESSION['success']); 
+                echo htmlspecialchars($_SESSION['success'], ENT_QUOTES, 'UTF-8');
+                unset($_SESSION['success']);
                 ?>
             </div>
         <?php endif; ?>
@@ -48,7 +48,7 @@ $baseUrl = Config::getBaseUrl();
         <form id="loginForm" method="POST" action="<?php echo $basePath; ?>/login">
             <div class="formGroup">
                 <input type="text" id="username" name="username" required 
-                       placeholder="Usuario o correo" value="<?php echo $_POST['username'] ?? ''; ?>">
+                       placeholder="Usuario o correo" value="<?php echo htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
             </div>
             
             <div class="formGroup">
@@ -56,22 +56,12 @@ $baseUrl = Config::getBaseUrl();
                        placeholder="Contraseña">
             </div>
             
-            <div class="checkboxGroup">
-                <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Recordarme</label>
-            </div>
-                        
             <hr class="divider">
             
             <button type="submit" class="loginButton">
                 <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
             </button>
         </form>
-        
-        <div class="rememberInfo">
-            <i class="fas fa-info-circle"></i>
-            <span>Al marcar "Recordarme", tu sesión se mantendrá por 30 días</span>
-        </div>
         
         <div class="sessionInfo">
             <i class="fas fa-clock"></i>
@@ -80,7 +70,7 @@ $baseUrl = Config::getBaseUrl();
     </div>
 
     <!-- ✅ Incluir scripts -->
-    <script src="<?php echo $baseUrl; ?>/assets/js/rememberMe.js"></script>
+    <script src="<?php echo $baseUrl; ?>/assets/js/limpiarCredenciales.js"></script>
     <script src="<?php echo $baseUrl; ?>/assets/js/login.js"></script>
 </body>
 </html>

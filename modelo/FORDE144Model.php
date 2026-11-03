@@ -609,14 +609,168 @@ class FORDE144Model {
     }
 
     // Estado actual de los indicadores publicados de un formulario (landing "Reporte de seguimiento")
+    // Cumplimiento ponderado (global y por línea) de VARIAS formas de medir el avance, leyendo los indicadores y los pesos UNA sola vez.
+    // $variantes: [clave => callable(fila) => avance 0-100]; la fila trae meta_programada, trimestreN_seguimiento y tN_estado / tN_sol.
+    // $opts: 'ids' => [int] solo esos indicadores (lo que el usuario puede ver); en ese caso las líneas, motores y proyectos con
+    // peso pero sin indicadores visibles no entran (no diluyen el resultado).
+    // Devuelve [clave => ['global' => float, 'lineas' => [código de línea => float]]].
+    public function getCumplimientosPorVariante($formulario_id, array $variantes, array $opts = []) {
+        $out = [];
+        foreach ($variantes as $k => $_) $out[$k] = ['global' => null, 'lineas' => []];
+        try {
+            require_once __DIR__ . '/Modulo144Model.php';
+            (new Modulo144Model())->asegurarColumnasDescripcionSemestres(); // columnas y tabla de trimestres
+
+            $formulario = $this->getById($formulario_id);
+            $anio = (int)($formulario['anio'] ?? 0);
+            $sqlIds = '';
+            $conIds = isset($opts['ids']) && is_array($opts['ids']);
+            if ($conIds) {
+                $ids = array_values(array_filter(array_map('intval', $opts['ids'])));
+                $sqlIds = $ids ? ' AND f.id IN (' . implode(',', $ids) . ')' : ' AND 1 = 0';
+            }
+            $extra = ', f.meta_programada';
+            foreach ([1, 2, 3, 4] as $n) {
+                $extra .= ", f.trimestre{$n}_seguimiento"
+                    . ", (SELECT x.estado FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n}) AS t{$n}_estado"
+                    . ", (SELECT x.solicitud FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n}) AS t{$n}_sol";
+            }
+            $stmt = $this->db->prepare(
+                "SELECT f.id,
+                        COALESCE(f.linea_estrategica,'Sin línea') AS linea, le.id AS linea_id, le.codigo AS linea_codigo,
+                        COALESCE(f.motor_desarrollo,'Sin motor') AS motor, m.id AS motor_id, m.codigo AS motor_codigo,
+                        COALESCE(f.proyecto,'Sin proyecto') AS proyecto, p.id AS proyecto_id, p.codigo AS proyecto_codigo,
+                        COALESCE(f.ponderacion_actividades, 0) AS ponderacion,
+                        f.tipo_medicion, f.linea_base_meta, f.estado_seguimiento, f.solicitud_estado_seguimiento{$extra}
+                 FROM formulacion_144 f
+                 LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
+                 LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
+                 LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2" . $sqlIds
+            );
+            $stmt->execute([':fid' => $formulario_id]);
+            $rows = $stmt->fetchAll();
+
+            // Pesos configurados para el año (solo los mayores a 0)
+            $pesos = ['linea' => [], 'motor' => [], 'proyecto' => []];
+            if ($anio > 0) {
+                $consultas = [
+                    'linea'    => "SELECT d.linea_id AS id, d.porcentaje, le.nombre, le.codigo FROM data_linea_estrategica d JOIN lineas_estrategicas le ON le.id = d.linea_id WHERE d.anio = :anio AND d.porcentaje > 0",
+                    'motor'    => "SELECT d.motor_id AS id, d.linea_id AS padre_id, d.porcentaje, m.nombre, m.codigo FROM data_motores d JOIN motores m ON m.id = d.motor_id WHERE d.anio = :anio AND d.porcentaje > 0",
+                    'proyecto' => "SELECT d.proyecto_id AS id, d.motor_id AS padre_id, d.porcentaje, p.nombre, p.codigo FROM data_proyectos d JOIN proyectos p ON p.id = d.proyecto_id WHERE d.anio = :anio AND d.porcentaje > 0",
+                ];
+                foreach ($consultas as $nivel => $sql) {
+                    $s = $this->db->prepare($sql);
+                    $s->execute([':anio' => $anio]);
+                    foreach ($s->fetchAll() as $r) $pesos[$nivel][(int)$r['id']] = $r;
+                }
+            }
+
+            foreach ($variantes as $clave => $avanceFn) {
+                // Si el callable devuelve null el indicador no aplica a esa medición y no entra en el promedio
+                $filas = [];
+                foreach ($rows as $f) {
+                    $av = call_user_func($avanceFn, $f);
+                    if ($av === null) continue;
+                    $f['avance'] = max(0, min(100, (float)$av));
+                    $filas[] = $f;
+                }
+                $out[$clave] = $this->ponderarArbol($filas, $pesos, !$conIds);
+            }
+        } catch (PDOException $e) {
+            error_log('Error getCumplimientosPorVariante: ' . $e->getMessage());
+        }
+        return $out;
+    }
+
+    // Árbol línea → motor → proyecto → indicadores, ponderado con los pesos configurados. Devuelve ['global', 'lineas' => [código => cumplimiento]]
+    private function ponderarArbol(array $filas, array $pesos, $conVacios) {
+        $arbol = [];
+        foreach ($filas as $r) {
+            $lk = $r['linea_id'] ? 'i' . $r['linea_id'] : 'n' . $r['linea'];
+            $mk = $r['motor_id'] ? 'i' . $r['motor_id'] : 'n' . $r['motor'];
+            $pk = $r['proyecto_id'] ? 'i' . $r['proyecto_id'] : 'n' . $r['proyecto'];
+            $arbol[$lk] = $arbol[$lk] ?? ['id' => (int)$r['linea_id'], 'codigo' => $r['linea_codigo'], 'hijos' => []];
+            $arbol[$lk]['hijos'][$mk] = $arbol[$lk]['hijos'][$mk] ?? ['id' => (int)$r['motor_id'], 'hijos' => []];
+            $arbol[$lk]['hijos'][$mk]['hijos'][$pk] = $arbol[$lk]['hijos'][$mk]['hijos'][$pk] ?? ['id' => (int)$r['proyecto_id'], 'indicadores' => []];
+            $arbol[$lk]['hijos'][$mk]['hijos'][$pk]['indicadores'][] = ['avance' => (float)$r['avance'], 'ponderacion' => (float)$r['ponderacion']];
+        }
+
+        // Los elementos con peso configurado que no tienen indicadores aportan 0 (salvo cuando se mira solo lo visible para un usuario)
+        $agregar = function (array &$hijos, array $pw, $padreId, $conHijos) {
+            foreach ($pw as $id => $w) {
+                if ($padreId !== null && (int)$w['padre_id'] !== $padreId) continue;
+                if (!isset($hijos['i' . $id])) $hijos['i' . $id] = ['id' => $id, 'codigo' => $w['codigo'] ?? null] + ($conHijos ? ['hijos' => []] : ['indicadores' => []]);
+            }
+        };
+        // Promedio ponderado por el peso configurado de cada hijo; sin pesos, promedio simple
+        $ponderar = function (array $items, array $pw) {
+            $suma = 0.0;
+            foreach ($items as $it) $suma += isset($pw[$it['id']]) ? (float)$pw[$it['id']]['porcentaje'] : 0;
+            if ($suma > 0) {
+                $total = 0.0;
+                foreach ($items as $it) $total += (isset($pw[$it['id']]) ? (float)$pw[$it['id']]['porcentaje'] : 0) * $it['cumplimiento'];
+                return $total / $suma;
+            }
+            return $items ? array_sum(array_column($items, 'cumplimiento')) / count($items) : 0;
+        };
+
+        if ($conVacios) $agregar($arbol, $pesos['linea'], null, true);
+        $lineas = [];
+        foreach ($arbol as $linea) {
+            $lineaId = $linea['id'] ?: null;
+            if ($conVacios && $lineaId !== null) $agregar($linea['hijos'], $pesos['motor'], $lineaId, true);
+            $motores = [];
+            foreach ($linea['hijos'] as $motor) {
+                $motorId = $motor['id'] ?: null;
+                if ($conVacios && $motorId !== null) $agregar($motor['hijos'], $pesos['proyecto'], $motorId, false);
+                $proyectos = [];
+                foreach ($motor['hijos'] as $proy) {
+                    $inds = $proy['indicadores'];
+                    $sumaPond = array_sum(array_column($inds, 'ponderacion'));
+                    if ($sumaPond > 0) {
+                        $cp = 0.0;
+                        foreach ($inds as $ind) $cp += $ind['ponderacion'] * $ind['avance'];
+                        $cp /= $sumaPond;
+                    } else {
+                        $cp = $inds ? array_sum(array_column($inds, 'avance')) / count($inds) : 0;
+                    }
+                    $proyectos[] = ['id' => $proy['id'], 'cumplimiento' => round($cp, 2)];
+                }
+                $motores[] = ['id' => $motor['id'], 'cumplimiento' => round($ponderar($proyectos, $pesos['proyecto']), 2)];
+            }
+            $lineas[] = ['id' => $linea['id'], 'codigo' => $linea['codigo'] ?: '—', 'cumplimiento' => round($ponderar($motores, $pesos['motor']), 2)];
+        }
+        $res = ['global' => round($ponderar($lineas, $pesos['linea']), 2), 'lineas' => []];
+        foreach ($lineas as $l) $res['lineas'][(string)$l['codigo']] = (float)$l['cumplimiento'];
+        return $res;
+    }
+
+    // Trimestre vigente del plan (0 a 4): el del selector del Dashboard o, si no, el del calendario. Una sola implementación (Modulo144Model).
+    public function getTrimestreVigente($formulario_id, $anio) {
+        require_once __DIR__ . '/Modulo144Model.php';
+        return (new Modulo144Model())->getTrimestreVigente($formulario_id, $anio);
+    }
+
+    // El seguimiento se aprueba por trimestre: cada indicador trae, por trimestre, su valor (trimestreN_seguimiento), su estado de
+    // aprobación (tN_estado: 2 = aprobado), si está en revisión o devuelto (tN_sol: 1 / 2) y la etapa del semáforo (tN_etapa).
     public function getReporteSeguimiento($formulario_id) {
         $res = ['indicadores' => [], 'evidencias' => [], 'facultades' => []];
         try {
+            // Crea las columnas y la tabla de trimestres si todavía no existen (las consultas siguientes las necesitan)
+            require_once __DIR__ . '/Modulo144Model.php';
+            (new Modulo144Model())->asegurarColumnasDescripcionSemestres();
+            $subTrim = '';
+            foreach ([1, 2, 3, 4] as $n) {
+                $sub = "(SELECT x.%s FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n})";
+                $subTrim .= ", f.trimestre{$n}_seguimiento, " . sprintf($sub, 'estado') . " AS t{$n}_estado, " . sprintf($sub, 'solicitud') . " AS t{$n}_sol, "
+                          . sprintf($sub, 'semaforo_etapa') . " AS t{$n}_etapa";
+            }
             $stmt = $this->db->prepare(
                 "SELECT f.id, f.nombre_borrador, f.nombre_indicador, f.formula_medicion, f.linea_estrategica, f.responsable_formulacion,
                         f.tipo_medicion, f.unidad_medida, f.meta_programada, f.meta_ejecutada, f.porcentaje_avance,
                         f.semestre1_seguimiento, f.semestre2_seguimiento, f.estado_seguimiento,
-                        f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento, f.gestionado_facultades,
+                        f.solicitud_estado_seguimiento, f.semaforo_etapa_seguimiento, f.gestionado_facultades{$subTrim},
                         le.codigo AS linea_codigo, m.codigo AS motor_codigo, p.codigo AS proyecto_codigo
                  FROM formulacion_144 f
                  LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1

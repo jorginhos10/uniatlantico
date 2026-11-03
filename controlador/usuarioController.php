@@ -3,12 +3,40 @@
 
 require_once 'modelo/usuarioModel.php';
 require_once 'modelo/rolesModel.php';
+require_once __DIR__ . '/../config/roles_helper.php';
 
 class UsuarioController {
     private $usuarioModel;
 
     public function __construct() {
         $this->usuarioModel = new UsuarioModel();
+    }
+
+    // El rol debe existir en el catálogo. Solo el superadministrador asigna el rol 'admin' (si no, un administrador
+    // podría crear o ascender cómplices con el mismo poder que él)
+    private function rolInvalido($rol) {
+        $validos = array_column((new RolesModel())->getActivos(), 'slug');
+        if (!in_array($rol, $validos, true)) return 'El rol elegido no existe';
+        if ($rol === 'admin' && !Roles::esSuperadmin()) return 'Solo el superadministrador puede asignar el rol de administrador';
+        return null;
+    }
+
+    // Un usuario con rol 'admin' solo puede ser modificado, desactivado, borrado o reseteado por el superadministrador.
+    // Devuelve true (y ya respondió) si la acción debe bloquearse.
+    private function bloqueaPorAdmin($id, $esJson = true) {
+        if (Roles::esSuperadmin()) return false;
+        $u = $this->usuarioModel->obtenerUsuarioPorId((int)$id);
+        if ($u && ($u['rol'] ?? '') === 'admin') {
+            $msg = 'Solo el superadministrador puede modificar a otro administrador';
+            if ($esJson) {
+                echo json_encode(['success' => false, 'message' => $msg]);
+            } else {
+                $_SESSION['error'] = $msg;
+                header("Location: " . Config::getBasePath() . "/usuarios");
+            }
+            return true;
+        }
+        return false;
     }
 
     public function index() {
@@ -134,8 +162,8 @@ class UsuarioController {
         if (empty($datos['username'])) $errores['username'] = ['El nombre de usuario es obligatorio'];
         if (empty($datos['password'])) {
             $errores['password'] = ['La contraseña es obligatoria'];
-        } elseif (strlen($datos['password']) < 6) {
-            $errores['password'] = ['La contraseña debe tener al menos 6 caracteres'];
+        } elseif (strlen($datos['password']) < 8) {
+            $errores['password'] = ['La contraseña debe tener al menos 8 caracteres'];
         }
         if (empty($datos['nombre'])) $errores['nombre'] = ['El nombre completo es obligatorio'];
         if (empty($datos['email'])) {
@@ -209,9 +237,9 @@ class UsuarioController {
         $contentType = isset($_SERVER['CONTENT_TYPE']) ? $_SERVER['CONTENT_TYPE'] : '';
         if (strpos($contentType, 'application/json') !== false) {
             $input = json_decode(file_get_contents('php://input'), true);
-            $_POST = $input;
+            $_POST = is_array($input) ? $input : [];
         }
-        
+
         // Obtener datos
         $datos = [
             'username' => trim($_POST['username'] ?? ''),
@@ -220,21 +248,31 @@ class UsuarioController {
             'email'    => trim($_POST['email'] ?? ''),
             'rol'      => $_POST['rol'] ?? 'auxiliar',
             'avatar'   => 'default.png',
-            'activo'   => isset($_POST['activo']) ? (int)$_POST['activo'] : 1,
+            'activo'   => empty($_POST['activo']) && isset($_POST['activo']) ? 0 : 1,
             'cargo_id' => !empty($_POST['cargo_id']) ? (int)$_POST['cargo_id'] : null,
         ];
 
         // Validaciones
         $errores = [];
-        
+
+        if (($msgRol = $this->rolInvalido($datos['rol'])) !== null) {
+            $errores['rol'] = [$msgRol];
+        }
+        foreach (['username' => 60, 'nombre' => 150, 'email' => 150] as $campo => $max) {
+            if (mb_strlen($datos[$campo], 'UTF-8') > $max) $errores[$campo] = ["Máximo $max caracteres"];
+        }
+        if ($datos['username'] !== '' && !preg_match('/^[A-Za-z0-9._-]{3,60}$/', $datos['username'])) {
+            $errores['username'] = ['Usa de 3 a 60 letras, números, punto, guion o guion bajo'];
+        }
+
         if (empty($datos['username'])) {
             $errores['username'] = ['El nombre de usuario es obligatorio'];
         }
         
         if (empty($datos['password'])) {
             $errores['password'] = ['La contraseña es obligatoria'];
-        } elseif (strlen($datos['password']) < 6) {
-            $errores['password'] = ['La contraseña debe tener al menos 6 caracteres'];
+        } elseif (strlen($datos['password']) < 8) {
+            $errores['password'] = ['La contraseña debe tener al menos 8 caracteres'];
         }
         
         if (empty($datos['nombre'])) {
@@ -324,9 +362,9 @@ class UsuarioController {
         
         // Decodificar JSON
         $input = json_decode(file_get_contents('php://input'), true);
-        $id = $input['id'] ?? 0;
-        $activo = $input['activo'] ?? 0;
-        
+        $id = (int)($input['id'] ?? 0);
+        $activo = empty($input['activo']) ? 0 : 1;
+
         // Validar ID
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de usuario no válido']);
@@ -345,6 +383,8 @@ class UsuarioController {
             exit;
         }
         
+        if ($this->bloqueaPorAdmin($id)) exit;
+
         // Actualizar estado
         if ($this->usuarioModel->actualizarEstado($id, $activo)) {
             echo json_encode(['success' => true, 'message' => 'Estado actualizado correctamente']);
@@ -369,7 +409,7 @@ class UsuarioController {
             $input = $_POST;
         }
         
-        $id = $input['id'] ?? 0;
+        $id = (int)($input['id'] ?? 0);
         // Lo que no llega en la petición conserva su valor actual (antes el rol caía a 'cocina' y el usuario quedaba inactivo)
         $existente = $this->usuarioModel->obtenerUsuarioPorId($id);
         if (!$existente) {
@@ -380,7 +420,7 @@ class UsuarioController {
             'nombre'   => trim($input['nombre'] ?? ''),
             'email'    => trim($input['email'] ?? ''),
             'rol'      => $input['rol'] ?? $existente['rol'],
-            'activo'   => isset($input['activo']) ? (int)$input['activo'] : (int)$existente['activo'],
+            'activo'   => isset($input['activo']) ? (empty($input['activo']) ? 0 : 1) : (int)$existente['activo'],
             'cargo_id' => array_key_exists('cargo_id', $input) ? (!empty($input['cargo_id']) ? (int)$input['cargo_id'] : null) : ($existente['cargo_id'] ?: null),
         ];
 
@@ -389,12 +429,19 @@ class UsuarioController {
         
         if (empty($datos['nombre'])) {
             $errores['nombre'] = ['El nombre es obligatorio'];
+        } elseif (mb_strlen($datos['nombre'], 'UTF-8') > 150) {
+            $errores['nombre'] = ['Máximo 150 caracteres'];
         }
-        
+
         if (empty($datos['email'])) {
             $errores['email'] = ['El email es obligatorio'];
-        } elseif (!filter_var($datos['email'], FILTER_VALIDATE_EMAIL)) {
+        } elseif (!filter_var($datos['email'], FILTER_VALIDATE_EMAIL) || mb_strlen($datos['email'], 'UTF-8') > 150) {
             $errores['email'] = ['Email inválido'];
+        }
+
+        // Solo si el rol cambia se valida contra el catálogo (conserva el de usuarios con roles antiguos)
+        if ($datos['rol'] !== $existente['rol'] && ($msgRol = $this->rolInvalido($datos['rol'])) !== null) {
+            $errores['rol'] = [$msgRol];
         }
 
         if (!empty($errores)) {
@@ -405,6 +452,9 @@ class UsuarioController {
             ]);
             exit;
         }
+
+        // Un administrador no puede modificar a otro administrador
+        if ($this->bloqueaPorAdmin($id)) exit;
 
         // Verificar si es el superadmin (ID 1) - NADIE puede modificarlo
         if ($id == 1) {
@@ -454,8 +504,10 @@ class UsuarioController {
 
     public function eliminar() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $id = $_POST['id'] ?? 0;
-            
+            $id = (int)($_POST['id'] ?? 0);
+
+            if ($this->bloqueaPorAdmin($id, false)) exit;
+
             // Validaciones de seguridad - NADIE puede eliminar al superadmin (ID 1)
             if ($id == 1) {
                 $_SESSION['error'] = 'No se puede eliminar al administrador principal';
@@ -506,20 +558,22 @@ class UsuarioController {
         
         // Decodificar JSON
         $input = json_decode(file_get_contents('php://input'), true);
-        $id = $input['id'] ?? 0;
-        $password = $input['password'] ?? '';
-        
+        $id = (int)($input['id'] ?? 0);
+        $password = (string)($input['password'] ?? '');
+
         // Validar ID
         if (empty($id)) {
             echo json_encode(['success' => false, 'message' => 'ID de usuario no válido']);
             exit;
         }
-        
+
         // Validar contraseña
-        if (strlen($password) < 6) {
-            echo json_encode(['success' => false, 'message' => 'La contraseña debe tener al menos 6 caracteres']);
+        if (strlen($password) < 8) {
+            echo json_encode(['success' => false, 'message' => 'La contraseña debe tener al menos 8 caracteres']);
             exit;
         }
+
+        if ($this->bloqueaPorAdmin($id)) exit;
         
         // Validaciones de seguridad - NADIE puede cambiar contraseña del superadmin
         if ($id == 1) {
@@ -542,19 +596,6 @@ class UsuarioController {
         exit;
     }
 
-    // Método para obtener estadísticas en tiempo real
-    public function getStats() {
-        header('Content-Type: application/json');
-        
-        $stats = $this->usuarioModel->obtenerEstadisticas();
-        
-        echo json_encode([
-            'success' => true,
-            'stats' => $stats
-        ]);
-        exit;
-    }
-
     /**
      * Método NUEVO: Obtener estadísticas EN TIEMPO REAL de usuarios activos
      * Para actualización en vivo del contador
@@ -567,65 +608,6 @@ class UsuarioController {
         }
         $pendientes = $this->usuarioModel->obtenerPendientesRegistro();
         echo json_encode(['success' => true, 'pendientes' => $pendientes]);
-        exit;
-    }
-
-    public function getRealTimeStats() {
-        header('Content-Type: application/json');
-        
-        // Solo administradores pueden ver estadísticas
-        if (!isset($_SESSION['usuario_rol']) || $_SESSION['usuario_rol'] !== 'admin') {
-            echo json_encode(['success' => false, 'message' => 'No tienes permisos']);
-            exit;
-        }
-        
-        // Obtener estadísticas básicas
-        $stats = $this->usuarioModel->obtenerEstadisticas();
-        
-        // Calcular logins de hoy
-        $hoy = date('Y-m-d');
-        $usuarios = $this->usuarioModel->obtenerTodosUsuarios();
-        $loginsHoy = 0;
-        
-        foreach ($usuarios as $usuario) {
-            if ($usuario['ultimo_login'] && date('Y-m-d', strtotime($usuario['ultimo_login'])) == $hoy) {
-                $loginsHoy++;
-            }
-        }
-        
-        // Calcular usuarios por rol específicos
-        $cocinaCount = 0;
-        $inventarioCount = 0;
-        $meserosCount = 0;
-        
-        foreach ($usuarios as $usuario) {
-            if ($usuario['activo'] == 1) {
-                switch ($usuario['rol']) {
-                    case 'cocina':
-                        $cocinaCount++;
-                        break;
-                    case 'inventario':
-                        $inventarioCount++;
-                        break;
-                    case 'mesero':
-                        $meserosCount++;
-                        break;
-                }
-            }
-        }
-        
-        // Agregar datos adicionales
-        $stats['logins_hoy'] = $loginsHoy;
-        $stats['total'] = count($usuarios);
-        $stats['cocina'] = $cocinaCount;
-        $stats['inventario'] = $inventarioCount;
-        $stats['meseros'] = $meserosCount;
-        
-        echo json_encode([
-            'success' => true,
-            'stats' => $stats,
-            'timestamp' => date('Y-m-d H:i:s')
-        ]);
         exit;
     }
 }
