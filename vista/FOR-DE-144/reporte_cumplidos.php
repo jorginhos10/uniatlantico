@@ -1,5 +1,5 @@
 <?php
-// vista/FOR-DE-144/reporte_cumplidos.php — landing compacta: dependencias con indicadores reportados, completos y aprobados
+// vista/FOR-DE-144/reporte_cumplidos.php — landing compacta: dependencias por estado (aprobados completos, en construcción, sin iniciar)
 if (!isset($formulario)) {
     header('Location: ' . Config::getBasePath() . '/FOR-DE-144');
     exit;
@@ -13,49 +13,65 @@ $tituloAnio = (strpos($tituloF, (string)$anio) !== false) ? $tituloF : $tituloF 
 $tieneValor = function ($v) { return $v !== null && trim((string)$v) !== ''; };
 $fmt = function ($v) { return rtrim(rtrim(number_format((float)$v, 2, ',', '.'), '0'), ','); };
 
-// Un indicador cumple si: tiene algún valor reportado, no deja campos de seguimiento vacíos y su seguimiento está aprobado
-$total = 0; $cumplen = 0;
-$porDep = []; // clave => ['nombre', 'total', 'items' => []]
+// Categorías (mismo criterio del reporte general):
+//  cumple       = aprobado, con algún valor y sin campos de seguimiento vacíos
+//  construccion = sin solicitud de revisión ni aprobación, con algún valor reportado
+//  sin          = sin solicitud ni aprobación y sin ningún valor reportado
+$cats = ['cumple' => [], 'construccion' => [], 'sin' => []];
+$conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0];
+$totalDep = []; // clave => total de indicadores de la dependencia
+$nombreDep = [];
+$total = 0;
 foreach ($indicadores as $r) {
     $total++;
     $esLimite = ($r['tipo_medicion'] ?? '') === 'Límite';
-    $s1 = $tieneValor($r['semestre1_seguimiento'] ?? null);
+    $s1 = !$esLimite && $tieneValor($r['semestre1_seguimiento'] ?? null);
     $s2 = $tieneValor($r['semestre2_seguimiento'] ?? null);
     $algunValor = $s1 || $s2;
-    $completo = $s2 && ($esLimite || $s1); // los de tipo Límite no tienen semestre 1
+    $completo = $s2 && ($esLimite || $s1);
     $aprobado = (int)($r['estado_seguimiento'] ?? 0) === 2;
+    $sol = (int)($r['solicitud_estado_seguimiento'] ?? 0);
 
     $deps = array_values(array_unique(array_filter(array_map('trim', preg_split('/\s*[;,\/\n]\s*/u', (string)($r['responsable_formulacion'] ?? ''))))));
     foreach ($deps as $d) {
         $k = mb_strtolower($d, 'UTF-8');
-        if (!isset($porDep[$k])) $porDep[$k] = ['nombre' => $d, 'total' => 0, 'items' => []];
-        $porDep[$k]['total']++;
+        $nombreDep[$k] = $d;
+        $totalDep[$k] = ($totalDep[$k] ?? 0) + 1;
     }
-    if (!($algunValor && $completo && $aprobado)) continue;
 
-    $cumplen++;
+    if ($aprobado) { $cat = ($algunValor && $completo) ? 'cumple' : null; }
+    elseif ($sol === 0) { $cat = $algunValor ? 'construccion' : 'sin'; }
+    else { $cat = null; } // en revisión o devuelto: no entra en esta landing
+    if ($cat === null) continue;
+
     $pc = ($r['unidad_medida'] ?? '') === 'Porcentaje' ? '%' : '';
     $item = [
         'nombre' => trim((string)($r['formula_medicion'] ?? '')) !== '' ? $r['formula_medicion'] : ($r['nombre_indicador'] ?: $r['nombre_borrador']),
         'lmp' => implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])),
-        'v1' => $esLimite ? 'No aplica' : $fmt($r['semestre1_seguimiento']) . $pc,
-        'v2' => $fmt($r['semestre2_seguimiento']) . $pc,
-        'pct' => $tieneValor($r['porcentaje_avance'] ?? null) ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
+        'v1' => $esLimite ? 'No aplica' : ($s1 ? $fmt($r['semestre1_seguimiento']) . $pc : '—'),
+        'v2' => $s2 ? $fmt($r['semestre2_seguimiento']) . $pc : '—',
+        'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
-    foreach ($deps as $d) $porDep[mb_strtolower($d, 'UTF-8')]['items'][] = $item;
+    $conteo[$cat]++;
+    foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
 }
-// Solo las dependencias que tienen al menos un indicador que cumple
-$porDep = array_filter($porDep, function ($g) { return $g['items']; });
-uasort($porDep, function ($a, $b) { return strcoll($a['nombre'], $b['nombre']); });
+foreach ($cats as $c => $grupos) {
+    uksort($cats[$c], function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); });
+}
+$pestanas = [
+    'cumple' => ['Cumplimiento aprobado', 'Indicadores aprobados por Planeación, con valor reportado y sin campos vacíos.'],
+    'construccion' => ['En construcción', 'Indicadores con algún valor reportado que todavía no se han enviado a revisión.'],
+    'sin' => ['Sin iniciar', 'Indicadores que no tienen ningún valor reportado ni se han enviado a revisión.'],
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cumplimiento aprobado · <?php echo $tituloAnio; ?></title>
+<title>Estado por dependencia · <?php echo $tituloAnio; ?></title>
 <style>
-:root{--navy:#143163;--blue:#1D71B8;--orange:#D85819;--bg:#f3f5f9;--panel:#fff;--fg:#17203a;--muted:#5b6479;--line:#dde2ec;--soft:#e7ecf5;--blue-soft:#e4eef8;--ok:#1f8a4c;--ok-soft:#e3f4ea}
+:root{--navy:#143163;--blue:#1D71B8;--orange:#D85819;--bg:#f3f5f9;--panel:#fff;--fg:#17203a;--muted:#5b6479;--line:#dde2ec;--soft:#e7ecf5;--blue-soft:#e4eef8;--ok:#1f8a4c;--ok-soft:#e3f4ea;--amber-soft:#fdf1d6;--amber-fg:#8a5a00}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--fg);font-size:14px;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1100px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:14px}
@@ -63,15 +79,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .hero small{opacity:.8;letter-spacing:.08em;text-transform:uppercase;font-size:11px;font-weight:700}
 .hero h1{font-size:22px;margin-top:3px;line-height:1.2}
 .hero p{opacity:.85;margin-top:3px;font-size:13px}
-.hero-acc{display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.4);color:#fff;background:rgba(255,255,255,.12);padding:7px 13px;border-radius:9px;font-weight:600;font-size:13px;text-decoration:none}
 .btn:hover{background:rgba(255,255,255,.22)}
-.res{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
-.res b{font-size:22px;font-variant-numeric:tabular-nums}
-.res span{color:var(--muted)}
-.crit{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
-.crit i{font-style:normal;font-size:12px;font-weight:700;background:var(--ok-soft);color:var(--ok);border-radius:99px;padding:4px 10px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:2px solid var(--line)}
+.tabs button{border:0;background:none;padding:10px 16px;font:inherit;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
+.tabs button.on{color:var(--navy);border-bottom-color:var(--orange)}
+.ayuda{color:var(--muted);font-size:13px;margin-bottom:10px}
 .tools input{font:inherit;width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:38px;background:#fff;color:var(--fg)}
+.lista{display:grid;gap:8px}
+.tp[hidden],.acc[hidden]{display:none!important}
 .acc{border:1px solid var(--line);border-radius:10px;background:#fff}
 .acc summary{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px 10px 30px;cursor:pointer;list-style:none;position:relative}
 .acc summary::-webkit-details-marker{display:none}
@@ -79,8 +96,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .acc[open] summary::before{content:'▾'}
 .acc[open] summary{border-bottom:1px solid var(--line)}
 .acc-n{font-weight:700;color:var(--navy)}
-.chip{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700;background:var(--ok-soft);color:var(--ok);white-space:nowrap}
+.chip{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--ok-soft);color:var(--ok)}
 .chip small{font-weight:500;color:var(--muted)}
+.c-construccion{background:var(--amber-soft);color:var(--amber-fg)}
+.c-sin{background:var(--soft);color:var(--muted)}
 .tw{overflow-x:auto;padding:0 6px 6px}
 table{border-collapse:collapse;width:100%;min-width:620px}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
@@ -97,33 +116,37 @@ tr:last-child td{border-bottom:0}
     <header class="hero">
         <div>
             <small>Reporte de seguimiento · FOR-DE-144</small>
-            <h1>Cumplimiento aprobado</h1>
-            <p><?php echo $tituloAnio; ?> · actualizado <?php echo date('d/m/Y H:i'); ?></p>
+            <h1>Estado por dependencia</h1>
+            <p><?php echo $tituloAnio; ?> · <?php echo $total; ?> indicadores · actualizado <?php echo date('d/m/Y H:i'); ?></p>
         </div>
-        <div class="hero-acc">
-            <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144?action=reporteSeguimiento&id=<?php echo (int)$formulario['id']; ?>">‹ Reporte general</a>
-        </div>
+        <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144?action=reporteSeguimiento&id=<?php echo (int)$formulario['id']; ?>">‹ Reporte general</a>
     </header>
 
-    <section class="res">
-        <div><b><?php echo count($porDep); ?></b> <span>dependencias</span></div>
-        <div><b><?php echo $cumplen; ?></b> <span>de <?php echo $total; ?> indicadores</span></div>
-        <div class="crit"><i>Con valor reportado</i><i>Sin campos vacíos</i><i>Aprobado</i></div>
-    </section>
+    <nav class="tabs" role="tablist">
+        <?php $primera = true; foreach ($pestanas as $c => $p): ?>
+        <button type="button" role="tab" class="<?php echo $primera ? 'on' : ''; ?>" data-tp="tp-<?php echo $c; ?>"><?php echo $h($p[0]); ?> <span><?php echo $conteo[$c]; ?></span></button>
+        <?php $primera = false; endforeach; ?>
+    </nav>
 
-    <?php if ($porDep): ?>
     <div class="tools"><input type="search" id="q" placeholder="Buscar dependencia…" aria-label="Buscar dependencia"></div>
-    <section id="lista" style="display:grid;gap:8px">
-        <?php foreach ($porDep as $g): ?>
-        <details class="acc" data-n="<?php echo $h(mb_strtolower($g['nombre'], 'UTF-8')); ?>">
+
+    <?php $primera = true; foreach ($pestanas as $c => $p): ?>
+    <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
+        <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada dependencia es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
+        <?php if (!$cats[$c]): ?>
+        <p class="vacio">Ninguna dependencia tiene indicadores en este estado.</p>
+        <?php else: ?>
+        <div class="lista">
+        <?php foreach ($cats[$c] as $k => $items): ?>
+        <details class="acc" data-n="<?php echo $h(mb_strtolower($nombreDep[$k], 'UTF-8')); ?>">
             <summary>
-                <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
-                <span class="chip"><?php echo count($g['items']); ?> <small>de <?php echo (int)$g['total']; ?> indicadores</small></span>
+                <span class="acc-n"><?php echo $h($nombreDep[$k]); ?></span>
+                <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$totalDep[$k]; ?> indicadores</small></span>
             </summary>
             <div class="tw"><table>
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Avance</th></tr></thead>
                 <tbody>
-                <?php foreach ($g['items'] as $it): ?>
+                <?php foreach ($items as $it): ?>
                 <tr>
                     <td><?php echo $h($it['nombre']); ?></td>
                     <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
@@ -136,20 +159,26 @@ tr:last-child td{border-bottom:0}
             </table></div>
         </details>
         <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </section>
-    <?php else: ?>
-    <p class="vacio">Todavía ninguna dependencia tiene indicadores con valor reportado, sin campos vacíos y aprobados.</p>
-    <?php endif; ?>
+    <?php $primera = false; endforeach; ?>
 
-    <p class="pie">El número de cada dependencia es la cantidad de indicadores que cumplen los tres criterios, sobre el total que tiene asignados.</p>
+    <p class="pie">Los indicadores en revisión o devueltos no aparecen aquí; se ven en el reporte general.</p>
 </div>
 <script>
 (function () {
+    var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+    botones.forEach(function (b) {
+        b.addEventListener('click', function () {
+            botones.forEach(function (x) { x.classList.toggle('on', x === b); });
+            Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
+        });
+    });
     var q = document.getElementById('q');
-    if (!q) return;
     q.addEventListener('input', function () {
         var t = q.value.trim().toLowerCase();
-        Array.prototype.forEach.call(document.querySelectorAll('#lista details'), function (d) {
+        Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
             d.hidden = t !== '' && d.getAttribute('data-n').indexOf(t) === -1;
         });
     });
