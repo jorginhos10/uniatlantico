@@ -826,6 +826,20 @@ ob_start();
         .seg-tri { background: #FAFBFC; border: 1px solid #E5E5EA; border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; min-width: 0; align-content: start; }
         .seg-tri .form-label { font-size: 12px; }
         .seg-input-tri { font-size: 18px; }
+        .seg-tri-est { font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; border-radius: 99px; padding: 1px 7px; margin-left: 4px; }
+        .seg-tri-est:empty { display: none; }
+        .seg-tri-est.apr { background: #E3F4EA; color: #1F8A4C; } .seg-tri-est.rev { background: #FDF1D6; color: #8A5A00; } .seg-tri-est.dev { background: #FDE5E3; color: #C0392B; }
+        .aprob-trims { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        @media (max-width: 640px) { .aprob-trims { grid-template-columns: minmax(0, 1fr); } }
+        .apt { border: 1px solid #E5E5EA; border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; background: #fff; }
+        .apt-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .apt-est { font-size: 12px; font-weight: 700; border-radius: 99px; padding: 3px 10px; background: #EEEEF2; color: #6E6E73; }
+        .apt-apr .apt-est { background: #E3F4EA; color: #1F8A4C; } .apt-rev .apt-est { background: #FDF1D6; color: #8A5A00; } .apt-dev .apt-est { background: #FDE5E3; color: #C0392B; }
+        .apt-pasos { display: flex; gap: 6px; }
+        .apt-paso { width: 26px; height: 26px; border-radius: 50%; background: #EEEEF2; color: #8E8E93; font-size: 12px; font-weight: 800; display: grid; place-items: center; }
+        .apt-paso.ok { background: #34C759; color: #fff; } .apt-paso.rech { background: #FF3B30; color: #fff; }
+        .apt-na { opacity: .55; }
+        .apt-acc { display: flex; gap: 6px; flex-wrap: wrap; min-height: 31px; align-items: center; }
         @media (max-width: 520px) { .seg-tris { grid-template-columns: minmax(0, 1fr); } }
         .seg-ev-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
         .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #1D71B8; background: #E4EEF8; color: #1D71B8; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
@@ -3373,7 +3387,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <?php foreach ($tris as $t): ?>
                                         <div class="seg-tri">
                                             <div class="seg-sem-head">
-                                                <label class="form-label mb-0" for="seguimiento_trimestre<?php echo $t; ?>">TRIMESTRE <?php echo $t; ?></label>
+                                                <label class="form-label mb-0" for="seguimiento_trimestre<?php echo $t; ?>">TRIMESTRE <?php echo $t; ?> <span class="seg-tri-est" id="segTriEst<?php echo $t; ?>"></span></label>
                                                 <span class="seg-ev-label">
                                                     <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, <?php echo $semN; ?>, <?php echo $t; ?>)" title="Evidencias del trimestre <?php echo $t; ?> (hasta 5 archivos)" aria-label="Evidencias del trimestre <?php echo $t; ?>">
                                                         <i class="fas fa-plus"></i><span class="ev-n" id="segEvTri<?php echo $t; ?>">0</span>
@@ -3386,6 +3400,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     </div>
                                 </div>
                                 <?php endforeach; ?>
+                            </div>
+                            <div class="mt-2 text-end">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirAprobacionTrimestres($('#seguimiento_id').val())" title="Enviar a aprobación, aprobar o rechazar cada trimestre">
+                                    <i class="fas fa-clipboard-check me-1"></i>Aprobación por trimestre
+                                </button>
                             </div>
                         </div>
 
@@ -3502,6 +3521,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA EMERGENTE: aprobación del seguimiento por trimestre (cada trimestre tiene su propio semáforo) -->
+    <div class="modal fade" id="modalAprobTrim" tabindex="-1" aria-hidden="true" data-bs-focus="false">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-clipboard-check me-2"></i>Aprobación por trimestre</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small" id="aprobTrimResumen"></p>
+                    <div class="aprob-trims" id="aprobTrimLista"></div>
+                    <p class="text-muted small mt-3 mb-0">Etapas del semáforo: <b>G</b> Gestor de Metas · <b>L</b> Líder de Metas · <b>V</b> Vicerrectoría · <b>P</b> Oficina de Planeación.</p>
                 </div>
             </div>
         </div>
@@ -5886,6 +5922,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             aplicarBloqueoSemestres();
                             cargarSeguimientoFacultades(b.id, String(b.gestionado_facultades) === '1');
                             cargarResumenEvidencias(b.id);
+                            cargarEstadoTrimestres(b.id);
                             seguimientoSnap = leerCamposSeguimiento();
                             $('#modalSeguimiento').modal('show');
                         }
@@ -5996,6 +6033,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function cambiarSolicitudEstado(modulo, id, solicitudEstado) {
+            if (modulo === 'seguimiento') { abrirAprobacionTrimestres(id); return; } // el seguimiento se aprueba por trimestre
             const textos = {
                 1: { title: '¿Solicitar aprobación?', text: 'Un administrador podrá aprobarla o rechazarla.', color: '#FF9500', boton: 'Sí, solicitar' },
                 2: { title: '¿Rechazar solicitud?', text: 'El creador podrá corregirla y volver a solicitar.', color: '#E74C3C', boton: 'Sí, rechazar' }
@@ -6029,6 +6067,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function avanzarSemaforo(modulo, id, etapaActual) {
+            if (modulo === 'seguimiento') { abrirAprobacionTrimestres(id); return; } // el seguimiento se aprueba por trimestre
             Swal.fire({
                 title: '¿Aprobar esta etapa?',
                 text: 'Tu aprobación quedará registrada en el semáforo.',
@@ -6212,6 +6251,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function rechazarSemaforo(modulo, id, etapaActual) {
+            if (modulo === 'seguimiento') { abrirAprobacionTrimestres(id); return; } // el seguimiento se aprueba por trimestre
             Swal.fire({
                 title: '¿Rechazar y devolver al creador?',
                 html: 'El ítem volverá al inicio para que el creador lo corrija. Este motivo se le enviará como mensaje directo.',
@@ -6249,6 +6289,99 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
         }
 
+        // ═══ Aprobación del seguimiento por trimestre: cada trimestre (T1 a T4) tiene su propio flujo ═══
+        // El indicador queda «reportado» solo cuando sus cuatro trimestres están aprobados por la Oficina de Planeación.
+        let aprobTrimId = 0;
+        let aprobTrimCambio = false;
+
+        function aprobTrimTarjeta(x, etapas) {
+            const t = x.trimestre;
+            let clase = 'con', texto = x.tiene_valor ? 'En construcción' : 'Sin iniciar';
+            if (!x.aplica) { clase = 'na'; texto = 'No aplica'; }
+            else if (x.estado === 2) { clase = 'apr'; texto = 'Aprobado'; }
+            else if (x.estado === 0 && x.solicitud === 1) { clase = 'rev'; texto = 'En revisión · espera a ' + (x.espera_a || '—'); }
+            else if (x.estado === 0 && x.solicitud === 2) { clase = 'dev'; texto = 'Devuelto para ajustes' + (x.rechazo ? ' (' + (etapas[x.rechazo] || '') + ')' : ''); }
+            const pasos = [1, 2, 3, 4].map(function(e) {
+                const hecho = x.estado === 2 || e <= x.etapa;
+                const rech = x.solicitud === 2 && x.rechazo === e;
+                return '<span class="apt-paso' + (rech ? ' rech' : (hecho && x.aplica ? ' ok' : '')) + '" title="' + evalHtmlEscape(etapas[e] || '') + '">' + ['G', 'L', 'V', 'P'][e - 1] + '</span>';
+            }).join('');
+            let acciones = '';
+            if (x.puede_solicitar) acciones += '<button type="button" class="btn btn-sm btn-success" data-acc="solicitar" data-t="' + t + '"><i class="fas fa-paper-plane me-1"></i>' + (x.solicitud === 2 ? 'Reenviar a aprobación' : 'Enviar a aprobación') + '</button>';
+            if (x.puede_decidir) {
+                acciones += '<button type="button" class="btn btn-sm btn-success" data-acc="aprobar" data-t="' + t + '" data-etapa="' + x.etapa + '"><i class="fas fa-' + (x.es_final ? 'globe' : 'check') + ' me-1"></i>' + (x.es_final ? 'Aprobar y reportar' : 'Aprobar') + '</button>'
+                          + '<button type="button" class="btn btn-sm btn-danger" data-acc="rechazar" data-t="' + t + '" data-etapa="' + x.etapa + '"><i class="fas fa-times me-1"></i>Rechazar</button>';
+            }
+            return '<div class="apt apt-' + clase + '"><div class="apt-head"><b>Trimestre ' + t + '</b><span class="apt-est">' + texto + '</span></div>'
+                 + '<div class="apt-pasos">' + pasos + '</div><div class="apt-acc">' + (acciones || '<span class="text-muted small">' + (x.aplica ? (x.estado === 2 ? 'Reportado' : (x.tiene_valor ? 'Sin acciones para tu rol' : 'Registra un valor para poder enviarlo')) : 'No se registra') + '</span>') + '</div></div>';
+        }
+
+        function abrirAprobacionTrimestres(id) {
+            id = parseInt(id, 10) || 0;
+            if (!id) return;
+            aprobTrimId = id;
+            $.getJSON(basePath + '/modulo144/getFlujoTrimestres', { id: id }, function(r) {
+                if (!r.success) { Swal.fire('Error', r.message || 'No se pudo cargar la aprobación por trimestre', 'error'); return; }
+                const aplican = r.trimestres.filter(function(x) { return x.aplica; }).length;
+                const aprobados = r.trimestres.filter(function(x) { return x.aplica && x.estado === 2; }).length;
+                $('#aprobTrimResumen').text(aprobados + ' de ' + aplican + ' trimestres aprobados' + (aprobados === aplican ? ' · seguimiento reportado' : ' · el seguimiento se reporta cuando estén aprobados todos'));
+                $('#aprobTrimLista').html(r.trimestres.map(function(x) { return aprobTrimTarjeta(x, r.etapas || {}); }).join(''));
+                if (!$('#modalAprobTrim').hasClass('show')) $('#modalAprobTrim').modal('show');
+            }).fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+        }
+
+        function aprobTrimEnviar(url, datos, titulo) {
+            $.ajax({ url: basePath + '/modulo144/' + url, type: 'POST', data: Object.assign({ modulo: 'seguimiento', id: aprobTrimId }, datos), dataType: 'json' })
+                .done(function(r) {
+                    if (r.success) { aprobTrimCambio = true; Swal.fire({ icon: 'success', title: titulo || r.message, text: titulo ? r.message : '', timer: 1400, showConfirmButton: false }); }
+                    else Swal.fire('No se pudo', r.message || 'Intenta de nuevo', 'error');
+                    abrirAprobacionTrimestres(aprobTrimId);
+                })
+                .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+        }
+
+        $(document).on('click', '#aprobTrimLista [data-acc]', function() {
+            const acc = $(this).data('acc'), t = parseInt($(this).data('t'), 10), etapa = parseInt($(this).data('etapa'), 10) || 0;
+            if (acc === 'solicitar') {
+                aprobTrimEnviar('cambiarSolicitudEstado', { trimestre: t, solicitud_estado: 1 });
+            } else if (acc === 'aprobar') {
+                Swal.fire({ title: '¿Aprobar el trimestre ' + t + '?', text: 'Tu aprobación quedará registrada en el semáforo de este trimestre.', icon: 'question',
+                    showCancelButton: true, confirmButtonColor: '#34C759', confirmButtonText: 'Sí, aprobar', cancelButtonText: 'Cancelar' })
+                    .then(function(res) { if (res.isConfirmed) aprobTrimEnviar('avanzarSemaforo', { trimestre: t, etapa_actual: etapa }); });
+            } else if (acc === 'rechazar') {
+                Swal.fire({ title: '¿Rechazar el trimestre ' + t + '?', html: 'Volverá al creador para su corrección. El motivo se le enviará como mensaje directo.', icon: 'warning',
+                    input: 'textarea', inputPlaceholder: 'Escribe el motivo del rechazo...',
+                    inputValidator: function(v) { if (!v || !v.trim()) return 'Debes ingresar el motivo del rechazo'; },
+                    showCancelButton: true, confirmButtonColor: '#FF3B30', confirmButtonText: 'Sí, rechazar', cancelButtonText: 'Cancelar' })
+                    .then(function(res) { if (res.isConfirmed) aprobTrimEnviar('rechazarSemaforo', { trimestre: t, etapa_actual: etapa, motivo: res.value.trim() }); });
+            }
+        });
+
+        // Al cerrar la ventana con cambios, se recarga para ver el estado nuevo en la lista
+        $(document).on('hidden.bs.modal', '#modalAprobTrim', function() {
+            if (!aprobTrimCambio) return;
+            aprobTrimCambio = false;
+            guardarEstadoAcordeon();
+            location.reload();
+        });
+
+        // Estado de cada trimestre dentro del seguimiento: etiqueta junto a su casilla; un trimestre aprobado ya no se edita
+        function cargarEstadoTrimestres(id) {
+            $('.seg-tri-est').text('').attr('class', 'seg-tri-est');
+            $.getJSON(basePath + '/modulo144/getFlujoTrimestres', { id: id }, function(r) {
+                if (!r.success) return;
+                r.trimestres.forEach(function(x) {
+                    const t = x.trimestre;
+                    let clase = '', texto = '';
+                    if (x.estado === 2) { clase = 'apr'; texto = 'Aprobado'; }
+                    else if (x.estado === 0 && x.solicitud === 1) { clase = 'rev'; texto = 'En revisión'; }
+                    else if (x.estado === 0 && x.solicitud === 2) { clase = 'dev'; texto = 'Devuelto'; }
+                    $('#segTriEst' + t).text(texto).attr('class', 'seg-tri-est' + (clase ? ' ' + clase : ''));
+                    if (x.estado === 2) $('#seguimiento_trimestre' + t).prop('disabled', true).attr('title', 'Trimestre aprobado: ya no se modifica');
+                });
+            });
+        }
+
         function verHistorialEstado(modulo, id) {
             $.ajax({
                 url: basePath + '/modulo144/getHistorialSemaforo',
@@ -6274,7 +6407,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             const accionTexto = esAprobado ? 'Aprobó' : 'Rechazó';
                             const fecha = h.fecha_creacion ? new Date(h.fecha_creacion.replace(' ', 'T')).toLocaleString('es-CO') : '';
                             html += '<div style="padding:8px 0;border-bottom:1px solid #eee;">'
-                                 + '<div>' + icono + ' <strong>' + accionTexto + '</strong> — ' + $('<div>').text(h.usuario_nombre).html()
+                                 + '<div>' + icono + ' <strong>' + accionTexto + '</strong>' + (parseInt(h.trimestre, 10) > 0 ? ' · Trimestre ' + parseInt(h.trimestre, 10) : '') + ' — ' + $('<div>').text(h.usuario_nombre).html()
                                  + (h.rol ? ' <span class="text-muted">(' + $('<div>').text(h.rol).html() + ')</span>' : '')
                                  + '</div>'
                                  + '<div class="text-muted small">' + fecha + '</div>';

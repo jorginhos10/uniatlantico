@@ -295,8 +295,16 @@ class FORDE144Model {
             }
             // 'trimestres' => true: la fila que recibe el callback 'avance' trae también la meta anual y los valores por trimestre
             // (las columnas de trimestre las crea el Módulo 144; quien use la opción debe haberlas asegurado antes)
-            $extraCols = !empty($opts['trimestres'])
-                ? ', f.meta_programada, f.trimestre1_seguimiento, f.trimestre2_seguimiento, f.trimestre3_seguimiento, f.trimestre4_seguimiento' : '';
+            // Con el estado de aprobación de cada trimestre: tN_estado (2 = aprobado) y tN_sol (1 = en revisión)
+            $extraCols = '';
+            if (!empty($opts['trimestres'])) {
+                $extraCols = ', f.meta_programada';
+                foreach ([1, 2, 3, 4] as $n) {
+                    $extraCols .= ", f.trimestre{$n}_seguimiento"
+                        . ", (SELECT x.estado FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n}) AS t{$n}_estado"
+                        . ", (SELECT x.solicitud FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n}) AS t{$n}_sol";
+                }
+            }
             $stmt = $this->db->prepare(
                 "SELECT f.id,
                         COALESCE(f.linea_estrategica,'Sin línea') AS linea,

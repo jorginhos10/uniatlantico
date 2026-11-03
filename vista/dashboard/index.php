@@ -58,12 +58,16 @@ function dbEsperadoPct($q) {
 // Cumplimiento (0 a 100) de un indicador con lo acumulado hasta el trimestre $k, según su tipo de medición y frente a la meta anual:
 // Acumulado → línea base + suma de los trimestres; Nuevo gestionado → suma; Promedio → promedio de los reportados;
 // Último valor reportado → el del último trimestre con dato; Límite (solo cuentan T3 y T4) → 100 si lo declarado no pasa el límite.
-// Sin ningún trimestre reportado hasta $k es 0.
-function dbPctAcumTrim($r, $k) {
+// Sin ningún trimestre reportado hasta $k es 0. Solo cuentan los trimestres aprobados (tN_estado = 2) y, con $conRevision,
+// también los que están en revisión (tN_sol = 1): cada trimestre se aprueba por separado.
+function dbPctAcumTrim($r, $k, $conRevision = false) {
     $tipo = (string)($r['tipo_medicion'] ?? '');
     $meta = dbNum($r['meta_programada'] ?? null);
     $vals = [];
     for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
+        $aprobado = (int)($r['t' . $i . '_estado'] ?? 0) === 2;
+        $enRevision = (int)($r['t' . $i . '_estado'] ?? 0) === 0 && (int)($r['t' . $i . '_sol'] ?? 0) === 1;
+        if (!$aprobado && !($conRevision && $enRevision)) continue;
         $v = dbNum($r['trimestre' . $i . '_seguimiento'] ?? null);
         if ($v !== null) $vals[] = $v;
     }
@@ -354,8 +358,7 @@ if ($pdo && $plan && $rows) {
             $celda = ['esp' => dbEsperadoPct($t), 'apr' => null, 'rev' => null];
             foreach (['apr', 'rev'] as $k) {
                 $inf = $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['trimestres' => true, 'avance' => function ($r) use ($k, $t) {
-                    $cuenta = (int)$r['estado_seguimiento'] === 2 || ($k === 'rev' && (int)$r['solicitud_estado_seguimiento'] === 1);
-                    return $cuenta ? dbPctAcumTrim($r, $t) : 0;
+                    return dbPctAcumTrim($r, $t, $k === 'rev');
                 }]);
                 if ($linea === '') { $celda[$k] = isset($inf['global_cumplimiento']) ? (float)$inf['global_cumplimiento'] : null; continue; }
                 foreach ($inf['lineas'] ?? [] as $l) if ((string)$l['codigo'] === $linea) $celda[$k] = (float)$l['cumplimiento'];
@@ -403,25 +406,46 @@ foreach ($filas as $r) {
 $flujoMax = max(1, max($flujo));
 $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
 
-// Mi bandeja: seguimientos que esperan tu aprobación
+// Estado de aprobación de cada trimestre del seguimiento: id => [trimestre => ['estado', 'solicitud', 'etapa']]
+$trimFlujo = [];
+if ($pdo && $plan && $filas) {
+    try {
+        require_once __DIR__ . '/../../modelo/Modulo144Model.php';
+        (new Modulo144Model())->asegurarTablaTrimestres();
+        $idsFilas = implode(',', array_map('intval', array_column($filas, 'id')));
+        foreach ($pdo->query("SELECT formulacion_id, trimestre, estado, solicitud, semaforo_etapa FROM seguimiento_trimestres_144 WHERE formulacion_id IN ($idsFilas)") as $x) {
+            $trimFlujo[(int)$x['formulacion_id']][(int)$x['trimestre']] = ['estado' => (int)$x['estado'], 'solicitud' => (int)$x['solicitud'], 'etapa' => (int)$x['semaforo_etapa']];
+        }
+    } catch (Throwable $e) { error_log('Dash trimFlujo: ' . $e->getMessage()); }
+}
+
+// Mi bandeja: trimestres del seguimiento que esperan tu aprobación (cada trimestre tiene su propio semáforo)
 $bandeja = [];
-foreach ($filas as $r) {
-    if ($r['aprobado']) continue;
-    $item = null;
-    if ($miNivel >= 2 && $r['solicitud'] === 1 && $r['etapa'] === $miNivel - 1
-        && ($veTodo || $miNivel === 4 || dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre))) {
-        $item = 'Aprobado por ' . $etapaNombre[$r['etapa']];
-    } elseif ($miNivel === 1 && $r['solicitud'] === 2 && (int)$r['creado_por'] === $uid) {
-        $item = 'Devuelto para ajustes';
-    } elseif ($miNivel === 0 && $veTodo && $r['solicitud'] === 1 && $r['etapa'] < 4) {
-        $item = 'Espera a ' . $etapaNombre[min($r['etapa'] + 1, 4)];
+foreach ($filas as $fila) {
+    if ($fila['aprobado']) continue;
+    foreach ([1, 2, 3, 4] as $tri) {
+        $x = $trimFlujo[(int)$fila['id']][$tri] ?? ['estado' => 0, 'solicitud' => 0, 'etapa' => 0];
+        if ($x['estado'] !== 0) continue; // aprobado (o cancelado)
+        $r = $fila;
+        $r['solicitud'] = $x['solicitud'];
+        $r['etapa'] = $x['etapa'];
+        $item = null;
+        if ($miNivel >= 2 && $r['solicitud'] === 1 && $r['etapa'] === $miNivel - 1
+            && ($veTodo || $miNivel === 4 || dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre))) {
+            $item = 'Aprobado por ' . $etapaNombre[$r['etapa']];
+        } elseif ($miNivel === 1 && $r['solicitud'] === 2 && (int)$r['creado_por'] === $uid) {
+            $item = 'Devuelto para ajustes';
+        } elseif ($miNivel === 0 && $veTodo && $r['solicitud'] === 1 && $r['etapa'] < 4) {
+            $item = 'Espera a ' . $etapaNombre[min($r['etapa'] + 1, 4)];
+        }
+        if ($item === null) continue;
+        $desde = $ultimaAccion[(int)$r['id']] ?? $r['fecha_creacion'];
+        $r['trimestre'] = $tri;
+        $r['tipo'] = 'T' . $tri . ' · ' . $item;
+        $r['dias'] = max(0, (int)floor((time() - strtotime($desde)) / 86400));
+        $r['puede_aprobar'] = dbPuedeAprobar($r, $uid, $rolNorm);
+        $bandeja[] = $r;
     }
-    if ($item === null) continue;
-    $desde = $ultimaAccion[(int)$r['id']] ?? $r['fecha_creacion'];
-    $r['tipo'] = $item;
-    $r['dias'] = max(0, (int)floor((time() - strtotime($desde)) / 86400));
-    $r['puede_aprobar'] = dbPuedeAprobar($r, $uid, $rolNorm);
-    $bandeja[] = $r;
 }
 usort($bandeja, fn($a, $b) => $b['dias'] <=> $a['dias']);
 $bandejaTotal = count($bandeja);
@@ -974,8 +998,8 @@ require_once __DIR__ . '/../complementos/header.php';
                     </a>
                     <?php if ($b['puede_aprobar']): ?>
                     <div class="pa-inbox-actions">
-                        <button type="button" class="ok" onclick="dbAprobar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>)"><i class="fas fa-check"></i> Aprobar</button>
-                        <button type="button" class="no" onclick="dbRechazar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>)"><i class="fas fa-times"></i> Rechazar</button>
+                        <button type="button" class="ok" onclick="dbAprobar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>, <?php echo (int)$b['trimestre']; ?>)"><i class="fas fa-check"></i> Aprobar T<?php echo (int)$b['trimestre']; ?></button>
+                        <button type="button" class="no" onclick="dbRechazar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>, <?php echo (int)$b['trimestre']; ?>)"><i class="fas fa-times"></i> Rechazar</button>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -1081,9 +1105,9 @@ function dbEnviarSemaforo(accion, datos, boton) {
         });
 }
 
-function dbAprobar(boton, id, etapa) {
+function dbAprobar(boton, id, etapa, trimestre) {
     Swal.fire({
-        title: '¿Aprobar esta etapa?',
+        title: '¿Aprobar esta etapa del trimestre ' + trimestre + '?',
         text: 'Tu aprobación quedará registrada en el semáforo.',
         icon: 'question',
         showCancelButton: true,
@@ -1091,13 +1115,13 @@ function dbAprobar(boton, id, etapa) {
         confirmButtonText: 'Sí, aprobar',
         cancelButtonText: 'Cancelar'
     }).then(function (r) {
-        if (r.isConfirmed) dbEnviarSemaforo('avanzarSemaforo', { modulo: 'seguimiento', id: id, etapa_actual: etapa }, boton);
+        if (r.isConfirmed) dbEnviarSemaforo('avanzarSemaforo', { modulo: 'seguimiento', id: id, trimestre: trimestre, etapa_actual: etapa }, boton);
     });
 }
 
-function dbRechazar(boton, id, etapa) {
+function dbRechazar(boton, id, etapa, trimestre) {
     Swal.fire({
-        title: '¿Rechazar y devolver al creador?',
+        title: '¿Rechazar el trimestre ' + trimestre + ' y devolver al creador?',
         text: 'El motivo se le enviará como mensaje directo.',
         icon: 'warning',
         input: 'textarea',
@@ -1108,7 +1132,7 @@ function dbRechazar(boton, id, etapa) {
         confirmButtonText: 'Sí, rechazar',
         cancelButtonText: 'Cancelar'
     }).then(function (r) {
-        if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'seguimiento', id: id, etapa_actual: etapa, motivo: r.value.trim() }, boton);
+        if (r.isConfirmed) dbEnviarSemaforo('rechazarSemaforo', { modulo: 'seguimiento', id: id, trimestre: trimestre, etapa_actual: etapa, motivo: r.value.trim() }, boton);
     });
 }
 

@@ -397,6 +397,9 @@ switch ($action) {
             case 'getHistorialSemaforo':
                 $modulo144Controller->getHistorialSemaforo();
                 break;
+            case 'getFlujoTrimestres':
+                $modulo144Controller->getFlujoTrimestres();
+                break;
             case 'getDistribucionFacultades':
                 $modulo144Controller->getDistribucionFacultades();
                 break;

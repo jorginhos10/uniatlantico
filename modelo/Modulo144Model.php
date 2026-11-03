@@ -831,7 +831,9 @@ class Modulo144Model {
                                                 {$modulo_config['campo_semaforo_rechazo']} = 0{$reviveSeguimiento},
                                                 fecha_actualizacion = NOW()
                                             WHERE id = :id");
-                return $stmt->execute([':id' => $id]);
+                $ok = $stmt->execute([':id' => $id]);
+                if ($ok && $modulo === 'seguimiento') $this->fijarTrimestres($id, 0); // los cuatro trimestres vuelven a borrador
+                return $ok;
             } else {
                 // Publicar (2) deja el flujo completo y coherente: solicitado y con las 4 etapas aprobadas
                 $stmt = $this->db->prepare("UPDATE {$tabla}
@@ -842,10 +844,12 @@ class Modulo144Model {
                                                 {$modulo_config['campo_semaforo_rechazo']} = CASE WHEN :estado = 2 THEN 0 ELSE {$modulo_config['campo_semaforo_rechazo']} END,
                                                 fecha_actualizacion = NOW() 
                                             WHERE id = :id");
-                return $stmt->execute([
+                $ok = $stmt->execute([
                     ':id' => $id,
                     ':estado' => $estado
                 ]);
+                if ($ok && $modulo === 'seguimiento' && (int)$estado === 2) $this->fijarTrimestres($id, 2); // publicar = los cuatro aprobados
+                return $ok;
             }
         } catch (PDOException $e) {
             error_log("Error cambiarEstado [{$modulo}]: " . $e->getMessage());
@@ -858,6 +862,13 @@ class Modulo144Model {
     public function devolverTodosABorrador($modulo, $formulario_id) {
         try {
             $c = $this->modulos[$modulo];
+            if ($modulo === 'seguimiento') {
+                // Los trimestres de los seguimientos publicados vuelven a borrador junto con el resumen del indicador
+                $this->asegurarTablaTrimestres();
+                $this->db->prepare("UPDATE seguimiento_trimestres_144 t JOIN formulacion_144 f ON f.id = t.formulacion_id
+                                    SET t.estado = 0, t.solicitud = 0, t.semaforo_etapa = 0, t.semaforo_rechazo_etapa = 0, t.fecha_actualizacion = NOW()
+                                    WHERE f.formulario_id = :fid AND f.estado_seguimiento = 2")->execute([':fid' => $formulario_id]);
+            }
             $stmt = $this->db->prepare("UPDATE {$c['tabla']}
                                         SET {$c['campo_estado']} = 0,
                                             {$c['campo_solicitud']} = 0,
@@ -961,6 +972,7 @@ class Modulo144Model {
             );
             $stmt->execute([':id' => (int)$id]);
             if ($stmt->rowCount() === 0) return false;
+            $this->fijarTrimestres((int)$id, 2); // los cuatro trimestres quedan aprobados
             $this->registrarHistorialSemaforo('seguimiento', (int)$id, 4, 'aprobado', $usuarioId, $usuarioNombre, $rol,
                 'Publicado por el superadministrador');
             return true;
@@ -1082,15 +1094,18 @@ class Modulo144Model {
         }
     }
 
-    public function registrarHistorialSemaforo($modulo, $formulacionId, $etapa, $accion, $usuarioId, $usuarioNombre, $rol = null, $motivo = null) {
+    // $trimestre (1 a 4): el movimiento es de ese trimestre del seguimiento; 0 = del indicador completo
+    public function registrarHistorialSemaforo($modulo, $formulacionId, $etapa, $accion, $usuarioId, $usuarioNombre, $rol = null, $motivo = null, $trimestre = 0) {
         try {
+            $this->asegurarTablaTrimestres();
             $stmt = $this->db->prepare(
-                "INSERT INTO semaforo_historial_144 (modulo, formulacion_id, etapa, accion, usuario_id, usuario_nombre, rol, motivo)
-                 VALUES (:modulo, :formulacion_id, :etapa, :accion, :usuario_id, :usuario_nombre, :rol, :motivo)"
+                "INSERT INTO semaforo_historial_144 (modulo, formulacion_id, trimestre, etapa, accion, usuario_id, usuario_nombre, rol, motivo)
+                 VALUES (:modulo, :formulacion_id, :trimestre, :etapa, :accion, :usuario_id, :usuario_nombre, :rol, :motivo)"
             );
             return $stmt->execute([
                 ':modulo' => $modulo,
                 ':formulacion_id' => $formulacionId,
+                ':trimestre' => (int)$trimestre,
                 ':etapa' => $etapa,
                 ':accion' => $accion,
                 ':usuario_id' => $usuarioId,
@@ -1116,6 +1131,230 @@ class Modulo144Model {
         } catch (PDOException $e) {
             error_log("Error getHistorialSemaforo: " . $e->getMessage());
             return [];
+        }
+    }
+
+    // ───────────────────────── Aprobación del seguimiento por trimestre ─────────────────────────
+    // Cada trimestre (1 a 4) tiene su propio flujo (estado, solicitud, etapa del semáforo y rechazo) en seguimiento_trimestres_144.
+    // Las columnas de seguimiento de formulacion_144 quedan como RESUMEN del indicador, para que listas, informes y tablero sigan
+    // igual: el seguimiento es «reportado» (estado 2) solo cuando los cuatro trimestres están aprobados.
+    public function asegurarTablaTrimestres() {
+        static $listo = false;
+        if ($listo) return;
+        try {
+            if ($this->db->query("SHOW TABLES LIKE 'seguimiento_trimestres_144'")->rowCount() === 0) {
+                $this->db->exec("CREATE TABLE seguimiento_trimestres_144 (
+                    formulacion_id INT NOT NULL,
+                    trimestre TINYINT NOT NULL,
+                    estado TINYINT NOT NULL DEFAULT 0,
+                    solicitud TINYINT NOT NULL DEFAULT 0,
+                    semaforo_etapa TINYINT NOT NULL DEFAULT 0,
+                    semaforo_rechazo_etapa TINYINT NOT NULL DEFAULT 0,
+                    fecha_publicacion DATETIME NULL,
+                    fecha_actualizacion DATETIME NULL,
+                    PRIMARY KEY (formulacion_id, trimestre)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+                $listo = true; // evita volver a entrar mientras se migra
+                try {
+                    // Lo que ya había (en construcción, en revisión, devuelto o aprobado) pasa al primer trimestre de cada semestre
+                    // (T1 y T3), igual que los valores y las evidencias; T2 y T4 empiezan en construcción. Un cancelado lo queda en los cuatro.
+                    $this->db->exec("INSERT INTO seguimiento_trimestres_144
+                            (formulacion_id, trimestre, estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa, fecha_publicacion, fecha_actualizacion)
+                        SELECT f.id, t.n,
+                               CASE WHEN f.estado_seguimiento = 1 THEN 1 WHEN t.n IN (1, 3) THEN f.estado_seguimiento ELSE 0 END,
+                               CASE WHEN t.n IN (1, 3) THEN f.solicitud_estado_seguimiento ELSE 0 END,
+                               CASE WHEN t.n IN (1, 3) THEN f.semaforo_etapa_seguimiento ELSE 0 END,
+                               CASE WHEN t.n IN (1, 3) THEN f.semaforo_rechazo_etapa_seguimiento ELSE 0 END,
+                               CASE WHEN t.n IN (1, 3) THEN f.fecha_publicacion_seguimiento ELSE NULL END,
+                               NOW()
+                        FROM formulacion_144 f
+                        JOIN (SELECT 1 AS n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4) t");
+                    foreach ($this->db->query("SELECT id FROM formulacion_144")->fetchAll(PDO::FETCH_COLUMN) as $fid) {
+                        $this->recalcularAgregadoSeguimiento((int)$fid);
+                    }
+                } catch (PDOException $e) {
+                    $this->db->exec("DROP TABLE IF EXISTS seguimiento_trimestres_144"); // se vuelve a intentar en la próxima carga
+                    $listo = false;
+                    throw $e;
+                }
+            }
+            // El historial de aprobación indica a qué trimestre corresponde cada movimiento (0 = el indicador completo)
+            if ($this->db->query("SHOW TABLES LIKE 'semaforo_historial_144'")->rowCount() > 0
+                && $this->db->query("SHOW COLUMNS FROM semaforo_historial_144 LIKE 'trimestre'")->rowCount() === 0) {
+                $this->db->exec("ALTER TABLE semaforo_historial_144 ADD COLUMN trimestre TINYINT NOT NULL DEFAULT 0 AFTER formulacion_id");
+            }
+            $listo = true;
+        } catch (PDOException $e) {
+            error_log('Error asegurarTablaTrimestres: ' . $e->getMessage());
+        }
+    }
+
+    // Estado crudo de los cuatro trimestres tal como está guardado (los que no tienen fila están en construcción)
+    private function leerTrimestres($id) {
+        $out = [];
+        foreach ([1, 2, 3, 4] as $t) $out[$t] = ['estado' => 0, 'solicitud' => 0, 'semaforo' => 0, 'rechazo' => 0, 'fecha_publicacion' => null];
+        $q = $this->db->prepare("SELECT trimestre, estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa, fecha_publicacion
+                                 FROM seguimiento_trimestres_144 WHERE formulacion_id = :id");
+        $q->execute([':id' => (int)$id]);
+        foreach ($q->fetchAll() as $r) {
+            $t = (int)$r['trimestre'];
+            if (!isset($out[$t])) continue;
+            $out[$t] = ['estado' => (int)$r['estado'], 'solicitud' => (int)$r['solicitud'], 'semaforo' => (int)$r['semaforo_etapa'],
+                        'rechazo' => (int)$r['semaforo_rechazo_etapa'], 'fecha_publicacion' => $r['fecha_publicacion']];
+        }
+        return $out;
+    }
+
+    // [1..4 => ['estado', 'solicitud', 'semaforo', 'rechazo', 'fecha_publicacion']]. Un seguimiento cancelado lo está en los cuatro.
+    public function getFlujoTrimestres($id) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $t = $this->leerTrimestres($id);
+            $q = $this->db->prepare("SELECT estado_seguimiento FROM formulacion_144 WHERE id = :id");
+            $q->execute([':id' => (int)$id]);
+            if ((int)$q->fetchColumn() === 1) foreach ($t as $n => $x) $t[$n]['estado'] = 1;
+            return $t;
+        } catch (PDOException $e) {
+            error_log('Error getFlujoTrimestres: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    // Misma forma que getEstadoFlujo (estado, solicitud, semaforo, creado_por_rol) pero de un trimestre
+    public function getEstadoFlujoTrimestre($id, $trimestre) {
+        try {
+            $t = $this->getFlujoTrimestres($id)[(int)$trimestre] ?? null;
+            if (!$t) return null;
+            $q = $this->db->prepare("SELECT u.rol FROM formulacion_144 f LEFT JOIN usuarios u ON u.id = f.creado_por WHERE f.id = :id");
+            $q->execute([':id' => (int)$id]);
+            return ['estado' => $t['estado'], 'solicitud' => $t['solicitud'], 'semaforo' => $t['semaforo'], 'creado_por_rol' => $q->fetchColumn() ?: null];
+        } catch (PDOException $e) {
+            error_log('Error getEstadoFlujoTrimestre: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function guardarTrimestre($id, $trimestre, array $s) {
+        $stmt = $this->db->prepare(
+            "INSERT INTO seguimiento_trimestres_144 (formulacion_id, trimestre, estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa, fecha_publicacion, fecha_actualizacion)
+             VALUES (:id, :t, :e, :s, :sem, :rech, :fp, NOW())
+             ON DUPLICATE KEY UPDATE estado = VALUES(estado), solicitud = VALUES(solicitud), semaforo_etapa = VALUES(semaforo_etapa),
+                 semaforo_rechazo_etapa = VALUES(semaforo_rechazo_etapa), fecha_publicacion = VALUES(fecha_publicacion), fecha_actualizacion = NOW()"
+        );
+        $stmt->execute([':id' => (int)$id, ':t' => (int)$trimestre, ':e' => $s['estado'], ':s' => $s['solicitud'], ':sem' => $s['semaforo'],
+                        ':rech' => $s['rechazo'], ':fp' => $s['fecha_publicacion']]);
+    }
+
+    // Deja los cuatro trimestres en el mismo estado (publicar o devolver a borrador el seguimiento completo)
+    public function fijarTrimestres($id, $estado) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $aprobado = (int)$estado === 2;
+            foreach ([1, 2, 3, 4] as $t) {
+                $this->guardarTrimestre($id, $t, ['estado' => (int)$estado, 'solicitud' => $aprobado ? 1 : 0, 'semaforo' => $aprobado ? 4 : 0,
+                                                  'rechazo' => 0, 'fecha_publicacion' => $aprobado ? date('Y-m-d H:i:s') : null]);
+            }
+            $this->recalcularAgregadoSeguimiento($id);
+            return true;
+        } catch (PDOException $e) {
+            error_log('Error fijarTrimestres: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Resume los cuatro trimestres en las columnas de seguimiento del indicador:
+    //  · estado: 2 (reportado) solo con los cuatro aprobados; un cancelado (1) se mantiene
+    //  · solicitud: 1 si algún trimestre está en revisión, si no 2 si alguno está devuelto, si no 0
+    //  · semáforo: la etapa más atrasada entre los que están en revisión; 4 si todos están aprobados
+    public function recalcularAgregadoSeguimiento($id) {
+        $t = $this->leerTrimestres($id);
+        // En «Límite» el semestre 1 (T1 y T2) no aplica: basta con T3 y T4
+        $q = $this->db->prepare("SELECT tipo_medicion FROM formulacion_144 WHERE id = :id");
+        $q->execute([':id' => (int)$id]);
+        $aplican = $q->fetchColumn() === 'Límite' ? [3, 4] : [1, 2, 3, 4];
+        $todos = count(array_filter($t, function ($x, $n) use ($aplican) { return in_array($n, $aplican, true) && $x['estado'] === 2; }, ARRAY_FILTER_USE_BOTH)) === count($aplican);
+        $enRev = array_filter($t, function ($x) { return $x['estado'] === 0 && $x['solicitud'] === 1; });
+        $dev   = array_filter($t, function ($x) { return $x['estado'] === 0 && $x['solicitud'] === 2; });
+        $sol   = $todos || $enRev ? 1 : ($dev ? 2 : 0);
+        $sem   = $todos ? 4 : ($enRev ? min(array_column($enRev, 'semaforo')) : 0);
+        $rech  = $dev ? max(array_column($dev, 'rechazo')) : 0;
+        // La fecha va antes que el estado: MySQL evalúa las asignaciones de izquierda a derecha
+        $stmt = $this->db->prepare(
+            "UPDATE formulacion_144
+             SET fecha_publicacion_seguimiento = CASE WHEN :todos1 = 1 AND estado_seguimiento != 2 THEN NOW() ELSE fecha_publicacion_seguimiento END,
+                 estado_seguimiento = CASE WHEN :todos2 = 1 THEN 2 WHEN estado_seguimiento = 1 THEN 1 ELSE 0 END,
+                 solicitud_estado_seguimiento = :sol, semaforo_etapa_seguimiento = :sem, semaforo_rechazo_etapa_seguimiento = :rech,
+                 fecha_actualizacion = NOW()
+             WHERE id = :id"
+        );
+        $stmt->execute([':todos1' => $todos ? 1 : 0, ':todos2' => $todos ? 1 : 0, ':sol' => $sol, ':sem' => $sem, ':rech' => $rech, ':id' => (int)$id]);
+    }
+
+    // Solicita la aprobación de un trimestre (1) o reinicia su solicitud (0): como actualizarSolicitudEstado, pero de un trimestre
+    public function actualizarSolicitudTrimestre($id, $trimestre, $solicitud, $nivelCreador = null) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $s = $this->leerTrimestres($id)[(int)$trimestre];
+            $s['solicitud'] = (int)$solicitud;
+            if ((int)$solicitud === 1) {
+                $s['rechazo'] = 0;
+                if ($nivelCreador !== null && $nivelCreador > 0) $s['semaforo'] = max($s['semaforo'], (int)$nivelCreador);
+            } elseif ((int)$solicitud === 0) {
+                $s['semaforo'] = 0;
+                $s['rechazo'] = 0;
+            }
+            $this->guardarTrimestre($id, $trimestre, $s);
+            $this->recalcularAgregadoSeguimiento($id);
+            return true;
+        } catch (PDOException $e) {
+            error_log('Error actualizarSolicitudTrimestre: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    // Aprueba la etapa $etapaNueva de un trimestre (la 4 lo deja aprobado). Igual que transicionarSemaforo, bajo bloqueo de fila.
+    public function transicionarSemaforoTrimestre($id, $trimestre, $etapaNueva, $nivelCreador) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $this->db->beginTransaction();
+            $this->db->prepare("INSERT IGNORE INTO seguimiento_trimestres_144 (formulacion_id, trimestre) VALUES (:id, :t)")
+                     ->execute([':id' => (int)$id, ':t' => (int)$trimestre]);
+            $q = $this->db->prepare("SELECT estado, solicitud, semaforo_etapa FROM seguimiento_trimestres_144 WHERE formulacion_id = :id AND trimestre = :t FOR UPDATE");
+            $q->execute([':id' => (int)$id, ':t' => (int)$trimestre]);
+            $r = $q->fetch();
+            if (!$r) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El trimestre no existe']; }
+            if ((int)$r['estado'] !== 0) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El trimestre ya no es un borrador']; }
+            if ((int)$r['solicitud'] !== 1) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'Primero se debe solicitar la aprobación']; }
+            $actual = max((int)$r['semaforo_etapa'], (int)$nivelCreador);
+            if ((int)$etapaNueva !== $actual + 1) { $this->db->rollBack(); return ['ok' => false, 'motivo' => 'El trimestre cambió de etapa: recarga la página']; }
+            $u = $this->db->prepare("UPDATE seguimiento_trimestres_144
+                                     SET semaforo_etapa = :e, estado = :est, fecha_publicacion = CASE WHEN :est2 = 2 THEN NOW() ELSE fecha_publicacion END, fecha_actualizacion = NOW()
+                                     WHERE formulacion_id = :id AND trimestre = :t");
+            $u->execute([':e' => (int)$etapaNueva, ':est' => (int)$etapaNueva === 4 ? 2 : 0, ':est2' => (int)$etapaNueva === 4 ? 2 : 0, ':id' => (int)$id, ':t' => (int)$trimestre]);
+            $this->db->commit();
+            $this->recalcularAgregadoSeguimiento($id);
+            return ['ok' => true, 'motivo' => ''];
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log('Error transicionarSemaforoTrimestre: ' . $e->getMessage());
+            return ['ok' => false, 'motivo' => 'No se pudo guardar'];
+        }
+    }
+
+    public function rechazarSemaforoTrimestre($id, $trimestre, $etapaQueRechaza) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $stmt = $this->db->prepare(
+                "UPDATE seguimiento_trimestres_144 SET semaforo_etapa = 0, solicitud = 2, semaforo_rechazo_etapa = :rechazo, fecha_actualizacion = NOW()
+                 WHERE formulacion_id = :id AND trimestre = :t AND semaforo_etapa < :rechazo2 AND estado = 0 AND solicitud = 1"
+            );
+            $stmt->execute([':id' => (int)$id, ':t' => (int)$trimestre, ':rechazo' => (int)$etapaQueRechaza, ':rechazo2' => (int)$etapaQueRechaza]);
+            if ($stmt->rowCount() === 0) return false;
+            $this->recalcularAgregadoSeguimiento($id);
+            return true;
+        } catch (PDOException $e) {
+            error_log('Error rechazarSemaforoTrimestre: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -1656,6 +1895,7 @@ class Modulo144Model {
                 }
                 $this->db->exec("UPDATE formulacion_144 SET trimestre1_seguimiento = semestre1_seguimiento, trimestre3_seguimiento = semestre2_seguimiento");
             }
+            $this->asegurarTablaTrimestres();
             $listo = true;
         } catch (PDOException $e) {
             error_log('Error asegurarColumnasDescripcionSemestres: ' . $e->getMessage());

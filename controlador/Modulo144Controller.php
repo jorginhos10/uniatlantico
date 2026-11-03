@@ -479,6 +479,10 @@ class Modulo144Controller {
                 $bl = $this->semestresBloqueados($itemActual);
                 if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento'], $_POST['descripcion_sem1'],
                     $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
+                // Un trimestre ya aprobado no se modifica
+                foreach ($this->model->getFlujoTrimestres($id) as $tNum => $tFlujo) {
+                    if (($tFlujo['estado'] ?? 0) === 2) unset($_POST['trimestre' . $tNum . '_seguimiento']);
+                }
                 if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['trimestre3_seguimiento'], $_POST['trimestre4_seguimiento'], $_POST['descripcion_sem2'],
                     $_POST['logros_sem2'], $_POST['limites_sem2'], $_POST['observacion_estado_sem2'], $_POST['acciones_fortalecimiento_sem2']);
             }
@@ -770,18 +774,26 @@ class Modulo144Controller {
 
         if ($solicitud_estado === 1 && $this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
+        // El seguimiento se aprueba por trimestre: cada uno tiene su propio flujo
+        $trim = $this->trimestreDelFlujo($modulo, $_POST);
+        if ($trim === null) return;
+
         $item = $this->model->getById($modulo, $id);
-        $flujo = $this->model->getEstadoFlujo($modulo, $id);
+        $flujo = $trim ? $this->model->getEstadoFlujoTrimestre($id, $trim) : $this->model->getEstadoFlujo($modulo, $id);
         if (!$item || !$flujo) {
             echo json_encode(['success' => false, 'message' => 'El registro no existe']);
             return;
         }
         if ((int)$flujo['estado'] !== 0) {
-            echo json_encode(['success' => false, 'message' => 'Solo se puede solicitar aprobación de un borrador']);
+            echo json_encode(['success' => false, 'message' => $trim ? 'Este trimestre ya está aprobado' : 'Solo se puede solicitar aprobación de un borrador']);
             return;
         }
         if (!$this->puedeGestionarIndicador($item)) {
             echo json_encode(['success' => false, 'message' => 'No tienes permiso para solicitar la aprobación de este indicador']);
+            return;
+        }
+        if ($trim && $solicitud_estado === 1 && !$this->trimestreTieneValor($item, $trim)) {
+            echo json_encode(['success' => false, 'message' => 'El trimestre ' . $trim . ' no tiene ningún valor registrado']);
             return;
         }
 
@@ -795,8 +807,11 @@ class Modulo144Controller {
             if ($nivelCreador >= 2 && $this->bloquearSinConcertar($modulo, $id)) return;
         }
 
-        $resultado = $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador);
+        $resultado = $trim
+            ? $this->model->actualizarSolicitudTrimestre($id, $trim, $solicitud_estado, $nivelCreador)
+            : $this->model->actualizarSolicitudEstado($modulo, $id, $solicitud_estado, $nivelCreador);
         $mensajes = [0 => 'Solicitud reiniciada', 1 => 'Solicitud de aprobación enviada'];
+        if ($trim) $mensajes = [0 => 'Solicitud del trimestre ' . $trim . ' reiniciada', 1 => 'Trimestre ' . $trim . ' enviado a aprobación'];
         echo json_encode([
             'success' => $resultado,
             'message' => $resultado ? ($mensajes[$solicitud_estado] ?? 'Actualizado') : 'Error al actualizar'
@@ -869,14 +884,29 @@ class Modulo144Controller {
 
     // Comprobaciones comunes de aprobar y rechazar: el registro existe, es un borrador solicitado y la pantalla
     // que lo pide no está desactualizada. Devuelve [etapaVigente, nivelCreador] o null (ya respondió el error).
-    private function validarEtapaSemaforo($modulo, $id) {
-        $flujo = $this->model->getEstadoFlujo($modulo, $id);
+    // Trimestre (1 a 4) del que se pide el flujo: obligatorio en el seguimiento, que se aprueba por trimestre; 0 en formulación.
+    // Devuelve null (y responde el error) si el seguimiento no trae un trimestre válido.
+    private function trimestreDelFlujo($modulo, $origen) {
+        if ($modulo !== 'seguimiento') return 0;
+        $t = (int)($origen['trimestre'] ?? 0);
+        if ($t >= 1 && $t <= 4) return $t;
+        echo json_encode(['success' => false, 'message' => 'Indica el trimestre: el seguimiento se aprueba por trimestre']);
+        return null;
+    }
+
+    private function trimestreTieneValor(array $item, $t) {
+        $v = $item['trimestre' . (int)$t . '_seguimiento'] ?? null;
+        return $v !== null && trim((string)$v) !== '';
+    }
+
+    private function validarEtapaSemaforo($modulo, $id, $trim = 0) {
+        $flujo = $trim ? $this->model->getEstadoFlujoTrimestre($id, $trim) : $this->model->getEstadoFlujo($modulo, $id);
         if (!$flujo) {
             echo json_encode(['success' => false, 'message' => 'El registro no existe']);
             return null;
         }
         if ((int)$flujo['estado'] !== 0) {
-            echo json_encode(['success' => false, 'message' => 'El registro ya no es un borrador']);
+            echo json_encode(['success' => false, 'message' => $trim ? 'Este trimestre ya está aprobado' : 'El registro ya no es un borrador']);
             return null;
         }
         if ((int)$flujo['solicitud'] !== 1) {
@@ -914,7 +944,10 @@ class Modulo144Controller {
 
         if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
 
-        $vigente = $this->validarEtapaSemaforo($modulo, $id);
+        $trim = $this->trimestreDelFlujo($modulo, $_POST);
+        if ($trim === null) return;
+
+        $vigente = $this->validarEtapaSemaforo($modulo, $id, $trim);
         if ($vigente === null) return;
         [$etapaActual, $nivelCreador] = $vigente;
 
@@ -939,21 +972,25 @@ class Modulo144Controller {
         }
 
         // Aprueba bajo bloqueo de fila y, en la etapa 4, publica en el mismo UPDATE
-        $res = $this->model->transicionarSemaforo($modulo, $id, $etapaNueva, $nivelCreador);
+        $res = $trim
+            ? $this->model->transicionarSemaforoTrimestre($id, $trim, $etapaNueva, $nivelCreador)
+            : $this->model->transicionarSemaforo($modulo, $id, $etapaNueva, $nivelCreador);
 
         if ($res['ok']) {
             $this->model->registrarHistorialSemaforo(
                 $modulo, $id, $etapaNueva, 'aprobado',
                 (int)($_SESSION['usuario_id'] ?? 0),
                 $_SESSION['usuario_nombre'] ?? '—',
-                $rolEsperado ?? ($_SESSION['usuario_rol'] ?? null)
+                $rolEsperado ?? ($_SESSION['usuario_rol'] ?? null),
+                null, $trim
             );
         }
 
         echo json_encode([
             'success' => $res['ok'],
             'message' => $res['ok']
-                ? ($etapaNueva === 4 ? 'Etapa aprobada: publicado exitosamente' : 'Etapa aprobada')
+                ? ($trim ? ($etapaNueva === 4 ? 'Trimestre ' . $trim . ' aprobado por la Oficina de Planeación' : 'Etapa aprobada (trimestre ' . $trim . ')')
+                         : ($etapaNueva === 4 ? 'Etapa aprobada: publicado exitosamente' : 'Etapa aprobada'))
                 : ($res['motivo'] ?: 'No se pudo actualizar (puede que ya haya avanzado)')
         ]);
     }
@@ -980,7 +1017,10 @@ class Modulo144Controller {
             return;
         }
 
-        $vigente = $this->validarEtapaSemaforo($modulo, $id);
+        $trim = $this->trimestreDelFlujo($modulo, $_POST);
+        if ($trim === null) return;
+
+        $vigente = $this->validarEtapaSemaforo($modulo, $id, $trim);
         if ($vigente === null) return;
         [$etapaActual] = $vigente;
 
@@ -1002,7 +1042,9 @@ class Modulo144Controller {
             return;
         }
 
-        $resultado = $this->model->rechazarSemaforo($modulo, $id, $etapaActual, $etapaSiguiente);
+        $resultado = $trim
+            ? $this->model->rechazarSemaforoTrimestre($id, $trim, $etapaSiguiente)
+            : $this->model->rechazarSemaforo($modulo, $id, $etapaActual, $etapaSiguiente);
 
         if ($resultado) {
             $this->model->registrarHistorialSemaforo(
@@ -1010,9 +1052,9 @@ class Modulo144Controller {
                 (int)($_SESSION['usuario_id'] ?? 0),
                 $_SESSION['usuario_nombre'] ?? '—',
                 $rolEsperado ?? ($_SESSION['usuario_rol'] ?? null),
-                $motivo
+                $motivo, $trim
             );
-            $this->enviarMensajeRechazo($modulo, $id, $motivo);
+            $this->enviarMensajeRechazo($modulo, $id, $trim ? 'Trimestre ' . $trim . ': ' . $motivo : $motivo);
         }
 
         echo json_encode([
@@ -1162,6 +1204,54 @@ class Modulo144Controller {
 
         $historial = $this->model->getHistorialSemaforo($modulo, $id);
         echo json_encode(['success' => true, 'historial' => $historial]);
+    }
+
+    // Estado y permisos de aprobación de cada trimestre del seguimiento de un indicador (ventana «Aprobación por trimestre»).
+    // Los permisos siguen las mismas reglas de avanzarSemaforo, rechazarSemaforo y cambiarSolicitudEstado, que vuelven a comprobarlos.
+    public function getFlujoTrimestres() {
+        header('Content-Type: application/json');
+        $id = intval($_GET['id'] ?? 0);
+        $item = $id > 0 ? $this->model->getById('seguimiento', $id) : null;
+        if (!$item) { echo json_encode(['success' => false, 'message' => 'Indicador no válido']); return; }
+
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        $rolUsuario = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        $esSuper = $uid === 1;
+        $creador = $this->model->getEstadoFlujoTrimestre($id, 1);
+        $nivelCreador = $this->semaforoRolNivel[$this->normalizarRol($creador['creado_por_rol'] ?? '')] ?? 0;
+        $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
+        $puedeGestionar = $this->puedeGestionarIndicador($item) && !$this->facultadesRestringidas($item);
+        $nombres = [1 => 'Gestor de Metas', 2 => 'Líder de Metas', 3 => 'Vicerrectoría', 4 => 'Oficina de Planeación'];
+
+        $trimestres = [];
+        foreach ($this->model->getFlujoTrimestres($id) as $t => $f) {
+            $aplica = !($esLimite && $t <= 2); // en «Límite» el semestre 1 (T1 y T2) no se registra
+            $etapa = max((int)$f['semaforo'], $nivelCreador);
+            $enRevision = $f['estado'] === 0 && $f['solicitud'] === 1;
+            $siguiente = $etapa + 1;
+            $puedeDecidir = false;
+            if ($aplica && $enRevision && $siguiente <= 4) {
+                $rolEsperado = $this->semaforoRoles[$siguiente] ?? null;
+                $esAdminFinal = $siguiente === 4 && in_array($rolUsuario, ['administrador', 'sub administrador'], true);
+                $puedeDecidir = $esSuper || $esAdminFinal || ($rolEsperado && $this->normalizarRol($rolEsperado) === $rolUsuario);
+                if ($puedeDecidir && $this->vicerrectorNoCorresponde('seguimiento', $id, $siguiente)) $puedeDecidir = false;
+            }
+            $trimestres[] = [
+                'trimestre'      => $t,
+                'aplica'         => $aplica,
+                'tiene_valor'    => $this->trimestreTieneValor($item, $t),
+                'estado'         => $f['estado'],
+                'solicitud'      => $f['solicitud'],
+                'etapa'          => $f['estado'] === 2 ? 4 : $etapa,
+                'rechazo'        => $f['rechazo'],
+                'espera_a'       => $enRevision && $siguiente <= 4 ? $nombres[$siguiente] : '',
+                'puede_solicitar' => $aplica && $puedeGestionar && $f['estado'] === 0 && $f['solicitud'] !== 1 && $this->trimestreTieneValor($item, $t),
+                'puede_decidir'  => $puedeDecidir,
+                'siguiente'      => $siguiente,
+                'es_final'       => $siguiente === 4,
+            ];
+        }
+        echo json_encode(['success' => true, 'trimestres' => $trimestres, 'etapas' => $nombres]);
     }
 
     /**
