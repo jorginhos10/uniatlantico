@@ -820,6 +820,13 @@ ob_start();
         #tablaSeguimientoFacultades thead th { vertical-align: middle; font-size: 12px; }
         @media (max-width: 800px) { .seg-sems { grid-template-columns: minmax(0, 1fr); } }
         @media (max-width: 700px) { .seg-card { grid-template-columns: minmax(0, 1fr); } #modalSeguimiento .modal-body-scroll { padding: 12px 14px 20px; } }
+        .seg-sem-calc { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
+        .seg-sem > .seg-input { background: #F5F6F8; }
+        .seg-tris { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .seg-tri { background: #FAFBFC; border: 1px solid #E5E5EA; border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; min-width: 0; align-content: start; }
+        .seg-tri .form-label { font-size: 12px; }
+        .seg-input-tri { font-size: 18px; }
+        @media (max-width: 520px) { .seg-tris { grid-template-columns: minmax(0, 1fr); } }
         .seg-ev-label { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #6E6E73; }
         .seg-ev-btn { display: inline-flex; align-items: center; gap: 8px; border: 2px dashed #1D71B8; background: #E4EEF8; color: #1D71B8; border-radius: 99px; padding: 3px 6px 3px 12px; cursor: pointer; }
         .seg-ev-btn:hover { border-style: solid; }
@@ -3355,28 +3362,30 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             </div>
 
                             <div class="seg-sems">
+                                <?php foreach ([1 => [1, 2], 2 => [3, 4]] as $semN => $tris): ?>
                                 <div class="seg-sem">
                                     <div class="seg-sem-head">
-                                        <label class="form-label mb-0" for="seguimiento_semestre1">SEMESTRE 1</label>
-                                        <span class="seg-ev-label">Evidencias
-                                            <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, 1)" title="Evidencias del semestre 1 (hasta 5 archivos)" aria-label="Evidencias del semestre 1">
-                                                <i class="fas fa-plus"></i><span class="ev-n" id="segEvGenN1">0</span>
-                                            </button>
-                                        </span>
+                                        <label class="form-label mb-0" for="seguimiento_semestre<?php echo $semN; ?>">SEMESTRE <?php echo $semN; ?></label>
+                                        <span class="seg-sem-calc" id="segSemCalc<?php echo $semN; ?>" title="Se calcula con los dos trimestres según el tipo de medición del indicador">calculado</span>
                                     </div>
-                                    <input type="number" class="form-control seg-input" name="semestre1_seguimiento" id="seguimiento_semestre1" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
-                                </div>
-                                <div class="seg-sem">
-                                    <div class="seg-sem-head">
-                                        <label class="form-label mb-0" for="seguimiento_semestre2">SEMESTRE 2</label>
-                                        <span class="seg-ev-label">Evidencias
-                                            <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, 2)" title="Evidencias del semestre 2 (hasta 5 archivos)" aria-label="Evidencias del semestre 2">
-                                                <i class="fas fa-plus"></i><span class="ev-n" id="segEvGenN2">0</span>
-                                            </button>
-                                        </span>
+                                    <input type="number" class="form-control seg-input" name="semestre<?php echo $semN; ?>_seguimiento" id="seguimiento_semestre<?php echo $semN; ?>" step="0.01" readonly tabindex="-1" aria-label="Valor del semestre <?php echo $semN; ?> (calculado con sus trimestres)">
+                                    <div class="seg-tris">
+                                        <?php foreach ($tris as $t): ?>
+                                        <div class="seg-tri">
+                                            <div class="seg-sem-head">
+                                                <label class="form-label mb-0" for="seguimiento_trimestre<?php echo $t; ?>">TRIMESTRE <?php echo $t; ?></label>
+                                                <span class="seg-ev-label">
+                                                    <button type="button" class="seg-ev-btn" onclick="abrirEvidencias(0, <?php echo $semN; ?>, <?php echo $t; ?>)" title="Evidencias del trimestre <?php echo $t; ?> (hasta 5 archivos)" aria-label="Evidencias del trimestre <?php echo $t; ?>">
+                                                        <i class="fas fa-plus"></i><span class="ev-n" id="segEvTri<?php echo $t; ?>">0</span>
+                                                    </button>
+                                                </span>
+                                            </div>
+                                            <input type="number" class="form-control seg-input seg-input-tri" name="trimestre<?php echo $t; ?>_seguimiento" id="seguimiento_trimestre<?php echo $t; ?>" step="0.01" oninput="recalcularSemestres(); autoGuardarSeguimiento()">
+                                        </div>
+                                        <?php endforeach; ?>
                                     </div>
-                                    <input type="number" class="form-control seg-input" name="semestre2_seguimiento" id="seguimiento_semestre2" step="0.01" oninput="calcularCumplimientoSeguimiento(); autoGuardarSeguimiento()">
                                 </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
 
@@ -4459,13 +4468,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // ── Evidencias del seguimiento: hasta 5 archivos por semestre, por indicador y por facultad ──
         let evFacultadActual = 0;
         let evSemestreActual = 1;
+        let evTrimestreActual = 0; // 1 a 4 en las evidencias del indicador; 0 en las de facultad y concertación
         let evFormulacionConcertacion = 0; // distinto de 0: la ventana se abrió desde Concertaciones (facultad_id negativo = lado de la vicerrectoría)
         function evFormulacionId() { return evFormulacionConcertacion || $('#seguimiento_id').val(); }
 
         function evAplicarResumen(r) {
-            const g = r.general || {};
-            $('#segEvGenN1').text(g[1] || 0);
-            $('#segEvGenN2').text(g[2] || 0);
+            const g = r.trimestres || {};
+            [1, 2, 3, 4].forEach(function(t) { $('#segEvTri' + t).text(g[t] || 0); });
             $('#tablaSeguimientoFacultades tbody tr').each(function() {
                 const f = (r.facultades || {})[$(this).data('facultad-id')] || {};
                 $(this).find('.ev-n[data-sem="1"]').text(f[1] || 0);
@@ -4474,7 +4483,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         function cargarResumenEvidencias(formulacionId) {
-            evAplicarResumen({ general: {}, facultades: {} });
+            evAplicarResumen({ trimestres: {}, facultades: {} });
             if (!formulacionId) return;
             $.getJSON(basePath + '/modulo144/resumenEvidencias', { formulacion_id: formulacionId }, function(r) {
                 if (r.success) evAplicarResumen(r);
@@ -4517,25 +4526,26 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     if (fCn) fCn[ladoCn === 'facultad' ? 'ev_f' : 'ev_v'][evSemestreActual] = archivos.length;
                 }
             }
-            else if (!evFacultadActual) $('#segEvGenN' + evSemestreActual).text(archivos.length);
+            else if (!evFacultadActual) $('#segEvTri' + evTrimestreActual).text(archivos.length);
             else $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"] .ev-n[data-sem="' + evSemestreActual + '"]').text(archivos.length);
         }
 
         function evRecargar() {
-            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: evFormulacionId(), facultad_id: evFacultadActual, semestre: evSemestreActual }, function(r) {
+            $.getJSON(basePath + '/modulo144/listarEvidencias', { formulacion_id: evFormulacionId(), facultad_id: evFacultadActual, semestre: evSemestreActual, trimestre: evTrimestreActual }, function(r) {
                 if (!r.success) { evMostrarError(r.message || 'No se pudieron cargar las evidencias'); return; }
                 evPintar(r);
             }).fail(function() { evMostrarError('Error de conexión con el servidor'); });
         }
 
-        // facultadId 0 = evidencias del indicador; semestre 1 o 2
-        function abrirEvidencias(facultadId, semestre) {
+        // facultadId 0 = evidencias del indicador (por trimestre, 1 a 4); si no, las de esa facultad en el semestre 1 o 2
+        function abrirEvidencias(facultadId, semestre, trimestre) {
             if (!$('#seguimiento_id').val()) return;
             evFormulacionConcertacion = 0;
             evFacultadActual = parseInt(facultadId, 10) || 0;
-            evSemestreActual = parseInt(semestre, 10) === 2 ? 2 : 1;
+            evTrimestreActual = evFacultadActual === 0 ? Math.min(4, Math.max(0, parseInt(trimestre, 10) || 0)) : 0;
+            evSemestreActual = evTrimestreActual ? (evTrimestreActual <= 2 ? 1 : 2) : (parseInt(semestre, 10) === 2 ? 2 : 1);
             const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + evFacultadActual + '"]');
-            $('#evTitulo').text('Evidencias · Semestre ' + evSemestreActual + (evFacultadActual ? ' · ' + fila.find('td:first').text().trim() : ''));
+            $('#evTitulo').text('Evidencias · ' + (evTrimestreActual ? 'Trimestre ' + evTrimestreActual + ' (Semestre ' + evSemestreActual + ')' : 'Semestre ' + evSemestreActual) + (evFacultadActual ? ' · ' + fila.find('td:first').text().trim() : ''));
             $('#evQuien').text($('#tituloSeguimientoSpan').text());
             evMostrarError('');
             $('#evLista').empty();
@@ -4549,6 +4559,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (!cnIndicadorActual) return;
             evFormulacionConcertacion = cnIndicadorActual;
             evFacultadActual = (lado === 'vicerrectoria' ? -1 : 1) * (parseInt(facultadId, 10) || 0);
+            evTrimestreActual = 0;
             evSemestreActual = parseInt(semestre, 10) === 2 ? 2 : 1;
             const f = cnDatos.facultades.filter(function(x) { return x.facultad_id == facultadId; })[0];
             $('#evTitulo').text('Evidencias · Semestre ' + evSemestreActual + ' · ' + (lado === 'vicerrectoria' ? 'Vicerrectoría' : 'Facultad') + (f ? ' · ' + cnNombreCorto(f.nombre) : ''));
@@ -4577,6 +4588,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 datos.append('formulacion_id', evFormulacionId());
                 datos.append('facultad_id', evFacultadActual);
                 datos.append('semestre', evSemestreActual);
+                datos.append('trimestre', evTrimestreActual);
                 datos.append('archivo', f);
                 $.ajax({ url: basePath + '/modulo144/subirEvidencia', type: 'POST', data: datos, processData: false, contentType: false, dataType: 'json' })
                     .done(function(r) { if (!r.success) errores.push(f.name + ': ' + (r.message || 'no se pudo cargar')); })
@@ -5215,6 +5227,33 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             if (text) text.textContent = Math.round(p) + '%';
         }
 
+        // El valor de cada semestre se calcula con sus dos trimestres (T1-T2 → semestre 1; T3-T4 → semestre 2) según el tipo de medición:
+        // Promedio → promedio de los trimestres reportados; Último valor reportado y Límite → el del último trimestre con dato;
+        // Acumulado y Nuevo gestionado durante la vigencia → suma. Sin ningún trimestre reportado el semestre queda vacío.
+        function valorTrimestre(n) {
+            const v = $('#seguimiento_trimestre' + n).val();
+            return (v !== '' && v !== null && v !== undefined && !isNaN(v)) ? parseFloat(v) : null;
+        }
+
+        function combinarTrimestres(a, b, tipo) {
+            if (a === null && b === null) return null;
+            if (tipo === 'Promedio') {
+                const vals = [a, b].filter(function(x) { return x !== null; });
+                return vals.reduce(function(s, x) { return s + x; }, 0) / vals.length;
+            }
+            if (tipo === 'Último valor reportado' || tipo === 'Límite') return b !== null ? b : a;
+            return (a || 0) + (b || 0);
+        }
+
+        function recalcularSemestres() {
+            const tipo = $('#formSeguimiento').data('tipoMedicion') || '';
+            [[1, 1, 2], [2, 3, 4]].forEach(function(s) {
+                const v = combinarTrimestres(valorTrimestre(s[1]), valorTrimestre(s[2]), tipo);
+                $('#seguimiento_semestre' + s[0]).val(v === null ? '' : String(Math.round(v * 100) / 100));
+            });
+            calcularCumplimientoSeguimiento();
+        }
+
         function calcularCumplimientoSeguimiento() {
             const tipoMedicion = $('#formSeguimiento').data('tipoMedicion') || '';
             const s1Raw = $('#seguimiento_semestre1').val();
@@ -5457,6 +5496,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 fecha_seguimiento: $('#seguimiento_fecha').val(),
                 semestre1_seguimiento: $('#seguimiento_semestre1').val(),
                 semestre2_seguimiento: $('#seguimiento_semestre2').val(),
+                trimestre1_seguimiento: $('#seguimiento_trimestre1').val(),
+                trimestre2_seguimiento: $('#seguimiento_trimestre2').val(),
+                trimestre3_seguimiento: $('#seguimiento_trimestre3').val(),
+                trimestre4_seguimiento: $('#seguimiento_trimestre4').val(),
                 meta_programada: $('#seguimiento_meta_programada').val(),
                 meta_ejecutada: $('#seguimiento_meta_ejecutada').val(),
                 porcentaje_avance: $('#seguimiento_porcentaje').val(),
@@ -5821,6 +5864,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             $('#seguimiento_fecha').val(b.fecha_seguimiento);
                             $('#seguimiento_semestre1').val(b.semestre1_seguimiento);
                             $('#seguimiento_semestre2').val(b.semestre2_seguimiento);
+                            [1, 2, 3, 4].forEach(function(t) { $('#seguimiento_trimestre' + t).val(b['trimestre' + t + '_seguimiento']); });
                             $('#seguimiento_meta_programada').val(b.meta_programada);
                             $('#seguimiento_meta_ejecutada').val(b.meta_ejecutada);
                             $('#seguimiento_porcentaje').val(b.porcentaje_avance);
@@ -5838,7 +5882,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             calcularCumplimientoSeguimiento();
                             seguimientoSnap = null; // se fija tras cargar todo (abajo)
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
-                            $('#seguimiento_semestre1').prop('disabled', b.tipo_medicion === 'Límite');
+                            $('#seguimiento_semestre1, #seguimiento_trimestre1, #seguimiento_trimestre2').prop('disabled', b.tipo_medicion === 'Límite');
                             aplicarBloqueoSemestres();
                             cargarSeguimientoFacultades(b.id, String(b.gestionado_facultades) === '1');
                             cargarResumenEvidencias(b.id);
@@ -6031,8 +6075,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         function aplicarBloqueoSemestres() {
             if (BLOQUEO_SEM1) $('#seguimiento_logros, #seguimiento_limites, #seguimiento_observacion_estado, #seguimiento_acciones_fortalecimiento').prop('disabled', true);
             if (BLOQUEO_SEM2) $('#seguimiento_logros_sem2, #seguimiento_limites_sem2, #seguimiento_observacion_estado_sem2, #seguimiento_acciones_fortalecimiento_sem2').prop('disabled', true);
-            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
-            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
+            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_trimestre1, #seguimiento_trimestre2, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
+            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #seguimiento_trimestre3, #seguimiento_trimestre4, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
             const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
             $('#segBloqueoAviso').toggle(bloqueados.length > 0)
                 .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador de este formulario.');

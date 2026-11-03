@@ -81,6 +81,7 @@ class Modulo144Model {
             'campos_editables' => ['indicador', 'meta_programada', 'meta_ejecutada', 'porcentaje_avance',
                                    'fecha_seguimiento', 'observaciones', 'responsable_seguimiento',
                                    'semestre1_seguimiento', 'semestre2_seguimiento', 'descripcion_sem1', 'descripcion_sem2',
+                                   'trimestre1_seguimiento', 'trimestre2_seguimiento', 'trimestre3_seguimiento', 'trimestre4_seguimiento',
                                    'logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento',
                                    'logros_sem2', 'limites_sem2', 'observacion_estado_sem2', 'acciones_fortalecimiento_sem2'],
             'campos_vista' => [
@@ -753,6 +754,7 @@ class Modulo144Model {
             // y el formulario vuelve a abrir mostrando "0,00" en vez de vacío)
             $camposNumericos = [
                 'semestre1_seguimiento', 'semestre2_seguimiento', 'porcentaje_avance',
+                'trimestre1_seguimiento', 'trimestre2_seguimiento', 'trimestre3_seguimiento', 'trimestre4_seguimiento',
                 'ponderacion_proyectos', 'ponderacion_actividades', 'anio_base_meta',
             ];
 
@@ -1497,15 +1499,25 @@ class Modulo144Model {
         if ($this->db->query("SHOW COLUMNS FROM evidencias_144 LIKE 'semestre'")->rowCount() === 0) {
             $this->db->exec("ALTER TABLE evidencias_144 ADD COLUMN semestre TINYINT NOT NULL DEFAULT 1 AFTER facultad_id");
         }
+        // Las evidencias del indicador (facultad_id = 0) se llevan por trimestre (1 a 4; `semestre` sigue guardando el semestre al que
+        // pertenece). Las que ya existían pasan al primer trimestre de su semestre: semestre 1 → T1, semestre 2 → T3. En las de facultad es 0.
+        if ($this->db->query("SHOW COLUMNS FROM evidencias_144 LIKE 'trimestre'")->rowCount() === 0) {
+            $this->db->exec("ALTER TABLE evidencias_144 ADD COLUMN trimestre TINYINT NOT NULL DEFAULT 0 AFTER semestre");
+            $this->db->exec("UPDATE evidencias_144 SET trimestre = IF(semestre = 2, 3, 1) WHERE facultad_id = 0");
+        }
         $listo = true;
     }
 
-    public function getEvidencias($formulacionId, $facultadId = 0, $semestre = 1) {
+    // $trimestre > 0 (evidencias del indicador): solo ese trimestre; 0: las del semestre completo
+    public function getEvidencias($formulacionId, $facultadId = 0, $semestre = 1, $trimestre = 0) {
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("SELECT id, nombre_original, ruta, tamano, fecha_creacion, semestre
-                                        FROM evidencias_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :sem ORDER BY id");
-            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre]);
+            $stmt = $this->db->prepare("SELECT id, nombre_original, ruta, tamano, fecha_creacion, semestre, trimestre
+                                        FROM evidencias_144 WHERE formulacion_id = :f AND facultad_id = :fac AND semestre = :sem"
+                                        . ((int)$trimestre > 0 ? " AND trimestre = :tri" : "") . " ORDER BY id");
+            $params = [':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre];
+            if ((int)$trimestre > 0) $params[':tri'] = (int)$trimestre;
+            $stmt->execute($params);
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             error_log('Error getEvidencias: ' . $e->getMessage());
@@ -1513,17 +1525,22 @@ class Modulo144Model {
         }
     }
 
-    // ['general' => [semestre => n], 'facultades' => [facultad_id => [semestre => n]]]
+    // ['general' => [semestre => n], 'trimestres' => [trimestre => n], 'facultades' => [facultad_id => [semestre => n]]]
     public function getResumenEvidencias($formulacionId) {
-        $res = ['general' => [1 => 0, 2 => 0], 'facultades' => []];
+        $res = ['general' => [1 => 0, 2 => 0], 'trimestres' => [1 => 0, 2 => 0, 3 => 0, 4 => 0], 'facultades' => []];
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("SELECT facultad_id, semestre, COUNT(*) AS n FROM evidencias_144 WHERE formulacion_id = :f GROUP BY facultad_id, semestre");
+            $stmt = $this->db->prepare("SELECT facultad_id, semestre, trimestre, COUNT(*) AS n FROM evidencias_144 WHERE formulacion_id = :f GROUP BY facultad_id, semestre, trimestre");
             $stmt->execute([':f' => (int)$formulacionId]);
             foreach ($stmt->fetchAll() as $r) {
                 $sem = (int)$r['semestre'] === 2 ? 2 : 1;
-                if ((int)$r['facultad_id'] === 0) $res['general'][$sem] = (int)$r['n'];
-                else $res['facultades'][(int)$r['facultad_id']][$sem] = (int)$r['n'];
+                if ((int)$r['facultad_id'] === 0) {
+                    $res['general'][$sem] += (int)$r['n'];
+                    $tri = (int)$r['trimestre'] >= 1 && (int)$r['trimestre'] <= 4 ? (int)$r['trimestre'] : ($sem === 2 ? 3 : 1);
+                    $res['trimestres'][$tri] += (int)$r['n'];
+                } else {
+                    $res['facultades'][(int)$r['facultad_id']][$sem] = (int)$r['n'];
+                }
             }
         } catch (PDOException $e) {
             error_log('Error getResumenEvidencias: ' . $e->getMessage());
@@ -1531,16 +1548,16 @@ class Modulo144Model {
         return $res;
     }
 
-    public function contarEvidencias($formulacionId, $facultadId = 0, $semestre = 1) {
-        return count($this->getEvidencias($formulacionId, $facultadId, $semestre));
+    public function contarEvidencias($formulacionId, $facultadId = 0, $semestre = 1, $trimestre = 0) {
+        return count($this->getEvidencias($formulacionId, $facultadId, $semestre, $trimestre));
     }
 
-    public function guardarEvidencia($formulacionId, $facultadId, $nombreOriginal, $ruta, $tamano, $usuarioId, $semestre = 1) {
+    public function guardarEvidencia($formulacionId, $facultadId, $nombreOriginal, $ruta, $tamano, $usuarioId, $semestre = 1, $trimestre = 0) {
         try {
             $this->asegurarTablaEvidencias();
-            $stmt = $this->db->prepare("INSERT INTO evidencias_144 (formulacion_id, facultad_id, semestre, nombre_original, ruta, tamano, usuario_id)
-                                        VALUES (:f, :fac, :sem, :n, :r, :t, :u)");
-            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre, ':n' => $nombreOriginal,
+            $stmt = $this->db->prepare("INSERT INTO evidencias_144 (formulacion_id, facultad_id, semestre, trimestre, nombre_original, ruta, tamano, usuario_id)
+                                        VALUES (:f, :fac, :sem, :tri, :n, :r, :t, :u)");
+            $stmt->execute([':f' => (int)$formulacionId, ':fac' => (int)$facultadId, ':sem' => (int)$semestre, ':tri' => (int)$trimestre, ':n' => $nombreOriginal,
                             ':r' => $ruta, ':t' => (int)$tamano, ':u' => $usuarioId ?: null]);
             return (int)$this->db->lastInsertId();
         } catch (PDOException $e) {
@@ -1630,6 +1647,14 @@ class Modulo144Model {
                 if ($this->db->query("SHOW COLUMNS FROM {$tabla} LIKE '{$col}'")->rowCount() === 0) {
                     $this->db->exec("ALTER TABLE {$tabla} ADD COLUMN {$col} {$def}");
                 }
+            }
+            // Cada semestre se divide en dos trimestres (T1 y T2 → semestre 1; T3 y T4 → semestre 2). El valor del semestre se
+            // calcula con ellos; los valores que ya había quedan en el primer trimestre de su semestre (T1 y T3)
+            if ($this->db->query("SHOW COLUMNS FROM formulacion_144 LIKE 'trimestre1_seguimiento'")->rowCount() === 0) {
+                foreach ([1, 2, 3, 4] as $t) {
+                    $this->db->exec("ALTER TABLE formulacion_144 ADD COLUMN trimestre{$t}_seguimiento DECIMAL(15,2) NULL");
+                }
+                $this->db->exec("UPDATE formulacion_144 SET trimestre1_seguimiento = semestre1_seguimiento, trimestre3_seguimiento = semestre2_seguimiento");
             }
             $listo = true;
         } catch (PDOException $e) {
