@@ -1,30 +1,11 @@
 <?php
 // config/config.php
 
-// Las credenciales de la base de datos NO van en el repositorio: se leen de config/config.local.php (ignorado por git;
-// copia config/config.local.example.php) o de variables de entorno.
-$__local = __DIR__ . '/config.local.php';
-if (is_file($__local)) {
-    require_once $__local;
-}
-foreach (['HOST' => 'localhost', 'NAME' => null, 'USER' => null, 'PASS' => null] as $__k => $__def) {
-    if (!defined('APP_DB_' . $__k)) {
-        $__env = getenv('APP_DB_' . $__k);
-        if ($__env === false && $__def === null) {
-            http_response_code(500);
-            error_log('Falta la configuración de la base de datos: crea config/config.local.php (ver config.local.example.php)');
-            exit('Falta la configuración de la base de datos. Crea config/config.local.php a partir de config.local.example.php.');
-        }
-        define('APP_DB_' . $__k, $__env !== false ? $__env : $__def);
-    }
-}
-unset($__local, $__k, $__def, $__env);
-
 class Config {
-    const DB_HOST = APP_DB_HOST;
-    const DB_NAME = APP_DB_NAME;
-    const DB_USER = APP_DB_USER;
-    const DB_PASS = APP_DB_PASS;
+    const DB_HOST = 'localhost';
+    const DB_NAME = 'jorginho_app-uniatlantico';
+    const DB_USER = 'jorginho_app-uniatlantico';
+    const DB_PASS = 'jorginho10.';
     const DB_CHARSET = 'utf8';
 
 

@@ -2,7 +2,6 @@ evidencias/*
 !evidencias/.gitkeep
 
 # Secretos y datos locales: nunca al repositorio
-config/config.local.php
 debug.log
 error_log
 *.javb
