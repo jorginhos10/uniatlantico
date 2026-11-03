@@ -186,7 +186,7 @@ tr:last-child td{border-bottom:0}
             <div class="tgs" role="group" aria-label="Filtrar por estado">
                 <button type="button" class="tg" data-e="devuelto" aria-pressed="false">Devueltos</button>
                 <button type="button" class="tg" data-e="borrador" aria-pressed="false">En borrador (sin enviar a revisión)</button>
-                <button type="button" class="tg" data-e="nada" aria-pressed="false">Sin iniciar nada</button>
+                <button type="button" class="tg" data-e="nada" aria-pressed="false">Sin iniciar nada (semestre 2 vacío)</button>
             </div>
         </div>
         <?php endif; ?>
@@ -260,7 +260,7 @@ tr:last-child td{border-bottom:0}
         filtrarSin(); // la pestaña «Sin iniciar» vuelve a aplicar sus propios filtros
     }
     // Filtro por facultad (pestaña «Sin iniciar»)
-    // y toggles de estado (devueltos / en borrador / sin iniciar nada; varios activos se suman, ninguno = todos)
+    // y toggles de estado (devueltos / en borrador / sin iniciar nada; solo uno activo, ninguno = todos)
     var fac = document.getElementById('fac');
     var tgs = Array.prototype.slice.call(document.querySelectorAll('.tg'));
     function filtrarSin() {
@@ -269,7 +269,8 @@ tr:last-child td{border-bottom:0}
         Array.prototype.forEach.call(document.querySelectorAll('#tp-sin details.acc'), function (d) {
             var visibles = 0;
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
-                var ok = !on.length || on.indexOf(r.getAttribute('data-e')) !== -1;
+                // «nada» = sin valor en semestre 2 (en cualquier estado); los otros dos filtran por estado
+                var ok = !on.length || (on[0] === 'nada' ? r.getAttribute('data-f2') === '1' : r.getAttribute('data-e') === on[0]);
                 r.hidden = !ok;
                 if (ok) visibles++;
             });
@@ -280,7 +281,10 @@ tr:last-child td{border-bottom:0}
     if (fac) fac.addEventListener('change', filtrarSin);
     tgs.forEach(function (b) {
         b.addEventListener('click', function () {
-            b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+            // Solo uno activo a la vez; volver a pulsar el activo lo quita
+            var estabaOn = b.getAttribute('aria-pressed') === 'true';
+            tgs.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+            if (!estabaOn) b.setAttribute('aria-pressed', 'true');
             filtrarSin();
         });
     });
