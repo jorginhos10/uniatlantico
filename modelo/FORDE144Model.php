@@ -276,6 +276,7 @@ class FORDE144Model {
     // $opts (opcional):
     //   'soloAprobadas' => false     (por defecto true) incluir también lo que no está aprobado
     //   'ids'           => [int]     solo esos indicadores (lo que el usuario puede ver)
+    //   'trimestres'    => true      la fila del callback 'avance' incluye meta_programada y trimestre1..4_seguimiento
     //   'avance'        => callable  recibe la fila del indicador y devuelve su avance (0-100) en lugar del criterio por defecto
     public function getInformeCompleto($formulario_id, array $opts = []) {
         $opts += ['soloAprobadas' => true];
@@ -292,6 +293,10 @@ class FORDE144Model {
                 $ids = array_values(array_filter(array_map('intval', $opts['ids'])));
                 $sqlIds = $ids ? ' AND f.id IN (' . implode(',', $ids) . ')' : ' AND 1 = 0';
             }
+            // 'trimestres' => true: la fila que recibe el callback 'avance' trae también la meta anual y los valores por trimestre
+            // (las columnas de trimestre las crea el Módulo 144; quien use la opción debe haberlas asegurado antes)
+            $extraCols = !empty($opts['trimestres'])
+                ? ', f.meta_programada, f.trimestre1_seguimiento, f.trimestre2_seguimiento, f.trimestre3_seguimiento, f.trimestre4_seguimiento' : '';
             $stmt = $this->db->prepare(
                 "SELECT f.id,
                         COALESCE(f.linea_estrategica,'Sin línea') AS linea,
@@ -303,7 +308,7 @@ class FORDE144Model {
                         $calc AS avance,
                         COALESCE(f.ponderacion_actividades, 0) AS ponderacion,
                         f.tipo_medicion, f.meta_s1, f.meta_s2, f.linea_base_meta, f.porcentaje_avance,
-                        f.estado_seguimiento, f.solicitud_estado_seguimiento
+                        f.estado_seguimiento, f.solicitud_estado_seguimiento$extraCols
                  FROM formulacion_144 f
                  LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
                  LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1

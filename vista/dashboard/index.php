@@ -55,6 +55,26 @@ function dbTrimestreAuto($anio) {
 function dbEsperadoPct($q) {
     return [0, 30, 60, 80, 100][max(0, min(4, (int)$q))];
 }
+// Cumplimiento (0 a 100) de un indicador con lo acumulado hasta el trimestre $k, según su tipo de medición y frente a la meta anual:
+// Acumulado → línea base + suma de los trimestres; Nuevo gestionado → suma; Promedio → promedio de los reportados;
+// Último valor reportado → el del último trimestre con dato; Límite (solo cuentan T3 y T4) → 100 si lo declarado no pasa el límite.
+// Sin ningún trimestre reportado hasta $k es 0.
+function dbPctAcumTrim($r, $k) {
+    $tipo = (string)($r['tipo_medicion'] ?? '');
+    $meta = dbNum($r['meta_programada'] ?? null);
+    $vals = [];
+    for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
+        $v = dbNum($r['trimestre' . $i . '_seguimiento'] ?? null);
+        if ($v !== null) $vals[] = $v;
+    }
+    if (!$vals) return 0;
+    if ($tipo === 'Límite') return ($meta !== null && end($vals) <= $meta) ? 100 : 0;
+    if ($tipo === 'Promedio') $logrado = array_sum($vals) / count($vals);
+    elseif ($tipo === 'Último valor reportado') $logrado = end($vals);
+    elseif ($tipo === 'Acumulado') $logrado = (dbNum($r['linea_base_meta'] ?? null) ?? 0) + array_sum($vals);
+    else $logrado = array_sum($vals);
+    return ($meta !== null && $meta > 0) ? max(0, min(100, $logrado / $meta * 100)) : 0;
+}
 function dbTono($p) {
     if ($p === null) return 'none';
     return $p >= 80 ? 'ok' : ($p >= 60 ? 'warn' : 'bad');
@@ -302,6 +322,7 @@ $nRevision = count(array_filter($filas, fn($r) => $r['revision']));
 //  · con revisión: suma además lo registrado en los seguimientos en revisión (dato provisional)
 //  · esperado: lo que debería llevar cada indicador con el trimestre vigente
 $avance = $avanceRev = null;
+$porTrim = []; // t (1 a 4) => ['esp' =>, 'apr' =>, 'rev' =>]: cumplimiento acumulado hasta ese trimestre
 $infPorLinea = ['apr' => [], 'rev' => []];
 $esperado = dbEsperadoPct($trimVigente);
 if ($pdo && $plan && $rows) {
@@ -323,6 +344,25 @@ if ($pdo && $plan && $rows) {
     };
     $avance    = $total('apr');
     $avanceRev = $total('rev');
+
+    // Cumplimiento acumulado de T1 a T4 (mismo ponderado del informe, con lo acumulado hasta cada trimestre):
+    // 'apr' cuenta solo seguimientos aprobados; 'rev' suma además los que están en revisión
+    try {
+        require_once __DIR__ . '/../../modelo/Modulo144Model.php';
+        (new Modulo144Model())->asegurarColumnasDescripcionSemestres(); // crea las columnas de trimestre si aún no existen
+        foreach ([1, 2, 3, 4] as $t) {
+            $celda = ['esp' => dbEsperadoPct($t), 'apr' => null, 'rev' => null];
+            foreach (['apr', 'rev'] as $k) {
+                $inf = $modeloInforme->getInformeCompleto((int)$plan['id'], $base + ['trimestres' => true, 'avance' => function ($r) use ($k, $t) {
+                    $cuenta = (int)$r['estado_seguimiento'] === 2 || ($k === 'rev' && (int)$r['solicitud_estado_seguimiento'] === 1);
+                    return $cuenta ? dbPctAcumTrim($r, $t) : 0;
+                }]);
+                if ($linea === '') { $celda[$k] = isset($inf['global_cumplimiento']) ? (float)$inf['global_cumplimiento'] : null; continue; }
+                foreach ($inf['lineas'] ?? [] as $l) if ((string)$l['codigo'] === $linea) $celda[$k] = (float)$l['cumplimiento'];
+            }
+            $porTrim[$t] = $celda;
+        }
+    } catch (Throwable $e) { error_log('Dash trimestres: ' . $e->getMessage()); $porTrim = []; }
 }
 
 // Cierre del formulario
@@ -537,6 +577,18 @@ ob_start();
 .pa-track { position: relative; height: 10px; border-radius: 999px; background: var(--pa-track); }
 .pa-track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; }
 .pa-track .fill.rev { background: #99C8FF; }
+.pa-trims { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+.pa-trim { display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 14px; background: var(--pa-fill); min-width: 0; }
+.pa-trim .pa-track { background: var(--pa-seg); }
+.pa-trim.on { box-shadow: inset 0 0 0 2px var(--pa-blue-tint); }
+.pa-trim-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pa-trim-t { font-size: 13px; font-weight: 600; color: var(--pa-sub); }
+.pa-trim-v { font-size: 30px; font-weight: 700; line-height: 1.1; }
+.pa-trim-v small { font-size: 15px; font-weight: 600; color: var(--pa-sub); }
+.pa-trim-n { font-size: 12.5px; color: var(--pa-sub); }
+.pa-trim-n b { color: var(--pa-text); font-weight: 600; }
+@media (max-width: 900px) { .pa-trims { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .pa-trims { grid-template-columns: minmax(0, 1fr); } }
 .pa-track .goal { position: absolute; top: -5px; bottom: -5px; width: 2px; border-radius: 1px; background: var(--pa-text); opacity: .5; }
 .pa-line .pct { text-align: right; font-size: 15px; font-weight: 600; }
 .pa-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--pa-sub); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--pa-sep-soft); }
@@ -813,6 +865,35 @@ require_once __DIR__ . '/../complementos/header.php';
             <span class="note"><?php echo htmlspecialchars($cierreNota); ?></span>
         </div>
     </section>
+
+    <?php if ($porTrim): ?>
+    <!-- ── Cumplimiento acumulado por trimestre ── -->
+    <section class="pa-card" aria-label="Cumplimiento acumulado por trimestre">
+        <div class="pa-card-head">
+            <h2>Cumplimiento acumulado por trimestre</h2>
+            <span class="pa-note">Lo acumulado hasta cada trimestre frente a la meta anual, ponderado como el avance general</span>
+        </div>
+        <div class="pa-trims">
+            <?php foreach ($porTrim as $t => $c):
+                $tt = $TONO[dbTono($c['apr'])]; ?>
+            <div class="pa-trim<?php echo $trimVigente === $t ? ' on' : ''; ?>">
+                <div class="pa-trim-head">
+                    <span class="pa-trim-t">Acumulado a T<?php echo $t; ?></span>
+                    <?php if ($trimVigente === $t): ?><span class="pa-pill" style="background:var(--pa-blue-tint);color:var(--pa-blue-ink)">Vigente</span><?php endif; ?>
+                </div>
+                <span class="pa-trim-v num" style="color:<?php echo $tt['ink']; ?>"><?php echo $c['apr'] === null ? '—' : dbFmt($c['apr']); ?><small> %</small></span>
+                <div class="pa-track" role="img" aria-label="T<?php echo $t; ?>: <?php echo $c['apr'] === null ? 'sin avance' : dbFmt($c['apr']) . ' %'; ?>">
+                    <div class="fill rev" style="width:<?php echo round(max($c['rev'] ?? 0, $c['apr'] ?? 0), 1); ?>%"></div>
+                    <div class="fill" style="width:<?php echo round($c['apr'] ?? 0, 1); ?>%;background:<?php echo $tt['bar']; ?>"></div>
+                    <div class="goal" style="left:calc(<?php echo (int)$c['esp']; ?>% - 1px)"></div>
+                </div>
+                <span class="pa-trim-n">Esperado: <b class="num"><?php echo (int)$c['esp']; ?> %</b></span>
+                <span class="pa-trim-n">Con lo registrado en revisión: <b class="num"><?php echo $c['rev'] === null ? '—' : dbFmt($c['rev']) . ' %'; ?></b></span>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- ── Avance por línea + flujo ── -->
     <div class="pa-row">
