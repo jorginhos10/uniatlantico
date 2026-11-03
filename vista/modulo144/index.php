@@ -6173,25 +6173,45 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         // Publica un solo indicador (administrador), sin pasar por las etapas de aprobación
         // Solo superadministrador: publica el seguimiento sin pasar por las etapas del semáforo que le faltan
         function publicarSeguimiento(id) {
-            Swal.fire({
-                title: '¿Publicar este seguimiento?',
-                html: 'Se publicará <strong>sin esperar las etapas de aprobación</strong> que le faltan y quedará como <strong>reportado</strong> (aprobado por la Oficina de Planeación).',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#34C759',
-                confirmButtonText: 'Sí, publicar',
-                cancelButtonText: 'Cancelar'
-            }).then(function(result) {
-                if (!result.isConfirmed) return;
-                $.post(basePath + '/modulo144/publicarSeguimiento', { id: id }, function(r) {
-                    if (r.success) {
-                        Swal.fire({ icon: 'success', title: r.message, timer: 1200, showConfirmButton: false });
-                        setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 1200);
-                    } else {
-                        Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
+            // Pregunta qué trimestres publicar: cada uno se aprueba por separado; solo se ofrecen los que aplican y no están aprobados
+            $.getJSON(basePath + '/modulo144/getFlujoTrimestres', { id: id }, function(f) {
+                if (!f.success) { Swal.fire('Error', f.message || 'No se pudo cargar los trimestres', 'error'); return; }
+                const pendientes = f.trimestres.filter(function(x) { return x.aplica && x.estado !== 2; });
+                if (!pendientes.length) { Swal.fire('Nada que publicar', 'Todos los trimestres ya están aprobados.', 'info'); return; }
+                const opciones = pendientes.map(function(x) {
+                    return '<label class="d-flex align-items-center gap-2 py-1" style="cursor:pointer"><input type="checkbox" class="form-check-input mt-0 pub-trim" value="' + x.trimestre + '"> Trimestre ' + x.trimestre
+                         + (x.tiene_valor ? '' : ' <small class="text-muted">(sin valor registrado)</small>') + '</label>';
+                }).join('');
+                Swal.fire({
+                    title: '¿Qué trimestres publicar?',
+                    html: 'Se publicarán <strong>sin esperar las etapas de aprobación</strong> que les faltan y quedarán aprobados por la Oficina de Planeación. El seguimiento se reporta cuando todos los trimestres estén aprobados.'
+                        + '<div class="text-start mt-3 mx-auto" style="max-width:300px">' + opciones + '</div>',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#34C759',
+                    confirmButtonText: 'Publicar',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: function() {
+                        const ts = $('.pub-trim:checked').map(function() { return this.value; }).get();
+                        if (!ts.length) { Swal.showValidationMessage('Elige al menos un trimestre'); return false; }
+                        return ts;
                     }
-                }, 'json').fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
-            });
+                }).then(function(result) {
+                    if (!result.isConfirmed) return;
+                    enviarPublicarSeguimiento(id, result.value);
+                });
+            }).fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+        }
+
+        function enviarPublicarSeguimiento(id, trimestres) {
+            $.post(basePath + '/modulo144/publicarSeguimiento', { id: id, trimestres: trimestres }, function(r) {
+                if (r.success) {
+                    Swal.fire({ icon: 'success', title: r.message, timer: 1200, showConfirmButton: false });
+                    setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                } else {
+                    Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
+                }
+            }, 'json').fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
         }
 
         function publicarIndicador(id) {

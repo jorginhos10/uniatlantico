@@ -1262,6 +1262,31 @@ class Modulo144Model {
         }
     }
 
+    // Publica solo los trimestres indicados (superadministrador), sin esperar las etapas que les faltan: quedan aprobados por Planeación.
+    // Devuelve los trimestres publicados, o false si la formulación no está publicada.
+    public function publicarTrimestres($id, array $trimestres, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
+        try {
+            $this->asegurarTablaTrimestres();
+            $q = $this->db->prepare("SELECT estado_formulacion FROM formulacion_144 WHERE id = :id");
+            $q->execute([':id' => (int)$id]);
+            if ((int)$q->fetchColumn() !== 2) return false;
+            $actual = $this->getFlujoTrimestres($id);
+            $publicados = [];
+            foreach (array_unique(array_map('intval', $trimestres)) as $t) {
+                if ($t < 1 || $t > 4 || ($actual[$t]['estado'] ?? 0) !== 0) continue;
+                $this->guardarTrimestre($id, $t, ['estado' => 2, 'solicitud' => 1, 'semaforo' => 4, 'rechazo' => 0, 'fecha_publicacion' => date('Y-m-d H:i:s')]);
+                $this->registrarHistorialSemaforo('seguimiento', (int)$id, 4, 'aprobado', $usuarioId, $usuarioNombre, $rol,
+                    'Publicado por el superadministrador', $t);
+                $publicados[] = $t;
+            }
+            if ($publicados) $this->recalcularAgregadoSeguimiento($id);
+            return $publicados;
+        } catch (PDOException $e) {
+            error_log('Error publicarTrimestres: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // Resume los cuatro trimestres en las columnas de seguimiento del indicador:
     //  · estado: 2 (reportado) solo con los cuatro aprobados; un cancelado (1) se mantiene
     //  · solicitud: 1 si algún trimestre está en revisión, si no 2 si alguno está devuelto, si no 0

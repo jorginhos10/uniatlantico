@@ -716,8 +716,22 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'Este seguimiento ya está publicado']);
             return;
         }
-        $ok = $this->model->publicarSeguimientoIndicador($id, $uid, $_SESSION['usuario_nombre'] ?? '—', $_SESSION['usuario_rol'] ?? null);
-        echo json_encode(['success' => $ok, 'message' => $ok ? 'Seguimiento publicado' : 'No se pudo publicar (¿la formulación está publicada?)']);
+        // Se publican los trimestres elegidos (el seguimiento se aprueba por trimestre)
+        $trimestres = array_values(array_filter(array_map('intval', (array)($_POST['trimestres'] ?? [])), function ($t) { return $t >= 1 && $t <= 4; }));
+        if (!$trimestres) {
+            echo json_encode(['success' => false, 'message' => 'Elige al menos un trimestre para publicar']);
+            return;
+        }
+        $publicados = $this->model->publicarTrimestres($id, $trimestres, $uid, $_SESSION['usuario_nombre'] ?? '—', $_SESSION['usuario_rol'] ?? null);
+        if ($publicados === false) {
+            echo json_encode(['success' => false, 'message' => 'No se pudo publicar (¿la formulación está publicada?)']);
+            return;
+        }
+        if (!$publicados) {
+            echo json_encode(['success' => false, 'message' => 'Los trimestres elegidos ya estaban aprobados']);
+            return;
+        }
+        echo json_encode(['success' => true, 'message' => count($publicados) === 1 ? 'Trimestre ' . $publicados[0] . ' publicado' : 'Trimestres ' . implode(', ', $publicados) . ' publicados']);
     }
 
     public function devolverTodosABorrador() {
