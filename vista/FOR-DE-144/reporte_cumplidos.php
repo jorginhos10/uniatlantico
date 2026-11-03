@@ -22,7 +22,7 @@ $cats = ['cumple' => [], 'construccion' => [], 'sin' => [], 'pend' => []];
 $conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0, 'pend' => 0];
 $totalDep = []; // clave => total de indicadores de la dependencia
 $nombreDep = [];
-$facs = []; $nombreFac = []; $totalFac = []; // facultades con indicadores que tienen algún semestre sin reportar
+$facsC = []; $facs = []; $nombreFac = []; $totalFac = []; // facultades con indicadores que tienen algún semestre sin reportar
 $total = 0;
 foreach ($indicadores as $r) {
     $total++;
@@ -63,9 +63,11 @@ foreach ($indicadores as $r) {
         'est' => $est, 'e' => ['Devuelto' => 'devuelto', 'En construcción' => 'borrador', 'Sin iniciar' => 'nada'][$est] ?? 'otro',
         'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
-    if ($cat !== null && $cat !== 'sin') { // "Sin iniciar" se arma por facultad, más abajo
+    if ($cat === 'cumple') {
         $conteo[$cat]++;
         foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
+    } elseif ($cat === 'construccion') { // "En construcción" y "Sin iniciar" se arman por facultad
+        foreach ($facR as $fx) $facsC[$fx['id']][] = $item;
     }
     if ($pend) {
         $conteo['pend']++;
@@ -73,14 +75,17 @@ foreach ($indicadores as $r) {
         foreach ($facR as $fx) $facs[$fx['id']][] = $item;
     }
 }
-$conteo['sin'] = count($facs);
-uksort($facs, function ($a, $b) use ($nombreFac) { return strcoll($nombreFac[$a], $nombreFac[$b]); });
+$conteo['sin'] = count($facs);          // en estas dos pestañas el contador es de facultades, no de indicadores
+$conteo['construccion'] = count($facsC);
+$porNombreFac = function ($a, $b) use ($nombreFac) { return strcoll($nombreFac[$a], $nombreFac[$b]); };
+uksort($facs, $porNombreFac);
+uksort($facsC, $porNombreFac);
 foreach ($cats as $c => $grupos) {
     uksort($cats[$c], function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); });
 }
 $pestanas = [
     'cumple' => ['Cumplimiento aprobado', 'Indicadores aprobados por Planeación, con valor reportado y sin campos vacíos.'],
-    'construccion' => ['En construcción', 'Indicadores con algún valor reportado que todavía no se han enviado a revisión.'],
+    'construccion' => ['En construcción', 'Facultades con indicadores que tienen algún valor reportado y todavía no se han enviado a revisión.'],
     'sin' => ['Sin iniciar', 'Facultades con indicadores que tienen algún semestre sin reportar, en cualquier estado.'],
 ];
 // Sección extra (sin pestaña): aparece al elegir un semestre en el filtro
@@ -171,13 +176,13 @@ tr:last-child td{border-bottom:0}
     <?php $primera = true; foreach ($secciones as $c => $p): ?>
     <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
         <?php
-        $porFac = $c === 'sin'; // esta pestaña agrupa por facultad, las demás por dependencia
-        $gr  = $porFac ? $facs : $cats[$c];
+        $porFac = $c === 'sin' || $c === 'construccion'; // estas pestañas agrupan por facultad, las demás por dependencia
+        $gr  = $c === 'sin' ? $facs : ($c === 'construccion' ? $facsC : $cats[$c]);
         $nom = $porFac ? $nombreFac : $nombreDep;
         $tot = $porFac ? $totalFac : $totalDep;
         ?>
         <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada <?php echo $porFac ? 'facultad' : 'dependencia'; ?> es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
-        <?php if ($porFac && $gr): ?>
+        <?php if ($c === 'sin' && $gr): ?>
         <div class="tools" style="margin-bottom:10px">
             <select id="fac" aria-label="Filtrar por facultad">
                 <option value="">Todas las facultades con datos sin reportar</option>
