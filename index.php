@@ -304,6 +304,11 @@ switch ($action) {
                 $forde144Controller->reporteSeguimientoPage($id);
                 break;
 
+            case 'reporteCumplidos':
+                $id = $_GET['id'] ?? ($urlParts[2] ?? 0);
+                $forde144Controller->reporteCumplidosPage($id);
+                break;
+
             case 'getAdministradores':
                 $forde144Controller->getAdministradores();
                 break;

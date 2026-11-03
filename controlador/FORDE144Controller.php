@@ -198,6 +198,21 @@ class FORDE144Controller {
         require_once 'vista/FOR-DE-144/reporte_seguimiento.php';
     }
 
+    // Landing compacta: dependencias con indicadores reportados, completos y aprobados
+    public function reporteCumplidosPage($id) {
+        if (!$this->puedeHacer('informe')) {
+            header('Location: ' . Config::getBasePath() . '/FOR-DE-144');
+            exit;
+        }
+        $formulario = empty($id) ? null : $this->model->getById($id);
+        if (!$formulario) {
+            header('Location: ' . Config::getBasePath() . '/FOR-DE-144');
+            exit;
+        }
+        $reporte = $this->model->getReporteSeguimiento($id);
+        require_once 'vista/FOR-DE-144/reporte_cumplidos.php';
+    }
+
     public function informe($id) {
         if (!$this->puedeHacer('informe')) {
             echo json_encode(['success' => false, 'message' => 'No tienes permiso para ver el informe']);

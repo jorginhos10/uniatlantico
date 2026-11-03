@@ -198,6 +198,7 @@ tr.resalta td{background:var(--amber-soft)}
         </div>
         <div class="hero-acc">
             <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144">‹ Volver</a>
+            <a class="btn" href="<?php echo $basePath; ?>/FOR-DE-144?action=reporteCumplidos&id=<?php echo (int)$formulario['id']; ?>">Cumplimiento aprobado</a>
             <a class="btn" href="<?php echo $basePath; ?>/modulo144?id=<?php echo (int)$formulario['id']; ?>">Plan de acción</a>
         </div>
     </header>
