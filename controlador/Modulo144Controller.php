@@ -65,6 +65,10 @@ class Modulo144Controller {
             ];
         }
 
+        // Seguimiento: el semáforo de la lista es el del trimestre vigente (el del Dashboard); cada trimestre tiene el suyo
+        $trimVigenteSeg = $this->model->getTrimestreVigente((int)$formulario['id'], $formulario['anio'] ?? date('Y')) ?: 1;
+        $flujoTrimSeg = $this->model->getFlujoTrimestresVarios(array_column($datos_modulos['seguimiento']['borradores'] ?? [], 'id'));
+
         // Concertaciones: ven todo el superadministrador y la dependencia responsable del indicador (vicerrectoría);
         // los usuarios de facultad solo ven lo que su facultad tiene que concertar
         if ((int)($_SESSION['usuario_id'] ?? 0) !== 1) {

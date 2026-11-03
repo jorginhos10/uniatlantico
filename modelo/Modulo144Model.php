@@ -1195,6 +1195,43 @@ class Modulo144Model {
         }
     }
 
+    // Trimestre vigente del plan (0 a 4): el que fijó a mano un administrador en el Dashboard o, si no, el del calendario. El seguimiento
+    // se reporta trimestre vencido: T1 rige desde el 1 de abril, T2 desde el 1 de julio, T3 desde el 1 de octubre y T4 desde el 1 de febrero.
+    public function getTrimestreVigente($formularioId, $anio) {
+        try {
+            $s = $this->db->prepare("SELECT valor FROM dashboard_config_144 WHERE clave = :c");
+            $s->execute([':c' => 'trimestre_vigente_' . (int)$formularioId]);
+            $manual = (int)$s->fetchColumn();
+            if ($manual >= 1 && $manual <= 4) return $manual;
+        } catch (PDOException $e) { /* sin la tabla del Dashboard todavía: se usa el calendario */ }
+        $anio = (int)$anio ?: (int)date('Y');
+        $ahora = time();
+        if ($ahora >= strtotime(($anio + 1) . '-02-01')) return 4;
+        if ($ahora >= strtotime($anio . '-10-01')) return 3;
+        if ($ahora >= strtotime($anio . '-07-01')) return 2;
+        if ($ahora >= strtotime($anio . '-04-01')) return 1;
+        return 0;
+    }
+
+    // Flujo de aprobación de cada trimestre de varios indicadores: id => [trimestre => ['estado', 'solicitud', 'semaforo', 'rechazo']]
+    public function getFlujoTrimestresVarios(array $ids) {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        $out = [];
+        if (!$ids) return $out;
+        try {
+            $this->asegurarTablaTrimestres();
+            $q = $this->db->query("SELECT formulacion_id, trimestre, estado, solicitud, semaforo_etapa, semaforo_rechazo_etapa
+                                   FROM seguimiento_trimestres_144 WHERE formulacion_id IN (" . implode(',', $ids) . ")");
+            foreach ($q->fetchAll() as $r) {
+                $out[(int)$r['formulacion_id']][(int)$r['trimestre']] = ['estado' => (int)$r['estado'], 'solicitud' => (int)$r['solicitud'],
+                    'semaforo' => (int)$r['semaforo_etapa'], 'rechazo' => (int)$r['semaforo_rechazo_etapa']];
+            }
+        } catch (PDOException $e) {
+            error_log('Error getFlujoTrimestresVarios: ' . $e->getMessage());
+        }
+        return $out;
+    }
+
     // Estado crudo de los cuatro trimestres tal como está guardado (los que no tienen fila están en construcción)
     private function leerTrimestres($id) {
         $out = [];
@@ -1293,8 +1330,8 @@ class Modulo144Model {
         }
     }
 
-    // Publica los trimestres indicados en TODOS los indicadores del formulario (administrador), aunque estén vacíos. Se omiten los
-    // trimestres que no aplican (T1 y T2 de «Límite») y los ya aprobados.
+    // Publica los trimestres indicados en TODOS los indicadores del formulario (administrador), aunque estén vacíos o no apliquen
+    // (T1 y T2 de «Límite»). Solo se omiten los ya aprobados y los seguimientos cancelados.
     // Devuelve ['indicadores' => n, 'trimestres' => n, 'sin_valor' => 0] o false.
     public function publicarTrimestresFormulario($formularioId, array $trimestres, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
         try {
@@ -1308,8 +1345,7 @@ class Modulo144Model {
                 $validos = [];
                 foreach (array_unique(array_map('intval', $trimestres)) as $t) {
                     if ($t < 1 || $t > 4 || ($flujo[$t]['estado'] ?? 0) !== 0) continue;
-                    if ($r['tipo_medicion'] === 'Límite' && $t <= 2) continue;
-                    $validos[] = $t; // se publica aunque el trimestre esté vacío
+                    $validos[] = $t; // se publica todo, aunque el trimestre esté vacío o no aplique (T1 y T2 de «Límite»)
                 }
                 if (!$validos) continue;
                 $pub = $this->publicarTrimestres((int)$r['id'], $validos, $usuarioId, $usuarioNombre, $rol);

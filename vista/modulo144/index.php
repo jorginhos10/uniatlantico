@@ -826,6 +826,7 @@ ob_start();
         .seg-tri { background: #FAFBFC; border: 1px solid #E5E5EA; border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; min-width: 0; align-content: start; }
         .seg-tri .form-label { font-size: 12px; }
         .seg-input-tri { font-size: 18px; }
+        .semaforo-trim { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #1D71B8; background: #E4EEF8; border-radius: 99px; padding: 2px 9px; margin-bottom: 6px; }
         .trim-chips { display: flex; gap: 5px; flex-wrap: wrap; }
         .trim-chip { font-size: 12px; font-weight: 800; border-radius: 99px; padding: 3px 9px; background: #EEEEF2; color: #8E8E93; }
         .trim-chip.ok { background: #E3F4EA; color: #1F8A4C; }
@@ -2057,6 +2058,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         $linea_excedida = $suma_linea > 100.01;
                                         $tiene_seg_b = !empty($borrador['fecha_seguimiento']) || !empty($borrador['porcentaje_avance']) || !empty($borrador['indicador']);
                                         $campoSolicitud = $modulo['config']['campo_solicitud'];
+                                        // En el seguimiento el semáforo y el estado de la fila son los del trimestre vigente: cada trimestre se aprueba por separado
+                                        $trimFila = 0;
+                                        if ($key === 'seguimiento') {
+                                            $trimFila = (int)($trimVigenteSeg ?? 1);
+                                            $tf = ($flujoTrimSeg ?? [])[(int)$borrador['id']][$trimFila] ?? ['estado' => 0, 'solicitud' => 0, 'semaforo' => 0, 'rechazo' => 0];
+                                            $borrador[$campoSolicitud] = $tf['solicitud'];
+                                            $borrador[$campoSemaforo] = $tf['estado'] === 2 ? 4 : $tf['semaforo'];
+                                            $borrador[$campoSemaforoRechazo] = $tf['rechazo'];
+                                        }
                                         $solEstado = (int)($borrador[$campoSolicitud] ?? 0);
                                         $solInfo = $solEstadoInfo[$solEstado] ?? $solEstadoInfo[0];
                                         $rechazoEtapa = (int)($borrador[$campoSemaforoRechazo] ?? 0);
@@ -2124,6 +2134,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                 <button type="button" class="m144-estado <?php echo $solInfo['clase']; ?>" title="<?php echo $solInfo['titulo']; ?> — clic para ver historial" onclick="verHistorialEstado('<?php echo $key; ?>', <?php echo $borrador['id']; ?>)"><i></i><?php echo $solInfo['titulo']; ?></button>
                                             </div>
                                             <div class="col-md-2">
+                                                <?php if ($trimFila): ?>
+                                                <div class="semaforo-trim" title="Trimestre vigente: el semáforo es el de este trimestre. Cada trimestre se aprueba por separado.">Trimestre <?php echo $trimFila; ?></div>
+                                                <?php endif; ?>
                                                 <div class="semaforo-row">
                                                     <?php
                                                     $puedeRechazarEtapa = false;
