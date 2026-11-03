@@ -60,7 +60,7 @@ foreach ($indicadores as $r) {
         'v1' => $esLimite ? 'No aplica' : ($s1 ? $fmt($r['semestre1_seguimiento']) . $pc : '—'),
         'v2' => $s2 ? $fmt($r['semestre2_seguimiento']) . $pc : '—',
         'f1' => !$esLimite && !$s1, 'f2' => !$s2, // semestres sin iniciar (en Límite no aplica el 1)
-        'est' => $est,
+        'est' => $est, 'e' => ['Devuelto' => 'devuelto', 'En construcción' => 'borrador', 'Sin iniciar' => 'nada'][$est] ?? 'otro',
         'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
     if ($cat !== null && $cat !== 'sin') { // "Sin iniciar" se arma por facultad, más abajo
@@ -112,6 +112,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .tools input,.tools select{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:38px;background:#fff;color:var(--fg);min-width:0}
 .tools input{flex:1 1 260px}
 .nd{color:var(--muted)}
+.tgs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tg{font:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:99px;padding:7px 14px}
+.tg:hover{border-color:var(--blue)}
+.tg[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
 tr[hidden]{display:none}
 .lista{display:grid;gap:8px}
 .tp[hidden],.acc[hidden]{display:none!important}
@@ -179,6 +183,11 @@ tr:last-child td{border-bottom:0}
                 <option value="">Todas las facultades con datos sin reportar</option>
                 <?php foreach ($gr as $k => $items): ?><option value="<?php echo $h($k); ?>"><?php echo $h($nom[$k]); ?> (<?php echo count($items); ?>)</option><?php endforeach; ?>
             </select>
+            <div class="tgs" role="group" aria-label="Filtrar por estado">
+                <button type="button" class="tg" data-e="devuelto" aria-pressed="false">Devueltos</button>
+                <button type="button" class="tg" data-e="borrador" aria-pressed="false">En borrador (sin enviar a revisión)</button>
+                <button type="button" class="tg" data-e="nada" aria-pressed="false">Sin iniciar nada</button>
+            </div>
         </div>
         <?php endif; ?>
         <?php if (!$gr): ?>
@@ -195,7 +204,7 @@ tr:last-child td{border-bottom:0}
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
                 <tbody>
                 <?php foreach ($items as $it): ?>
-                <tr data-f1="<?php echo $it['f1'] ? 1 : 0; ?>" data-f2="<?php echo $it['f2'] ? 1 : 0; ?>">
+                <tr data-e="<?php echo $h($it['e']); ?>" data-f1="<?php echo $it['f1'] ? 1 : 0; ?>" data-f2="<?php echo $it['f2'] ? 1 : 0; ?>">
                     <td><?php echo $h($it['nombre']); ?></td>
                     <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
                     <td class="sv"><?php echo $h($it['v1']); ?></td>
@@ -248,13 +257,31 @@ tr:last-child td{border-bottom:0}
             });
             d.hidden = (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
         });
+        filtrarSin(); // la pestaña «Sin iniciar» vuelve a aplicar sus propios filtros
     }
     // Filtro por facultad (pestaña «Sin iniciar»)
+    // y toggles de estado (devueltos / en borrador / sin iniciar nada; varios activos se suman, ninguno = todos)
     var fac = document.getElementById('fac');
-    if (fac) fac.addEventListener('change', function () {
+    var tgs = Array.prototype.slice.call(document.querySelectorAll('.tg'));
+    function filtrarSin() {
+        var t = q.value.trim().toLowerCase();
+        var on = tgs.filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; }).map(function (b) { return b.getAttribute('data-e'); });
         Array.prototype.forEach.call(document.querySelectorAll('#tp-sin details.acc'), function (d) {
-            d.hidden = fac.value !== '' && d.getAttribute('data-k') !== fac.value;
-            if (fac.value !== '') d.open = true;
+            var visibles = 0;
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                var ok = !on.length || on.indexOf(r.getAttribute('data-e')) !== -1;
+                r.hidden = !ok;
+                if (ok) visibles++;
+            });
+            d.hidden = (fac && fac.value !== '' && d.getAttribute('data-k') !== fac.value) || (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
+            if (fac && fac.value !== '' && !d.hidden) d.open = true;
+        });
+    }
+    if (fac) fac.addEventListener('change', filtrarSin);
+    tgs.forEach(function (b) {
+        b.addEventListener('click', function () {
+            b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+            filtrarSin();
         });
     });
     q.addEventListener('input', filtrar);
