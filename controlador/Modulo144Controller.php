@@ -742,8 +742,9 @@ class Modulo144Controller {
             return;
         }
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
-        if ($uid !== 1) {
-            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar el seguimiento']);
+        $rol = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
+        if ($uid !== 1 && !in_array($rol, ['admin', 'administrador'], true)) {
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede publicar el seguimiento']);
             return;
         }
         $formularioId = intval($_POST['formulario_id'] ?? 0);
@@ -764,7 +765,6 @@ class Modulo144Controller {
         $msg = $res['trimestres'] === 0
             ? 'No había trimestres para publicar'
             : $res['trimestres'] . ' trimestre(s) publicados en ' . $res['indicadores'] . ' indicador(es)';
-        if ($res['sin_valor'] > 0) $msg .= ' · ' . $res['sin_valor'] . ' sin valor registrado quedaron sin publicar';
         echo json_encode(['success' => true, 'message' => $msg]);
     }
 

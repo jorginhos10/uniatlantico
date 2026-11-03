@@ -1293,9 +1293,9 @@ class Modulo144Model {
         }
     }
 
-    // Publica los trimestres indicados en TODOS los indicadores del formulario (superadministrador). Se omiten los trimestres que no
-    // aplican (T1 y T2 de «Límite»), los ya aprobados y los que no tienen ningún valor registrado.
-    // Devuelve ['indicadores' => n, 'trimestres' => n, 'sin_valor' => n] o false.
+    // Publica los trimestres indicados en TODOS los indicadores del formulario (administrador), aunque estén vacíos. Se omiten los
+    // trimestres que no aplican (T1 y T2 de «Límite») y los ya aprobados.
+    // Devuelve ['indicadores' => n, 'trimestres' => n, 'sin_valor' => 0] o false.
     public function publicarTrimestresFormulario($formularioId, array $trimestres, $usuarioId = 0, $usuarioNombre = '', $rol = null) {
         try {
             $this->asegurarColumnasDescripcionSemestres();
@@ -1309,9 +1309,7 @@ class Modulo144Model {
                 foreach (array_unique(array_map('intval', $trimestres)) as $t) {
                     if ($t < 1 || $t > 4 || ($flujo[$t]['estado'] ?? 0) !== 0) continue;
                     if ($r['tipo_medicion'] === 'Límite' && $t <= 2) continue;
-                    $v = $r['trimestre' . $t . '_seguimiento'];
-                    if ($v === null || trim((string)$v) === '') { $res['sin_valor']++; continue; }
-                    $validos[] = $t;
+                    $validos[] = $t; // se publica aunque el trimestre esté vacío
                 }
                 if (!$validos) continue;
                 $pub = $this->publicarTrimestres((int)$r['id'], $validos, $usuarioId, $usuarioNombre, $rol);

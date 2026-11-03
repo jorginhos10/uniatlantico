@@ -1905,7 +1905,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <i class="fas fa-file-download me-2"></i>Exportar plantilla</a></li>
                                         <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla()" title="Sube la plantilla de Excel llena">
                                             <i class="fas fa-file-upload me-2"></i>Importar plantilla</button></li>
-                                        <?php $puedePublicarSeg = $key === 'seguimiento' && (int)($_SESSION['usuario_id'] ?? 0) === 1 && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
+                                        <?php $puedePublicarSeg = $key === 'seguimiento' && ((int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true)) && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
                                         <?php if ($puedePublicarLote || $puedePublicarSeg || $puedeDevolverTodos): ?>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><h6 class="dropdown-header">Solo administrador</h6></li>
@@ -6230,7 +6230,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             Swal.fire({
                 title: '¿En qué trimestre publicar todos?',
                 html: 'Se publicará el seguimiento de <strong>' + total + '</strong> indicador(es) <strong>sin pasar por las etapas de aprobación</strong>: '
-                    + 'los trimestres elegidos quedarán aprobados por la Oficina de Planeación. Los trimestres sin valor registrado no se publican.'
+                    + 'los trimestres elegidos quedarán aprobados por la Oficina de Planeación, <strong>aunque estén vacíos</strong>.'
                     + '<div class="text-start mt-3 mx-auto" style="max-width:300px">' + opciones + '</div>',
                 icon: 'question',
                 showCancelButton: true,
