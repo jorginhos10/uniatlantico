@@ -22,7 +22,7 @@ $cats = ['cumple' => [], 'construccion' => [], 'sin' => [], 'pend' => []];
 $conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0, 'pend' => 0];
 $totalDep = []; // clave => total de indicadores de la dependencia
 $nombreDep = [];
-$facsC = []; $facs = []; $nombreFac = []; $totalFac = []; // facultades con indicadores que tienen algún semestre sin reportar
+$facsC = []; $facs = []; // por dependencia: «En construcción» y «Sin iniciar» (algún semestre sin reportar)
 $total = 0;
 foreach ($indicadores as $r) {
     $total++;
@@ -33,12 +33,6 @@ foreach ($indicadores as $r) {
     $completo = $s2 && ($esLimite || $s1);
     $aprobado = (int)($r['estado_seguimiento'] ?? 0) === 2;
     $sol = (int)($r['solicitud_estado_seguimiento'] ?? 0);
-
-    $facR = $reporte['facultades'][(int)$r['id']] ?? []; // facultades con meta en este indicador
-    foreach ($facR as $fx) {
-        $nombreFac[$fx['id']] = $fx['nombre'];
-        $totalFac[$fx['id']] = ($totalFac[$fx['id']] ?? 0) + 1;
-    }
 
     $deps = array_values(array_unique(array_filter(array_map('trim', preg_split('/\s*[;,\/\n]\s*/u', (string)($r['responsable_formulacion'] ?? ''))))));
     foreach ($deps as $d) {
@@ -66,27 +60,27 @@ foreach ($indicadores as $r) {
     if ($cat === 'cumple') {
         $conteo[$cat]++;
         foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
-    } elseif ($cat === 'construccion') { // "En construcción" y "Sin iniciar" se arman por facultad
-        foreach ($facR as $fx) $facsC[$fx['id']][] = $item;
+    } elseif ($cat === 'construccion') {
+        foreach ($deps as $d) $facsC[mb_strtolower($d, 'UTF-8')][] = $item;
     }
     if ($pend) {
         $conteo['pend']++;
         foreach ($deps as $d) $cats['pend'][mb_strtolower($d, 'UTF-8')][] = $item;
-        foreach ($facR as $fx) $facs[$fx['id']][] = $item;
+        foreach ($deps as $d) $facs[mb_strtolower($d, 'UTF-8')][] = $item;
     }
 }
-$conteo['sin'] = count($facs);          // en estas dos pestañas el contador es de facultades, no de indicadores
+$conteo['sin'] = count($facs);          // en estas dos pestañas el contador es de dependencias, no de indicadores
 $conteo['construccion'] = count($facsC);
-$porNombreFac = function ($a, $b) use ($nombreFac) { return strcoll($nombreFac[$a], $nombreFac[$b]); };
-uksort($facs, $porNombreFac);
-uksort($facsC, $porNombreFac);
+$porNombreDep = function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); };
+uksort($facs, $porNombreDep);
+uksort($facsC, $porNombreDep);
 foreach ($cats as $c => $grupos) {
     uksort($cats[$c], function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); });
 }
 $pestanas = [
     'cumple' => ['Cumplimiento aprobado', 'Indicadores aprobados por Planeación, con valor reportado y sin campos vacíos.'],
-    'construccion' => ['En construcción', 'Facultades con indicadores que tienen algún valor reportado y todavía no se han enviado a revisión.'],
-    'sin' => ['Sin iniciar', 'Facultades con indicadores que tienen algún semestre sin reportar, en cualquier estado.'],
+    'construccion' => ['En construcción', 'Dependencias con indicadores que tienen algún valor reportado y todavía no se han enviado a revisión.'],
+    'sin' => ['Sin iniciar', 'Dependencias con indicadores que tienen algún semestre sin reportar, en cualquier estado.'],
 ];
 // Sección extra (sin pestaña): aparece al elegir un semestre en el filtro
 $secciones = $pestanas + ['pend' => ['Sin iniciar por semestre', 'Todos los indicadores, en cualquier estado, que no tienen valor en el semestre elegido.']];
@@ -176,16 +170,15 @@ tr:last-child td{border-bottom:0}
     <?php $primera = true; foreach ($secciones as $c => $p): ?>
     <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
         <?php
-        $porFac = $c === 'sin' || $c === 'construccion'; // estas pestañas agrupan por facultad, las demás por dependencia
         $gr  = $c === 'sin' ? $facs : ($c === 'construccion' ? $facsC : $cats[$c]);
-        $nom = $porFac ? $nombreFac : $nombreDep;
-        $tot = $porFac ? $totalFac : $totalDep;
+        $nom = $nombreDep;
+        $tot = $totalDep;
         ?>
-        <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada <?php echo $porFac ? 'facultad' : 'dependencia'; ?> es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
+        <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada dependencia es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
         <?php if ($c === 'sin' && $gr): ?>
         <div class="tools" style="margin-bottom:10px">
-            <select id="fac" aria-label="Filtrar por facultad">
-                <option value="">Todas las facultades con datos sin reportar</option>
+            <select id="fac" aria-label="Filtrar por dependencia">
+                <option value="">Todas las dependencias con datos sin reportar</option>
                 <?php foreach ($gr as $k => $items): ?><option value="<?php echo $h($k); ?>"><?php echo $h($nom[$k]); ?> (<?php echo count($items); ?>)</option><?php endforeach; ?>
             </select>
             <div class="tgs" role="group" aria-label="Filtrar por estado">
@@ -196,7 +189,7 @@ tr:last-child td{border-bottom:0}
         </div>
         <?php endif; ?>
         <?php if (!$gr): ?>
-        <p class="vacio">Ninguna <?php echo $porFac ? 'facultad' : 'dependencia'; ?> tiene indicadores en este estado.</p>
+        <p class="vacio">Ninguna dependencia tiene indicadores en este estado.</p>
         <?php else: ?>
         <div class="lista">
         <?php foreach ($gr as $k => $items): ?>
@@ -270,7 +263,7 @@ tr:last-child td{border-bottom:0}
         });
         filtrarSin(); // la pestaña «Sin iniciar» vuelve a aplicar sus propios filtros
     }
-    // Filtro por facultad (pestaña «Sin iniciar»)
+    // Filtro por dependencia (pestaña «Sin iniciar»)
     // y toggles de estado (devueltos / en borrador / sin iniciar nada; solo uno activo, ninguno = todos)
     var fac = document.getElementById('fac');
     var tgs = Array.prototype.slice.call(document.querySelectorAll('.tg'));
