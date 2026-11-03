@@ -50,6 +50,7 @@ foreach ($indicadores as $r) {
         'lmp' => implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])),
         'v1' => $esLimite ? 'No aplica' : ($s1 ? $fmt($r['semestre1_seguimiento']) . $pc : '—'),
         'v2' => $s2 ? $fmt($r['semestre2_seguimiento']) . $pc : '—',
+        'f1' => !$esLimite && !$s1, 'f2' => !$s2, // semestres sin iniciar (en Límite no aplica el 1)
         'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
     $conteo[$cat]++;
@@ -86,7 +87,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-s
 .tabs button span{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:#e8ebf3;color:var(--navy);font-size:.75rem;text-align:center;margin-left:4px}
 .tabs button.on{color:var(--navy);border-bottom-color:var(--orange)}
 .ayuda{color:var(--muted);font-size:13px;margin-bottom:10px}
-.tools input{font:inherit;width:100%;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:38px;background:#fff;color:var(--fg)}
+.tools{display:flex;gap:10px;flex-wrap:wrap}
+.tools input,.tools select{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:38px;background:#fff;color:var(--fg);min-width:0}
+.tools input{flex:1 1 260px}
+.nd{color:var(--muted)}
+tr[hidden]{display:none}
 .lista{display:grid;gap:8px}
 .tp[hidden],.acc[hidden]{display:none!important}
 .acc{border:1px solid var(--line);border-radius:10px;background:#fff}
@@ -128,7 +133,15 @@ tr:last-child td{border-bottom:0}
         <?php $primera = false; endforeach; ?>
     </nav>
 
-    <div class="tools"><input type="search" id="q" placeholder="Buscar dependencia…" aria-label="Buscar dependencia"></div>
+    <div class="tools">
+        <input type="search" id="q" placeholder="Buscar dependencia…" aria-label="Buscar dependencia">
+        <select id="sem" aria-label="Filtrar por semestre sin iniciar">
+            <option value="">Todos los indicadores</option>
+            <option value="1">Sin iniciar semestre 1</option>
+            <option value="2">Sin iniciar semestre 2</option>
+            <option value="12">Sin iniciar ninguno de los dos semestres</option>
+        </select>
+    </div>
 
     <?php $primera = true; foreach ($pestanas as $c => $p): ?>
     <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
@@ -144,14 +157,19 @@ tr:last-child td{border-bottom:0}
                 <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$totalDep[$k]; ?> indicadores</small></span>
             </summary>
             <div class="tw"><table>
-                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Avance</th></tr></thead>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
                 <tbody>
                 <?php foreach ($items as $it): ?>
-                <tr>
+                <tr data-f1="<?php echo $it['f1'] ? 1 : 0; ?>" data-f2="<?php echo $it['f2'] ? 1 : 0; ?>">
                     <td><?php echo $h($it['nombre']); ?></td>
                     <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
                     <td class="sv"><?php echo $h($it['v1']); ?></td>
                     <td class="sv"><?php echo $h($it['v2']); ?></td>
+                    <td>
+                        <?php if ($it['f1']): ?><span class="chip c-sin">Semestre 1</span> <?php endif; ?>
+                        <?php if ($it['f2']): ?><span class="chip c-sin">Semestre 2</span><?php endif; ?>
+                        <?php if (!$it['f1'] && !$it['f2']): ?><span class="nd">—</span><?php endif; ?>
+                    </td>
                     <td class="sv"><?php echo $h($it['pct']); ?></td>
                 </tr>
                 <?php endforeach; ?>
@@ -175,13 +193,23 @@ tr:last-child td{border-bottom:0}
             Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
         });
     });
-    var q = document.getElementById('q');
-    q.addEventListener('input', function () {
-        var t = q.value.trim().toLowerCase();
+    var q = document.getElementById('q'), sem = document.getElementById('sem');
+    // Filtra por nombre de dependencia y por semestre sin iniciar; oculta las dependencias que se quedan sin filas
+    function filtrar() {
+        var t = q.value.trim().toLowerCase(), s = sem.value;
         Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
-            d.hidden = t !== '' && d.getAttribute('data-n').indexOf(t) === -1;
+            var visibles = 0;
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                var f1 = r.getAttribute('data-f1') === '1', f2 = r.getAttribute('data-f2') === '1';
+                var ok = s === '' || (s === '1' && f1) || (s === '2' && f2) || (s === '12' && f1 && f2);
+                r.hidden = !ok;
+                if (ok) visibles++;
+            });
+            d.hidden = (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
         });
-    });
+    }
+    q.addEventListener('input', filtrar);
+    sem.addEventListener('change', filtrar);
 })();
 </script>
 </body>
