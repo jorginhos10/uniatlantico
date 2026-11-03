@@ -203,7 +203,7 @@ tr:last-child td{border-bottom:0}
         <details class="acc" data-n="<?php echo $h(mb_strtolower($nom[$k], 'UTF-8')); ?>" data-k="<?php echo $h($k); ?>">
             <summary>
                 <span class="acc-n"><?php echo $h($nom[$k]); ?></span>
-                <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$tot[$k]; ?> indicadores</small></span>
+                <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><span class="n"><?php echo count($items); ?></span> <small>de <?php echo (int)$tot[$k]; ?> indicadores</small></span>
             </summary>
             <div class="tw"><table>
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
@@ -245,6 +245,11 @@ tr:last-child td{border-bottom:0}
         });
     });
     var q = document.getElementById('q'), sem = document.getElementById('sem');
+    // El número del chip de cada grupo es el de filas visibles con los filtros activos
+    function contar(d) {
+        var n = d.querySelector('.chip .n');
+        if (n) n.textContent = d.querySelectorAll('tbody tr:not([hidden])').length;
+    }
     // Filtra por nombre de dependencia y por semestre sin iniciar; oculta las dependencias que se quedan sin filas
     function filtrar() {
         var t = q.value.trim().toLowerCase(), s = sem.value;
@@ -261,6 +266,7 @@ tr:last-child td{border-bottom:0}
                 if (ok) visibles++;
             });
             d.hidden = (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
+            contar(d);
         });
         filtrarSin(); // la pestaña «Sin iniciar» vuelve a aplicar sus propios filtros
     }
@@ -281,6 +287,7 @@ tr:last-child td{border-bottom:0}
             });
             d.hidden = (fac && fac.value !== '' && d.getAttribute('data-k') !== fac.value) || (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
             if (fac && fac.value !== '' && !d.hidden) d.open = true;
+            contar(d);
         });
     }
     if (fac) fac.addEventListener('change', filtrarSin);
