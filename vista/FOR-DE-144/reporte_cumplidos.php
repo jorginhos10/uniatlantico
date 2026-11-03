@@ -22,6 +22,7 @@ $cats = ['cumple' => [], 'construccion' => [], 'sin' => [], 'pend' => []];
 $conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0, 'pend' => 0];
 $totalDep = []; // clave => total de indicadores de la dependencia
 $nombreDep = [];
+$facs = []; $nombreFac = []; $totalFac = []; // facultades con indicadores que tienen algún semestre sin reportar
 $total = 0;
 foreach ($indicadores as $r) {
     $total++;
@@ -32,6 +33,12 @@ foreach ($indicadores as $r) {
     $completo = $s2 && ($esLimite || $s1);
     $aprobado = (int)($r['estado_seguimiento'] ?? 0) === 2;
     $sol = (int)($r['solicitud_estado_seguimiento'] ?? 0);
+
+    $facR = $reporte['facultades'][(int)$r['id']] ?? []; // facultades con meta en este indicador
+    foreach ($facR as $fx) {
+        $nombreFac[$fx['id']] = $fx['nombre'];
+        $totalFac[$fx['id']] = ($totalFac[$fx['id']] ?? 0) + 1;
+    }
 
     $deps = array_values(array_unique(array_filter(array_map('trim', preg_split('/\s*[;,\/\n]\s*/u', (string)($r['responsable_formulacion'] ?? ''))))));
     foreach ($deps as $d) {
@@ -56,22 +63,25 @@ foreach ($indicadores as $r) {
         'est' => $est,
         'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
-    if ($cat !== null) {
+    if ($cat !== null && $cat !== 'sin') { // "Sin iniciar" se arma por facultad, más abajo
         $conteo[$cat]++;
         foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
     }
     if ($pend) {
         $conteo['pend']++;
         foreach ($deps as $d) $cats['pend'][mb_strtolower($d, 'UTF-8')][] = $item;
+        foreach ($facR as $fx) $facs[$fx['id']][] = $item;
     }
 }
+$conteo['sin'] = count($facs);
+uksort($facs, function ($a, $b) use ($nombreFac) { return strcoll($nombreFac[$a], $nombreFac[$b]); });
 foreach ($cats as $c => $grupos) {
     uksort($cats[$c], function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); });
 }
 $pestanas = [
     'cumple' => ['Cumplimiento aprobado', 'Indicadores aprobados por Planeación, con valor reportado y sin campos vacíos.'],
     'construccion' => ['En construcción', 'Indicadores con algún valor reportado que todavía no se han enviado a revisión.'],
-    'sin' => ['Sin iniciar', 'Indicadores que no tienen ningún valor reportado ni se han enviado a revisión.'],
+    'sin' => ['Sin iniciar', 'Facultades con indicadores que tienen algún semestre sin reportar, en cualquier estado.'],
 ];
 // Sección extra (sin pestaña): aparece al elegir un semestre en el filtro
 $secciones = $pestanas + ['pend' => ['Sin iniciar por semestre', 'Todos los indicadores, en cualquier estado, que no tienen valor en el semestre elegido.']];
@@ -156,16 +166,30 @@ tr:last-child td{border-bottom:0}
 
     <?php $primera = true; foreach ($secciones as $c => $p): ?>
     <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
-        <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada dependencia es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
-        <?php if (!$cats[$c]): ?>
-        <p class="vacio">Ninguna dependencia tiene indicadores en este estado.</p>
+        <?php
+        $porFac = $c === 'sin'; // esta pestaña agrupa por facultad, las demás por dependencia
+        $gr  = $porFac ? $facs : $cats[$c];
+        $nom = $porFac ? $nombreFac : $nombreDep;
+        $tot = $porFac ? $totalFac : $totalDep;
+        ?>
+        <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada <?php echo $porFac ? 'facultad' : 'dependencia'; ?> es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
+        <?php if ($porFac && $gr): ?>
+        <div class="tools" style="margin-bottom:10px">
+            <select id="fac" aria-label="Filtrar por facultad">
+                <option value="">Todas las facultades con datos sin reportar</option>
+                <?php foreach ($gr as $k => $items): ?><option value="<?php echo $h($k); ?>"><?php echo $h($nom[$k]); ?> (<?php echo count($items); ?>)</option><?php endforeach; ?>
+            </select>
+        </div>
+        <?php endif; ?>
+        <?php if (!$gr): ?>
+        <p class="vacio">Ninguna <?php echo $porFac ? 'facultad' : 'dependencia'; ?> tiene indicadores en este estado.</p>
         <?php else: ?>
         <div class="lista">
-        <?php foreach ($cats[$c] as $k => $items): ?>
-        <details class="acc" data-n="<?php echo $h(mb_strtolower($nombreDep[$k], 'UTF-8')); ?>">
+        <?php foreach ($gr as $k => $items): ?>
+        <details class="acc" data-n="<?php echo $h(mb_strtolower($nom[$k], 'UTF-8')); ?>" data-k="<?php echo $h($k); ?>">
             <summary>
-                <span class="acc-n"><?php echo $h($nombreDep[$k]); ?></span>
-                <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$totalDep[$k]; ?> indicadores</small></span>
+                <span class="acc-n"><?php echo $h($nom[$k]); ?></span>
+                <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$tot[$k]; ?> indicadores</small></span>
             </summary>
             <div class="tw"><table>
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
@@ -194,7 +218,7 @@ tr:last-child td{border-bottom:0}
     </section>
     <?php $primera = false; endforeach; ?>
 
-    <p class="pie">Los indicadores en revisión o devueltos no aparecen aquí; se ven en el reporte general.</p>
+    <p class="pie">Cumplimiento aprobado y En construcción no incluyen los indicadores en revisión o devueltos; "Sin iniciar" y el filtro de semestre sí los cuentan.</p>
 </div>
 <script>
 (function () {
@@ -225,6 +249,14 @@ tr:last-child td{border-bottom:0}
             d.hidden = (t !== '' && d.getAttribute('data-n').indexOf(t) === -1) || visibles === 0;
         });
     }
+    // Filtro por facultad (pestaña «Sin iniciar»)
+    var fac = document.getElementById('fac');
+    if (fac) fac.addEventListener('change', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('#tp-sin details.acc'), function (d) {
+            d.hidden = fac.value !== '' && d.getAttribute('data-k') !== fac.value;
+            if (fac.value !== '') d.open = true;
+        });
+    });
     q.addEventListener('input', filtrar);
     sem.addEventListener('change', filtrar);
 })();
