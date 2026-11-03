@@ -17,8 +17,9 @@ $fmt = function ($v) { return rtrim(rtrim(number_format((float)$v, 2, ',', '.'),
 //  cumple       = aprobado, con algún valor y sin campos de seguimiento vacíos
 //  construccion = sin solicitud de revisión ni aprobación, con algún valor reportado
 //  sin          = sin solicitud ni aprobación y sin ningún valor reportado
-$cats = ['cumple' => [], 'construccion' => [], 'sin' => []];
-$conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0];
+//  pend         = (aparte, lo usa el filtro por semestre) todos los indicadores de cualquier estado con algún semestre vacío
+$cats = ['cumple' => [], 'construccion' => [], 'sin' => [], 'pend' => []];
+$conteo = ['cumple' => 0, 'construccion' => 0, 'sin' => 0, 'pend' => 0];
 $totalDep = []; // clave => total de indicadores de la dependencia
 $nombreDep = [];
 $total = 0;
@@ -39,10 +40,11 @@ foreach ($indicadores as $r) {
         $totalDep[$k] = ($totalDep[$k] ?? 0) + 1;
     }
 
-    if ($aprobado) { $cat = ($algunValor && $completo) ? 'cumple' : null; }
-    elseif ($sol === 0) { $cat = $algunValor ? 'construccion' : 'sin'; }
-    else { $cat = null; } // en revisión o devuelto: no entra en esta landing
-    if ($cat === null) continue;
+    if ($aprobado) { $cat = ($algunValor && $completo) ? 'cumple' : null; $est = 'Aprobado'; }
+    elseif ($sol === 0) { $cat = $algunValor ? 'construccion' : 'sin'; $est = $algunValor ? 'En construcción' : 'Sin iniciar'; }
+    else { $cat = null; $est = $sol === 1 ? 'En revisión' : 'Devuelto'; } // en revisión o devuelto: no entra en las pestañas
+    $pend = (!$esLimite && !$s1) || !$s2; // le falta algún semestre del seguimiento, sea cual sea su estado
+    if ($cat === null && !$pend) continue;
 
     $pc = ($r['unidad_medida'] ?? '') === 'Porcentaje' ? '%' : '';
     $item = [
@@ -51,10 +53,17 @@ foreach ($indicadores as $r) {
         'v1' => $esLimite ? 'No aplica' : ($s1 ? $fmt($r['semestre1_seguimiento']) . $pc : '—'),
         'v2' => $s2 ? $fmt($r['semestre2_seguimiento']) . $pc : '—',
         'f1' => !$esLimite && !$s1, 'f2' => !$s2, // semestres sin iniciar (en Límite no aplica el 1)
+        'est' => $est,
         'pct' => $tieneValor($r['porcentaje_avance'] ?? null) && $algunValor ? $fmt(min(100, max(0, (float)$r['porcentaje_avance']))) . '%' : '—',
     ];
-    $conteo[$cat]++;
-    foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
+    if ($cat !== null) {
+        $conteo[$cat]++;
+        foreach ($deps as $d) $cats[$cat][mb_strtolower($d, 'UTF-8')][] = $item;
+    }
+    if ($pend) {
+        $conteo['pend']++;
+        foreach ($deps as $d) $cats['pend'][mb_strtolower($d, 'UTF-8')][] = $item;
+    }
 }
 foreach ($cats as $c => $grupos) {
     uksort($cats[$c], function ($a, $b) use ($nombreDep) { return strcoll($nombreDep[$a], $nombreDep[$b]); });
@@ -64,6 +73,8 @@ $pestanas = [
     'construccion' => ['En construcción', 'Indicadores con algún valor reportado que todavía no se han enviado a revisión.'],
     'sin' => ['Sin iniciar', 'Indicadores que no tienen ningún valor reportado ni se han enviado a revisión.'],
 ];
+// Sección extra (sin pestaña): aparece al elegir un semestre en el filtro
+$secciones = $pestanas + ['pend' => ['Sin iniciar por semestre', 'Todos los indicadores, en cualquier estado, que no tienen valor en el semestre elegido.']];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -104,7 +115,7 @@ tr[hidden]{display:none}
 .chip{padding:4px 11px;border-radius:99px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--ok-soft);color:var(--ok)}
 .chip small{font-weight:500;color:var(--muted)}
 .c-construccion{background:var(--amber-soft);color:var(--amber-fg)}
-.c-sin{background:var(--soft);color:var(--muted)}
+.c-sin,.c-pend{background:var(--soft);color:var(--muted)}
 .tw{overflow-x:auto;padding:0 6px 6px}
 table{border-collapse:collapse;width:100%;min-width:620px}
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
@@ -143,7 +154,7 @@ tr:last-child td{border-bottom:0}
         </select>
     </div>
 
-    <?php $primera = true; foreach ($pestanas as $c => $p): ?>
+    <?php $primera = true; foreach ($secciones as $c => $p): ?>
     <section class="tp" id="tp-<?php echo $c; ?>" <?php echo $primera ? '' : 'hidden'; ?>>
         <p class="ayuda"><?php echo $h($p[1]); ?> El número de cada dependencia es la cantidad de indicadores en este estado, sobre el total que tiene asignados.</p>
         <?php if (!$cats[$c]): ?>
@@ -157,7 +168,7 @@ tr:last-child td{border-bottom:0}
                 <span class="chip <?php echo $c === 'cumple' ? '' : 'c-' . $c; ?>"><?php echo count($items); ?> <small>de <?php echo (int)$totalDep[$k]; ?> indicadores</small></span>
             </summary>
             <div class="tw"><table>
-                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Semestre 1</th><th>Semestre 2</th><th>Estado</th><th>Sin iniciar</th><th>Avance</th></tr></thead>
                 <tbody>
                 <?php foreach ($items as $it): ?>
                 <tr data-f1="<?php echo $it['f1'] ? 1 : 0; ?>" data-f2="<?php echo $it['f2'] ? 1 : 0; ?>">
@@ -165,6 +176,7 @@ tr:last-child td{border-bottom:0}
                     <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
                     <td class="sv"><?php echo $h($it['v1']); ?></td>
                     <td class="sv"><?php echo $h($it['v2']); ?></td>
+                    <td><?php echo $h($it['est']); ?></td>
                     <td>
                         <?php if ($it['f1']): ?><span class="chip c-sin">Semestre 1</span> <?php endif; ?>
                         <?php if ($it['f2']): ?><span class="chip c-sin">Semestre 2</span><?php endif; ?>
@@ -191,12 +203,17 @@ tr:last-child td{border-bottom:0}
         b.addEventListener('click', function () {
             botones.forEach(function (x) { x.classList.toggle('on', x === b); });
             Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
+            if (sem.value) { sem.value = ''; filtrar(); } // elegir una pestaña quita el filtro de semestre
         });
     });
     var q = document.getElementById('q'), sem = document.getElementById('sem');
     // Filtra por nombre de dependencia y por semestre sin iniciar; oculta las dependencias que se quedan sin filas
     function filtrar() {
         var t = q.value.trim().toLowerCase(), s = sem.value;
+        // Con un semestre elegido se muestra la lista de todos los estados; sin él, vuelve la pestaña activa
+        var activa = document.querySelector('.tabs button.on').getAttribute('data-tp');
+        Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== (s === '' ? activa : 'tp-pend'); });
+        document.querySelector('.tabs').style.opacity = s === '' ? '' : '.45';
         Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
             var visibles = 0;
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
