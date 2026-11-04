@@ -177,7 +177,7 @@ tr:last-child td{border-bottom:0}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.bar-row{grid-template-columns:minmax(90px,130px) minmax(0,1fr) 48px}.hero h1{font-size:21px}}
 @media print{.tools,.tabs,.hero-acc,.kpis,.pie{display:none!important}body{background:#fff}.hero{background:none!important;color:var(--fg);padding:0}.hero small,.hero p{color:var(--muted)}.box{border:0;padding:0}.acc{break-inside:avoid}.tp[hidden]{display:none!important}}
 .fbar{margin-left:auto;display:flex;gap:8px;align-items:center;padding-bottom:6px}
-.fbar[hidden]{display:none}
+.fbar[hidden],.acc-chips .chip[hidden]{display:none}
 .fbar select,.fbar button{font:inherit;border:1px solid var(--line);border-radius:9px;padding:7px 11px;min-height:36px;background:#fff;color:var(--fg);cursor:pointer}
 .fbar button{font-weight:700;color:var(--navy)}.fbar button:hover{border-color:var(--blue)}
 .tabs .fbar button{border-bottom:1px solid var(--line);margin-bottom:0;padding:7px 11px}
@@ -306,9 +306,9 @@ tr.resalta td{background:var(--amber-soft)}
                     <i class="s-ok" style="width:<?php echo $pctDe($g['conc'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['espera'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['nada'], $g['total']); ?>%"></i>
                 </span>
                 <span class="acc-chips">
-                    <span class="chip c-publicado" title="Concertado con la vicerrectoría"><?php echo $g['conc']; ?></span>
-                    <span class="chip c-revision" title="En espera de concertación"><?php echo $g['espera']; ?></span>
-                    <span class="chip c-construccion" title="Sin declarar"><?php echo $g['nada']; ?></span>
+                    <span class="chip c-publicado" data-k="conc" title="Concertado con la vicerrectoría"><?php echo $g['conc']; ?></span>
+                    <span class="chip c-revision" data-k="espera" title="En espera de concertación"><?php echo $g['espera']; ?></span>
+                    <span class="chip c-construccion" data-k="nada" title="Sin declarar"><?php echo $g['nada']; ?></span>
                 </span>
             </summary>
             <div class="tw"><table>
@@ -374,6 +374,8 @@ tr.resalta td{background:var(--amber-soft)}
             var c = d.querySelector('.acc-c');
             c.innerHTML = (t ? Math.round(n / t * 100) : 0) + '% ' + (e ? ETIQUETA[e] : 'concertado') + '<small>' + n + ' de ' + t + ' indicadores</small>';
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) { r.hidden = e !== '' && r.getAttribute('data-ec') !== e; });
+            // Con un filtro activo solo queda la bolita del estado elegido; sin filtro, las tres
+            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) { b.hidden = e !== '' && b.getAttribute('data-k') !== e; });
             d.hidden = e !== '' && n === 0; // con un filtro activo solo se listan las facultades que tienen indicadores en ese estado
         });
     }
