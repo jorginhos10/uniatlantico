@@ -175,7 +175,12 @@ tr:last-child td{border-bottom:0}
 .vacio{text-align:center;color:var(--muted);padding:26px}
 .pie{color:var(--muted);font-size:12px;text-align:center}
 @media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}.bar-row{grid-template-columns:minmax(90px,130px) minmax(0,1fr) 48px}.hero h1{font-size:21px}}
-@media print{.acc,.tools{display:none}body{background:#fff}}
+@media print{.tools,.tabs,.hero-acc,.kpis,.pie{display:none!important}body{background:#fff}.hero{background:none!important;color:var(--fg);padding:0}.hero small,.hero p{color:var(--muted)}.box{border:0;padding:0}.acc{break-inside:avoid}.tp[hidden]{display:none!important}}
+.fbar{margin-left:auto;display:flex;gap:8px;align-items:center;padding-bottom:6px}
+.fbar[hidden]{display:none}
+.fbar select,.fbar button{font:inherit;border:1px solid var(--line);border-radius:9px;padding:7px 11px;min-height:36px;background:#fff;color:var(--fg);cursor:pointer}
+.fbar button{font-weight:700;color:var(--navy)}.fbar button:hover{border-color:var(--blue)}
+.tabs .fbar button{border-bottom:1px solid var(--line);margin-bottom:0;padding:7px 11px}
 .fc{white-space:nowrap}.fcn{display:block;font-size:.82rem;color:var(--fg)}.fcn b{color:var(--navy);margin-right:4px}
 .tp[hidden]{display:none!important}
 .kpi-btn{font:inherit;color:inherit;text-align:left;cursor:pointer;width:100%}
@@ -230,6 +235,15 @@ tr.resalta td{background:var(--amber-soft)}
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
         <button type="button" role="tab" data-tp="tp-fac">Facultades <span><?php echo count($porFacultad); ?></span></button>
+        <div class="fbar" id="fbar" hidden>
+            <select id="fFiltro" aria-label="Filtrar por estado de concertación">
+                <option value="">Todos los estados</option>
+                <option value="conc">Concertado con vicerrectoría</option>
+                <option value="espera">En espera de concertación</option>
+                <option value="nada">Sin declarar</option>
+            </select>
+            <button type="button" id="fPdf" title="Abre el diálogo de impresión: elige «Guardar como PDF»">Exportar PDF</button>
+        </div>
     </nav>
 
     <?php
@@ -284,7 +298,7 @@ tr.resalta td{background:var(--amber-soft)}
         <?php else: $txtEc = ['conc' => 'Concertado', 'espera' => 'En espera de concertación', 'nada' => 'Sin declarar']; ?>
         <p class="vacio acc-ayuda">Concertación del semestre <?php echo $semConc; ?> (T<?php echo $trimestre; ?>) entre cada facultad y la vicerrectoría. Concertado: la vicerrectoría puso su valor y se dio clic en Concertar · En espera: la facultad puso un valor y aún no se ha concertado · Sin declarar: la facultad no ha puesto ningún valor.</p>
         <?php foreach ($porFacultad as $g): ?>
-        <details class="acc facc">
+        <details class="acc facc" data-t="<?php echo (int)$g['total']; ?>" data-conc="<?php echo (int)$g['conc']; ?>" data-espera="<?php echo (int)$g['espera']; ?>" data-nada="<?php echo (int)$g['nada']; ?>">
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
                 <span class="acc-c"><?php echo $pctDe($g['conc'], $g['total']); ?>% concertado<small><?php echo $g['conc']; ?> de <?php echo $g['total']; ?> indicadores</small></span>
@@ -301,7 +315,7 @@ tr.resalta td{background:var(--amber-soft)}
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Facultad</th><th>Vicerrectoría</th><th>Estado</th></tr></thead>
                 <tbody>
                 <?php foreach ($g['items'] as $it): ?>
-                <tr>
+                <tr data-ec="<?php echo $h($it['ec']); ?>">
                     <td class="nm"><b><?php echo $h($it['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
                     <td class="sv"><?php echo $h($it['vf']); ?></td>
@@ -339,12 +353,44 @@ tr.resalta td{background:var(--amber-soft)}
         if (on) { var tab = document.querySelector('.tabs button[data-tp="tp-dep"]'); if (tab) tab.click(); }
     }
     kRev.addEventListener('click', function () { filtrarRevision(kRev.getAttribute('aria-pressed') !== 'true'); });
-    var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button'));
+    var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button[data-tp]'));
+    var fbar = document.getElementById('fbar');
     botones.forEach(function (b) {
         b.addEventListener('click', function () {
             botones.forEach(function (x) { x.classList.toggle('on', x === b); });
             Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
+            fbar.hidden = b.getAttribute('data-tp') !== 'tp-fac'; // el filtro y el PDF solo van con «Facultades»
         });
+    });
+
+    // Facultades: filtra por estado de concertación; el número del medio sigue al filtro
+    var ETIQUETA = { conc: 'concertado', espera: 'en espera', nada: 'sin declarar' };
+    var fFiltro = document.getElementById('fFiltro');
+    function filtrarFacultades() {
+        var e = fFiltro.value;
+        Array.prototype.forEach.call(document.querySelectorAll('details.facc'), function (d) {
+            var t = parseInt(d.getAttribute('data-t'), 10) || 0;
+            var n = e ? (parseInt(d.getAttribute('data-' + e), 10) || 0) : parseInt(d.getAttribute('data-conc'), 10) || 0;
+            var c = d.querySelector('.acc-c');
+            c.innerHTML = (t ? Math.round(n / t * 100) : 0) + '% ' + (e ? ETIQUETA[e] : 'concertado') + '<small>' + n + ' de ' + t + ' indicadores</small>';
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) { r.hidden = e !== '' && r.getAttribute('data-ec') !== e; });
+            d.hidden = e !== '' && n === 0; // con un filtro activo solo se listan las facultades que tienen indicadores en ese estado
+        });
+    }
+    fFiltro.addEventListener('change', filtrarFacultades);
+
+    // Exportar PDF: se imprime solo la pestaña «Facultades» con lo que el filtro deja ver y los desplegables abiertos
+    document.getElementById('fPdf').addEventListener('click', function () {
+        var abiertos = [];
+        Array.prototype.forEach.call(document.querySelectorAll('#tp-fac details.facc'), function (d) { abiertos.push([d, d.open]); d.open = !d.hidden; });
+        var tituloAntes = document.title;
+        document.title = 'Concertación por facultad · T<?php echo (int)$trimestre; ?>' + (fFiltro.value ? ' · ' + ETIQUETA[fFiltro.value] : '');
+        window.onafterprint = function () {
+            document.title = tituloAntes;
+            abiertos.forEach(function (a) { a[0].open = a[1]; });
+            window.onafterprint = null;
+        };
+        window.print();
     });
 })();
 </script>
