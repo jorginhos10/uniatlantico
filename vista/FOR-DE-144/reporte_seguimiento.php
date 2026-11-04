@@ -54,16 +54,17 @@ foreach ($indicadores as $r) {
         'unidad' => $r['unidad_medida'] ?? '',
     ];
     // Por facultad: concertación con la vicerrectoría del semestre al que pertenece el trimestre elegido.
-    //  conc  = los dos lados concertaron (aprobada, o ambos declararon el mismo valor)
-    //  espera = la facultad declaró y la vicerrectoría todavía no concerta (o aún no coinciden)
-    //  nada  = la facultad no ha declarado nada
+    //  conc  = la vicerrectoría puso su valor y se dio clic en «Concertar»
+    //  espera = la facultad puso un valor y todavía no se ha concertado
+    //  nada  = la facultad no ha puesto ningún valor
     $semConc = $trimestre <= 2 ? 1 : 2;
     if (!($esLimite && $semConc === 1)) { // en «Límite» el semestre 1 no se registra
         $pc = ($r['unidad_medida'] ?? '') === 'Porcentaje' ? '%' : '';
         foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
             $c = $concertaciones[(int)$r['id']][(int)$fx['id']][$semConc] ?? null;
             $vf = $c['vf'] ?? null; $vv = $c['vv'] ?? null;
-            if ($c && ($c['aprobado'] || ($vf !== null && $vv !== null && abs($vf - $vv) < 0.005))) $ec = 'conc';
+            // Concertado: la vicerrectoría puso su valor y se dio clic en «Concertar» (queda enviada o aprobada)
+            if ($c && ($c['aprobado'] || ($vv !== null && $c['enviado']))) $ec = 'conc';
             elseif ($vf !== null) $ec = 'espera';
             else $ec = 'nada';
             if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'conc' => 0, 'espera' => 0, 'nada' => 0, 'items' => []];
@@ -281,7 +282,7 @@ tr.resalta td{background:var(--amber-soft)}
         <?php if (!$porFacultad): ?>
         <p class="vacio">Ninguna facultad tiene metas en los indicadores de este semestre.</p>
         <?php else: $txtEc = ['conc' => 'Concertado', 'espera' => 'En espera de concertación', 'nada' => 'Sin declarar']; ?>
-        <p class="vacio acc-ayuda">Concertación del semestre <?php echo $semConc; ?> (T<?php echo $trimestre; ?>) entre cada facultad y la vicerrectoría. Concertado: los dos coincidieron · En espera: la facultad declaró y la vicerrectoría aún no concerta · Sin declarar: la facultad no ha declarado nada.</p>
+        <p class="vacio acc-ayuda">Concertación del semestre <?php echo $semConc; ?> (T<?php echo $trimestre; ?>) entre cada facultad y la vicerrectoría. Concertado: la vicerrectoría puso su valor y se dio clic en Concertar · En espera: la facultad puso un valor y aún no se ha concertado · Sin declarar: la facultad no ha puesto ningún valor.</p>
         <?php foreach ($porFacultad as $g): ?>
         <details class="acc facc">
             <summary>
