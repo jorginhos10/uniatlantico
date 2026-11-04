@@ -18,7 +18,7 @@ $etapas = [1 => 'Gestor de Metas', 2 => 'Líder de Metas', 3 => 'Vicerrectoría'
 $tieneValor = function ($v) { return $v !== null && trim((string)$v) !== ''; };
 
 $filas = [];
-$kpi = ['total' => 0, 'publicados' => 0, 'revision' => 0, 'devueltos' => 0, 'construccion' => 0];
+$kpi = ['total' => 0, 'publicados' => 0, 'revision' => 0, 'devueltos' => 0, 'construccion' => 0, 'sinreportar' => 0];
 $porFacultad = []; // id => ['nombre', 'total', y un conteo por estado]
 foreach ($indicadores as $r) {
     $esLimite = ($r['tipo_medicion'] ?? '') === 'Límite';
@@ -41,7 +41,8 @@ foreach ($indicadores as $r) {
         case 'ap':  $estado = 'publicado';    $estadoTxt = 'Aprobado';                          $kpi['publicados']++;   break;
         case 'rev': $estado = 'revision';     $estadoTxt = 'En revisión · ' . ($etapas[min(4, $etapa + 1)] ?? ''); $kpi['revision']++; break;
         case 'dev': $estado = 'devuelto';     $estadoTxt = 'Devuelto para ajustes';             $kpi['devueltos']++;    break;
-        default:    $estado = 'construccion'; $estadoTxt = $conValor ? 'En construcción' : 'Sin iniciar'; $kpi['construccion']++;
+        default:    if ($conValor) { $estado = 'construccion'; $estadoTxt = 'En construcción'; $kpi['construccion']++; }
+                    else { $estado = 'sinreportar'; $estadoTxt = 'Sin reportar'; $kpi['sinreportar']++; }
     }
     $kpi['total']++;
 
@@ -93,7 +94,7 @@ $porDep = [];
 foreach ($filas as $i => $f) {
     foreach (array_unique($f['deps']) as $d) {
         $k = mb_strtolower($d, 'UTF-8');
-        if (!isset($porDep[$k])) $porDep[$k] = ['nombre' => $d, 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
+        if (!isset($porDep[$k])) $porDep[$k] = ['nombre' => $d, 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'sinreportar' => 0, 'idx' => []];
         $porDep[$k]['total']++; $porDep[$k][$f['estado']]++; $porDep[$k]['idx'][] = $i;
     }
 }
@@ -157,6 +158,7 @@ a{color:inherit}
 .chip{padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700}
 .c-publicado{background:var(--ok-soft);color:var(--ok)}.c-revision{background:var(--amber-soft);color:var(--amber-fg)}
 .c-devuelto{background:var(--blue-soft);color:var(--blue)}.c-construccion{background:var(--soft);color:var(--muted)}
+.c-sinreportar{background:#fff;color:var(--muted);box-shadow:inset 0 0 0 1px #c3c9d6}
 .tools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .tools input,.tools select{font:inherit;border:1px solid var(--line);border-radius:9px;padding:8px 11px;min-height:38px;background:#fff;color:var(--fg);min-width:0}
 .tools input{flex:1 1 240px}
@@ -209,7 +211,7 @@ tr:last-child td{border-bottom:0}
 .acc[open] summary{border-bottom:1px solid var(--line)}
 .acc-n{font-weight:700;color:var(--navy)}.acc-c{font-weight:800;text-align:right}.acc-c{text-align:left}.trk.stk{display:flex;overflow:hidden}.trk.stk::after{display:none}
 .trk.stk i{border-radius:0;flex:none}
-.trk.stk .s-ok{background:var(--ok)}.trk.stk .s-rev{background:var(--amber)}.trk.stk .s-dev{background:var(--blue)}.trk.stk .s-con{background:#c3c9d6}
+.trk.stk .s-ok{background:var(--ok)}.trk.stk .s-rev{background:var(--amber)}.trk.stk .s-dev{background:var(--blue)}.trk.stk .s-con{background:#c3c9d6}.trk.stk .s-sin{background:#e6e9f0}
 tr.resalta td{background:var(--amber-soft)}
 .acc-c small{display:block;font-weight:600;color:var(--muted);font-size:11px}
 .acc-chips{display:flex;gap:4px}
@@ -270,13 +272,14 @@ tr.resalta td{background:var(--amber-soft)}
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
                 <span class="acc-c" data-orig="<?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small>" title="Reportados = seguimiento aprobado por la Oficina de Planeación, sobre los <?php echo $g['total']; ?> indicadores de este grupo"><?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small></span>
-                <span class="trk stk" title="Aprobados · en revisión · devueltos · en construcción">
-                    <i class="s-ok" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['revision'], $g['total']); ?>%"></i><i class="s-dev" style="width:<?php echo $pctDe($g['devuelto'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['construccion'], $g['total']); ?>%"></i>
+                <span class="trk stk" title="Aprobados · en revisión · devueltos · en construcción · sin reportar">
+                    <i class="s-ok" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['revision'], $g['total']); ?>%"></i><i class="s-dev" style="width:<?php echo $pctDe($g['devuelto'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['construccion'], $g['total']); ?>%"></i><i class="s-sin" style="width:<?php echo $pctDe($g['sinreportar'], $g['total']); ?>%"></i>
                 </span>
                 <span class="acc-chips">
                     <span class="chip c-revision" title="En revisión"><?php echo $g['revision']; ?></span>
                     <span class="chip c-devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
-                    <span class="chip c-construccion" title="En construcción"><?php echo $g['construccion']; ?></span>
+                    <span class="chip c-construccion" title="En construcción: con valor, sin enviar a revisión"><?php echo $g['construccion']; ?></span>
+                    <span class="chip c-sinreportar" title="Sin reportar: ningún valor en este trimestre"><?php echo $g['sinreportar']; ?></span>
                 </span>
             </summary>
             <div class="tw"><table>
