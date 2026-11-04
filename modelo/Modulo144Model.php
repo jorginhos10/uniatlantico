@@ -1452,6 +1452,28 @@ class Modulo144Model {
         }
     }
 
+    // Cuántos indicadores del formulario tienen cada trimestre (1 a 4) SIN aprobar: [1 => n, 2 => n, 3 => n, 4 => n]. Es lo que todavía se puede
+    // publicar con «Publicar todos»: un trimestre aprobado en todos los indicadores queda en 0 y no se ofrece. Los cancelados no cuentan.
+    public function getPendientesPublicarTrimestres($formularioId) {
+        $pend = [1 => 0, 2 => 0, 3 => 0, 4 => 0];
+        try {
+            $this->asegurarTablaTrimestres();
+            $q = $this->db->prepare("SELECT id, tipo_medicion FROM formulacion_144 WHERE formulario_id = :f AND estado_formulacion = 2 AND estado_seguimiento != 1");
+            $q->execute([':f' => (int)$formularioId]);
+            $filas = $q->fetchAll();
+            $flujos = $this->getFlujoTrimestresVarios(array_map('intval', array_column($filas, 'id')));
+            foreach ($filas as $f) {
+                foreach ([1, 2, 3, 4] as $t) {
+                    if ($f['tipo_medicion'] === 'Límite' && $t <= 2) continue; // no aplica: no cuenta como pendiente
+                    if ((($flujos[(int)$f['id']][$t]['estado'] ?? 0)) !== 2) $pend[$t]++;
+                }
+            }
+        } catch (PDOException $e) {
+            error_log('Error getPendientesPublicarTrimestres: ' . $e->getMessage());
+        }
+        return $pend;
+    }
+
     // Publica los trimestres indicados en TODOS los indicadores del formulario (administrador), aunque estén vacíos o no apliquen
     // (T1 y T2 de «Límite»). Solo se omiten los ya aprobados y los seguimientos cancelados.
     // Devuelve ['indicadores' => n, 'trimestres' => n, 'sin_valor' => 0] o false.

@@ -53,15 +53,33 @@ foreach ($indicadores as $r) {
         'estado' => $estado, 'estadoTxt' => $estadoTxt,
         'unidad' => $r['unidad_medida'] ?? '',
     ];
-    // Por facultad: cuántos de sus indicadores hay en cada estado del trimestre
-    foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
-        if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'publicado' => 0, 'revision' => 0, 'devuelto' => 0, 'construccion' => 0, 'idx' => []];
-        $porFacultad[$fx['id']]['total']++;
-        $porFacultad[$fx['id']]['idx'][] = count($filas) - 1;
-        $porFacultad[$fx['id']][$estado]++;
+    // Por facultad: concertación con la vicerrectoría del semestre al que pertenece el trimestre elegido.
+    //  conc  = los dos lados concertaron (aprobada, o ambos declararon el mismo valor)
+    //  espera = la facultad declaró y la vicerrectoría todavía no concerta (o aún no coinciden)
+    //  nada  = la facultad no ha declarado nada
+    $semConc = $trimestre <= 2 ? 1 : 2;
+    if (!($esLimite && $semConc === 1)) { // en «Límite» el semestre 1 no se registra
+        $pc = ($r['unidad_medida'] ?? '') === 'Porcentaje' ? '%' : '';
+        foreach ($facultadesRep[(int)$r['id']] ?? [] as $fx) {
+            $c = $concertaciones[(int)$r['id']][(int)$fx['id']][$semConc] ?? null;
+            $vf = $c['vf'] ?? null; $vv = $c['vv'] ?? null;
+            if ($c && ($c['aprobado'] || ($vf !== null && $vv !== null && abs($vf - $vv) < 0.005))) $ec = 'conc';
+            elseif ($vf !== null) $ec = 'espera';
+            else $ec = 'nada';
+            if (!isset($porFacultad[$fx['id']])) $porFacultad[$fx['id']] = ['nombre' => $fx['nombre'], 'total' => 0, 'conc' => 0, 'espera' => 0, 'nada' => 0, 'items' => []];
+            $porFacultad[$fx['id']]['total']++;
+            $porFacultad[$fx['id']][$ec]++;
+            $porFacultad[$fx['id']]['items'][] = [
+                'nombre' => $nombre, 'lmp' => implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])),
+                'vf' => $vf === null ? '—' : rtrim(rtrim(number_format($vf, 2, ',', '.'), '0'), ',') . $pc,
+                'vv' => $vv === null ? '—' : rtrim(rtrim(number_format($vv, 2, ',', '.'), '0'), ',') . $pc,
+                'ec' => $ec,
+            ];
+        }
     }
 }
 uasort($porFacultad, function ($a, $b) { return strcoll($a['nombre'], $b['nombre']); });
+$semConc = $trimestre <= 2 ? 1 : 2;
 // Dependencias responsables (un indicador puede tener varias separadas por coma o punto y coma)
 $dependencias = [];
 foreach ($filas as $i => $f) {
@@ -260,7 +278,40 @@ tr.resalta td{background:var(--amber-soft)}
 
     <section class="box tp" id="tp-fac" hidden>
         <h2>Facultades</h2>
-        <?php $desplegables($porFacultad, 'Ninguna facultad tiene metas en los indicadores aprobados.'); ?>
+        <?php if (!$porFacultad): ?>
+        <p class="vacio">Ninguna facultad tiene metas en los indicadores de este semestre.</p>
+        <?php else: $txtEc = ['conc' => 'Concertado', 'espera' => 'En espera de concertación', 'nada' => 'Sin declarar']; ?>
+        <p class="vacio acc-ayuda">Concertación del semestre <?php echo $semConc; ?> (T<?php echo $trimestre; ?>) entre cada facultad y la vicerrectoría. Concertado: los dos coincidieron · En espera: la facultad declaró y la vicerrectoría aún no concerta · Sin declarar: la facultad no ha declarado nada.</p>
+        <?php foreach ($porFacultad as $g): ?>
+        <details class="acc facc">
+            <summary>
+                <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
+                <span class="acc-c"><?php echo $pctDe($g['conc'], $g['total']); ?>% concertado<small><?php echo $g['conc']; ?> de <?php echo $g['total']; ?> indicadores</small></span>
+                <span class="trk stk" title="Concertado · en espera · sin declarar">
+                    <i class="s-ok" style="width:<?php echo $pctDe($g['conc'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['espera'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['nada'], $g['total']); ?>%"></i>
+                </span>
+                <span class="acc-chips">
+                    <span class="chip c-publicado" title="Concertado con la vicerrectoría"><?php echo $g['conc']; ?></span>
+                    <span class="chip c-revision" title="En espera de concertación"><?php echo $g['espera']; ?></span>
+                    <span class="chip c-construccion" title="Sin declarar"><?php echo $g['nada']; ?></span>
+                </span>
+            </summary>
+            <div class="tw"><table>
+                <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>Facultad</th><th>Vicerrectoría</th><th>Estado</th></tr></thead>
+                <tbody>
+                <?php foreach ($g['items'] as $it): ?>
+                <tr>
+                    <td class="nm"><b><?php echo $h($it['nombre']); ?></b></td>
+                    <td><span class="lmp"><?php echo $h($it['lmp'] ?: '—'); ?></span></td>
+                    <td class="sv"><?php echo $h($it['vf']); ?></td>
+                    <td class="sv"><?php echo $h($it['vv']); ?></td>
+                    <td><span class="chip c-<?php echo ['conc' => 'publicado', 'espera' => 'revision', 'nada' => 'construccion'][$it['ec']]; ?>"><?php echo $h($txtEc[$it['ec']]); ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table></div>
+        </details>
+        <?php endforeach; endif; ?>
     </section>
 
     <p class="pie">La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris) del T<?php echo $trimestre; ?>. Para cambiar un dato, ábrelo en el Plan de acción.</p>
@@ -273,7 +324,7 @@ tr.resalta td{background:var(--amber-soft)}
     // para ver de un vistazo cuántos han cumplido (aprobados) y cuántos no
     function filtrarRevision(on) {
         kRev.setAttribute('aria-pressed', on ? 'true' : 'false');
-        Array.prototype.forEach.call(document.querySelectorAll('details.acc'), function (d) {
+        Array.prototype.forEach.call(document.querySelectorAll('details.acc:not(.facc)'), function (d) {
             var t = parseInt(d.getAttribute('data-t'), 10) || 0, a = parseInt(d.getAttribute('data-a'), 10) || 0, r = parseInt(d.getAttribute('data-r'), 10) || 0;
             var c = d.querySelector('.acc-c');
             c.innerHTML = on

@@ -196,6 +196,9 @@ class FORDE144Controller {
         }
         $reporte = $this->model->getReporteSeguimiento($id);
         $trimestre = $this->trimestreDelReporte($formulario);
+        // Concertación de cada facultad con la vicerrectoría (valor que declara cada lado por semestre): pestaña «Facultades»
+        require_once 'modelo/Modulo144Model.php';
+        $concertaciones = (new Modulo144Model())->getTodasConcertaciones((int)$id);
         require_once 'vista/FOR-DE-144/reporte_seguimiento.php';
     }
 

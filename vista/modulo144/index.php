@@ -6250,13 +6250,25 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // Publica el seguimiento de TODOS los indicadores del formulario en los trimestres que se elijan (solo superadministrador)
+        // Solo se ofrecen los trimestres que todavía tienen indicadores sin aprobar; si ya está todo aprobado no hay nada que publicar
         function publicarSeguimientoTodos(total) {
-            const opciones = [1, 2, 3, 4].map(function(t) {
-                return '<label class="d-flex align-items-center gap-2 py-1" style="cursor:pointer"><input type="checkbox" class="form-check-input mt-0 pub-trim" value="' + t + '"> Trimestre ' + t + '</label>';
+            $.getJSON(basePath + '/modulo144/pendientesPublicarTodos', { formulario_id: formularioId }, function(r) {
+                if (!r.success) { Swal.fire('Error', r.message || 'No se pudo consultar los trimestres', 'error'); return; }
+                const pendientes = r.pendientes || {};
+                const ofrecer = [1, 2, 3, 4].filter(function(t) { return (pendientes[t] || 0) > 0; });
+                if (!ofrecer.length) { Swal.fire('Todo aprobado', 'Todos los trimestres ya están aprobados en todos los indicadores.', 'info'); return; }
+                dialogoPublicarTodos(total, ofrecer, pendientes);
+            }).fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error'); });
+        }
+
+        function dialogoPublicarTodos(total, trimestres, pendientes) {
+            const opciones = trimestres.map(function(t) {
+                return '<label class="d-flex align-items-center gap-2 py-1" style="cursor:pointer"><input type="checkbox" class="form-check-input mt-0 pub-trim" value="' + t + '"> Trimestre ' + t
+                     + ' <small class="text-muted">(' + pendientes[t] + ' sin aprobar)</small></label>';
             }).join('');
             Swal.fire({
                 title: '¿En qué trimestre publicar todos?',
-                html: 'Se publicará el seguimiento de <strong>' + total + '</strong> indicador(es) <strong>sin pasar por las etapas de aprobación</strong>: '
+                html: 'Se publicará el seguimiento <strong>sin pasar por las etapas de aprobación</strong>: '
                     + 'los trimestres elegidos quedarán aprobados por la Oficina de Planeación, <strong>aunque estén vacíos</strong>.'
                     + '<div class="text-start mt-3 mx-auto" style="max-width:300px">' + opciones + '</div>',
                 icon: 'question',

@@ -683,6 +683,22 @@ class Modulo144Controller {
         echo json_encode(['success' => true, 'message' => $msg]);
     }
 
+    // Trimestres que todavía se pueden publicar con «Publicar todos» (cuántos indicadores tienen cada uno sin aprobar)
+    public function pendientesPublicarTodos() {
+        header('Content-Type: application/json');
+        $uid = (int)($_SESSION['usuario_id'] ?? 0);
+        if (!Roles::esAdmin()) {
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede publicar el seguimiento']);
+            return;
+        }
+        $formularioId = intval($_GET['formulario_id'] ?? 0);
+        if ($formularioId <= 0 || !$this->model->verificarFormulario($formularioId)) {
+            echo json_encode(['success' => false, 'message' => 'Formulario no válido']);
+            return;
+        }
+        echo json_encode(['success' => true, 'pendientes' => $this->model->getPendientesPublicarTrimestres($formularioId)]);
+    }
+
     public function devolverTodosABorrador() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
