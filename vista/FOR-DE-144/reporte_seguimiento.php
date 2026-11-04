@@ -178,6 +178,16 @@ tr:last-child td{border-bottom:0}
 @media print{.tools,.tabs,.hero-acc,.kpis,.pie{display:none!important}body{background:#fff}.hero{background:none!important;color:var(--fg);padding:0}.hero small,.hero p{color:var(--muted)}.box{border:0;padding:0}.acc{break-inside:avoid}.tp[hidden]{display:none!important}}
 .fbar{margin-left:auto;display:flex;gap:8px;align-items:center;padding-bottom:6px}
 .fbar[hidden],.acc-chips .chip[hidden]{display:none}
+#dlgPdf{border:0;border-radius:16px;padding:22px 24px;max-width:420px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(20,49,99,.35);color:var(--fg)}
+#dlgPdf::backdrop{background:rgba(13,33,71,.45)}
+#dlgPdf h3{font-size:17px;color:var(--navy);margin-bottom:6px}
+#dlgPdf p{color:var(--muted);font-size:13px;margin-bottom:16px}
+#dlgPdf .opc{display:grid;gap:10px}
+#dlgPdf .opc button{font:inherit;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px 14px;cursor:pointer}
+#dlgPdf .opc button:hover{border-color:var(--blue);background:var(--blue-soft)}
+#dlgPdf .opc b{display:block;color:var(--navy)}#dlgPdf .opc span{color:var(--muted);font-size:12px}
+#dlgPdf .cancelar{margin-top:12px;border:0;background:none;color:var(--muted);font:inherit;cursor:pointer;float:right}
+@media print{#dlgPdf{display:none!important}}
 .fbar select,.fbar button{font:inherit;border:1px solid var(--line);border-radius:9px;padding:7px 11px;min-height:36px;background:#fff;color:var(--fg);cursor:pointer}
 .fbar button{font-weight:700;color:var(--navy)}.fbar button:hover{border-color:var(--blue)}
 .tabs .fbar button{border-bottom:1px solid var(--line);margin-bottom:0;padding:7px 11px}
@@ -331,6 +341,15 @@ tr.resalta td{background:var(--amber-soft)}
 
     <p class="pie">La barra suma aprobados (verde), en revisión (ámbar), devueltos (azul) y en construcción (gris) del T<?php echo $trimestre; ?>. Para cambiar un dato, ábrelo en el Plan de acción.</p>
 </div>
+<dialog id="dlgPdf" aria-labelledby="dlgPdfT">
+    <h3 id="dlgPdfT">Exportar PDF</h3>
+    <p>¿Cómo quieres el reporte de facultades?</p>
+    <div class="opc">
+        <button type="button" data-desglose="1"><b>Desglosado</b><span>Cada facultad con sus indicadores abiertos</span></button>
+        <button type="button" data-desglose="0"><b>Sin desglosar</b><span>Solo las facultades, sin abrir sus indicadores</span></button>
+    </div>
+    <button type="button" class="cancelar" id="dlgPdfCancelar">Cancelar</button>
+</dialog>
 <script>
 (function () {
     // La tarjeta «En revisión» filtra las listas de abajo (Por dependencia y Facultades): solo ese estado, con los desplegables abiertos
@@ -381,18 +400,26 @@ tr.resalta td{background:var(--amber-soft)}
     }
     fFiltro.addEventListener('change', filtrarFacultades);
 
-    // Exportar PDF: se imprime solo la pestaña «Facultades» con lo que el filtro deja ver y los desplegables abiertos
-    document.getElementById('fPdf').addEventListener('click', function () {
-        var abiertos = [];
-        Array.prototype.forEach.call(document.querySelectorAll('#tp-fac details.facc'), function (d) { abiertos.push([d, d.open]); d.open = !d.hidden; });
-        var tituloAntes = document.title;
-        document.title = 'Concertación por facultad · T<?php echo (int)$trimestre; ?>' + (fFiltro.value ? ' · ' + ETIQUETA[fFiltro.value] : '');
-        window.onafterprint = function () {
-            document.title = tituloAntes;
-            abiertos.forEach(function (a) { a[0].open = a[1]; });
-            window.onafterprint = null;
-        };
-        window.print();
+    // Exportar PDF: el pop up pregunta si va desglosado (facultades con sus indicadores abiertos) o sin desglosar (solo las facultades).
+    // Se imprime solo la pestaña «Facultades», con lo que el filtro deja ver.
+    var dlg = document.getElementById('dlgPdf');
+    document.getElementById('fPdf').addEventListener('click', function () { dlg.showModal(); });
+    document.getElementById('dlgPdfCancelar').addEventListener('click', function () { dlg.close(); });
+    Array.prototype.forEach.call(dlg.querySelectorAll('[data-desglose]'), function (b) {
+        b.addEventListener('click', function () {
+            var desglosado = b.getAttribute('data-desglose') === '1';
+            dlg.close();
+            var abiertos = [];
+            Array.prototype.forEach.call(document.querySelectorAll('#tp-fac details.facc'), function (d) { abiertos.push([d, d.open]); d.open = desglosado && !d.hidden; });
+            var tituloAntes = document.title;
+            document.title = 'Concertación por facultad · T<?php echo (int)$trimestre; ?>' + (fFiltro.value ? ' · ' + ETIQUETA[fFiltro.value] : '') + (desglosado ? ' · desglosado' : '');
+            window.onafterprint = function () {
+                document.title = tituloAntes;
+                abiertos.forEach(function (a) { a[0].open = a[1]; });
+                window.onafterprint = null;
+            };
+            setTimeout(function () { window.print(); }, 50); // deja que el pop up termine de cerrarse antes de imprimir
+        });
     });
 })();
 </script>
