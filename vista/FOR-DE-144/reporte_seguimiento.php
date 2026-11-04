@@ -51,7 +51,7 @@ foreach ($indicadores as $r) {
         'id' => (int)$r['id'], 'nombre' => $nombre,
         'lmp' => implode(' · ', array_filter([$r['linea_codigo'], $r['motor_codigo'], $r['proyecto_codigo']])),
         'responsable' => $r['responsable_formulacion'] ?? '', 'tri' => $tri,
-        'estado' => $estado, 'estadoTxt' => $estadoTxt,
+        'estado' => $estado, 'estadoTxt' => $estadoTxt, 'revisa' => $estado === 'revision' ? min(4, $etapa + 1) : 0,
         'unidad' => $r['unidad_medida'] ?? '',
     ];
     // Por facultad: concertación con la vicerrectoría del semestre al que pertenece el trimestre elegido.
@@ -258,6 +258,10 @@ tr.resalta td{background:var(--amber-soft)}
                 <option value="pos">Parcial positivo (con algo reportado)</option>
                 <option value="neg">Parcial negativo (sin nada reportado)</option>
             </select>
+            <select id="dSub" aria-label="Filtrar por quién está revisando" hidden>
+                <option value="">Todos los revisores</option>
+                <?php foreach ($etapas as $num => $nombreEtapa): ?><option value="<?php echo (int)$num; ?>"><?php echo $h($nombreEtapa); ?></option><?php endforeach; ?>
+            </select>
             <button type="button" id="dPdf" title="Abre el diálogo de impresión: elige «Guardar como PDF»">Exportar PDF</button>
         </div>
         <div class="fbar" id="fbar" hidden>
@@ -300,7 +304,7 @@ tr.resalta td{background:var(--amber-soft)}
                 <thead><tr><th>Indicador</th><th>Línea · Motor · Proyecto</th><th>T1</th><th>T2</th><th>T3</th><th>T4</th><th>Estado T<?php echo (int)$trimestre; ?></th></tr></thead>
                 <tbody>
                 <?php foreach ($g['idx'] as $i): $f = $filas[$i]; $pc = $f['unidad'] === 'Porcentaje' ? '%' : ''; ?>
-                <tr data-estado="<?php echo $h($f['estado']); ?>">
+                <tr data-estado="<?php echo $h($f['estado']); ?>" data-rev="<?php echo (int)$f['revisa']; ?>">
                     <td class="nm"><b><?php echo $h($f['nombre']); ?></b></td>
                     <td><span class="lmp"><?php echo $h($f['lmp'] ?: '—'); ?></span></td>
                     <?php foreach ([1, 2, 3, 4] as $tn): $c = $f['tri'][$tn]; ?>
@@ -429,7 +433,7 @@ tr.resalta td{background:var(--amber-soft)}
 
     // Por dependencia: filtra por estado del trimestre; el número del medio sigue al filtro (parcial positivo/negativo igual que en Facultades)
     var ETQ_DEP = { publicado: 'aprobados', revision: 'en revisión', devuelto: 'devueltos', construccion: 'en construcción', sinreportar: 'sin reportar', pos: 'con reporte', neg: 'sin reporte' };
-    var dFiltro = document.getElementById('dFiltro');
+    var dFiltro = document.getElementById('dFiltro'), dSub = document.getElementById('dSub');
     function filtrarDependencias() {
         var e = dFiltro.value;
         var porEstado = !!e && e !== 'pos' && e !== 'neg';
@@ -438,17 +442,38 @@ tr.resalta td{background:var(--amber-soft)}
             var v = function (k) { return parseInt(d.getAttribute('data-' + k), 10) || 0; };
             var conAlgo = t - v('sinreportar');
             var n = porEstado ? v(e) : (e === 'pos' ? conAlgo : (e === 'neg' ? v('sinreportar') : 0));
+            // En revisión con un revisor elegido: solo cuentan los indicadores que está revisando esa etapa
+            var sub = e === 'revision' ? dSub.value : '';
+            if (sub) {
+                n = 0;
+                Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                    if (r.getAttribute('data-estado') === 'revision' && r.getAttribute('data-rev') === sub) n++;
+                });
+            }
             var c = d.querySelector('.acc-c');
-            c.innerHTML = e ? (t ? Math.round(n / t * 100) : 0) + '% ' + ETQ_DEP[e] + '<small>' + n + ' de ' + t + ' indicadores</small>' : c.getAttribute('data-orig');
+            var quien = sub ? ' · ' + dSub.options[dSub.selectedIndex].text : '';
+            c.innerHTML = e ? (t ? Math.round(n / t * 100) : 0) + '% ' + ETQ_DEP[e] + quien + '<small>' + n + ' de ' + t + ' indicadores</small>' : c.getAttribute('data-orig');
             Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
                 var est = r.getAttribute('data-estado');
-                r.hidden = porEstado ? est !== e : (e === 'pos' ? est === 'sinreportar' : false);
+                r.hidden = porEstado ? (est !== e || (sub !== '' && r.getAttribute('data-rev') !== sub)) : (e === 'pos' ? est === 'sinreportar' : false);
             });
-            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) { b.hidden = porEstado && b.getAttribute('data-k') !== e; });
+            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) {
+                b.hidden = porEstado && b.getAttribute('data-k') !== e;
+                // La bolita de «En revisión» sigue al revisor elegido
+                if (b.getAttribute('data-k') === 'revision') {
+                    if (b.getAttribute('data-orig') === null) b.setAttribute('data-orig', b.textContent);
+                    b.textContent = sub ? n : b.getAttribute('data-orig');
+                }
+            });
             d.hidden = (porEstado && n === 0) || (e === 'pos' && conAlgo === 0) || (e === 'neg' && conAlgo > 0);
         });
     }
-    dFiltro.addEventListener('change', filtrarDependencias);
+    dFiltro.addEventListener('change', function () {
+        dSub.hidden = dFiltro.value !== 'revision'; // el subfiltro solo existe con «En revisión»
+        if (dSub.hidden) dSub.value = '';
+        filtrarDependencias();
+    });
+    dSub.addEventListener('change', filtrarDependencias);
 
     // Exportar PDF (en cualquiera de las dos pestañas): el pop up pregunta si va desglosado (con los indicadores abiertos) o sin desglosar.
     // Se imprime solo la pestaña activa, con lo que el filtro deja ver.
@@ -467,7 +492,7 @@ tr.resalta td{background:var(--amber-soft)}
             var abiertos = [];
             Array.prototype.forEach.call(document.querySelectorAll(enFac ? '#tp-fac details.facc' : '#tp-dep details.acc'), function (d) { abiertos.push([d, d.open]); d.open = desglosado && !d.hidden; });
             var tituloAntes = document.title;
-            document.title = (enFac ? 'Concertación por facultad' : 'Estado por dependencia') + ' · T<?php echo (int)$trimestre; ?>' + (filtro ? ' · ' + etiqueta[filtro] : '') + (desglosado ? ' · desglosado' : '');
+            document.title = (enFac ? 'Concertación por facultad' : 'Estado por dependencia') + ' · T<?php echo (int)$trimestre; ?>' + (filtro ? ' · ' + etiqueta[filtro] : '') + (!enFac && dSub.value ? ' · ' + dSub.options[dSub.selectedIndex].text : '') + (desglosado ? ' · desglosado' : '');
             window.onafterprint = function () {
                 document.title = tituloAntes;
                 abiertos.forEach(function (a) { a[0].open = a[1]; });
