@@ -251,6 +251,8 @@ tr.resalta td{background:var(--amber-soft)}
                 <option value="conc">Concertado con vicerrectoría</option>
                 <option value="espera">En espera de concertación</option>
                 <option value="nada">Sin declarar</option>
+                <option value="pos">Parcial positivo (con verdes o naranjas)</option>
+                <option value="neg">Parcial negativo (sin nada reportado)</option>
             </select>
             <button type="button" id="fPdf" title="Abre el diálogo de impresión: elige «Guardar como PDF»">Exportar PDF</button>
         </div>
@@ -383,19 +385,26 @@ tr.resalta td{background:var(--amber-soft)}
     });
 
     // Facultades: filtra por estado de concertación; el número del medio sigue al filtro
-    var ETIQUETA = { conc: 'concertado', espera: 'en espera', nada: 'sin declarar' };
+    var ETIQUETA = { conc: 'concertado', espera: 'en espera', nada: 'sin declarar', pos: 'con reporte', neg: 'sin reporte' };
     var fFiltro = document.getElementById('fFiltro');
+    // Parcial positivo: la facultad tiene algo reportado (verdes o naranjas). Parcial negativo: todo en gris, no ha hecho nada.
     function filtrarFacultades() {
         var e = fFiltro.value;
+        var porEstado = e === 'conc' || e === 'espera' || e === 'nada';
         Array.prototype.forEach.call(document.querySelectorAll('details.facc'), function (d) {
             var t = parseInt(d.getAttribute('data-t'), 10) || 0;
-            var n = e ? (parseInt(d.getAttribute('data-' + e), 10) || 0) : parseInt(d.getAttribute('data-conc'), 10) || 0;
+            var conc = parseInt(d.getAttribute('data-conc'), 10) || 0, espera = parseInt(d.getAttribute('data-espera'), 10) || 0, nada = parseInt(d.getAttribute('data-nada'), 10) || 0;
+            var n = e === '' ? conc : (e === 'conc' ? conc : (e === 'espera' ? espera : (e === 'nada' ? nada : (e === 'pos' ? conc + espera : nada))));
             var c = d.querySelector('.acc-c');
             c.innerHTML = (t ? Math.round(n / t * 100) : 0) + '% ' + (e ? ETIQUETA[e] : 'concertado') + '<small>' + n + ' de ' + t + ' indicadores</small>';
-            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) { r.hidden = e !== '' && r.getAttribute('data-ec') !== e; });
-            // Con un filtro activo solo queda la bolita del estado elegido; sin filtro, las tres
-            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) { b.hidden = e !== '' && b.getAttribute('data-k') !== e; });
-            d.hidden = e !== '' && n === 0; // con un filtro activo solo se listan las facultades que tienen indicadores en ese estado
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                var ec = r.getAttribute('data-ec');
+                r.hidden = porEstado ? ec !== e : (e === 'pos' ? ec === 'nada' : false);
+            });
+            // Con un estado activo solo queda la bolita de ese estado; con «Todos» o con los parciales, las tres
+            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) { b.hidden = porEstado && b.getAttribute('data-k') !== e; });
+            // Se listan solo las facultades que cumplen el filtro
+            d.hidden = (porEstado && n === 0) || (e === 'pos' && conc + espera === 0) || (e === 'neg' && conc + espera > 0);
         });
     }
     fFiltro.addEventListener('change', filtrarFacultades);
