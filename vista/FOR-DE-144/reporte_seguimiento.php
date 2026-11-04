@@ -178,7 +178,7 @@ tr:last-child td{border-bottom:0}
 @media print{.tools,.tabs,.hero-acc,.kpis,.pie{display:none!important}body{background:#fff}.hero{background:none!important;color:var(--fg);padding:0}.hero small,.hero p{color:var(--muted)}.box{border:0;padding:0}.acc{break-inside:avoid}.tp[hidden]{display:none!important}}
 .fbar{margin-left:auto;display:flex;gap:8px;align-items:center;padding-bottom:6px}
 .fbar[hidden],.acc-chips .chip[hidden]{display:none}
-#dlgPdf{border:0;border-radius:16px;padding:22px 24px;max-width:420px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(20,49,99,.35);color:var(--fg)}
+#dlgPdf{margin:auto;border:0;border-radius:16px;padding:22px 24px;max-width:420px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(20,49,99,.35);color:var(--fg)}
 #dlgPdf::backdrop{background:rgba(13,33,71,.45)}
 #dlgPdf h3{font-size:17px;color:var(--navy);margin-bottom:6px}
 #dlgPdf p{color:var(--muted);font-size:13px;margin-bottom:16px}
