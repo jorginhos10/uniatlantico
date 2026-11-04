@@ -247,6 +247,19 @@ tr.resalta td{background:var(--amber-soft)}
     <nav class="tabs" role="tablist">
         <button type="button" role="tab" class="on" data-tp="tp-dep">Por dependencia <span><?php echo count($porDep); ?></span></button>
         <button type="button" role="tab" data-tp="tp-fac">Facultades <span><?php echo count($porFacultad); ?></span></button>
+        <div class="fbar" id="fbarDep">
+            <select id="dFiltro" aria-label="Filtrar dependencias por estado">
+                <option value="">Todos los estados</option>
+                <option value="publicado">Aprobado</option>
+                <option value="revision">En revisión</option>
+                <option value="devuelto">Devuelto</option>
+                <option value="construccion">En construcción</option>
+                <option value="sinreportar">Sin reportar</option>
+                <option value="pos">Parcial positivo (con algo reportado)</option>
+                <option value="neg">Parcial negativo (sin nada reportado)</option>
+            </select>
+            <button type="button" id="dPdf" title="Abre el diálogo de impresión: elige «Guardar como PDF»">Exportar PDF</button>
+        </div>
         <div class="fbar" id="fbar" hidden>
             <select id="fFiltro" aria-label="Filtrar por estado de concertación">
                 <option value="">Todos los estados</option>
@@ -268,7 +281,7 @@ tr.resalta td{background:var(--amber-soft)}
             // Avance sobre TODOS los indicadores del grupo: reportado = seguimiento aprobado por la Oficina de Planeación
             $cPct = $pctDe($g['publicado'], $g['total']);
         ?>
-        <details class="acc" data-t="<?php echo (int)$g['total']; ?>" data-a="<?php echo (int)$g['publicado']; ?>" data-r="<?php echo (int)$g['revision']; ?>">
+        <details class="acc" data-t="<?php echo (int)$g['total']; ?>" data-a="<?php echo (int)$g['publicado']; ?>" data-r="<?php echo (int)$g['revision']; ?>" data-publicado="<?php echo (int)$g['publicado']; ?>" data-revision="<?php echo (int)$g['revision']; ?>" data-devuelto="<?php echo (int)$g['devuelto']; ?>" data-construccion="<?php echo (int)$g['construccion']; ?>" data-sinreportar="<?php echo (int)$g['sinreportar']; ?>">
             <summary>
                 <span class="acc-n"><?php echo $h($g['nombre']); ?></span>
                 <span class="acc-c" data-orig="<?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small>" title="Reportados = seguimiento aprobado por la Oficina de Planeación, sobre los <?php echo $g['total']; ?> indicadores de este grupo"><?php echo $cPct; ?>% reportados<small><?php echo $g['publicado']; ?> de <?php echo $g['total']; ?> aprobados</small></span>
@@ -276,10 +289,11 @@ tr.resalta td{background:var(--amber-soft)}
                     <i class="s-ok" style="width:<?php echo $pctDe($g['publicado'], $g['total']); ?>%"></i><i class="s-rev" style="width:<?php echo $pctDe($g['revision'], $g['total']); ?>%"></i><i class="s-dev" style="width:<?php echo $pctDe($g['devuelto'], $g['total']); ?>%"></i><i class="s-con" style="width:<?php echo $pctDe($g['construccion'], $g['total']); ?>%"></i><i class="s-sin" style="width:<?php echo $pctDe($g['sinreportar'], $g['total']); ?>%"></i>
                 </span>
                 <span class="acc-chips">
-                    <span class="chip c-revision" title="En revisión"><?php echo $g['revision']; ?></span>
-                    <span class="chip c-devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
-                    <span class="chip c-construccion" title="En construcción: con valor, sin enviar a revisión"><?php echo $g['construccion']; ?></span>
-                    <span class="chip c-sinreportar" title="Sin reportar: ningún valor en este trimestre"><?php echo $g['sinreportar']; ?></span>
+                    <span class="chip c-publicado" data-k="publicado" title="Aprobados"><?php echo $g['publicado']; ?></span>
+                    <span class="chip c-revision" data-k="revision" title="En revisión"><?php echo $g['revision']; ?></span>
+                    <span class="chip c-devuelto" data-k="devuelto" title="Devueltos"><?php echo $g['devuelto']; ?></span>
+                    <span class="chip c-construccion" data-k="construccion" title="En construcción: con valor, sin enviar a revisión"><?php echo $g['construccion']; ?></span>
+                    <span class="chip c-sinreportar" data-k="sinreportar" title="Sin reportar: ningún valor en este trimestre"><?php echo $g['sinreportar']; ?></span>
                 </span>
             </summary>
             <div class="tw"><table>
@@ -348,10 +362,10 @@ tr.resalta td{background:var(--amber-soft)}
 </div>
 <dialog id="dlgPdf" aria-labelledby="dlgPdfT">
     <h3 id="dlgPdfT">Exportar PDF</h3>
-    <p>¿Cómo quieres el reporte de facultades?</p>
+    <p id="dlgPdfP">¿Cómo quieres el reporte?</p>
     <div class="opc">
-        <button type="button" data-desglose="1"><b>Desglosado</b><span>Cada facultad con sus indicadores abiertos</span></button>
-        <button type="button" data-desglose="0"><b>Sin desglosar</b><span>Solo las facultades, sin abrir sus indicadores</span></button>
+        <button type="button" data-desglose="1"><b>Desglosado</b><span>Cada grupo con sus indicadores abiertos</span></button>
+        <button type="button" data-desglose="0"><b>Sin desglosar</b><span>Solo los grupos, sin abrir sus indicadores</span></button>
     </div>
     <button type="button" class="cancelar" id="dlgPdfCancelar">Cancelar</button>
 </dialog>
@@ -378,12 +392,13 @@ tr.resalta td{background:var(--amber-soft)}
     }
     kRev.addEventListener('click', function () { filtrarRevision(kRev.getAttribute('aria-pressed') !== 'true'); });
     var botones = Array.prototype.slice.call(document.querySelectorAll('.tabs button[data-tp]'));
-    var fbar = document.getElementById('fbar');
+    var fbar = document.getElementById('fbar'), fbarDep = document.getElementById('fbarDep');
     botones.forEach(function (b) {
         b.addEventListener('click', function () {
             botones.forEach(function (x) { x.classList.toggle('on', x === b); });
             Array.prototype.forEach.call(document.querySelectorAll('.tp'), function (p) { p.hidden = p.id !== b.getAttribute('data-tp'); });
-            fbar.hidden = b.getAttribute('data-tp') !== 'tp-fac'; // el filtro y el PDF solo van con «Facultades»
+            fbar.hidden = b.getAttribute('data-tp') !== 'tp-fac'; // cada pestaña tiene su propio filtro y su PDF
+            fbarDep.hidden = b.getAttribute('data-tp') !== 'tp-dep';
         });
     });
 
@@ -412,19 +427,47 @@ tr.resalta td{background:var(--amber-soft)}
     }
     fFiltro.addEventListener('change', filtrarFacultades);
 
-    // Exportar PDF: el pop up pregunta si va desglosado (facultades con sus indicadores abiertos) o sin desglosar (solo las facultades).
-    // Se imprime solo la pestaña «Facultades», con lo que el filtro deja ver.
+    // Por dependencia: filtra por estado del trimestre; el número del medio sigue al filtro (parcial positivo/negativo igual que en Facultades)
+    var ETQ_DEP = { publicado: 'aprobados', revision: 'en revisión', devuelto: 'devueltos', construccion: 'en construcción', sinreportar: 'sin reportar', pos: 'con reporte', neg: 'sin reporte' };
+    var dFiltro = document.getElementById('dFiltro');
+    function filtrarDependencias() {
+        var e = dFiltro.value;
+        var porEstado = !!e && e !== 'pos' && e !== 'neg';
+        Array.prototype.forEach.call(document.querySelectorAll('#tp-dep details.acc'), function (d) {
+            var t = parseInt(d.getAttribute('data-t'), 10) || 0;
+            var v = function (k) { return parseInt(d.getAttribute('data-' + k), 10) || 0; };
+            var conAlgo = t - v('sinreportar');
+            var n = porEstado ? v(e) : (e === 'pos' ? conAlgo : (e === 'neg' ? v('sinreportar') : 0));
+            var c = d.querySelector('.acc-c');
+            c.innerHTML = e ? (t ? Math.round(n / t * 100) : 0) + '% ' + ETQ_DEP[e] + '<small>' + n + ' de ' + t + ' indicadores</small>' : c.getAttribute('data-orig');
+            Array.prototype.forEach.call(d.querySelectorAll('tbody tr'), function (r) {
+                var est = r.getAttribute('data-estado');
+                r.hidden = porEstado ? est !== e : (e === 'pos' ? est === 'sinreportar' : false);
+            });
+            Array.prototype.forEach.call(d.querySelectorAll('.acc-chips .chip[data-k]'), function (b) { b.hidden = porEstado && b.getAttribute('data-k') !== e; });
+            d.hidden = (porEstado && n === 0) || (e === 'pos' && conAlgo === 0) || (e === 'neg' && conAlgo > 0);
+        });
+    }
+    dFiltro.addEventListener('change', filtrarDependencias);
+
+    // Exportar PDF (en cualquiera de las dos pestañas): el pop up pregunta si va desglosado (con los indicadores abiertos) o sin desglosar.
+    // Se imprime solo la pestaña activa, con lo que el filtro deja ver.
     var dlg = document.getElementById('dlgPdf');
-    document.getElementById('fPdf').addEventListener('click', function () { dlg.showModal(); });
+    function abrirPdf() { dlg.showModal(); }
+    document.getElementById('fPdf').addEventListener('click', abrirPdf);
+    document.getElementById('dPdf').addEventListener('click', abrirPdf);
     document.getElementById('dlgPdfCancelar').addEventListener('click', function () { dlg.close(); });
     Array.prototype.forEach.call(dlg.querySelectorAll('[data-desglose]'), function (b) {
         b.addEventListener('click', function () {
             var desglosado = b.getAttribute('data-desglose') === '1';
             dlg.close();
+            var enFac = !document.getElementById('tp-fac').hidden;
+            var filtro = enFac ? fFiltro.value : dFiltro.value;
+            var etiqueta = enFac ? ETIQUETA : ETQ_DEP;
             var abiertos = [];
-            Array.prototype.forEach.call(document.querySelectorAll('#tp-fac details.facc'), function (d) { abiertos.push([d, d.open]); d.open = desglosado && !d.hidden; });
+            Array.prototype.forEach.call(document.querySelectorAll(enFac ? '#tp-fac details.facc' : '#tp-dep details.acc'), function (d) { abiertos.push([d, d.open]); d.open = desglosado && !d.hidden; });
             var tituloAntes = document.title;
-            document.title = 'Concertación por facultad · T<?php echo (int)$trimestre; ?>' + (fFiltro.value ? ' · ' + ETIQUETA[fFiltro.value] : '') + (desglosado ? ' · desglosado' : '');
+            document.title = (enFac ? 'Concertación por facultad' : 'Estado por dependencia') + ' · T<?php echo (int)$trimestre; ?>' + (filtro ? ' · ' + etiqueta[filtro] : '') + (desglosado ? ' · desglosado' : '');
             window.onafterprint = function () {
                 document.title = tituloAntes;
                 abiertos.forEach(function (a) { a[0].open = a[1]; });
