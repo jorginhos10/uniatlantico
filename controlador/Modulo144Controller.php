@@ -380,6 +380,12 @@ class Modulo144Controller {
                 $bl = $this->semestresBloqueados($itemActual);
                 if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento'], $_POST['descripcion_sem1'],
                     $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
+                // Los valores de los trimestres solo los edita el superadministrador. Los semestres, la meta ejecutada y el % de avance
+                // se derivan de ellos, así que tampoco se aceptan de otro usuario (si no, se podrían enviar directo).
+                if (!Roles::esSuperadmin()) {
+                    foreach ([1, 2, 3, 4] as $tSolo) unset($_POST['trimestre' . $tSolo . '_seguimiento']);
+                    unset($_POST['semestre1_seguimiento'], $_POST['semestre2_seguimiento'], $_POST['meta_ejecutada'], $_POST['porcentaje_avance']);
+                }
                 // Un trimestre aprobado no se modifica; uno en revisión solo lo edita quien debe decidir su etapa (el líder de metas
                 // puede ajustarlo antes de aprobar) o un administrador
                 $nivelCreadorG = Roles::nivel(($this->model->getEstadoFlujoTrimestre($id, 1)['creado_por_rol'] ?? ''));

@@ -6154,10 +6154,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador', 'sub administrador'], true)
             );
         ?>
+        const ES_SUPERADMIN = <?php echo (int)($_SESSION['usuario_id'] ?? 0) === 1 ? 'true' : 'false'; ?>;
         const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
         const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
 
         function aplicarBloqueoSemestres() {
+            // Los trimestres solo los edita el superadministrador (el servidor lo vuelve a exigir)
+            if (!ES_SUPERADMIN) $('.seg-input-tri').prop('disabled', true).attr('title', 'Solo el superadministrador edita los valores de los trimestres');
             if (BLOQUEO_SEM1) $('#seguimiento_logros, #seguimiento_limites, #seguimiento_observacion_estado, #seguimiento_acciones_fortalecimiento').prop('disabled', true);
             if (BLOQUEO_SEM2) $('#seguimiento_logros_sem2, #seguimiento_limites_sem2, #seguimiento_observacion_estado_sem2, #seguimiento_acciones_fortalecimiento_sem2').prop('disabled', true);
             if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_trimestre1, #seguimiento_trimestre2, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
