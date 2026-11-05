@@ -1550,6 +1550,11 @@ ob_start();
         .filtro-lista-bar .filtro-tipo-select, .filtro-lista-bar .filtro-texto-input { background: #E3E3E8 !important; border: 0 !important; border-radius: 9px !important; font-size: 13px; font-weight: 600; color: #1D1D1F; }
 
         /* Borradores / Publicados / Cancelados como control segmentado */
+        .lista-tabs-barra { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px; margin-bottom: 1.5rem; }
+        .lista-tabs-barra .lista-tabs { margin-bottom: 0 !important; }
+        .filtro-trim { display: inline-flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; color: #6E6E73; }
+        .filtro-trim select { font: inherit; font-weight: 600; color: #1D1D1F; border: 1px solid #D2D2D7; border-radius: 9px; padding: 6px 10px; background: #fff; min-height: 34px; }
+        .semaforo-trim.t-no-aplica { color: #6E6E73; background: #EEEEF2; }
         .lista-tabs { display: inline-flex !important; flex-wrap: wrap; gap: 2px; padding: 2px; border: 0 !important; border-radius: 9px; background: #E3E3E8; }
         .lista-tabs .nav-link { border: 0 !important; border-radius: 7px !important; background: transparent !important; color: #3A3A3C !important;
                                 font-size: 13px; font-weight: 600; padding: 6px 14px; margin: 0 !important; }
@@ -1979,7 +1984,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <span class="filtro-resultado-badge" id="filtroResultado-<?php echo $key; ?>" style="display:none;"></span>
                         </div>
 
-                        <ul class="nav nav-tabs lista-tabs mb-4" id="listaTabs-<?php echo $key; ?>" role="tablist">
+                                        <?php $trimElegidoLista = ($key === 'seguimiento' && in_array((int)($_GET['trim'] ?? 0), [1, 2, 3, 4], true)) ? (int)$_GET['trim'] : 0; ?>
+                        <div class="lista-tabs-barra">
+        <ul class="nav nav-tabs lista-tabs mb-4" id="listaTabs-<?php echo $key; ?>" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabBorradores-<?php echo $key; ?>" type="button" role="tab">
                                     <i class="fas fa-pen-fancy me-1"></i>Borradores <span class="badge bg-secondary ms-1"><?php echo count($borradoresVisiblesPorModulo[$key]); ?></span>
@@ -1996,6 +2003,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 </button>
                             </li>
 </ul>
+                            <?php if ($key === 'seguimiento'): ?>
+                            <label class="filtro-trim" title="Muestra el semáforo y el estado de cada fila de Borradores en el trimestre elegido">
+                                <span>Trimestre</span>
+                                <select id="filtroTrimestre" aria-label="Trimestre que muestra la lista" onchange="cambiarTrimestreLista(this.value)">
+                                    <option value="">El que espera acción</option>
+                                    <?php foreach ([1, 2, 3, 4] as $tOpt): ?><option value="<?php echo $tOpt; ?>"<?php echo ($trimElegidoLista ?? 0) === $tOpt ? ' selected' : ''; ?>>Trimestre <?php echo $tOpt; ?></option><?php endforeach; ?>
+                                </select>
+                            </label>
+                            <?php endif; ?>
+                        </div>
 
                         <div class="tab-content">
                         <!-- BORRADORES -->
@@ -2074,8 +2091,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             if (!$trimFila) foreach ($aplican as $tn) { $f_ = $flujoFila[$tn] ?? []; if (($f_['estado'] ?? 0) === 0 && ($f_['solicitud'] ?? 0) === 2) { $trimFila = $tn; break; } }
                                             if (!$trimFila) foreach ($aplican as $tn) { if (($flujoFila[$tn]['estado'] ?? 0) !== 2) { $trimFila = $tn; break; } }
                                             if (!$trimFila) $trimFila = end($aplican);
+                                            if ($trimElegidoLista) $trimFila = $trimElegidoLista; // el usuario eligió qué trimestre mostrar
                                             $tf = $flujoFila[$trimFila] ?? ['estado' => 0, 'solicitud' => 0, 'semaforo' => 0, 'rechazo' => 0];
                                             $trimEstadoTxt = $tf['estado'] === 2 ? 'aprobado' : ($tf['solicitud'] === 1 ? 'en revisión' : ($tf['solicitud'] === 2 ? 'devuelto' : 'en construcción'));
+                                            if (!in_array($trimFila, $aplican, true)) { $trimEstadoTxt = 'no aplica'; $tf = ['estado' => 0, 'solicitud' => 0, 'semaforo' => 0, 'rechazo' => 0]; }
                                             $borrador[$campoSolicitud] = $tf['solicitud'];
                                             $borrador[$campoSemaforo] = $tf['estado'] === 2 ? 4 : $tf['semaforo'];
                                             $borrador[$campoSemaforoRechazo] = $tf['rechazo'];
@@ -6157,6 +6176,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         const ES_SUPERADMIN = <?php echo (int)($_SESSION['usuario_id'] ?? 0) === 1 ? 'true' : 'false'; ?>;
         const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
         const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
+
+        // Cambia el trimestre que muestra la lista de Borradores del seguimiento (?trim=1..4; vacío = el que espera acción)
+        function cambiarTrimestreLista(t) {
+            const url = new URL(window.location.href);
+            if (t) url.searchParams.set('trim', t); else url.searchParams.delete('trim');
+            guardarEstadoAcordeon();
+            window.location.href = url.toString();
+        }
 
         function aplicarBloqueoSemestres() {
             // Los trimestres solo los edita el superadministrador (el servidor lo vuelve a exigir)
