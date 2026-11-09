@@ -220,6 +220,7 @@ body{
 }
 .proyecto-item:last-child{border-bottom:none}
 .proyecto-nombre{font-size:.78rem;color:rgba(0,0,0,.65);flex:1;line-height:1.4}
+.porcentaje-num small{font-size:.62em;font-weight:600;color:rgba(0,0,0,.45);white-space:nowrap}
 .peso-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:rgba(0,113,227,.1);color:#0058b0;font-size:.68rem;font-weight:700;white-space:nowrap;vertical-align:middle}
 .proyecto-valor{font-size:.82rem;font-weight:700;white-space:nowrap}
 .pv-alto{color:#34C759}
@@ -473,6 +474,14 @@ function renderLineas() {
     lineasData.forEach(function(linea, idx) {
         const color = LINEA_COLORS[idx % LINEA_COLORS.length];
         const pct   = parseFloat(linea.cumplimiento).toFixed(2);
+        // El porcentaje de la línea es RELATIVO al plan: lo que aporta (cumplimiento x peso) sobre el peso que tiene. Las aportaciones de
+        // todas las líneas suman el cumplimiento integral del plan. Sin peso configurado se muestra el cumplimiento de la línea.
+        const peso  = (linea.peso === null || linea.peso === undefined) ? null : parseFloat(linea.peso);
+        const aporte = peso === null ? null : (parseFloat(linea.cumplimiento) * peso / 100);
+        const numHtml = aporte === null
+            ? pct + '%'
+            : aporte.toFixed(2) + '%<small> de ' + peso.toFixed(2) + '%</small>';
+        const numTitulo = 'Cumplimiento de la línea: ' + pct + '%' + (aporte === null ? '' : ' · aporta ' + aporte.toFixed(2) + ' puntos al plan');
 
         const card = document.createElement('div');
         card.className = 'linea-card';
@@ -487,7 +496,7 @@ function renderLineas() {
                 '<div class="eye-icon" id="eye-' + idx + '" title="Ver gráfica de motores"><i class="fas fa-eye"></i></div>' +
                 '<div class="progress-container">' +
                     '<div class="progress-bar-bg"><div class="progress-fill" id="pf-' + idx + '" data-target="' + Math.min(pct,100) + '"></div></div>' +
-                    '<div class="porcentaje-num">' + pct + '%</div>' +
+                    '<div class="porcentaje-num" title="' + numTitulo + '">' + numHtml + '</div>' +
                 '</div>' +
                 '<div class="expand-icon" id="ex-' + idx + '" title="Expandir detalle"><i class="fas fa-chevron-down"></i></div>' +
             '</div>' +
