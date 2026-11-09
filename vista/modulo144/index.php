@@ -3794,6 +3794,51 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             restaurarEstadoAcordeon();
         });
 
+        // Tras publicar, aprobar, rechazar o solicitar: se vuelve a pedir la página en segundo plano y se cambia solo el contenido de las
+        // listas. No se recarga ni se pierde el lugar: mismo scroll, mismas pestañas abiertas y mismos filtros. Si algo falla, recarga normal.
+        let refrescandoListas = false;
+        async function refrescarSinRecargar() {
+            if (refrescandoListas) return;
+            refrescandoListas = true;
+            const scroll = window.scrollY;
+            try {
+                const res = await fetch(window.location.href, { credentials: 'same-origin' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+                const actual = document.getElementById('moduloTabsTopContent'), nuevo = doc.getElementById('moduloTabsTopContent');
+                const navActual = document.getElementById('moduloTabsTop'), navNuevo = doc.getElementById('moduloTabsTop');
+                if (!actual || !nuevo) throw new Error('sin listas');
+
+                const activas = Array.from(document.querySelectorAll('.tab-pane.active')).map(function(p) { return p.id; }).filter(Boolean);
+                actual.style.minHeight = actual.offsetHeight + 'px'; // evita que la página se acorte mientras se reemplaza
+                actual.innerHTML = nuevo.innerHTML;
+                if (navActual && navNuevo) navActual.innerHTML = navNuevo.innerHTML; // contadores de las pestañas
+
+                // El HTML nuevo trae las pestañas por defecto: se vuelven a mostrar las que estaban abiertas
+                activas.forEach(function(id) {
+                    const btn = document.querySelector('[data-bs-target="#' + id + '"]');
+                    if (btn && window.bootstrap) bootstrap.Tab.getOrCreateInstance(btn).show();
+                });
+                // Filtros guardados de cada módulo
+                document.querySelectorAll('[id^="panelModulo-"]').forEach(function(panel) {
+                    const mod = panel.id.replace('panelModulo-', '');
+                    try {
+                        if (typeof poblarSelectsFiltro === 'function') poblarSelectsFiltro(mod);
+                        const pref = (typeof FILTER_PREFS !== 'undefined') ? FILTER_PREFS[mod] : null;
+                        if (pref && pref.tipo_filtro && pref.tipo_filtro !== 'todos' && typeof aplicarFiltro === 'function') aplicarFiltro(mod);
+                    } catch (e) { /* un filtro que no se pueda reponer no debe impedir la actualización */ }
+                });
+                actual.style.minHeight = '';
+                window.scrollTo(0, scroll);
+            } catch (e) {
+                console.error('refrescarSinRecargar', e);
+                guardarEstadoAcordeon();
+                location.reload(); // plan B: la recarga de siempre
+            } finally {
+                refrescandoListas = false;
+            }
+        }
+
         let timeoutId = null;
         // Autoguardado de formulación: timer propio, "sesión" por cada apertura del modal (para descartar
         // respuestas AJAX de una apertura anterior) y bandera de edición real del usuario (abrir/ver no guarda).
@@ -4033,7 +4078,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 document.getElementById('hours').innerHTML = '00';
                 document.getElementById('minutes').innerHTML = '00';
                 document.getElementById('seconds').innerHTML = '00';
-                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 3000);
+                setTimeout(() => { refrescarSinRecargar(); }, 3000);
                 return;
             }
             
@@ -4089,8 +4134,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     timer: 1500,
                                     showConfirmButton: false
                                 }).then(() => {
-                                    guardarEstadoAcordeon();
-                                    location.reload();
+                                    refrescarSinRecargar();
                                 });
                             } else {
                                 checkbox.checked = !estadoActual;
@@ -4444,7 +4488,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 .fail(function() { Swal.fire('Error', 'Error de conexión con el servidor', 'error').then(function() { location.reload(); }); });
                             return;
                         }
-                        if (cambios) { guardarEstadoAcordeon(); location.reload(); }
+                        if (cambios) { refrescarSinRecargar(); }
                     });
                 },
                 error: function() {
@@ -4872,7 +4916,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                        setTimeout(() => { refrescarSinRecargar(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -4890,7 +4934,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Creado!', response.message, 'success');
-                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                        setTimeout(() => { refrescarSinRecargar(); }, 1500);
                     } else {
                         Swal.fire('Error', response.message, 'error');
                     }
@@ -4915,7 +4959,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 success: function(response) {
                     if (response.success) {
                         Swal.fire('¡Duplicado!', response.message, 'success');
-                        setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                        setTimeout(() => { refrescarSinRecargar(); }, 1500);
                     }
                 }
             });
@@ -5658,8 +5702,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         $('#modalSeguimiento').on('hidden.bs.modal', function() {
             if (!seguimientoGuardado) return;
             seguimientoGuardado = false;
-            guardarEstadoAcordeon();
-            location.reload();
+            refrescarSinRecargar();
         });
 
         function mostrarAutoSaveIndicator() {
@@ -6055,7 +6098,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Completado!', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1500);
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo cambiar el estado', 'error');
                             }
@@ -6087,7 +6130,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Listo!', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1500);
                             } else {
                                 Swal.fire('Error', response.message, 'error');
                             }
@@ -6121,7 +6164,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Listo!', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1500);
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo actualizar', 'error');
                             }
@@ -6150,7 +6193,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Aprobado!', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1200);
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo aprobar', 'error');
                             }
@@ -6222,7 +6265,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             Swal.fire({
                 icon: omitidos.length ? ((res.publicados || []).length ? 'warning' : 'error') : 'success',
                 title: res.message, html: html, width: 640, confirmButtonText: 'Aceptar'
-            }).then(function() { guardarEstadoAcordeon(); location.reload(); });
+            }).then(function() { refrescarSinRecargar(); });
         }
 
         function publicarBorradores(total) {
@@ -6316,7 +6359,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 $.post(basePath + '/modulo144/publicarSeguimientoTodos', { formulario_id: formularioId, trimestres: result.value }, function(r) {
                     if (r.success) {
                         Swal.fire({ icon: 'success', title: r.message, timer: 2200, showConfirmButton: false });
-                        setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 2200);
+                        setTimeout(function() { refrescarSinRecargar(); }, 2200);
                     } else {
                         Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
                     }
@@ -6328,7 +6371,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             $.post(basePath + '/modulo144/publicarSeguimiento', { id: id, trimestres: trimestres }, function(r) {
                 if (r.success) {
                     Swal.fire({ icon: 'success', title: r.message, timer: 1200, showConfirmButton: false });
-                    setTimeout(function() { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                    setTimeout(function() { refrescarSinRecargar(); }, 1200);
                 } else {
                     Swal.fire('No se pudo publicar', r.message || 'Intenta de nuevo', 'error');
                 }
@@ -6379,7 +6422,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     success: function(response) {
                         if (response.success) {
                             Swal.fire('Listo', response.message, 'success');
-                            setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                            setTimeout(() => { refrescarSinRecargar(); }, 1200);
                         } else {
                             Swal.fire('Error', response.message || 'No se pudo devolver a borrador', 'error');
                         }
@@ -6417,7 +6460,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('Rechazado', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1200);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1200);
                             } else {
                                 Swal.fire('Error', response.message || 'No se pudo rechazar', 'error');
                             }
@@ -6498,12 +6541,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
         });
 
-        // Al cerrar la ventana con cambios, se recarga para ver el estado nuevo en la lista
+        // Al cerrar la ventana con cambios, la lista se actualiza en su lugar (sin recargar)
         $(document).on('hidden.bs.modal', '#modalAprobTrim', function() {
             if (!aprobTrimCambio) return;
             aprobTrimCambio = false;
-            guardarEstadoAcordeon();
-            location.reload();
+            refrescarSinRecargar();
         });
 
         // Estado de cada trimestre dentro del seguimiento: etiqueta junto a su casilla; un trimestre aprobado ya no se edita
@@ -6590,7 +6632,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         success: function(response) {
                             if (response.success) {
                                 Swal.fire('¡Eliminado!', response.message, 'success');
-                                setTimeout(() => { guardarEstadoAcordeon(); location.reload(); }, 1500);
+                                setTimeout(() => { refrescarSinRecargar(); }, 1500);
                             }
                         }
                     });
