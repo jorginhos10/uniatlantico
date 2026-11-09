@@ -789,8 +789,12 @@ class FORDE144Model {
             }
             $lineas[] = ['id' => $linea['id'], 'codigo' => $linea['codigo'] ?: '—', 'cumplimiento' => round($ponderar($motores, $pesos['motor']), 2)];
         }
-        $res = ['global' => round($ponderar($lineas, $pesos['linea']), 2), 'lineas' => []];
-        foreach ($lineas as $l) $res['lineas'][(string)$l['codigo']] = (float)$l['cumplimiento'];
+        // 'pesos': el peso configurado de cada línea (null si no tiene): con él, lo que aporta la línea al plan = cumplimiento x peso
+        $res = ['global' => round($ponderar($lineas, $pesos['linea']), 2), 'lineas' => [], 'pesos' => []];
+        foreach ($lineas as $l) {
+            $res['lineas'][(string)$l['codigo']] = (float)$l['cumplimiento'];
+            $res['pesos'][(string)$l['codigo']] = isset($pesos['linea'][$l['id']]) ? round((float)$pesos['linea'][$l['id']]['porcentaje'], 2) : null;
+        }
         return $res;
     }
 

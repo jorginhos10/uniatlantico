@@ -313,6 +313,7 @@ $nRevision = count(array_filter($filas, fn($r) => $r['revision']));
 $avance = $avanceRev = null;
 $porTrim = []; // t (1 a 4) => ['esp' =>, 'apr' =>, 'rev' =>]: cumplimiento acumulado hasta ese trimestre
 $infPorLinea = ['apr' => [], 'rev' => []];
+$pesoPorLinea = []; // código de línea => peso configurado (lo que aporta al plan = cumplimiento x peso)
 $esperado = dbEsperadoPct($trimVigente);
 if ($pdo && $plan && $rows) {
     require_once __DIR__ . '/../../modelo/FORDE144Model.php';
@@ -341,6 +342,7 @@ if ($pdo && $plan && $rows) {
         // contra el que se compara «Esperado» y el que miden «Reportados» y «En meta». El avance por línea y el avance ponderado salen de ahí.
         $tAct = $trimVigente ?: 1;
         foreach (['apr', 'rev'] as $k) $infPorLinea[$k] = $cumplVar[$k . $tAct]['lineas'] ?? [];
+        $pesoPorLinea = $cumplVar['apr' . $tAct]['pesos'] ?? [];
         $avance    = $porTrim[$tAct]['apr'];
         $avanceRev = $porTrim[$tAct]['rev'];
     } catch (Throwable $e) { error_log('Dash trimestres: ' . $e->getMessage()); $porTrim = []; }
@@ -373,6 +375,7 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
         'pct'    => $infPorLinea['apr'][(string)$cod] ?? null,
         'rev'    => $infPorLinea['rev'][(string)$cod] ?? null,
         'esp'    => $esperado,
+        'peso'   => $pesoPorLinea[(string)$cod] ?? null,
     ];
 }
 
@@ -584,7 +587,7 @@ ob_start();
 .pa-pill i.dot { width: 6px; height: 6px; border-radius: 50%; }
 
 .pa-lines { display: flex; flex-direction: column; gap: 16px; margin-top: 18px; }
-.pa-line { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr) 70px; gap: 14px; align-items: center; }
+.pa-line { display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr) 96px; gap: 14px; align-items: center; }
 .pa-line .nm { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 14px; line-height: 1.25; }
 .pa-code { flex: none; font-size: 12px; font-weight: 700; color: var(--pa-blue-ink); background: rgba(0,122,255,.10); padding: 3px 7px; border-radius: 6px; }
 .pa-track { position: relative; height: 10px; border-radius: 999px; background: var(--pa-track); }
@@ -603,7 +606,8 @@ ob_start();
 @media (max-width: 900px) { .pa-trims { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .pa-trims { grid-template-columns: minmax(0, 1fr); } }
 .pa-track .goal { position: absolute; top: -5px; bottom: -5px; width: 2px; border-radius: 1px; background: var(--pa-text); opacity: .5; }
-.pa-line .pct { text-align: right; font-size: 15px; font-weight: 600; }
+.pa-line .pct { text-align: right; font-size: 15px; font-weight: 600; line-height: 1.2; }
+.pa-line .pct small { display: block; font-size: 11px; font-weight: 500; color: var(--pa-sub); }
 .pa-legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--pa-sub); margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--pa-sep-soft); }
 .pa-legend span { display: flex; align-items: center; gap: 6px; }
 .pa-legend i { width: 10px; height: 10px; border-radius: 3px; }
@@ -702,7 +706,7 @@ a.pa-stage:hover { background: var(--pa-fill); }
     .pa-head h1 { font-size: 28px; }
     .pa-hero { padding: 22px 20px; }
     .pa-hero-text { max-width: 100%; }
-    .pa-line { grid-template-columns: minmax(0, 1fr) 64px; }
+    .pa-line { grid-template-columns: minmax(0, 1fr) 96px; }
     .pa-line .pa-track { grid-column: 1 / -1; grid-row: 2; }
     .pa-kpi.hero { flex-direction: column; align-items: flex-start; }
     .pa-weights { grid-template-columns: 1fr; }
@@ -901,7 +905,14 @@ require_once __DIR__ . '/../complementos/header.php';
                         <div class="fill" style="width:<?php echo round($pl['pct'] ?? 0, 1); ?>%;background:<?php echo $t['bar']; ?>"></div>
                         <div class="goal" style="left:calc(<?php echo (int)$pl['esp']; ?>% - 1px)"></div>
                     </div>
-                    <span class="pct num" style="color:<?php echo $t['ink']; ?>"><?php echo $pl['pct'] === null ? '—' : dbFmt($pl['pct']) . ' %'; ?></span>
+                    <?php
+                        // Mismo porcentaje del informe: lo que la línea aporta al plan (cumplimiento x peso) sobre su peso.
+                        // Sin peso configurado se muestra el cumplimiento de la línea.
+                        $aporte = ($pl['pct'] !== null && $pl['peso'] !== null) ? $pl['pct'] * $pl['peso'] / 100 : null;
+                    ?>
+                    <span class="pct num" style="color:<?php echo $t['ink']; ?>" title="Cumplimiento de la línea: <?php echo $pl['pct'] === null ? '—' : dbFmt($pl['pct'], 2) . ' %'; ?>">
+                        <?php echo $pl['pct'] === null ? '—' : ($aporte === null ? dbFmt($pl['pct'], 2) . ' %' : dbFmt($aporte, 2) . ' %<small>de ' . dbFmt($pl['peso'], 2) . ' %</small>'); ?>
+                    </span>
                 </a>
                 <?php endforeach; ?>
                 <?php if (!$porLinea): ?><div class="pa-empty-box">No hay metas aprobadas en este plan.</div><?php endif; ?>
