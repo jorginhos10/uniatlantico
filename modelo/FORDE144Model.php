@@ -293,12 +293,14 @@ class FORDE144Model {
                 $ids = array_values(array_filter(array_map('intval', $opts['ids'])));
                 $sqlIds = $ids ? ' AND f.id IN (' . implode(',', $ids) . ')' : ' AND 1 = 0';
             }
-            // 'trimestres' => true: la fila que recibe el callback 'avance' trae también la meta anual y los valores por trimestre
-            // (las columnas de trimestre las crea el Módulo 144; quien use la opción debe haberlas asegurado antes)
-            // Con el estado de aprobación de cada trimestre: tN_estado (2 = aprobado) y tN_sol (1 = en revisión)
+            // La fila trae siempre la meta anual, los valores por trimestre y el estado de aprobación de cada uno: tN_estado (2 = aprobado)
+            // y tN_sol (1 = en revisión). Las columnas y la tabla de trimestres las crea el Módulo 144.
+            require_once __DIR__ . '/Modulo144Model.php';
+            $mod144 = new Modulo144Model();
+            $mod144->asegurarColumnasDescripcionSemestres();
             $extraCols = '';
-            if (!empty($opts['trimestres'])) {
-                $extraCols = ', f.meta_programada';
+            if (true) {
+                $extraCols = ', f.meta_programada, f.responsable_formulacion, fa.nombre AS fac_nombre';
                 foreach ([1, 2, 3, 4] as $n) {
                     $extraCols .= ", f.trimestre{$n}_seguimiento"
                         . ", (SELECT x.estado FROM seguimiento_trimestres_144 x WHERE x.formulacion_id = f.id AND x.trimestre = {$n}) AS t{$n}_estado"
@@ -321,14 +323,19 @@ class FORDE144Model {
                  LEFT JOIN lineas_estrategicas le ON f.linea_estrategica = le.nombre AND le.activo = 1
                  LEFT JOIN motores m ON f.motor_desarrollo = m.nombre AND m.linea_id = le.id AND m.activo = 1
                  LEFT JOIN proyectos p ON f.proyecto = p.nombre AND p.motor_id = m.id AND p.activo = 1
+                 LEFT JOIN facultades fa ON f.facultad_id = fa.id
                  WHERE f.formulario_id = :fid AND f.estado_formulacion " . (!empty($opts['soloAprobadas']) ? '= 2' : '!= 1') . $sqlIds
             );
             $stmt->execute([':fid' => $formulario_id]);
             $rows = $stmt->fetchAll();
-            if (!empty($opts['avance']) && is_callable($opts['avance'])) {
-                foreach ($rows as &$rowAv) $rowAv['avance'] = max(0, min(100, (float)call_user_func($opts['avance'], $rowAv)));
-                unset($rowAv);
-            }
+            // Avance de cada indicador: el que pida quien llama o, por defecto, lo APROBADO acumulado hasta el trimestre vigente
+            // (el cumplimiento actual; no hace falta que el indicador tenga los cuatro trimestres aprobados para aportar)
+            $tAvance = $mod144->getTrimestreVigente($formulario_id, $anio) ?: 1;
+            $avanceFn = (!empty($opts['avance']) && is_callable($opts['avance']))
+                ? $opts['avance']
+                : function ($r) use ($tAvance) { return self::pctAcumTrim($r, $tAvance, false); };
+            foreach ($rows as &$rowAv) $rowAv['avance'] = max(0, min(100, (float)call_user_func($avanceFn, $rowAv)));
+            unset($rowAv);
 
             // Pesos configurados para el año (solo los mayores a 0), con nombres para los que no tengan datos
             $pesosLinea = $pesosMotor = $pesosProyecto = [];
@@ -456,27 +463,36 @@ class FORDE144Model {
 
             $global = $ponderar($lineas, $pesosLinea);
 
-            $stmtD = $this->db->prepare(
-                "SELECT
-                    COALESCE(NULLIF(TRIM(f.responsable_formulacion), ''), fa.nombre, 'Sin dependencia') as dependencia,
-                    COUNT(f.id) as total_indicadores,
-                    SUM(CASE WHEN f.estado_seguimiento = 2 THEN 1 ELSE 0 END) as reportados,
-                    SUM(CASE WHEN ($calc) >= 80 THEN 1 ELSE 0 END) as indicadores_80,
-                    ROUND(AVG($calc),2) as cumplimiento
-                 FROM formulacion_144 f
-                 LEFT JOIN facultades fa ON f.facultad_id = fa.id
-                 WHERE f.formulario_id = :fid AND f.estado_formulacion = 2
-                 GROUP BY dependencia
-                 ORDER BY cumplimiento DESC"
-            );
-            $stmtD->execute([':fid' => $formulario_id]);
-            $dependencias = $stmtD->fetchAll();
+            // Reportado = el trimestre vigente aprobado por la Oficina de Planeación (T1 si aún no vence ninguno)
+            $tv = $mod144->getTrimestreVigente($formulario_id, $anio) ?: 1;
+            $aplicaTv = function ($r) use ($tv) { return !(($r['tipo_medicion'] ?? '') === 'Límite' && $tv <= 2); };
+            $reportado = function ($r) use ($tv, $aplicaTv) { return $aplicaTv($r) && (int)($r['t' . $tv . '_estado'] ?? 0) === 2; };
+
+            $porDep = [];
+            foreach ($rows as $r) {
+                $dep = trim((string)($r['responsable_formulacion'] ?? ''));
+                if ($dep === '') $dep = trim((string)($r['fac_nombre'] ?? '')) ?: 'Sin dependencia';
+                if (!isset($porDep[$dep])) $porDep[$dep] = ['dependencia' => $dep, 'total_indicadores' => 0, 'reportados' => 0, 'indicadores_80' => 0, 'suma' => 0.0];
+                $porDep[$dep]['total_indicadores']++;
+                if ($reportado($r)) $porDep[$dep]['reportados']++;
+                if ((float)$r['avance'] >= 80) $porDep[$dep]['indicadores_80']++;
+                $porDep[$dep]['suma'] += (float)$r['avance'];
+            }
+            $dependencias = [];
+            foreach ($porDep as $d) {
+                $d['cumplimiento'] = round($d['suma'] / max(1, $d['total_indicadores']), 2);
+                unset($d['suma']);
+                $dependencias[] = $d;
+            }
+            usort($dependencias, function ($a, $b) { return $b['cumplimiento'] <=> $a['cumplimiento']; });
 
             return [
                 'facultades'          => $this->getInformeFacultades($formulario_id),
                 'global_cumplimiento' => round($global, 2),
-                'metas'               => count($rows),
-                'reportados'          => count(array_filter($rows, function ($r) { return (int)($r['estado_seguimiento'] ?? 0) === 2; })),
+                'metas'               => count(array_filter($rows, $aplicaTv)),
+                'metas_total'         => count($rows),
+                'trimestre_reporte'   => $tv,
+                'reportados'          => count(array_filter($rows, $reportado)),
                 'lineas'              => $lineas,
                 'dependencias'        => $dependencias,
             ];
@@ -609,6 +625,38 @@ class FORDE144Model {
     }
 
     // Estado actual de los indicadores publicados de un formulario (landing "Reporte de seguimiento")
+    // Cumplimiento (0 a 100) de un indicador con lo acumulado hasta el trimestre $k frente a su meta anual, según el tipo de medición:
+    // Acumulado → línea base + suma de los trimestres; Nuevo gestionado → suma; Promedio → promedio de los reportados;
+    // Último valor reportado → el del último trimestre con dato; Límite (solo T3 y T4) → 100 si lo declarado no pasa el límite.
+    // Solo cuentan los trimestres aprobados (tN_estado = 2) y, con $conRevision, también los que están en revisión (tN_sol = 1).
+    public static function pctAcumTrim($r, $k, $conRevision = false) {
+        $num = function ($v) {
+            if ($v === null) return null;
+            $v = str_replace(['%', ' '], '', (string)$v);
+            $v = str_replace(',', '.', $v);
+            return is_numeric($v) ? (float)$v : null;
+        };
+        $tipo = (string)($r['tipo_medicion'] ?? '');
+        if ($tipo === 'Límite' && $k < 3) return 0.0; // T1 y T2 no se registran: cuenta 0 hasta T3, para medir siempre los mismos indicadores
+        $meta = $num($r['meta_programada'] ?? null);
+        $vals = [];
+        for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
+            $e = (int)($r['t' . $i . '_estado'] ?? 0);
+            $aprobado = $e === 2;
+            $enRevision = $e === 0 && (int)($r['t' . $i . '_sol'] ?? 0) === 1;
+            if (!$aprobado && !($conRevision && $enRevision)) continue;
+            $v = $num($r['trimestre' . $i . '_seguimiento'] ?? null);
+            if ($v !== null) $vals[] = $v;
+        }
+        if (!$vals) return 0.0;
+        if ($tipo === 'Límite') return ($meta !== null && end($vals) <= $meta) ? 100.0 : 0.0;
+        if ($tipo === 'Promedio') $logrado = array_sum($vals) / count($vals);
+        elseif ($tipo === 'Último valor reportado') $logrado = end($vals);
+        elseif ($tipo === 'Acumulado') $logrado = ($num($r['linea_base_meta'] ?? null) ?? 0) + array_sum($vals);
+        else $logrado = array_sum($vals);
+        return ($meta !== null && $meta > 0) ? max(0.0, min(100.0, $logrado / $meta * 100)) : 0.0;
+    }
+
     // Cumplimiento ponderado (global y por línea) de VARIAS formas de medir el avance, leyendo los indicadores y los pesos UNA sola vez.
     // $variantes: [clave => callable(fila) => avance 0-100]; la fila trae meta_programada, trimestreN_seguimiento y tN_estado / tN_sol.
     // $opts: 'ids' => [int] solo esos indicadores (lo que el usuario puede ver); en ese caso las líneas, motores y proyectos con

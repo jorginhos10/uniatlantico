@@ -355,7 +355,7 @@ body{
         <div class="global-sub" style="margin-top:4px">
             <?php
                 $metas = (int)($informe['metas'] ?? 0); $rep = (int)($informe['reportados'] ?? 0);
-                echo $rep . ' de ' . $metas . ' metas aprobadas con seguimiento reportado (aprobado por la Oficina de Planeación). Lo no reportado aporta 0 %.';
+                echo $rep . ' de ' . $metas . ' metas con el T' . (int)($informe['trimestre_reporte'] ?? 1) . ' aprobado por la Oficina de Planeación. El cumplimiento suma lo aprobado hasta hoy, trimestre a trimestre; lo no aprobado aporta 0 %.';
             ?>
         </div>
     </div>

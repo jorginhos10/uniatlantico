@@ -61,24 +61,8 @@ function dbEsperadoPct($q) {
 // Sin ningún trimestre reportado hasta $k es 0. Solo cuentan los trimestres aprobados (tN_estado = 2) y, con $conRevision,
 // también los que están en revisión (tN_sol = 1): cada trimestre se aprueba por separado.
 function dbPctAcumTrim($r, $k, $conRevision = false) {
-    $tipo = (string)($r['tipo_medicion'] ?? '');
-    if ($tipo === 'Límite' && $k < 3) return 0.0; // en «Límite» T1 y T2 no se registran: cuenta 0 hasta T3, para que todas las columnas midan los mismos indicadores
-    $meta = dbNum($r['meta_programada'] ?? null);
-    $vals = [];
-    for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
-        $aprobado = (int)($r['t' . $i . '_estado'] ?? 0) === 2;
-        $enRevision = (int)($r['t' . $i . '_estado'] ?? 0) === 0 && (int)($r['t' . $i . '_sol'] ?? 0) === 1;
-        if (!$aprobado && !($conRevision && $enRevision)) continue;
-        $v = dbNum($r['trimestre' . $i . '_seguimiento'] ?? null);
-        if ($v !== null) $vals[] = $v;
-    }
-    if (!$vals) return 0;
-    if ($tipo === 'Límite') return ($meta !== null && end($vals) <= $meta) ? 100 : 0;
-    if ($tipo === 'Promedio') $logrado = array_sum($vals) / count($vals);
-    elseif ($tipo === 'Último valor reportado') $logrado = end($vals);
-    elseif ($tipo === 'Acumulado') $logrado = (dbNum($r['linea_base_meta'] ?? null) ?? 0) + array_sum($vals);
-    else $logrado = array_sum($vals);
-    return ($meta !== null && $meta > 0) ? max(0, min(100, $logrado / $meta * 100)) : 0;
+    require_once __DIR__ . '/../../modelo/FORDE144Model.php';
+    return FORDE144Model::pctAcumTrim($r, $k, $conRevision); // una sola implementación, igual a la del informe
 }
 function dbTono($p) {
     if ($p === null) return 'none';
@@ -353,11 +337,12 @@ if ($pdo && $plan && $rows) {
             }
             $porTrim[$t] = $celda;
         }
-        // Avance por línea: lo acumulado a T4 es todo lo aprobado hasta hoy
-        foreach (['apr', 'rev'] as $k) $infPorLinea[$k] = $cumplVar[$k . '4']['lineas'] ?? [];
-        // Avance ponderado = todo lo aprobado, trimestre a trimestre (no solo los indicadores con los cuatro aprobados)
-        $avance    = $porTrim[4]['apr'];
-        $avanceRev = $porTrim[4]['rev'];
+        // Cumplimiento ACTUAL = lo aprobado acumulado hasta el trimestre vigente (T1 si aún no vence ninguno): es el mismo trimestre
+        // contra el que se compara «Esperado» y el que miden «Reportados» y «En meta». El avance por línea y el avance ponderado salen de ahí.
+        $tAct = $trimVigente ?: 1;
+        foreach (['apr', 'rev'] as $k) $infPorLinea[$k] = $cumplVar[$k . $tAct]['lineas'] ?? [];
+        $avance    = $porTrim[$tAct]['apr'];
+        $avanceRev = $porTrim[$tAct]['rev'];
     } catch (Throwable $e) { error_log('Dash trimestres: ' . $e->getMessage()); $porTrim = []; }
 }
 
@@ -405,7 +390,7 @@ if ($pdo && $plan && $filas) {
 }
 
 // Trimestres aprobados (suma de los indicadores visibles) y «En meta»: indicadores cuyo cumplimiento con lo aprobado hasta hoy
-// (trimestres aprobados, acumulados a T4) llega al 80 % de la meta anual
+// (trimestres aprobados, acumulados al trimestre vigente) llega a lo esperado de ese trimestre
 $nTrimAprob = 0;
 foreach ($filas as $fila) {
     foreach ($trimFlujo[(int)$fila['id']] ?? [] as $tn => $x) {
