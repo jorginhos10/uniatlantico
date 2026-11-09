@@ -62,7 +62,7 @@ function dbEsperadoPct($q) {
 // también los que están en revisión (tN_sol = 1): cada trimestre se aprueba por separado.
 function dbPctAcumTrim($r, $k, $conRevision = false) {
     $tipo = (string)($r['tipo_medicion'] ?? '');
-    if ($tipo === 'Límite' && $k < 3) return null; // en «Límite» T1 y T2 no se registran: no cuentan ni como 0 ni en el promedio
+    if ($tipo === 'Límite' && $k < 3) return 0.0; // en «Límite» T1 y T2 no se registran: cuenta 0 hasta T3, para que todas las columnas midan los mismos indicadores
     $meta = dbNum($r['meta_programada'] ?? null);
     $vals = [];
     for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= $k; $i++) {
@@ -391,16 +391,6 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
     ];
 }
 
-// Flujo de aprobación del seguimiento (C = en construcción o devuelto; G/L/V = aprobado hasta esa etapa; P = aprobado por Planeación)
-$flujo = ['C' => 0, 'G' => 0, 'L' => 0, 'V' => 0, 'P' => 0];
-foreach ($filas as $r) {
-    if ($r['aprobado']) { $flujo['P']++; continue; }
-    if ($r['solicitud'] !== 1 || $r['etapa'] === 0) { $flujo['C']++; continue; }
-    $flujo[['', 'G', 'L', 'V', 'V'][min(4, $r['etapa'])]]++;
-}
-$flujoMax = max(1, max($flujo));
-$esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
-
 // Estado de aprobación de cada trimestre del seguimiento: id => [trimestre => ['estado', 'solicitud', 'etapa']]
 $trimFlujo = [];
 if ($pdo && $plan && $filas) {
@@ -417,7 +407,12 @@ if ($pdo && $plan && $filas) {
 // Trimestres aprobados (suma de los indicadores visibles) y «En meta»: indicadores cuyo cumplimiento con lo aprobado hasta hoy
 // (trimestres aprobados, acumulados a T4) llega al 80 % de la meta anual
 $nTrimAprob = 0;
-foreach ($filas as $fila) foreach ($trimFlujo[(int)$fila['id']] ?? [] as $x) if ($x['estado'] === 2) $nTrimAprob++;
+foreach ($filas as $fila) {
+    foreach ($trimFlujo[(int)$fila['id']] ?? [] as $tn => $x) {
+        if (($fila['tipo_medicion'] ?? '') === 'Límite' && $tn <= 2) continue; // no aplica: no cuenta
+        if ($x['estado'] === 2) $nTrimAprob++;
+    }
+}
 // «Reportados» depende del trimestre vigente (el del selector): los indicadores con ese trimestre aprobado por la Oficina de Planeación;
 // «en revisión», los que lo tienen esperando aprobación. Si aún no vence ningún trimestre se toma el T1.
 $trimRep = $trimVigente ?: 1;
@@ -429,6 +424,19 @@ foreach ($filas as $fila) {
     if ($x['estado'] === 2) $nAprob++;
     elseif ($x['estado'] === 0 && $x['solicitud'] === 1) $nRevision++;
 }
+// Flujo de aprobación del trimestre elegido (C = en construcción o devuelto; G/L/V = aprobado hasta esa etapa; P = aprobado por Planeación).
+// Misma población y mismo trimestre que «Reportados»: P es igual a ese número.
+$flujo = ['C' => 0, 'G' => 0, 'L' => 0, 'V' => 0, 'P' => 0];
+foreach ($filas as $fila) {
+    if (($fila['tipo_medicion'] ?? '') === 'Límite' && $trimRep <= 2) continue;
+    $x = $trimFlujo[(int)$fila['id']][$trimRep] ?? ['estado' => 0, 'solicitud' => 0, 'etapa' => 0];
+    if ($x['estado'] === 2) { $flujo['P']++; continue; }
+    if ($x['solicitud'] !== 1 || $x['etapa'] === 0) { $flujo['C']++; continue; }
+    $flujo[['', 'G', 'L', 'V', 'V'][min(4, $x['etapa'])]]++;
+}
+$flujoMax = max(1, max($flujo));
+$esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
+
 // «En meta»: indicadores cuyo cumplimiento con lo aprobado, acumulado al trimestre vigente, llega a lo esperado para ese trimestre
 // (30, 60, 80 y 100 %). Se muestra «N de M», con M los indicadores a los que aplica el trimestre.
 $enMeta = 0; $enMetaDe = 0;
@@ -438,8 +446,8 @@ if ($trimFlujo) {
         foreach ($pdo->query("SELECT id, tipo_medicion, linea_base_meta, meta_programada, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
                               FROM formulacion_144 WHERE id IN ($idsFilas)") as $x) {
             foreach ([1, 2, 3, 4] as $i) $x['t' . $i . '_estado'] = $trimFlujo[(int)$x['id']][$i]['estado'] ?? 0;
+            if ($x['tipo_medicion'] === 'Límite' && $trimRep <= 2) continue; // no aplica a este trimestre
             $p = dbPctAcumTrim($x, $trimRep, false);
-            if ($p === null) continue;
             $enMetaDe++;
             if ($p >= dbEsperadoPct($trimRep)) $enMeta++;
         }
@@ -922,7 +930,7 @@ require_once __DIR__ . '/../complementos/header.php';
         </section>
 
         <section class="pa-card" style="flex:5 1 340px;display:flex;flex-direction:column">
-            <h2>Flujo de aprobación del seguimiento</h2>
+            <h2>Flujo de aprobación · T<?php echo (int)$trimRep; ?></h2>
             <div class="pa-flow">
                 <?php
                 $etapasFlujo = [
