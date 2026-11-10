@@ -380,10 +380,10 @@ class Modulo144Controller {
                 $bl = $this->semestresBloqueados($itemActual);
                 if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento'], $_POST['descripcion_sem1'],
                     $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
-                // Los valores de los trimestres solo los edita el superadministrador. Los semestres, la meta ejecutada y el % de avance
-                // se derivan de ellos, así que tampoco se aceptan de otro usuario (si no, se podrían enviar directo).
+                // Los semestres, la meta ejecutada y el % de avance se DERIVAN de los trimestres (el modelo los recalcula al guardar un
+                // trimestre): no se aceptan enviados a mano. Los trimestres sí los registra quien gestiona el indicador, con las reglas de
+                // abajo (aprobado o en revisión no se tocan); el superadministrador puede editar cualquiera.
                 if (!Roles::esSuperadmin()) {
-                    foreach ([1, 2, 3, 4] as $tSolo) unset($_POST['trimestre' . $tSolo . '_seguimiento']);
                     unset($_POST['semestre1_seguimiento'], $_POST['semestre2_seguimiento'], $_POST['meta_ejecutada'], $_POST['porcentaje_avance']);
                 }
                 // Un trimestre aprobado no se modifica; uno en revisión solo lo edita quien debe decidir su etapa (el líder de metas
@@ -890,6 +890,7 @@ class Modulo144Controller {
     // ¿El usuario NO puede modificar los valores de este trimestre? Aprobado: nadie. En revisión: solo quien puede decidir la etapa
     // que le toca (o un administrador).
     private function trimestreBloqueado(array $flujo, $nivelCreador) {
+        if (Roles::esSuperadmin()) return false; // el superadministrador corrige cualquier trimestre
         if (($flujo['estado'] ?? 0) === 2) return true;
         if (($flujo['estado'] ?? 0) === 0 && ($flujo['solicitud'] ?? 0) === 1) {
             $siguiente = max((int)($flujo['semaforo'] ?? 0), (int)$nivelCreador) + 1;

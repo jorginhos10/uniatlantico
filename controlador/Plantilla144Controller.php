@@ -403,14 +403,6 @@ class Plantilla144Controller {
         }
         $trimestres = ['trimestre1_seguimiento', 'trimestre2_seguimiento', 'trimestre3_seguimiento', 'trimestre4_seguimiento'];
         $editables = array_merge($trimestres, ['logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento']);
-        // Los valores de los trimestres solo los modifica el superadministrador: otro usuario importa únicamente el estado de proyectos
-        $soloSuper = (int)($_SESSION['usuario_id'] ?? 0) !== 1;
-        if ($soloSuper) {
-            foreach ($trimestres as $kt) {
-                if (isset($mapa[$kt])) { $resumen['errores'][] = 'Seguimiento: solo el superadministrador modifica los valores de los trimestres; se importó únicamente el estado de proyectos.'; break; }
-            }
-        }
-
         foreach ($filas as $numFila => $fila) {
             if ($numFila < $filaInicio) continue;
             $excelFila = $numFila + 1;
@@ -435,7 +427,6 @@ class Plantilla144Controller {
                 if (!isset($mapa[$k])) continue;
                 $v = trim((string)($fila[$mapa[$k]] ?? ''));
                 if (in_array($k, $trimestres, true)) {
-                    if ($soloSuper) continue;
                     $t = (int)substr($k, 9, 1);
                     // En "Límite" el semestre 1 (T1 y T2) no se registra (igual que en la pantalla)
                     if ($esLimite && $t <= 2) continue;
@@ -445,7 +436,8 @@ class Plantilla144Controller {
                     $nuevo = $n === null ? '' : (string)$n;
                     // Trimestre aprobado o en revisión: solo se avisa si el archivo trae un valor distinto del guardado
                     $f = $flujo[$t] ?? ['estado' => 0, 'solicitud' => 0];
-                    $bloqueado = $f['estado'] === 2 || ($f['estado'] === 0 && $f['solicitud'] === 1 && !$this->esAdmin());
+                    $bloqueado = (int)($_SESSION['usuario_id'] ?? 0) !== 1
+                        && ($f['estado'] === 2 || ($f['estado'] === 0 && $f['solicitud'] === 1 && !$this->esAdmin()));
                     if ($bloqueado) {
                         $a = $actual[$k] ?? '';
                         $igual = (is_numeric($a) && is_numeric($nuevo) && (float)$a == (float)$nuevo) || (string)$a === (string)$nuevo;
