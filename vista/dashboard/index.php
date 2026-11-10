@@ -428,12 +428,14 @@ $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
 // «En meta»: indicadores cuyo cumplimiento con lo aprobado, acumulado al trimestre vigente, llega a lo esperado para ese trimestre
 // (30, 60, 80 y 100 %). Se muestra «N de M», con M los indicadores a los que aplica el trimestre.
 $enMeta = 0; $enMetaDe = 0;
+$conValorTrim = []; // id => el trimestre de «Reportados» ya tiene algún valor
 if ($trimFlujo) {
     try {
         $idsFilas = implode(',', array_map('intval', array_column($filas, 'id')));
         foreach ($pdo->query("SELECT id, tipo_medicion, linea_base_meta, meta_programada, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
                               FROM formulacion_144 WHERE id IN ($idsFilas)") as $x) {
             foreach ([1, 2, 3, 4] as $i) $x['t' . $i . '_estado'] = $trimFlujo[(int)$x['id']][$i]['estado'] ?? 0;
+            $conValorTrim[(int)$x['id']] = trim((string)($x['trimestre' . $trimRep . '_seguimiento'] ?? '')) !== '';
             if ($x['tipo_medicion'] === 'Límite' && $trimRep <= 2) continue; // no aplica a este trimestre
             $p = dbPctAcumTrim($x, $trimRep, false);
             $enMetaDe++;
@@ -441,6 +443,23 @@ if ($trimFlujo) {
         }
     } catch (Throwable $e) { error_log('Dash enMeta: ' . $e->getMessage()); }
 }
+
+// Pendientes por reportar al iniciar sesión (pop up): indicadores visibles para el usuario cuyo trimestre de «Reportados» aún no se ha
+// reportado, es decir, devueltos, en construcción (con valor, sin enviar a revisión) o sin ningún valor. Los que ya están en revisión
+// o aprobados no se listan. Se muestra una sola vez por inicio de sesión.
+$pendientes = []; $pendCuenta = ['devuelto' => 0, 'construccion' => 0, 'sinreportar' => 0];
+foreach ($filas as $fila) {
+    if (($fila['tipo_medicion'] ?? '') === 'Límite' && $trimRep <= 2) continue;
+    $x = $trimFlujo[(int)$fila['id']][$trimRep] ?? ['estado' => 0, 'solicitud' => 0];
+    if ($x['estado'] !== 0 || $x['solicitud'] === 1) continue;
+    $tipoP = $x['solicitud'] === 2 ? 'devuelto' : (!empty($conValorTrim[(int)$fila['id']]) ? 'construccion' : 'sinreportar');
+    $pendCuenta[$tipoP]++;
+    $pendientes[] = ['id' => (int)$fila['id'], 'texto' => $fila['texto'], 'lmp' => $fila['lmp'], 'tipo' => $tipoP];
+}
+$ordenPend = ['devuelto' => 0, 'construccion' => 1, 'sinreportar' => 2];
+usort($pendientes, fn($a, $b) => $ordenPend[$a['tipo']] <=> $ordenPend[$b['tipo']]);
+$mostrarPend = $plan && $pendientes && empty($_SESSION['pend_popup_visto']);
+if ($mostrarPend) $_SESSION['pend_popup_visto'] = true; // al cerrar sesión se limpia: vuelve a salir en el próximo inicio
 
 // Mi bandeja: trimestres del seguimiento que esperan tu aprobación (cada trimestre tiene su propio semáforo)
 $bandeja = [];
@@ -692,6 +711,14 @@ a.pa-stage:hover { background: var(--pa-fill); }
 .nov-popup-ov.open { opacity: 1; pointer-events: all; }
 .nov-popup { background: #fff; border-radius: 18px; width: 100%; max-width: 460px; margin: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.2); transform: scale(.95) translateY(8px); transition: transform .25s cubic-bezier(0.34,1.56,0.64,1); }
 .nov-popup-ov.open .nov-popup { transform: scale(1) translateY(0); }
+.pend-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.pend-chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 3px 11px; }
+.pend-chip.devuelto { background: #FDE5E3; color: #A3201A; } .pend-chip.construccion { background: #FDF1D6; color: #8A5A00; } .pend-chip.sinreportar { background: #EEEEF2; color: #6E6E73; }
+.pend-lista { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 4px; }
+.pend-lista a { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; padding: 7px 10px; border-radius: 9px; background: var(--pa-fill); color: inherit; font-size: 13px; line-height: 1.35; }
+.pend-lista a:hover { background: var(--pa-blue-tint); }
+.pend-lista small { flex: none; font-weight: 700; font-size: 11px; color: var(--pa-sub); }
+.pend-ir { display: inline-block; background: #007AFF; color: #fff; font-weight: 600; border-radius: 10px; padding: 9px 16px; }
 .nov-popup-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 20px 14px; border-bottom: 1px solid rgba(0,0,0,.07); }
 .nov-popup-head h4 { margin: 0; font-size: 16px; font-weight: 700; color: #1d1d1f; flex: 1; padding-right: 12px; }
 .nov-popup-close { width: 28px; height: 28px; border-radius: 50%; border: none; flex-shrink: 0; background: rgba(0,0,0,.06); cursor: pointer; font-size: 13px; color: #6e6e73; display: flex; align-items: center; justify-content: center; }
@@ -1052,6 +1079,37 @@ require_once __DIR__ . '/../complementos/header.php';
     </div>
 </div>
 
+<?php if (!empty($mostrarPend)):
+    $etqP = ['devuelto' => 'Devuelto', 'construccion' => 'En construcción', 'sinreportar' => 'Sin reportar'];
+    $etqPl = ['devuelto' => 'devueltos', 'construccion' => 'en construcción', 'sinreportar' => 'sin reportar'];
+    $topPend = array_slice($pendientes, 0, 8);
+?>
+<!-- Pop up al iniciar sesión: indicadores pendientes por reportar -->
+<div class="nov-popup-ov" id="pendPopupOv" onclick="if(event.target===this)pendCerrar()">
+    <div class="nov-popup" style="max-width:560px" role="dialog" aria-modal="true" aria-labelledby="pendTitulo">
+        <div class="nov-popup-head">
+            <h4 id="pendTitulo">Pendientes por reportar · T<?php echo (int)$trimRep; ?></h4>
+            <button class="nov-popup-close" onclick="pendCerrar()" aria-label="Cerrar"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="nov-popup-body" style="white-space:normal">
+            <p style="margin:0 0 10px">Tienes <b><?php echo count($pendientes); ?></b> indicador<?php echo count($pendientes) === 1 ? '' : 'es'; ?> por reportar en el trimestre <?php echo (int)$trimRep; ?>:</p>
+            <div class="pend-chips">
+                <?php foreach ($pendCuenta as $kP => $nP): if ($nP): ?><span class="pend-chip <?php echo $kP; ?>"><?php echo $nP . ' ' . $etqPl[$kP]; ?></span><?php endif; endforeach; ?>
+            </div>
+            <ul class="pend-lista">
+                <?php foreach ($topPend as $it): ?>
+                <li><a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $it['id'])); ?>">
+                    <span><?php echo htmlspecialchars($it['texto']); ?></span><small><?php echo $etqP[$it['tipo']]; ?></small>
+                </a></li>
+                <?php endforeach; ?>
+            </ul>
+            <?php if (count($pendientes) > count($topPend)): ?><p style="margin:0 0 12px;color:var(--pa-sub);font-size:13px">y <?php echo count($pendientes) - count($topPend); ?> más.</p><?php endif; ?>
+            <a class="pend-ir" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=borradores&trim=' . (int)$trimRep); ?>">Ir al seguimiento</a>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 // Aprobar / rechazar desde "Mi bandeja" (mismos endpoints que el semáforo del Módulo 144)
@@ -1161,7 +1219,19 @@ function novVerMas(titulo, contenido) {
 }
 function novCerrarPopup() {
     document.getElementById('novPopupOv').classList.remove('open');
+    if (window.pendEnCola) { window.pendEnCola = false; pendAbrir(); } // los pendientes salen después de la novedad
 }
+
+// Pop up de pendientes por reportar (una vez por inicio de sesión)
+function pendAbrir() { var o = document.getElementById('pendPopupOv'); if (o) o.classList.add('open'); }
+function pendCerrar() { var o = document.getElementById('pendPopupOv'); if (o) o.classList.remove('open'); }
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') pendCerrar(); });
+(function () {
+    if (!document.getElementById('pendPopupOv')) return;
+    setTimeout(function () {
+        if (document.getElementById('novPopupOv').classList.contains('open')) window.pendEnCola = true; else pendAbrir();
+    }, 900);
+})();
 
 // Apertura automática de novedades marcadas "auto_abrir" — una sola vez por sesión de login
 (function() {
