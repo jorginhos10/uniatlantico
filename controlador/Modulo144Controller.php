@@ -383,7 +383,7 @@ class Modulo144Controller {
                 // Los semestres, la meta ejecutada y el % de avance se DERIVAN de los trimestres (el modelo los recalcula al guardar un
                 // trimestre): no se aceptan enviados a mano. Los trimestres sí los registra quien gestiona el indicador, con las reglas de
                 // abajo (aprobado o en revisión no se tocan); el superadministrador puede editar cualquiera.
-                if (!Roles::esSuperadmin()) {
+                if (!Roles::esAdmin()) {
                     unset($_POST['semestre1_seguimiento'], $_POST['semestre2_seguimiento'], $_POST['meta_ejecutada'], $_POST['porcentaje_avance']);
                 }
                 // Un trimestre aprobado no se modifica; uno en revisión solo lo edita quien debe decidir su etapa (el líder de metas
@@ -541,20 +541,20 @@ class Modulo144Controller {
             echo json_encode(['success' => false, 'message' => 'El registro no existe']);
             return;
         }
-        $esSuper = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        $esSuper = Roles::esAdmin();
 
         if ($estado === 2) {
             if ($this->bloquearSeguimientoNoPublicado($modulo, $id)) return;
             // Publicar sin pasar por las 4 etapas del semáforo es exclusivo del superadministrador
             if (!$esSuper) {
-                echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar sin pasar por el semáforo']);
+                echo json_encode(['success' => false, 'message' => 'Solo un administrador puede publicar sin pasar por el semáforo']);
                 return;
             }
         }
 
         // Devolver un publicado a borrador: solo el superadmin (id=1)
         if ($estado === 0 && !$esSuper) {
-            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede devolver a borrador']);
             return;
         }
 
@@ -624,7 +624,7 @@ class Modulo144Controller {
         }
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         if ($uid !== 1) {
-            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede publicar el seguimiento']);
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede publicar el seguimiento']);
             return;
         }
         $id = intval($_POST['id'] ?? 0);
@@ -712,7 +712,7 @@ class Modulo144Controller {
             return;
         }
         if ((int)($_SESSION['usuario_id'] ?? 0) !== 1) {
-            echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede devolver a borrador']);
+            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede devolver a borrador']);
             return;
         }
         $modulo = $_POST['modulo'] ?? '';
@@ -838,7 +838,7 @@ class Modulo144Controller {
     // Etapa V (vicerrectoría): según el organigrama solo aprueba el vicerrector al que responde la dependencia del indicador.
     // El superadministrador siempre puede; si el organigrama no está configurado, aprueba cualquiera con el rol.
     private function vicerrectorNoCorresponde($modulo, $id, $etapa) {
-        if ($etapa !== 3 || (int)($_SESSION['usuario_id'] ?? 0) === 1) return false;
+        if ($etapa !== 3 || Roles::esAdmin()) return false;
         $item = $this->model->getById($modulo, $id);
         if (!$item) return false;
         $ids = $this->model->idsVicerrectoresDelIndicador($this->model->getUsuariosAprobadores(), $item['responsable_formulacion'] ?? '', (int)($item['creado_por'] ?? 0));
@@ -890,7 +890,7 @@ class Modulo144Controller {
     // ¿El usuario NO puede modificar los valores de este trimestre? Aprobado: nadie. En revisión: solo quien puede decidir la etapa
     // que le toca (o un administrador).
     private function trimestreBloqueado(array $flujo, $nivelCreador) {
-        if (Roles::esSuperadmin()) return false; // el superadministrador corrige cualquier trimestre
+        if (Roles::esAdmin()) return false; // el superadministrador corrige cualquier trimestre
         if (($flujo['estado'] ?? 0) === 2) return true;
         if (($flujo['estado'] ?? 0) === 0 && ($flujo['solicitud'] ?? 0) === 1) {
             $siguiente = max((int)($flujo['semaforo'] ?? 0), (int)$nivelCreador) + 1;
@@ -959,7 +959,7 @@ class Modulo144Controller {
         $etapaNueva = $etapaActual + 1;
         $rolEsperado = $this->semaforoRoles[$etapaNueva] ?? null;
         $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
-        $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        $esSuperAdmin = Roles::esAdmin();
         // Administrador / Sub Administrador solo pueden actuar sobre la etapa final (4)
         $esAdminEtapaFinal = $etapaNueva === 4 && in_array($rolUsuario, ['administrador', 'sub administrador'], true);
 
@@ -1035,7 +1035,7 @@ class Modulo144Controller {
         $etapaSiguiente = $etapaActual + 1;
         $rolEsperado = $this->semaforoRoles[$etapaSiguiente] ?? null;
         $rolUsuario  = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
-        $esSuperAdmin = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        $esSuperAdmin = Roles::esAdmin();
         // Administrador / Sub Administrador solo pueden actuar sobre la etapa final (4)
         $esAdminEtapaFinal = $etapaSiguiente === 4 && in_array($rolUsuario, ['administrador', 'sub administrador'], true);
 
@@ -1255,7 +1255,7 @@ class Modulo144Controller {
 
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
         $rolUsuario = $this->normalizarRol($_SESSION['usuario_rol'] ?? '');
-        $esSuper = $uid === 1;
+        $esSuper = Roles::esAdmin();
         $creador = $this->model->getEstadoFlujoTrimestre($id, 1);
         $nivelCreador = $this->semaforoRolNivel[$this->normalizarRol($creador['creado_por_rol'] ?? '')] ?? 0;
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
@@ -1631,7 +1631,7 @@ class Modulo144Controller {
     // Quién concierta cada valor: la dependencia responsable concierta el suyo y cada facultad el suyo.
     // Todos ven todos los valores; solo el superadministrador aprueba. El superadministrador también puede concertar por cualquiera.
     private function esSuperadminConcertacion() {
-        return (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        return Roles::esAdmin();
     }
 
     private function puedeConcertarDependencia(array $item) {
@@ -1718,7 +1718,7 @@ class Modulo144Controller {
         $esLimite = ($item['tipo_medicion'] ?? '') === 'Límite';
         $num = function ($v) { return ($v === null || $v === '') ? null : (float)$v; };
         $puedeV = $this->puedeConcertarDependencia($item);
-        // Solo el superadministrador y la dependencia responsable ven todas las facultades; las demás, únicamente la suya
+        // Solo un administrador y la dependencia responsable ven todas las facultades; las demás, únicamente la suya
         $verTodas = $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
 
         $evid = $this->model->getResumenEvidencias($id)['facultades'];
@@ -1883,7 +1883,7 @@ class Modulo144Controller {
     public function aprobarConcertacion() {
         header('Content-Type: application/json');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['success' => false, 'message' => 'Método no permitido']); return; }
-        if (!$this->esSuperadminConcertacion()) { echo json_encode(['success' => false, 'message' => 'Solo el superadministrador puede aprobar o rechazar']); return; }
+        if (!$this->esSuperadminConcertacion()) { echo json_encode(['success' => false, 'message' => 'Solo un administrador puede aprobar o rechazar']); return; }
         $id = intval($_POST['formulacion_id'] ?? 0);
         $fac = intval($_POST['facultad_id'] ?? 0);
         $sem = intval($_POST['semestre'] ?? 0);

@@ -263,6 +263,72 @@ function dbEsResponsable($responsables, $cargoNombre) {
     return false;
 }
 
+// Cumplimiento (0 a 100) de una FACULTAD en un indicador, con base en lo que concertó: la meta es el valor concertado y aprobado
+// de cada semestre (valor final) y lo logrado, lo que la facultad reporta en su seguimiento. Hasta T2 cuenta solo el semestre 1;
+// desde T3, los dos. Un semestre sin concertar no entra (ni en la meta ni en lo logrado). Límite no cuenta antes de T3.
+function dbPctFacultad($tipo, array $c, $t) {
+    $sems = $t <= 2 ? [1] : [1, 2];
+    $metas = $logs = [];
+    foreach ($sems as $s) {
+        if ($c['c' . $s] === null) continue;
+        $metas[] = $c['c' . $s];
+        $logs[]  = $c['s' . $s];
+    }
+    if (!$metas) return 0.0;
+    $tipo = (string)$tipo;
+    if ($tipo === 'Límite') {
+        if ($t <= 2) return 0.0;
+        $meta = end($metas); $log = end($logs);
+        return $log === null ? 0.0 : ($log <= $meta ? 100.0 : 0.0);
+    }
+    $conDato = array_values(array_filter($logs, function ($v) { return $v !== null; }));
+    if ($tipo === 'Promedio') {
+        $meta = array_sum($metas) / count($metas);
+        $log  = $conDato ? array_sum($conDato) / count($conDato) : 0;
+    } elseif (strpos($tipo, 'ltimo') !== false) {
+        $meta = end($metas);
+        $log  = $conDato ? end($conDato) : 0;
+    } else {
+        $meta = array_sum($metas);
+        $log  = array_sum($conDato);
+    }
+    return $meta > 0 ? min(100.0, max(0.0, $log / $meta * 100)) : 0.0;
+}
+
+// ── Usuario de facultad: su cumplimiento se mide con lo que su facultad concertó (no con el avance general del indicador) ──
+$misFacultades = [];
+$concFac = []; // id de indicador => ['c1' =>, 'c2' => (concertado y aprobado), 's1' =>, 's2' => (lo que reporta la facultad)]
+if ($pdo && $plan && !$veTodo) {
+    try {
+        require_once __DIR__ . '/../../modelo/Modulo144Model.php';
+        $misFacultades = array_map('intval', (new Modulo144Model())->getFacultadesDelUsuario($uid, $ucargo));
+        if ($misFacultades) {
+            $in = implode(',', $misFacultades);
+            $q = $pdo->prepare(
+                "SELECT d.formulacion_id, d.seguimiento_sem1 AS s1, d.seguimiento_sem2 AS s2,
+                        c1.valor_final AS c1, c2.valor_final AS c2
+                 FROM formulacion_distribucion_facultad_144 d
+                 JOIN formulacion_144 f ON f.id = d.formulacion_id AND f.formulario_id = :fid AND f.estado_formulacion = 2
+                 LEFT JOIN concertaciones_144 c1 ON c1.formulacion_id = d.formulacion_id AND c1.facultad_id = d.facultad_id AND c1.semestre = 1 AND c1.aprobado = 1
+                 LEFT JOIN concertaciones_144 c2 ON c2.formulacion_id = d.formulacion_id AND c2.facultad_id = d.facultad_id AND c2.semestre = 2 AND c2.aprobado = 1
+                 WHERE d.facultad_id IN ($in)"
+            );
+            $q->execute([':fid' => (int)$plan['id']]);
+            $num = function ($v) { return $v === null || $v === '' ? null : (float)$v; };
+            foreach ($q->fetchAll() as $x) {
+                $k = (int)$x['formulacion_id'];
+                $c = $concFac[$k] ?? ['c1' => null, 'c2' => null, 's1' => null, 's2' => null];
+                foreach (['c1', 'c2', 's1', 's2'] as $col) {
+                    $v = $num($x[$col]);
+                    if ($v !== null) $c[$col] = ($c[$col] ?? 0) + $v; // varias facultades del usuario: se suman
+                }
+                $concFac[$k] = $c;
+            }
+        }
+    } catch (Throwable $e) { error_log('Dash facultad: ' . $e->getMessage()); $misFacultades = []; $concFac = []; }
+}
+$esUsuarioFacultad = !empty($misFacultades);
+
 // ── Alcance por rol: admin / sub administrador ven todo; el resto, lo que creó
 //    y aquello de lo que su dependencia es responsable (sin importar quién lo creó) ──
 $rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucargoNombre) {
@@ -270,6 +336,13 @@ $rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucar
     if ((int)$r['creado_por'] === $uid) return true;
     return dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre);
 }));
+// Usuario de facultad: ve los indicadores donde su facultad ya concertó algún semestre (lo demás aún no tiene meta suya)
+if ($esUsuarioFacultad) {
+    $rows = array_values(array_filter($rows, function ($r) use ($concFac) {
+        $c = $concFac[(int)$r['id']] ?? null;
+        return $c && ($c['c1'] !== null || $c['c2'] !== null);
+    }));
+}
 
 // Catálogo de líneas presentes en el plan (para el filtro)
 $lineas = [];
@@ -291,6 +364,7 @@ foreach ($rows as &$r) {
     $r['ejec']  = dbNum($r['meta_ejecutada']);
     $av = dbNum($r['porcentaje_avance']);
     $r['pct']   = $av === null ? null : min(max($av, 0), 100);
+    if ($esUsuarioFacultad) $r['pct'] = dbPctFacultad($r['tipo_medicion'] ?? '', $concFac[(int)$r['id']], $trimVigente ?: 1);
     // Reportado = seguimiento aprobado por la Oficina de Planeación; en revisión = ya solicitado pero sin la aprobación final
     $r['aprobado']  = (int)$r['estado_seguimiento'] === 2;
     $r['solicitud'] = (int)$r['solicitud_estado_seguimiento'];
@@ -324,6 +398,12 @@ if ($pdo && $plan && $rows) {
     // Las 8 combinaciones salen de una sola lectura de los indicadores y de los pesos.
     $variantes = [];
     foreach ([1, 2, 3, 4] as $t) {
+        if ($esUsuarioFacultad) { // con lo concertado por la facultad (no hay "en revisión": se usa lo mismo)
+            $fn = function ($r) use ($t, $concFac) { return isset($concFac[(int)$r['id']]) ? dbPctFacultad($r['tipo_medicion'] ?? '', $concFac[(int)$r['id']], $t) : 0.0; };
+            $variantes['apr' . $t] = $fn;
+            $variantes['rev' . $t] = $fn;
+            continue;
+        }
         $variantes['apr' . $t] = function ($r) use ($t) { return dbPctAcumTrim($r, $t, false); };
         $variantes['rev' . $t] = function ($r) use ($t) { return dbPctAcumTrim($r, $t, true); };
     }
@@ -852,7 +932,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <span class="lbl">Avance ponderado</span>
                 <span class="val num"><?php echo $avance === null ? '—' : dbFmt($avance); ?><small> %</small></span>
                 <span class="note"><?php echo $trimVigente ? 'Esperado al T' . $trimVigente . ($trimManual ? ' (manual)' : ' vencido') . ': ' . $esperado . ' %' : 'Aún no vence ningún trimestre'; ?></span>
-                <span class="note">Con lo registrado en revisión: <b class="num"><?php echo $avanceRev === null ? '—' : dbFmt($avanceRev) . ' %'; ?></b></span>
+                <?php if ($esUsuarioFacultad): ?><span class="note">Con base en lo concertado por tu facultad</span><?php else: ?><span class="note">Con lo registrado en revisión: <b class="num"><?php echo $avanceRev === null ? '—' : dbFmt($avanceRev) . ' %'; ?></b></span><?php endif; ?>
                 <span class="pa-pill" style="margin-top:6px;background:<?php echo $TONO[$tonoAvance]['tint']; ?>;color:<?php echo $TONO[$tonoAvance]['ink']; ?>">
                     <?php echo $avance === null ? 'Sin metas aprobadas' : ($esperado <= 0 ? 'Aún sin trimestre vencido' : ($avance >= $esperado ? 'En lo esperado o por encima' : 'Avance en curso')); ?>
                 </span>

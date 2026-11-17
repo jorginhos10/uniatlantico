@@ -56,12 +56,12 @@ class Roles {
     }
 
     // ¿Puede aprobar o rechazar la etapa $etapa (1 a 4) del semáforo?
-    // El superadministrador aprueba cualquiera; la etapa final (4) también la aprueban los administradores
+    // Los administradores (y el superadmin) aprueban cualquier etapa; la etapa final (4) también el sub administrador
     public static function puedeAprobar($etapa) {
         $etapa = (int)$etapa;
         if (!isset(self::ETAPAS[$etapa])) return false;
-        if (self::esSuperadmin()) return true;
-        if ($etapa === 4 && in_array(self::rolActual(), ['admin', 'administrador', 'sub administrador'], true)) return true;
+        if (self::esAdmin()) return true;
+        if ($etapa === 4 && self::rolActual() === 'sub administrador') return true;
         return self::rolActual() === self::ETAPAS[$etapa];
     }
 

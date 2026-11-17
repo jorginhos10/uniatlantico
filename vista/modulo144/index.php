@@ -1771,15 +1771,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             'sub administrador' => 4,
         ];
         $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
-        $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+        $esSuperAdminSem  = Roles::esAdmin();
         $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
         // Dependencias del usuario: la principal y las de "Responsable de" (en Usuarios)
         $viewerCargoNombre = $viewer_dependencias ?? ($viewer_cargo_nombre ?? '');
         // Solo un administrador publica en bloque los borradores cargados por plantilla
-        $esSuperSeg = (int)($_SESSION['usuario_id'] ?? 0) === 1; // solo el superadministrador publica un seguimiento sin esperar las etapas
+        $esSuperSeg = Roles::esAdmin(); // solo el superadministrador publica un seguimiento sin esperar las etapas
         // El superadministrador y los líderes de metas editan los borradores en cualquier estado del semáforo (en construcción, solicitado o devuelto); lo aprobado no se edita
         $puedeEditarSiempre = $esSuperSeg || $miRolNormalizado === 'lider de meta';
-        $esAdminPlan = (int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
+        $esAdminPlan = Roles::esAdmin() || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true);
         $puedeVerTodoElSemaforo = $esSuperAdminSem || in_array($miRolNormalizado, ['administrador', 'sub administrador'], true);
 
         // ¿La dependencia del usuario es una de las responsables del indicador?
@@ -1905,7 +1905,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             <p class="m144-panel-desc"><?php echo $modulo['config']['descripcion']; ?></p>
                             <div class="m144-panel-acciones">
                                 <?php $puedePublicarLote = $key === 'formulacion' && $esAdminPlan && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
-                                <?php $puedeDevolverTodos = (int)($_SESSION['usuario_id'] ?? 0) === 1 && count($modulo['publicados']) > 0; ?>
+                                <?php $puedeDevolverTodos = Roles::esAdmin() && count($modulo['publicados']) > 0; ?>
                                 <div class="dropdown">
                                     <button type="button" class="m144-btn m144-btn-tinted dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                         <i class="fas fa-ellipsis-h"></i>Más acciones
@@ -1916,7 +1916,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                             <i class="fas fa-file-download me-2"></i>Exportar plantilla</a></li>
                                         <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla()" title="Sube la plantilla de Excel llena">
                                             <i class="fas fa-file-upload me-2"></i>Importar plantilla</button></li>
-                                        <?php $puedePublicarSeg = $key === 'seguimiento' && ((int)($_SESSION['usuario_id'] ?? 0) === 1 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true)) && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
+                                        <?php $puedePublicarSeg = $key === 'seguimiento' && (Roles::esAdmin() || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true)) && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
                                         <?php if ($puedePublicarLote || $puedePublicarSeg || $puedeDevolverTodos): ?>
                                         <li><hr class="dropdown-divider"></li>
                                         <li><h6 class="dropdown-header">Solo administrador</h6></li>
@@ -2062,7 +2062,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         }
                                     }
                                     $miRolNormalizado = m144_normalizarRol($_SESSION['usuario_rol'] ?? '');
-                                    $esSuperAdminSem  = (int)($_SESSION['usuario_id'] ?? 0) === 1;
+                                    $esSuperAdminSem  = Roles::esAdmin();
                                     $campoSemaforo    = $modulo['config']['campo_semaforo'];
                                     $campoSemaforoRechazo = $modulo['config']['campo_semaforo_rechazo'];
                                     $viewerId         = (int)($_SESSION['usuario_id'] ?? 0);
@@ -2413,7 +2413,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         <i class="fas fa-eye me-1"></i>Ver
                                                     </button>
                                                     <?php endif; ?>
-                                                    <?php if ((int)($_SESSION['usuario_id'] ?? 0) === 1): ?>
+                                                    <?php if (Roles::esAdmin()): ?>
                                                     <button class="btn btn-sm btn-warning" onclick="devolverABorrador('<?php echo $key; ?>', <?php echo $publicado['id']; ?>)" title="Devolver a borradores" aria-label="Devolver a borradores">
                                                         <i class="fas fa-undo"></i>
                                                     </button>
@@ -6212,7 +6212,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         <?php
             // "Excepto administradores": superadmin, administrador y sub administrador no quedan bloqueados
             $exceptoAdminBloqueo = !empty($formulario['bloqueo_excepto_admin']) && (
-                (int)($_SESSION['usuario_id'] ?? 0) === 1
+                Roles::esAdmin()
                 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador', 'sub administrador'], true)
             );
         ?>

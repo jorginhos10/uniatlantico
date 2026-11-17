@@ -21,11 +21,11 @@ class FORDE144Controller {
         $formularios = $this->model->getAll();
         $anios       = $this->model->getAnios();
 
-        // Sub-permisos FOR-DE-144: solo el superadmin (id=1) tiene todo por defecto;
-        // el resto (incluyendo admins) usa lo que se asignó en detalle_subpermiso
+        // Sub-permisos FOR-DE-144: los administradores (y el superadmin) tienen todo por defecto;
+        // el resto usa lo que se asignó en detalle_subpermiso
         $currentUserId = (int)($_SESSION['usuario_id'] ?? 0);
         $perms_f144 = ['crear' => true, 'editar' => true, 'informe' => true, 'eliminar' => true, 'ver' => true, 'configurar' => true];
-        if ($currentUserId !== 1) {
+        if (!Roles::esAdmin()) {
             require_once 'modelo/permisoModel.php';
             $pm        = new PermisoModel();
             $subPerms  = $pm->getSubpermisosActivosUsuario($currentUserId);
@@ -46,7 +46,7 @@ class FORDE144Controller {
      */
     private function puedeHacer(string $accion): bool {
         $uid = (int)($_SESSION['usuario_id'] ?? 0);
-        if ($uid === 1) return true;
+        if (Roles::esAdmin()) return true;
         require_once 'modelo/permisoModel.php';
         $pm = new PermisoModel();
         $subs = $pm->getSubpermisosActivosUsuario($uid);
