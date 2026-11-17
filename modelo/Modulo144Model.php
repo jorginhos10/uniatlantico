@@ -1149,6 +1149,56 @@ class Modulo144Model {
         }
     }
 
+    // ───────── Cambios hechos al seguimiento (para que el administrador vea los últimos al pasar el cursor) ─────────
+    const CAMPOS_CAMBIO = [
+        'trimestre1_seguimiento' => 'T1', 'trimestre2_seguimiento' => 'T2', 'trimestre3_seguimiento' => 'T3', 'trimestre4_seguimiento' => 'T4',
+        'descripcion_sem1' => 'Descripción S1', 'descripcion_sem2' => 'Descripción S2',
+        'logros' => 'Logros S1', 'logros_sem2' => 'Logros S2', 'limites' => 'Limitaciones S1', 'limites_sem2' => 'Limitaciones S2',
+        'observacion_estado' => 'Observación S1', 'observacion_estado_sem2' => 'Observación S2',
+        'acciones_fortalecimiento' => 'Acciones S1', 'acciones_fortalecimiento_sem2' => 'Acciones S2',
+    ];
+
+    private function asegurarTablaCambios() {
+        $this->db->exec("CREATE TABLE IF NOT EXISTS seguimiento_cambios_144 (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            formulacion_id INT NOT NULL,
+            usuario_id INT NULL,
+            usuario_nombre VARCHAR(150) NULL,
+            cambios TEXT NOT NULL,
+            fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_cambios_form (formulacion_id, fecha)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    // Compara el registro antes y después de guardar y deja constancia de qué campos del seguimiento cambiaron
+    public function registrarCambioSeguimiento($formulacionId, $antes, $despues, $usuarioId, $usuarioNombre) {
+        try {
+            if (!is_array($antes) || !is_array($despues)) return;
+            $norm = function ($v) { return trim((string)$v); };
+            $dif = [];
+            foreach (self::CAMPOS_CAMBIO as $col => $etq) {
+                $a = $norm($antes[$col] ?? ''); $d = $norm($despues[$col] ?? '');
+                if ($a === $d) continue;
+                $corto = function ($s) { return mb_strlen($s, 'UTF-8') > 60 ? mb_substr($s, 0, 60, 'UTF-8') . '…' : $s; };
+                $dif[] = ['campo' => $etq, 'antes' => $corto($a), 'despues' => $corto($d)];
+            }
+            if (!$dif) return;
+            $this->asegurarTablaCambios();
+            $this->db->prepare("INSERT INTO seguimiento_cambios_144 (formulacion_id, usuario_id, usuario_nombre, cambios) VALUES (:f, :u, :n, :c)")
+                ->execute([':f' => (int)$formulacionId, ':u' => (int)$usuarioId, ':n' => mb_substr((string)$usuarioNombre, 0, 150, 'UTF-8'),
+                           ':c' => json_encode($dif, JSON_UNESCAPED_UNICODE)]);
+        } catch (PDOException $e) { error_log('registrarCambioSeguimiento: ' . $e->getMessage()); }
+    }
+
+    public function getUltimosCambiosSeguimiento($formulacionId, $limite = 3) {
+        try {
+            $this->asegurarTablaCambios();
+            $q = $this->db->prepare("SELECT usuario_nombre, cambios, fecha FROM seguimiento_cambios_144 WHERE formulacion_id = :f ORDER BY id DESC LIMIT " . (int)$limite);
+            $q->execute([':f' => (int)$formulacionId]);
+            return array_map(function ($r) { return ['usuario' => $r['usuario_nombre'], 'fecha' => $r['fecha'], 'cambios' => json_decode($r['cambios'], true) ?: []]; }, $q->fetchAll());
+        } catch (PDOException $e) { error_log('getUltimosCambiosSeguimiento: ' . $e->getMessage()); return []; }
+    }
+
     public function getHistorialSemaforo($modulo, $formulacionId) {
         try {
             $stmt = $this->db->prepare(

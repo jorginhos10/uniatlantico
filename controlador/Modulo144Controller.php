@@ -397,6 +397,9 @@ class Modulo144Controller {
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
+            if ($resultado && $modulo === 'seguimiento' && $itemActual) {
+                $this->model->registrarCambioSeguimiento($id, $itemActual, $this->model->getById($modulo, $id), Roles::usuarioId(), $_SESSION['usuario_nombre'] ?? '');
+            }
             echo json_encode([
                 'success' => $resultado,
                 'message' => $resultado ? 'Guardado exitosamente' : 'Error al guardar'
@@ -1221,6 +1224,17 @@ class Modulo144Controller {
 
         // Dependencia responsable (principal o asociada en "Responsable de")
         return $this->esResponsableDelItem($item);
+    }
+
+    // Últimos tres cambios hechos al seguimiento de un indicador (quién, cuándo y qué valor): solo para administradores
+    public function ultimosCambios() {
+        header('Content-Type: application/json');
+        $id = intval($_GET['id'] ?? 0);
+        if (!Roles::esAdmin() || $id <= 0) {
+            echo json_encode(['success' => false, 'cambios' => []]);
+            return;
+        }
+        echo json_encode(['success' => true, 'cambios' => $this->model->getUltimosCambiosSeguimiento($id, 3)]);
     }
 
     public function getHistorialSemaforo() {

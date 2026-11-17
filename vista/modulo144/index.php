@@ -7540,4 +7540,65 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
 
     </script>
+<?php if (Roles::esAdmin()): ?>
+<style>
+#tipCambios{position:fixed;z-index:9999;max-width:340px;background:#1D1D1F;color:#fff;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;display:none}
+#tipCambios b{font-weight:600}
+#tipCambios .tc-h{color:#AEAEB2;margin-top:6px}
+#tipCambios .tc-h:first-child{margin-top:0}
+#tipCambios .tc-v{color:#9AE6B4}
+#tipCambios .tc-t{font-weight:700;margin-bottom:4px;color:#99C8FF}
+</style>
+<div id="tipCambios" role="tooltip"></div>
+<script>
+// Administradores: al pasar el cursor sobre un indicador del seguimiento se ven los 3 últimos cambios que se le hicieron
+(function () {
+    var tip = document.getElementById('tipCambios'), cache = {}, timer = null, actual = null;
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function html(cs) {
+        var h = '<div class="tc-t">Últimos cambios del seguimiento</div>';
+        cs.forEach(function (c, i) {
+            h += '<div class="tc-h">' + esc(c.usuario || 'Usuario') + ' · ' + esc((c.fecha || '').substring(0, 16)) + '</div>';
+            (c.cambios || []).forEach(function (x) {
+                h += '<div><b>' + esc(x.campo) + ':</b> ' + esc(x.antes || '—') + ' → <span class="tc-v">' + esc(x.despues || '—') + '</span></div>';
+            });
+        });
+        return h;
+    }
+    function mostrar(el, ev) {
+        var id = el.getAttribute('data-item-id');
+        if (!id) return;
+        actual = id;
+        var pintar = function (cs) {
+            if (actual !== id || !cs.length) return;
+            tip.innerHTML = html(cs); tip.style.display = 'block'; mover(ev);
+        };
+        if (cache[id]) return pintar(cache[id]);
+        fetch('<?php echo $basePath; ?>/modulo144/ultimosCambios?id=' + encodeURIComponent(id), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { cache[id] = (d && d.cambios) || []; pintar(cache[id]); })
+            .catch(function () {});
+    }
+    function mover(ev) {
+        if (tip.style.display === 'none' || !ev) return;
+        var x = ev.clientX + 16, y = ev.clientY + 16;
+        if (x + tip.offsetWidth > window.innerWidth - 8) x = ev.clientX - tip.offsetWidth - 16;
+        if (y + tip.offsetHeight > window.innerHeight - 8) y = ev.clientY - tip.offsetHeight - 16;
+        tip.style.left = Math.max(8, x) + 'px'; tip.style.top = Math.max(8, y) + 'px';
+    }
+    document.addEventListener('mouseover', function (ev) {
+        var el = ev.target.closest && ev.target.closest('.lista-item');
+        if (!el || el === actual) return;
+        clearTimeout(timer);
+        timer = setTimeout(function () { mostrar(el, ev); }, 350);
+    });
+    document.addEventListener('mousemove', mover);
+    document.addEventListener('mouseout', function (ev) {
+        var el = ev.target.closest && ev.target.closest('.lista-item');
+        if (!el || el.contains(ev.relatedTarget)) return;
+        clearTimeout(timer); actual = null; tip.style.display = 'none';
+    });
+})();
+</script>
+<?php endif; ?>
 <?php require_once __DIR__ . '/../complementos/footer.php'; ?>

@@ -396,6 +396,9 @@ switch ($action) {
             case 'getFlujoTrimestres':
                 $modulo144Controller->getFlujoTrimestres();
                 break;
+            case 'ultimosCambios':
+                $modulo144Controller->ultimosCambios();
+                break;
             case 'getDistribucionFacultades':
                 $modulo144Controller->getDistribucionFacultades();
                 break;
