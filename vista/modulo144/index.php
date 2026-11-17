@@ -4209,17 +4209,32 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             return total;
         }
 
-        let distribucionFacultadTimeout = null;
-        function autoGuardarDistribucionFacultad(fila) {
+        const distribucionFacultadTimeout = {};
+        function guardarDistribucionFila(fila) {
             const formulacionId = $('#formulacion_id').val();
             if (!formulacionId) return;
             const facultadId = $(fila).data('facultad-id');
-            const observacion = $(fila).find('.distribucion-observacion').val();
-            const distribucion = parseFloat($(fila).find('.distribucion-valor').val()) || 0;
-
+            $.ajax({
+                url: basePath + '/modulo144/guardarDistribucionFacultad',
+                type: 'POST',
+                data: {
+                    formulacion_id: formulacionId,
+                    facultad_id: facultadId,
+                    observacion: $(fila).find('.distribucion-observacion').val(),
+                    distribucion: parseFloat($(fila).find('.distribucion-valor').val()) || 0
+                },
+                dataType: 'json',
+                success: function(res) {
+                    if (!res || !res.success) Swal.fire('No se guardó la distribución', (res && res.message) || 'Intenta de nuevo', 'warning');
+                },
+                error: function() { Swal.fire('No se guardó la distribución', 'Error de conexión con el servidor', 'error'); }
+            });
+        }
+        function autoGuardarDistribucionFacultad(fila, inmediato) {
+            const facultadId = $(fila).data('facultad-id');
             const totalPrevio = actualizarTotalDistribucionFacultades();
             const meta = parseFloat($('#formulacion_anio_base_meta').val());
-            if (!isNaN(meta) && meta > 0 && totalPrevio > meta) {
+            if (!inmediato && !isNaN(meta) && meta > 0 && totalPrevio > meta) {
                 Swal.fire({
                     title: 'Se ha pasado del valor',
                     text: 'La distribución total (' + totalPrevio.toFixed(2) + ') supera el total de la meta anual (' + meta.toFixed(2) + ').',
@@ -4227,22 +4242,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     confirmButtonText: 'Entendido'
                 });
             }
-
-            clearTimeout(distribucionFacultadTimeout);
-            distribucionFacultadTimeout = setTimeout(function() {
-                $.ajax({
-                    url: basePath + '/modulo144/guardarDistribucionFacultad',
-                    type: 'POST',
-                    data: {
-                        formulacion_id: formulacionId,
-                        facultad_id: facultadId,
-                        observacion: observacion,
-                        distribucion: distribucion
-                    },
-                    dataType: 'json'
-                });
-            }, 500);
+            clearTimeout(distribucionFacultadTimeout[facultadId]);
+            if (inmediato) { guardarDistribucionFila(fila); return; }
+            distribucionFacultadTimeout[facultadId] = setTimeout(function() { guardarDistribucionFila(fila); }, 500);
         }
+
+        // Al salir de la casilla se guarda en el acto (no se pierde el valor si se pasa rápido a la siguiente facultad)
+        $(document).on('change', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
+            autoGuardarDistribucionFacultad($(this).closest('tr'), true);
+        });
 
         $(document).on('input', '#tablaDistribucionFacultades .distribucion-observacion, #tablaDistribucionFacultades .distribucion-valor', function() {
             autoGuardarDistribucionFacultad($(this).closest('tr'));
@@ -4553,8 +4561,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (dist <= 0 && !reporto) return; // sin meta ni reporte: se decide abajo si se muestra
                         const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + d.facultad_id + '"]');
                         if (!fila.length) return;
-                        const concIni = segFacNum((response.concertadas || {})[d.facultad_id]);
-                        fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : (concIni > 0 ? concIni.toFixed(2) : 'Sin meta')).attr('title', dist > 0 ? '' : (concIni > 0 ? 'Meta concertada con vicerrectoría' : ''));
+                        fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : 'Sin meta').attr('title', dist > 0 ? '' : 'La formulación no le distribuyó meta a esta facultad');
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
                         // Descripciones bloqueadas: son el texto del valor concertado; el título muestra el texto completo
@@ -4572,8 +4579,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             const fid = parseInt(fila.data('facultad-id'), 10);
                             if (fila.is(':visible')) return;
                             if (soloIds.length && soloIds.indexOf(fid) === -1) return; // la facultad solo ve la suya
-                            const concSin = segFacNum((response.concertadas || {})[fid]);
-                            fila.find('.seg-fac-distribucion').text(concSin > 0 ? concSin.toFixed(2) : 'Sin meta').attr('title', concSin > 0 ? 'Meta concertada con vicerrectoría' : '');
+                            fila.find('.seg-fac-distribucion').text('Sin meta').attr('title', 'La formulación no le distribuyó meta a esta facultad');
                             if (VIEWER_FACULTADES.includes(fid)) fila.addClass('table-primary');
                             fila.show();
                             hay = true;
