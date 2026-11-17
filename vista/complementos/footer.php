@@ -96,6 +96,7 @@
 
         /* actualizar badge — expuesto globalmente */
         window.actualizarBellBadge = function (n) {
+            n = (parseInt(n, 10) || 0) + (window.NTF_EXTRA || 0); /* mensajes sin leer + pendientes de Mi bandeja */
             badge.textContent = n;
             if (n > 0) {
                 badge.classList.add('ntf-visible');

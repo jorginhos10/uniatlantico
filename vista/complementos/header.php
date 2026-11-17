@@ -95,6 +95,42 @@ $avatarUrl = $baseUrl . '/assets/media/users/' . $avatar;
                                 <span class="ntf-panel-title"><i class="fas fa-bell"></i> Notificaciones</span>
                                 <a href="<?php echo $basePath; ?>/mensajes" class="ntf-link-all">Ver todos</a>
                             </div>
+                            <?php
+                            // Mi bandeja (aprobaciones del Plan de Acción): la arma el dashboard y queda en la sesión para las demás pantallas
+                            $bandejaCampana = $bandejaCampana ?? ($_SESSION['bandeja_campana'] ?? null);
+                            if (!empty($bandejaCampana['items'])): ?>
+                            <div class="ntf-bandeja">
+                                <div class="ntf-bandeja-tit">Mi bandeja <span><?php echo (int)$bandejaCampana['total']; ?></span></div>
+                                <?php foreach ($bandejaCampana['items'] as $it): ?>
+                                <div class="ntf-bandeja-it">
+                                    <a href="<?php echo htmlspecialchars($it['url']); ?>">
+                                        <b><?php echo htmlspecialchars($it['texto']); ?></b>
+                                        <small><?php echo htmlspecialchars($it['detalle']); ?> · <?php echo $it['dias'] === 0 ? 'hoy' : $it['dias'] . ' d'; ?></small>
+                                    </a>
+                                    <?php if (!empty($bandejaCampana['acciones']) && $it['puede']): ?>
+                                    <div class="ntf-bandeja-acc">
+                                        <button type="button" class="ok" onclick="dbAprobar(this, <?php echo $it['id']; ?>, <?php echo $it['etapa']; ?>, <?php echo $it['trimestre']; ?>)">Aprobar T<?php echo $it['trimestre']; ?></button>
+                                        <button type="button" class="no" onclick="dbRechazar(this, <?php echo $it['id']; ?>, <?php echo $it['etapa']; ?>, <?php echo $it['trimestre']; ?>)">Rechazar</button>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <script>window.NTF_EXTRA = <?php echo (int)$bandejaCampana['total']; ?>;</script>
+                            <style>
+                            .ntf-bandeja{padding:8px 12px;border-bottom:1px solid rgba(0,0,0,.08);max-height:260px;overflow:auto}
+                            .ntf-bandeja-tit{font-size:12px;font-weight:700;color:#6E6E73;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+                            .ntf-bandeja-tit span{background:#007AFF;color:#fff;border-radius:10px;padding:0 7px;margin-left:4px}
+                            .ntf-bandeja-it{padding:6px 0;border-bottom:1px solid rgba(0,0,0,.05)}
+                            .ntf-bandeja-it a{display:block;text-decoration:none;color:inherit}
+                            .ntf-bandeja-it b{display:block;font-size:13px;font-weight:600;line-height:1.25}
+                            .ntf-bandeja-it small{color:#6E6E73;font-size:11.5px}
+                            .ntf-bandeja-acc{display:flex;gap:6px;margin-top:4px}
+                            .ntf-bandeja-acc button{border:0;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer}
+                            .ntf-bandeja-acc .ok{background:rgba(52,199,89,.16);color:#248A3D}
+                            .ntf-bandeja-acc .no{background:rgba(255,59,48,.10);color:#D70015}
+                            </style>
+                            <?php endif; ?>
                             <div class="ntf-panel-list" id="ntfList">
                                 <div class="ntf-empty">
                                     <i class="fas fa-check-circle"></i>

@@ -654,6 +654,13 @@ $TONO = [
 ];
 $tonoAvance = $avance === null ? 'none' : ($avance >= $esperado ? 'ok' : dbTono($esperado > 0 ? $avance / $esperado * 100 : 100));
 $moduloUrl  = $plan ? $basePath . '/modulo144?id=' . (int)$plan['id'] : $basePath . '/FOR-DE-144';
+// «Mi bandeja» ya no se dibuja en el dashboard: vive en la campanita del encabezado. Se deja lista para el panel y guardada en la
+// sesión para que la campana la muestre también en las demás pantallas.
+$bandejaCampana = ['total' => $bandejaTotal, 'acciones' => true, 'items' => array_map(function ($x) use ($moduloUrl) {
+    return ['id' => (int)$x['id'], 'texto' => (string)$x['texto'], 'detalle' => $x['lmp'] . ' · ' . $x['tipo'], 'dias' => (int)$x['dias'],
+            'trimestre' => (int)$x['trimestre'], 'etapa' => (int)$x['etapa'], 'puede' => (bool)$x['puede_aprobar'], 'url' => dbVerUrl($moduloUrl, $x['id'])];
+}, $bandeja)];
+$_SESSION['bandeja_campana'] = $bandejaCampana;
 
 ob_start();
 ?>
@@ -1099,33 +1106,6 @@ require_once __DIR__ . '/../complementos/header.php';
     <!-- ── Bandeja, actividad, novedades ── -->
     <div class="pa-row">
         <?php if ($plan): ?>
-        <section class="pa-card pa-col">
-            <div class="pa-card-head">
-                <h2>Mi bandeja<?php echo $bandejaTotal ? ' <span class="pa-pill num" style="background:#007AFF;color:#fff;vertical-align:3px">' . $bandejaTotal . '</span>' : ''; ?></h2>
-                <span class="pa-note"><?php echo htmlspecialchars($rolEtiqueta); ?></span>
-            </div>
-            <div class="pa-inbox">
-                <?php foreach ($bandeja as $b):
-                    ?>
-                <div class="pa-inbox-item">
-                    <a href="<?php echo htmlspecialchars(dbVerUrl($moduloUrl, $b['id'])); ?>" title="Abrir en el Módulo 144">
-                        <span><span class="t"><?php echo htmlspecialchars($b['texto']); ?></span><span class="s"><?php echo htmlspecialchars($b['lmp'] . ' · ' . $b['tipo']); ?></span></span>
-                        <span class="pa-pill num" style="background:#E9E9EE;color:#3A3A3C">
-                            <?php echo $b['dias'] === 0 ? 'Hoy' : ($b['dias'] === 1 ? '1 día' : $b['dias'] . ' días'); ?>
-                        </span>
-                    </a>
-                    <?php if ($b['puede_aprobar']): ?>
-                    <div class="pa-inbox-actions">
-                        <button type="button" class="ok" onclick="dbAprobar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>, <?php echo (int)$b['trimestre']; ?>)"><i class="fas fa-check"></i> Aprobar T<?php echo (int)$b['trimestre']; ?></button>
-                        <button type="button" class="no" onclick="dbRechazar(this, <?php echo (int)$b['id']; ?>, <?php echo (int)$b['etapa']; ?>, <?php echo (int)$b['trimestre']; ?>)"><i class="fas fa-times"></i> Rechazar</button>
-                    </div>
-                    <?php endif; ?>
-                </div>
-                <?php endforeach; ?>
-                <?php if (!$bandeja): ?><div class="pa-empty-box">Nada pendiente de tu revisión.</div><?php endif; ?>
-            </div>
-        </section>
-
         <section class="pa-card pa-col">
             <h2>Actividad reciente</h2>
             <?php if (!$actividad): ?>
