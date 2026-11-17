@@ -274,18 +274,24 @@ function dbPctFacultad($tipo, array $c, $t) {
         $metas[] = $c['c' . $s];
         $logs[]  = $c['s' . $s];
     }
-    if (!$metas) return 0.0;
-    $tipo = (string)$tipo;
-    if ($tipo === 'Límite') {
-        if ($t <= 2) return 0.0;
-        $meta = end($metas); $log = end($logs);
-        return $log === null ? 0.0 : ($log <= $meta ? 100.0 : 0.0);
+    $unaMeta = false;
+    if (!$metas) { // nada concertado todavía: se mide frente a la meta distribuida a la facultad
+        if (empty($c['d'])) return 0.0;
+        $metas = [(float)$c['d']];
+        $logs  = array_map(function ($s) use ($c) { return $c['s' . $s]; }, $sems);
+        $unaMeta = true;
     }
+    $tipo = (string)$tipo;
     $conDato = array_values(array_filter($logs, function ($v) { return $v !== null; }));
+    if ($tipo === 'Límite') {
+        if ($t <= 2 || !$conDato) return 0.0;
+        return end($conDato) <= end($metas) ? 100.0 : 0.0;
+    }
+    $ultimo = strpos($tipo, 'ltimo') !== false;
     if ($tipo === 'Promedio') {
-        $meta = array_sum($metas) / count($metas);
+        $meta = $unaMeta ? $metas[0] : array_sum($metas) / count($metas);
         $log  = $conDato ? array_sum($conDato) / count($conDato) : 0;
-    } elseif (strpos($tipo, 'ltimo') !== false) {
+    } elseif ($ultimo) {
         $meta = end($metas);
         $log  = $conDato ? end($conDato) : 0;
     } else {
@@ -294,6 +300,8 @@ function dbPctFacultad($tipo, array $c, $t) {
     }
     return $meta > 0 ? min(100.0, max(0.0, $log / $meta * 100)) : 0.0;
 }
+// ¿La facultad ya reportó algo en el semestre del trimestre $t?
+function dbFacReporto(array $c, $t) { return $c['s' . ($t <= 2 ? 1 : 2)] !== null; }
 
 // ── Usuario de facultad: su cumplimiento se mide con lo que su facultad concertó (no con el avance general del indicador) ──
 $misFacultades = [];
@@ -305,20 +313,20 @@ if ($pdo && $plan && !$veTodo) {
         if ($misFacultades) {
             $in = implode(',', $misFacultades);
             $q = $pdo->prepare(
-                "SELECT d.formulacion_id, d.seguimiento_sem1 AS s1, d.seguimiento_sem2 AS s2,
+                "SELECT d.formulacion_id, d.distribucion AS d, d.seguimiento_sem1 AS s1, d.seguimiento_sem2 AS s2,
                         c1.valor_final AS c1, c2.valor_final AS c2
                  FROM formulacion_distribucion_facultad_144 d
                  JOIN formulacion_144 f ON f.id = d.formulacion_id AND f.formulario_id = :fid AND f.estado_formulacion = 2
                  LEFT JOIN concertaciones_144 c1 ON c1.formulacion_id = d.formulacion_id AND c1.facultad_id = d.facultad_id AND c1.semestre = 1 AND c1.aprobado = 1
                  LEFT JOIN concertaciones_144 c2 ON c2.formulacion_id = d.formulacion_id AND c2.facultad_id = d.facultad_id AND c2.semestre = 2 AND c2.aprobado = 1
-                 WHERE d.facultad_id IN ($in)"
+                 WHERE d.facultad_id IN ($in) AND (d.distribucion > 0 OR c1.valor_final IS NOT NULL OR c2.valor_final IS NOT NULL)"
             );
             $q->execute([':fid' => (int)$plan['id']]);
             $num = function ($v) { return $v === null || $v === '' ? null : (float)$v; };
             foreach ($q->fetchAll() as $x) {
                 $k = (int)$x['formulacion_id'];
-                $c = $concFac[$k] ?? ['c1' => null, 'c2' => null, 's1' => null, 's2' => null];
-                foreach (['c1', 'c2', 's1', 's2'] as $col) {
+                $c = $concFac[$k] ?? ['d' => null, 'c1' => null, 'c2' => null, 's1' => null, 's2' => null];
+                foreach (['d', 'c1', 'c2', 's1', 's2'] as $col) {
                     $v = $num($x[$col]);
                     if ($v !== null) $c[$col] = ($c[$col] ?? 0) + $v; // varias facultades del usuario: se suman
                 }
@@ -331,18 +339,14 @@ $esUsuarioFacultad = !empty($misFacultades);
 
 // ── Alcance por rol: admin / sub administrador ven todo; el resto, lo que creó
 //    y aquello de lo que su dependencia es responsable (sin importar quién lo creó) ──
-$rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucargoNombre) {
+$rows = array_values(array_filter($rows, function ($r) use ($veTodo, $uid, $ucargoNombre, $concFac) {
     if ($veTodo) return true;
+    if (isset($concFac[(int)$r['id']])) return true; // meta de su facultad
     if ((int)$r['creado_por'] === $uid) return true;
     return dbEsResponsable($r['responsable_formulacion'] ?? '', $ucargoNombre);
 }));
-// Usuario de facultad: ve los indicadores donde su facultad ya concertó algún semestre (lo demás aún no tiene meta suya)
-if ($esUsuarioFacultad) {
-    $rows = array_values(array_filter($rows, function ($r) use ($concFac) {
-        $c = $concFac[(int)$r['id']] ?? null;
-        return $c && ($c['c1'] !== null || $c['c2'] !== null);
-    }));
-}
+// Usuario de facultad: solo ve los indicadores con meta para su facultad (distribuida o concertada)
+if ($esUsuarioFacultad) $rows = array_values(array_filter($rows, function ($r) use ($concFac) { return isset($concFac[(int)$r['id']]); }));
 
 // Catálogo de líneas presentes en el plan (para el filtro)
 $lineas = [];
@@ -370,6 +374,10 @@ foreach ($rows as &$r) {
     $r['solicitud'] = (int)$r['solicitud_estado_seguimiento'];
     $r['revision']  = !$r['aprobado'] && $r['solicitud'] === 1;
     $r['etapa']     = $r['aprobado'] ? 4 : (int)$r['semaforo_etapa_seguimiento'];
+    if ($esUsuarioFacultad) { // lo que reporta la facultad en su seguimiento (no pasa por el semáforo del indicador)
+        $r['aprobado'] = dbFacReporto($concFac[(int)$r['id']], $trimVigente ?: 1);
+        $r['solicitud'] = 0; $r['revision'] = false; $r['etapa'] = $r['aprobado'] ? 4 : 0;
+    }
     $idsVisibles[(int)$r['id']] = $r;
 }
 unset($r);
@@ -461,7 +469,11 @@ foreach ($linea === '' ? array_keys($lineas) : [$linea] as $cod) {
 
 // Estado de aprobación de cada trimestre del seguimiento: id => [trimestre => ['estado', 'solicitud', 'etapa']]
 $trimFlujo = [];
-if ($pdo && $plan && $filas) {
+if ($esUsuarioFacultad) {
+    foreach ($filas as $fila) foreach ([1, 2, 3, 4] as $tn) {
+        $trimFlujo[(int)$fila['id']][$tn] = ['estado' => dbFacReporto($concFac[(int)$fila['id']], $tn) ? 2 : 0, 'solicitud' => 0, 'etapa' => 0];
+    }
+} elseif ($pdo && $plan && $filas) {
     try {
         require_once __DIR__ . '/../../modelo/Modulo144Model.php';
         (new Modulo144Model())->asegurarTablaTrimestres();
@@ -504,12 +516,30 @@ foreach ($filas as $fila) {
 }
 $flujoMax = max(1, max($flujo));
 $esperanFirma = $flujo['G'] + $flujo['L'] + $flujo['V'];
+if ($esUsuarioFacultad) { // C = semestre sin concertar, G = concertado sin reporte, P = reportado
+    $flujo = ['C' => 0, 'G' => 0, 'L' => 0, 'V' => 0, 'P' => 0];
+    foreach ($filas as $fila) {
+        if (($fila['tipo_medicion'] ?? '') === 'Límite' && $trimRep <= 2) continue;
+        $cf = $concFac[(int)$fila['id']]; $sm = $trimRep <= 2 ? 1 : 2;
+        if (dbFacReporto($cf, $trimRep)) $flujo['P']++;
+        elseif ($cf['c' . $sm] !== null) $flujo['G']++;
+        else $flujo['C']++;
+    }
+    $flujoMax = max(1, max($flujo)); $esperanFirma = 0;
+}
 
 // «En meta»: indicadores cuyo cumplimiento con lo aprobado, acumulado al trimestre vigente, llega a lo esperado para ese trimestre
 // (30, 60, 80 y 100 %). Se muestra «N de M», con M los indicadores a los que aplica el trimestre.
 $enMeta = 0; $enMetaDe = 0;
 $conValorTrim = []; // id => el trimestre de «Reportados» ya tiene algún valor
-if ($trimFlujo) {
+if ($esUsuarioFacultad) {
+    foreach ($filas as $fila) {
+        $conValorTrim[(int)$fila['id']] = dbFacReporto($concFac[(int)$fila['id']], $trimRep);
+        if (($fila['tipo_medicion'] ?? '') === 'Límite' && $trimRep <= 2) continue;
+        $enMetaDe++;
+        if (dbPctFacultad($fila['tipo_medicion'] ?? '', $concFac[(int)$fila['id']], $trimRep) >= dbEsperadoPct($trimRep)) $enMeta++;
+    }
+} elseif ($trimFlujo) {
     try {
         $idsFilas = implode(',', array_map('intval', array_column($filas, 'id')));
         foreach ($pdo->query("SELECT id, tipo_medicion, linea_base_meta, meta_programada, trimestre1_seguimiento, trimestre2_seguimiento, trimestre3_seguimiento, trimestre4_seguimiento
@@ -939,21 +969,21 @@ require_once __DIR__ . '/../complementos/header.php';
             </div>
         </div>
         <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=formulacion&lista=publicados'); ?>" title="Ver las metas aprobadas en el Módulo 144">
-            <span class="lbl">Metas aprobadas</span>
+            <span class="lbl"><?php echo $esUsuarioFacultad ? 'Metas de tu facultad' : 'Metas aprobadas'; ?></span>
             <span class="val num"><?php echo $nMetas; ?></span>
-            <span class="note">aprobadas por la Oficina de Planeación</span>
+            <span class="note"><?php echo $esUsuarioFacultad ? 'con meta distribuida o concertada' : 'aprobadas por la Oficina de Planeación'; ?></span>
             <span class="go">Ver metas →</span>
         </a>
         <a class="pa-card pa-kpi" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=publicados'); ?>" title="Ir al seguimiento en el Módulo 144">
             <span class="lbl">Reportados</span>
             <span class="val num"><?php echo $nAprob; ?><small> / <?php echo $nAplican; ?></small></span>
-            <span class="note">con el T<?php echo $trimRep; ?> aprobado · <?php echo $nRevision; ?> en revisión · <?php echo $nTrimAprob; ?> trimestres aprobados en total</span>
+            <?php if ($esUsuarioFacultad): ?><span class="note">con lo reportado por tu facultad para el T<?php echo $trimRep; ?></span><?php else: ?><span class="note">con el T<?php echo $trimRep; ?> aprobado · <?php echo $nRevision; ?> en revisión · <?php echo $nTrimAprob; ?> trimestres aprobados en total</span><?php endif; ?>
             <span class="go">Ir al seguimiento →</span>
         </a>
         <div class="pa-card pa-kpi">
             <span class="lbl">En meta</span>
             <span class="val num" style="color:<?php echo $enMeta ? '#248A3D' : 'inherit'; ?>"><?php echo $enMeta; ?><small> / <?php echo $enMetaDe; ?></small></span>
-            <span class="note">con lo esperado al T<?php echo $trimRep; ?> (<?php echo dbEsperadoPct($trimRep); ?> %) con lo aprobado</span>
+            <span class="note">con lo esperado al T<?php echo $trimRep; ?> (<?php echo dbEsperadoPct($trimRep); ?> %) <?php echo $esUsuarioFacultad ? 'con lo concertado y reportado' : 'con lo aprobado'; ?></span>
         </div>
         <div class="pa-card pa-kpi">
             <span class="lbl">Cierre del formulario</span>
@@ -1033,7 +1063,7 @@ require_once __DIR__ . '/../complementos/header.php';
         </section>
 
         <section class="pa-card" style="flex:5 1 340px;display:flex;flex-direction:column">
-            <h2>Flujo de aprobación · T<?php echo (int)$trimRep; ?></h2>
+            <h2><?php echo $esUsuarioFacultad ? 'Reporte de tu facultad' : 'Flujo de aprobación'; ?> · T<?php echo (int)$trimRep; ?></h2>
             <div class="pa-flow">
                 <?php
                 $etapasFlujo = [
@@ -1043,6 +1073,13 @@ require_once __DIR__ . '/../complementos/header.php';
                     'V' => ['Aprobado por Vicerrectoría',            'rgba(88,86,214,.14)',  '#4A48C8', '#5856D6'],
                     'P' => ['Oficina de Planeación · reportado',     'rgba(52,199,89,.16)',  '#248A3D', '#34C759'],
                 ];
+                if ($esUsuarioFacultad) { // sin semáforo: concertación y reporte de la facultad
+                    $etapasFlujo = [
+                        'C' => ['Sin concertar el semestre',  '#EEEEF2',             '#6E6E73', '#AEAEB2'],
+                        'G' => ['Concertado, falta reportar', 'rgba(0,122,255,.12)', '#0066CC', '#007AFF'],
+                        'P' => ['Reportado por tu facultad',  'rgba(52,199,89,.16)', '#248A3D', '#34C759'],
+                    ];
+                }
                 foreach ($etapasFlujo as $k => [$nom, $tint, $ink, $bar]): ?>
                 <a class="pa-stage" href="<?php echo htmlspecialchars($moduloUrl . '&modulo=seguimiento&lista=' . ($k === 'P' ? 'publicados' : 'borradores')); ?>" title="Ver en el Módulo 144">
                     <span class="dot" style="background:<?php echo $tint; ?>;color:<?php echo $ink; ?>"><?php echo $k; ?></span>
@@ -1052,7 +1089,7 @@ require_once __DIR__ . '/../complementos/header.php';
                 <?php endforeach; ?>
             </div>
             <div class="pa-chips" style="margin-top:auto;padding-top:16px">
-                <span><b class="num"><?php echo $esperanFirma; ?></b> esperan una firma intermedia</span>
+                <?php if ($esUsuarioFacultad): ?><span><b class="num"><?php echo $flujo['G']; ?></b> concertadas esperan tu reporte</span><?php else: ?><span><b class="num"><?php echo $esperanFirma; ?></b> esperan una firma intermedia</span><?php endif; ?>
             </div>
         </section>
     </div>
