@@ -183,20 +183,18 @@ class Plantilla144Controller {
         }
         for ($i = 0; $i < self::FILAS_VACIAS; $i++) $filasF[] = [];
 
-        $nombre = 'plantilla_plan_accion_' . preg_replace('/[^A-Za-z0-9_-]+/', '_', $formulario['titulo'] ?? 'formulario') . '_' . date('Y-m-d');
+        // hoja=formulacion | seguimiento exporta solo esa hoja (mismo formato); sin parámetro, el libro completo
+        $soloHoja = in_array($_GET['hoja'] ?? '', ['formulacion', 'seguimiento'], true) ? $_GET['hoja'] : '';
+        $nombre = ($soloHoja ? $soloHoja . '_plan_accion_' : 'plantilla_plan_accion_') . preg_replace('/[^A-Za-z0-9_-]+/', '_', $formulario['titulo'] ?? 'formulario') . '_' . date('Y-m-d');
         $totalActividades = count($registros);
-        ExcelLibro::descargar($nombre, [
-            [
-                'nombre'   => self::HOJA_FORMULACION,
-                'columnas' => $this->columnasExcel($columnas, 0),
-                'filas'    => $filasF,
-            ],
-            [
-                'nombre'   => self::HOJA_SEGUIMIENTO,
-                'columnas' => $this->columnasExcel($this->colsSeguimiento, $totalActividades),
-                'filas'    => $filasS,
-            ],
-        ]);
+        $hojas = [];
+        if ($soloHoja !== 'seguimiento') {
+            $hojas[] = ['nombre' => self::HOJA_FORMULACION, 'columnas' => $this->columnasExcel($columnas, 0), 'filas' => $filasF];
+        }
+        if ($soloHoja !== 'formulacion') {
+            $hojas[] = ['nombre' => self::HOJA_SEGUIMIENTO, 'columnas' => $this->columnasExcel($this->colsSeguimiento, $totalActividades), 'filas' => $filasS];
+        }
+        ExcelLibro::descargar($nombre, $hojas);
     }
 
     // ════════════════════════ IMPORTAR ════════════════════════
@@ -236,10 +234,11 @@ class Plantilla144Controller {
             return;
         }
 
-        $hojaF = $this->buscarHoja($libro, self::HOJA_FORMULACION);
-        $hojaS = $this->buscarHoja($libro, self::HOJA_SEGUIMIENTO);
+        $soloHoja = in_array($_POST['hoja'] ?? '', ['formulacion', 'seguimiento'], true) ? $_POST['hoja'] : '';
+        $hojaF = $soloHoja === 'seguimiento' ? null : $this->buscarHoja($libro, self::HOJA_FORMULACION);
+        $hojaS = $soloHoja === 'formulacion' ? null : $this->buscarHoja($libro, self::HOJA_SEGUIMIENTO);
         if ($hojaF === null && $hojaS === null) {
-            echo json_encode(['success' => false, 'message' => 'El archivo no tiene las hojas "Formulación" y "Seguimiento" de la plantilla']);
+            echo json_encode(['success' => false, 'message' => $soloHoja === 'formulacion' ? 'El archivo no tiene la hoja "Formulación" del formato' : ($soloHoja === 'seguimiento' ? 'El archivo no tiene la hoja "Seguimiento" del formato' : 'El archivo no tiene las hojas "Formulación" y "Seguimiento" de la plantilla')]);
             return;
         }
 

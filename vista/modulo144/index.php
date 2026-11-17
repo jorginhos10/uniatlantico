@@ -1911,11 +1911,17 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                         <i class="fas fa-ellipsis-h"></i>Más acciones
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end m144-menu-acciones">
+                                        <?php $etqHoja = $key === 'seguimiento' ? 'seguimiento' : 'formulación'; $parHoja = $key === 'seguimiento' ? 'seguimiento' : 'formulacion'; ?>
+                                        <li><a class="dropdown-item" href="<?php echo $basePath; ?>/modulo144/exportarPlantilla?id=<?php echo (int)$formulario['id']; ?>&hoja=<?php echo $parHoja; ?>"
+                                               title="Descarga la <?php echo $etqHoja; ?> en el formato FOR-DE-144 (Excel)">
+                                            <i class="fas fa-file-download me-2"></i>Exportar <?php echo $etqHoja; ?></a></li>
+                                        <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla('<?php echo $parHoja; ?>')" title="Sube el Excel de la <?php echo $etqHoja; ?> en el mismo formato">
+                                            <i class="fas fa-file-upload me-2"></i>Importar <?php echo $etqHoja; ?></button></li>
                                         <li><a class="dropdown-item" href="<?php echo $basePath; ?>/modulo144/exportarPlantilla?id=<?php echo (int)$formulario['id']; ?>"
-                                               title="Descarga la plantilla de Excel (hojas Formulación y Seguimiento) para llenarla y subirla">
-                                            <i class="fas fa-file-download me-2"></i>Exportar plantilla</a></li>
-                                        <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla()" title="Sube la plantilla de Excel llena">
-                                            <i class="fas fa-file-upload me-2"></i>Importar plantilla</button></li>
+                                               title="Descarga el Excel con las hojas Formulación y Seguimiento">
+                                            <i class="fas fa-file-excel me-2"></i>Exportar ambas hojas</a></li>
+                                        <li><button type="button" class="dropdown-item" onclick="abrirModalImportarPlantilla('')" title="Sube el Excel con las hojas Formulación y Seguimiento">
+                                            <i class="fas fa-file-import me-2"></i>Importar ambas hojas</button></li>
                                         <?php $puedePublicarSeg = $key === 'seguimiento' && (Roles::esAdmin() || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador'], true)) && count($borradoresVisiblesPorModulo[$key]) > 0; ?>
                                         <?php if ($puedePublicarLote || $puedePublicarSeg || $puedeDevolverTodos): ?>
                                         <li><hr class="dropdown-divider"></li>
@@ -3349,7 +3355,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 </div>
                 <div class="modal-body">
                     <ol class="small text-muted ps-3">
-                        <li>Pulsa <strong>Exportar plantilla</strong> y abre el Excel. Tiene dos hojas: <strong>Formulación</strong> y <strong>Seguimiento</strong>.</li>
+                        <li>Pulsa <strong>Exportar</strong> (formulación, seguimiento o ambas hojas) y abre el Excel: tiene el mismo formato FOR-DE-144 que vas a subir.</li>
                         <li><strong>Formulación:</strong> corrige tus indicadores en borrador o agrega nuevos en las filas vacías (columna ID vacía).</li>
                         <li><strong>Seguimiento:</strong> llena el avance de los indicadores ya aprobados. No cambies la columna ID.</li>
                         <li>Guarda el archivo y súbelo aquí.</li>
@@ -4428,7 +4434,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
 
         // ═══ IMPORTAR PLANTILLA ═══
-        function abrirModalImportarPlantilla() {
+        let hojaImportar = '';
+        function abrirModalImportarPlantilla(hoja) {
+            hojaImportar = hoja || '';
+            $('#modalImportarPlantilla .modal-title').html('<i class="fas fa-file-upload me-2"></i>Importar ' + (hojaImportar === 'seguimiento' ? 'seguimiento' : hojaImportar === 'formulacion' ? 'formulación' : 'plantilla'));
             $('#archivoPlantilla').val('');
             $('#modalImportarPlantilla').modal('show');
         }
@@ -4441,6 +4450,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             }
             const datos = new FormData();
             datos.append('formulario_id', formularioId);
+            datos.append('hoja', hojaImportar);
             datos.append('archivo', archivo);
 
             const boton = $('#btnImportarPlantilla');
