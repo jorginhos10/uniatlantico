@@ -3547,7 +3547,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                     <tfoot>
                                         <tr>
                                             <td class="fw-bold">Total</td>
-                                            <td class="text-end fw-bold" id="segFacTotalDist">0</td>
+                                            <td class="text-end fw-bold"><span id="segFacTotalDist">0</span><small class="d-block text-muted fw-normal" id="segFacMetaInd" style="font-size:11px"></small></td>
                                             <td class="fw-bold" id="segFacTotalS1">0</td>
                                             <td></td>
                                             <td></td>
@@ -4553,7 +4553,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         if (dist <= 0 && !reporto) return; // sin meta ni reporte: se decide abajo si se muestra
                         const fila = $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + d.facultad_id + '"]');
                         if (!fila.length) return;
-                        fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : 'Sin meta');
+                        const concIni = segFacNum((response.concertadas || {})[d.facultad_id]);
+                        fila.find('.seg-fac-distribucion').text(dist > 0 ? dist.toFixed(2) : (concIni > 0 ? concIni.toFixed(2) : 'Sin meta')).attr('title', dist > 0 ? '' : (concIni > 0 ? 'Meta concertada con vicerrectoría' : ''));
                         fila.find('.seg-fac-s1').val(d.seguimiento_sem1 !== null && d.seguimiento_sem1 !== undefined ? d.seguimiento_sem1 : '');
                         fila.find('.seg-fac-s2').val(d.seguimiento_sem2 !== null && d.seguimiento_sem2 !== undefined ? d.seguimiento_sem2 : '');
                         // Descripciones bloqueadas: son el texto del valor concertado; el título muestra el texto completo
@@ -4571,7 +4572,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             const fid = parseInt(fila.data('facultad-id'), 10);
                             if (fila.is(':visible')) return;
                             if (soloIds.length && soloIds.indexOf(fid) === -1) return; // la facultad solo ve la suya
-                            fila.find('.seg-fac-distribucion').text('Sin meta');
+                            const concSin = segFacNum((response.concertadas || {})[fid]);
+                            fila.find('.seg-fac-distribucion').text(concSin > 0 ? concSin.toFixed(2) : 'Sin meta').attr('title', concSin > 0 ? 'Meta concertada con vicerrectoría' : '');
                             if (VIEWER_FACULTADES.includes(fid)) fila.addClass('table-primary');
                             fila.show();
                             hay = true;
@@ -4584,6 +4586,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         ? 'Registra el avance de tu facultad sobre su parte de la distribución en cada semestre.'
                         : 'Cada facultad registra el avance de su parte de la distribución en cada semestre.');
                     $('#tablaSeguimientoFacultades tfoot').toggle(!soloPropia);
+                    const metaInd = segFacNum(response.meta_indicador);
+                    $('#segFacMetaInd').text(metaInd > 0 ? 'Meta del indicador: ' + metaInd.toFixed(2) : '');
                     actualizarTotalesSeguimientoFacultades();
                     aplicarBloqueoSemestres();
                 }

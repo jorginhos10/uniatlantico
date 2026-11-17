@@ -1090,7 +1090,21 @@ class Modulo144Controller {
                 return in_array((int)$d['facultad_id'], $facultadesPropias, true);
             }));
         }
-        echo json_encode(['success' => true, 'distribucion' => $distribucion, 'solo_facultades' => $facultadesPropias]);
+        // Meta de cada facultad cuando la formulación no le asignó distribución: lo concertado (valor final aprobado o, si no, el de vicerrectoría),
+        // sumando los semestres; y la meta anual del indicador, para compararla con lo distribuido
+        $metasConcertadas = [];
+        foreach ($this->model->getConcertaciones($formulacionId) as $facId => $sems) {
+            $suma = null;
+            foreach ($sems as $c) {
+                $v = (int)($c['aprobado'] ?? 0) === 1 && $c['valor_final'] !== null ? $c['valor_final'] : $c['valor_vicerrectoria'];
+                if ($v !== null && $v !== '') $suma = ($suma ?? 0) + (float)$v;
+            }
+            if ($suma !== null) $metasConcertadas[(int)$facId] = $suma;
+        }
+        $item = $this->model->getById('formulacion', $formulacionId) ?: [];
+        $metaIndicador = trim((string)($item['anio_base_meta'] ?? '')) !== '' ? $item['anio_base_meta'] : ($item['meta_programada'] ?? '');
+        echo json_encode(['success' => true, 'distribucion' => $distribucion, 'solo_facultades' => $facultadesPropias,
+                          'concertadas' => (object)$metasConcertadas, 'meta_indicador' => $metaIndicador]);
     }
 
     // Ids de las facultades del usuario si solo debe ver/registrar su propia fila; [] si puede ver todas
