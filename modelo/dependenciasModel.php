@@ -30,6 +30,34 @@ class DependenciasModel {
         }
     }
 
+    // La dependencia «Super Admin» es la cima del organigrama y la del usuario superadministrador (id 1). La Oficina de Planeación pasa a
+    // ser una dependencia más (reporta a Super Admin); el semáforo no cambia: la etapa de Planeación la sigue aprobando el superadmin.
+    // Se hace una sola vez, al crear «Super Admin»: lo que se edite después en el organigrama no se vuelve a tocar.
+    private function asegurarSuperAdmin() {
+        static $hecho = false;
+        if ($hecho) return;
+        $hecho = true;
+        try {
+            $q = $this->db->prepare("SELECT id FROM cargos WHERE nombre = 'Super Admin' LIMIT 1");
+            $q->execute();
+            if ($q->fetchColumn()) return;
+            $this->db->beginTransaction();
+            $this->db->exec("INSERT INTO cargos (nombre, activo, reporta_a_id, fecha_creacion) VALUES ('Super Admin', 1, NULL, NOW())");
+            $superId = (int)$this->db->lastInsertId();
+            $plan = $this->db->query("SELECT id FROM cargos WHERE nombre LIKE '%Planeaci%' ORDER BY (nombre = 'Oficina de Planeación') DESC, id ASC LIMIT 1")->fetchColumn();
+            if ($plan) {
+                // Lo que reportaba a Planeación y la propia Planeación pasan a reportar a Super Admin
+                $this->db->prepare("UPDATE cargos SET reporta_a_id = ? WHERE reporta_a_id = ? AND id <> ?")->execute([$superId, $plan, $superId]);
+                $this->db->prepare("UPDATE cargos SET reporta_a_id = ? WHERE id = ?")->execute([$superId, $plan]);
+            }
+            $this->db->prepare("UPDATE usuarios SET cargo_id = ? WHERE id = 1")->execute([$superId]);
+            $this->db->commit();
+        } catch (PDOException $e) {
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            error_log('asegurarSuperAdmin: ' . $e->getMessage());
+        }
+    }
+
     // El superior debe existir y no puede ser la misma dependencia ni una que ya le reporta (evita ciclos)
     public function reportaAValido($id, $reportaA) {
         if (!$reportaA) return true;
@@ -45,6 +73,7 @@ class DependenciasModel {
     public function getAll() {
         try {
             $this->asegurarColumnaReportaA();
+            $this->asegurarSuperAdmin();
             $stmt = $this->db->prepare(
                 "SELECT c.id, c.nombre, c.activo, c.fecha_creacion, c.reporta_a_id, p.nombre AS reporta_a_nombre
                  FROM cargos c LEFT JOIN cargos p ON p.id = c.reporta_a_id
