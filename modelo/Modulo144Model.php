@@ -1199,6 +1199,28 @@ class Modulo144Model {
         } catch (PDOException $e) { error_log('getUltimosCambiosSeguimiento: ' . $e->getMessage()); return []; }
     }
 
+    // Quién aprobó cada etapa del semáforo del seguimiento: [formulacion_id][trimestre][etapa] => ['nombre', 'fecha'].
+    // Cuenta la última aprobación de cada etapa posterior al último rechazo de ese trimestre (un rechazo reinicia el semáforo).
+    public function getAprobadoresSeguimiento(array $ids) {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if (!$ids) return [];
+        $out = [];
+        try {
+            $q = $this->db->query("SELECT formulacion_id, trimestre, etapa, accion, usuario_nombre, fecha_creacion
+                                   FROM semaforo_historial_144
+                                   WHERE modulo = 'seguimiento' AND formulacion_id IN (" . implode(',', $ids) . ")
+                                   ORDER BY fecha_creacion ASC, id ASC");
+            foreach ($q->fetchAll() as $r) {
+                $f = (int)$r['formulacion_id']; $t = (int)$r['trimestre'];
+                if ($r['accion'] === 'rechazado') { unset($out[$f][$t]); continue; }
+                if ($r['accion'] === 'aprobado') $out[$f][$t][(int)$r['etapa']] = ['nombre' => $r['usuario_nombre'], 'fecha' => $r['fecha_creacion']];
+            }
+        } catch (PDOException $e) {
+            error_log('getAprobadoresSeguimiento: ' . $e->getMessage());
+        }
+        return $out;
+    }
+
     public function getHistorialSemaforo($modulo, $formulacionId) {
         try {
             $stmt = $this->db->prepare(

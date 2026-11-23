@@ -2205,7 +2205,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                         $tituloCirculo = $etapaInfo['titulo'];
                                                         if ($rechazadaAqui) $tituloCirculo .= ' — Rechazó';
                                                         elseif ($noAplica) $tituloCirculo .= ' — No aplica (creado por un rol superior)';
-                                                        elseif ($activo) $tituloCirculo .= ' — Aprobado';
+                                                        elseif ($activo) {
+                                                            // Quién aprobó esta etapa en el trimestre que muestra la fila (o, en registros antiguos, sin trimestre)
+                                                            $quien = ($aprobadoresSeg ?? [])[(int)$borrador['id']][(int)$trimFila][$etapaNum] ?? (($aprobadoresSeg ?? [])[(int)$borrador['id']][0][$etapaNum] ?? null);
+                                                            $tituloCirculo .= ' — Aprobado' . ($quien ? ' por ' . $quien['nombre'] . ($quien['fecha'] ? ' (' . date('d/m/Y H:i', strtotime($quien['fecha'])) . ')' : '') : '');
+                                                        }
                                                         else {
                                                             $quienAprueba = m144_nombresAprobadores($usuarios_aprobadores ?? [], m144_normalizarRol($etapaInfo['rol']), $borrador['responsable_formulacion'] ?? '', $etapaNum, $idsVice);
                                                             if ($quienAprueba !== '') $tituloCirculo .= ' (' . $quienAprueba . ')';
