@@ -2229,7 +2229,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                           onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
-                                                    <?php if ($solEstado === 1 && $puedeRechazarEtapa): ?><span data-toca-aprobar="1" hidden></span><?php endif; ?>
+                                                    <?php // "Propios": el administrador solo cuenta cuando la etapa pendiente es la última (la suya); aunque pueda aprobar cualquiera, no le "toca" antes ?>
+                                                    <?php if ($solEstado === 1 && $puedeRechazarEtapa && (!$esSuperAdminSem || ($etapaActual + 1) === 4)): ?><span data-toca-aprobar="1" hidden></span><?php endif; ?>
                                                 </div>
                                                 <?php $dependenciaFila = trim($borrador['responsable_formulacion'] ?? '') ?: ($borrador['creado_por_cargo_nombre'] ?? ''); ?>
                                                 <?php if ($dependenciaFila !== ''): ?>
