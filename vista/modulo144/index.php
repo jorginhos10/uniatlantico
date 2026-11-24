@@ -1964,6 +1964,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                 <option value="sin_seguimiento" <?php echo $pref_key['tipo_filtro']==='sin_seguimiento' ? 'selected':''; ?>>Sin seguimiento</option>
                                 <option value="por_aprobar" <?php echo $pref_key['tipo_filtro']==='por_aprobar' ? 'selected':''; ?>>Por aprobar</option>
                             </select>
+                            <?php $aprobar_sel = ($pref_key['tipo_filtro'] === 'por_aprobar' && ($pref_key['valor_filtro'] ?? '') === 'ajenos') ? 'ajenos' : 'propios'; ?>
+                            <select class="filtro-tipo-select" id="filtroAprobar-<?php echo $key; ?>"
+                                    onchange="onFiltroAprobarChange('<?php echo $key; ?>')"
+                                    style="display:<?php echo $pref_key['tipo_filtro'] === 'por_aprobar' ? '' : 'none'; ?>;">
+                                <option value="propios" <?php echo $aprobar_sel === 'propios' ? 'selected' : ''; ?>>Propios (me toca aprobar)</option>
+                                <option value="ajenos"  <?php echo $aprobar_sel === 'ajenos'  ? 'selected' : ''; ?>>Ajenos (les toca a otros)</option>
+                            </select>
                             <select class="filtro-tipo-select" id="filtroLinea-<?php echo $key; ?>"
                                     onchange="onFiltroLineaChange('<?php echo $key; ?>')" style="display:none;">
                                 <option value="">Línea: Todas</option>
@@ -2222,6 +2229,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                                                           onclick="avanzarSemaforo('<?php echo $key; ?>', <?php echo $borrador['id']; ?>, <?php echo $etapaActual; ?>)"
                                                           <?php endif; ?>><?php echo $etapaInfo['letra']; ?></span>
                                                     <?php endforeach; ?>
+                                                    <?php if ($solEstado === 1 && $puedeRechazarEtapa): ?><span data-toca-aprobar="1" hidden></span><?php endif; ?>
                                                 </div>
                                                 <?php $dependenciaFila = trim($borrador['responsable_formulacion'] ?? '') ?: ($borrador['creado_por_cargo_nombre'] ?? ''); ?>
                                                 <?php if ($dependenciaFila !== ''): ?>
@@ -7175,6 +7183,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             const tipo  = document.getElementById('filtroTipo-' + modulo).value;
             const wrap  = document.getElementById('filtroInputWrap-' + modulo);
             const input = document.getElementById('filtroTexto-' + modulo);
+            const selAprobar = document.getElementById('filtroAprobar-' + modulo);
+            if (selAprobar) selAprobar.style.display = tipo === 'por_aprobar' ? '' : 'none';
             if (tipo === 'dependencia' || tipo === 'persona' || tipo === 'nombre') {
                 wrap.style.display = 'block';
                 input.placeholder  = tipo === 'persona' ? 'Buscar persona...'
@@ -7185,6 +7195,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             } else {
                 wrap.style.display = 'none';
             }
+            aplicarFiltro(modulo);
+            guardarFiltroPreferencia(modulo);
+        }
+
+        function onFiltroAprobarChange(modulo) {
             aplicarFiltro(modulo);
             guardarFiltroPreferencia(modulo);
         }
@@ -7227,7 +7242,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     visible = item.getAttribute('data-tiene-seguimiento') === '0';
                 } else if (tipo === 'por_aprobar') {
                     // Solicitados: esperan que se apruebe o rechace la etapa (en el seguimiento, el trimestre en revisión)
-                    visible = item.getAttribute('data-por-aprobar') === '1';
+                    // Propios: la etapa pendiente me corresponde aprobarla a mí. Ajenos: le corresponde a otras personas
+                    const modoAprobar = document.getElementById('filtroAprobar-' + modulo)?.value || 'propios';
+                    const meToca = !!item.querySelector('[data-toca-aprobar]');
+                    visible = item.getAttribute('data-por-aprobar') === '1' && (modoAprobar === 'propios' ? meToca : !meToca);
                 }
                 if (visible && linea) {
                     visible = (item.getAttribute('data-linea-filtro') || '') === linea;
@@ -7494,7 +7512,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                         formulario_id: formularioId,
                         modulo:        modulo,
                         tipo_filtro:   tipo,
-                        valor_filtro:  (tipo === 'dependencia' || tipo === 'persona') ? texto : null
+                        valor_filtro:  (tipo === 'dependencia' || tipo === 'persona') ? texto
+                                     : (tipo === 'por_aprobar' ? (document.getElementById('filtroAprobar-' + modulo)?.value || 'propios') : null)
                     })
                 });
             }, 800);
