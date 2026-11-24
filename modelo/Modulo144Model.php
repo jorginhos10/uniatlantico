@@ -2027,6 +2027,11 @@ class Modulo144Model {
 
     public function saveFilterPreference($usuario_id, $formulario_id, $modulo, $tipo_filtro, $valor_filtro) {
         try {
+            // Si tipo_filtro es un ENUM antiguo, se amplía a VARCHAR para admitir filtros nuevos (p. ej. 'por_aprobar')
+            $col = $this->db->query("SHOW COLUMNS FROM user_filter_preferences LIKE 'tipo_filtro'")->fetch(PDO::FETCH_ASSOC);
+            if ($col && stripos($col['Type'], 'enum') === 0) {
+                $this->db->exec("ALTER TABLE user_filter_preferences MODIFY tipo_filtro VARCHAR(30) NOT NULL DEFAULT 'todos'");
+            }
             $stmt = $this->db->prepare(
                 "INSERT INTO user_filter_preferences (usuario_id, formulario_id, modulo, tipo_filtro, valor_filtro)
                  VALUES (:uid, :fid, :mod, :tipo, :valor)
