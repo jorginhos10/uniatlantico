@@ -69,13 +69,20 @@ ob_start();
     .av label.et { display: block; font-size: .8rem; font-weight: 600; color: #424245; margin: 0 0 .3rem; }
     .av .campo { width: 100%; padding: .55rem .8rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .95rem; background: #fff; }
     .av .campo:focus { outline: 2px solid #0071e3; border-color: transparent; }
-    .av .fila2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; margin: .9rem 0; }
+    .av .fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: .7rem 0 0; }
+    .av .paso { display: flex; gap: .9rem; padding: .9rem 0; border-bottom: 1px solid #f0f0f3; }
+    .av .paso:last-of-type { border-bottom: 0; }
+    .av .paso .num { flex: none; width: 28px; height: 28px; border-radius: 50%; background: #0071e3; color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: .85rem; }
+    .av .paso .cont { flex: 1; min-width: 0; }
+    .av .campo.grande { width: 140px; font-size: 1.3rem; font-weight: 700; padding: .45rem .7rem; }
+    .av .ayuda { display: block; color: #86868b; font-size: .75rem; margin-top: .45rem; }
+    .av details.avanz { margin-top: .7rem; font-size: .82rem; }
+    .av details.avanz summary { cursor: pointer; color: #0071e3; }
     .av .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
     .av .chip input { position: absolute; opacity: 0; pointer-events: none; }
     .av .chip span { display: block; padding: .5rem .85rem; border: 1px solid #d2d2d7; border-radius: 999px; cursor: pointer; font-size: .88rem; background: #fff; user-select: none; }
     .av .chip span b { font-size: 1rem; margin-right: .3rem; }
     .av .chip input:checked + span { background: #0071e3; border-color: #0071e3; color: #fff; }
-    .av .chip input:disabled + span { opacity: .3; cursor: not-allowed; text-decoration: line-through; }
     .av .chip input:focus-visible + span { outline: 2px solid #0071e3; outline-offset: 2px; }
     .av .pie { display: flex; gap: .6rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
     .av .btn { border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .5rem 1rem; cursor: pointer; font-size: .9rem; }
@@ -113,33 +120,51 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="rejilla">
         <form method="post" action="<?php echo $basePath; ?>/proyeccion" class="caja" id="formNuevo">
             <input type="hidden" name="accion" value="crear">
-            <h2>Nueva proyección <small>Máximo 8 planes base</small></h2>
-            <label class="et" for="nombre">Nombre</label>
-            <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2026">
-            <div class="fila2">
-                <div><label class="et" for="anio">Año a proyectar (el que se decide)</label>
-                    <input class="campo" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $anioDefecto; ?>"></div>
-                <div><label class="et" for="metodo">Cómo se calcula</label>
-                    <select class="campo" id="metodo" name="metodo">
-                        <?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>"><?php echo $h($v); ?></option><?php endforeach; ?>
-                    </select></div>
-                <div><label class="et" for="ajuste">Ajuste (%)</label>
-                    <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="0" title="Porcentaje que se suma o resta a la meta calculada"></div>
+            <h2>Nueva proyección</h2>
+
+            <div class="paso"><span class="num">1</span>
+                <div class="cont">
+                    <label class="et" for="anio">¿Qué año quieres proyectar?</label>
+                    <input class="campo grande" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $anioDefecto; ?>" required>
+                    <small class="ayuda">Es el año para el que se van a proponer y decidir las metas.</small>
+                </div>
             </div>
-            <label class="et">Años históricos (de donde se toma lo formulado y lo logrado)</label>
-            <div class="chips">
-                <?php foreach ($planes as $pl): ?>
-                    <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
-                        <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>" data-anio="<?php echo (int)$pl['anio']; ?>">
-                        <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 30, '…', 'UTF-8')); ?></span>
-                    </label>
-                <?php endforeach; ?>
+
+            <div class="paso"><span class="num">2</span>
+                <div class="cont">
+                    <label class="et">¿Qué años históricos usarás como base?</label>
+                    <div class="chips">
+                        <?php foreach ($planes as $pl): ?>
+                            <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
+                                <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>">
+                                <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 22, '…', 'UTF-8')); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <small class="ayuda">De aquí se toma lo formulado y lo logrado. Solo se usan años anteriores al que proyectas.</small>
+                </div>
             </div>
+
+            <div class="paso"><span class="num">3</span>
+                <div class="cont">
+                    <label class="et" for="nombre">Nombre <span style="font-weight:400;color:#86868b">(opcional)</span></label>
+                    <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2025">
+                    <details class="avanz"><summary>Cómo se calcula la propuesta</summary>
+                        <div class="fila2">
+                            <div><label class="et" for="metodo">Método</label>
+                                <select class="campo" id="metodo" name="metodo"><?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>"><?php echo $h($v); ?></option><?php endforeach; ?></select></div>
+                            <div><label class="et" for="ajuste">Ajuste (%)</label>
+                                <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="0"></div>
+                        </div>
+                    </details>
+                </div>
+            </div>
+
             <div class="pie">
                 <button type="submit" class="btn primario" id="btnGenerar" disabled>Generar proyección</button>
                 <button type="button" class="enlace" id="btnTodos">Marcar todos</button>
                 <button type="button" class="enlace" id="btnNinguno">Quitar todos</button>
-                <span class="contador" id="contador">0 seleccionados</span>
+                <span class="contador" id="contador">0 años seleccionados</span>
             </div>
         </form>
 
@@ -185,21 +210,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var btn = document.getElementById('btnGenerar'), cont = document.getElementById('contador');
     function actualizar() {
         var n = 0; cajas.forEach(function (c) { if (c.checked) n++; });
-        cont.textContent = n + (n === 1 ? ' seleccionado' : ' seleccionados');
+        cont.textContent = n + (n === 1 ? ' año seleccionado' : ' años seleccionados');
         btn.disabled = n < 1;
     }
-    // El año a proyectar no puede ser histórico: se bloquean los planes de ese año o posteriores
-    var anioIn = document.getElementById('anio');
-    function bloquear() {
-        var y = parseInt(anioIn.value, 10);
-        cajas.forEach(function (c) {
-            var malo = !isNaN(y) && +c.dataset.anio >= y;
-            c.disabled = malo;
-            if (malo) c.checked = false;
-        });
-        actualizar();
-    }
-    anioIn.addEventListener('input', bloquear);
     cajas.forEach(function (c) {
         c.addEventListener('change', function () {
             var marcados = Array.prototype.filter.call(cajas, function (x) { return x.checked; });
@@ -207,9 +220,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             actualizar();
         });
     });
-    document.getElementById('btnTodos').addEventListener('click', function () { var n = 0; cajas.forEach(function (c) { c.checked = !c.disabled && n < 8; if (c.checked) n++; }); actualizar(); });
+    document.getElementById('btnTodos').addEventListener('click', function () { cajas.forEach(function (c, i) { c.checked = i < 8; }); actualizar(); });
     document.getElementById('btnNinguno').addEventListener('click', function () { cajas.forEach(function (c) { c.checked = false; }); actualizar(); });
-    bloquear();
+    actualizar();
 })();
 </script>
 
