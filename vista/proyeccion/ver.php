@@ -378,7 +378,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             D.anios.forEach(function (a) {
                 var x = f.h.filter(function (y) { return y.a === a; })[0];
                 if (!x || x.mf == null) { h += '<td class="nd' + (x && (x.nm || x.ff) ? ' cambio' : '') + '">—</td><td class="nd">—</td>'; return; }
-                h += '<td' + (x.nm || x.ff ? ' class="cambio" title="Ese año el indicador era distinto: ' + esc(x.nm || x.ff) + '"' : '') + '>' + esc(x.mf) + '</td><td class="cu">' + (x.lf == null ? '<span class="nd">sin dato</span>' : '<b>' + esc(x.lf) + '</b>' + (x.p == null ? '' : '<span class="' + cls(x.p) + '">' + fmt(x.p, 0) + '%</span>')) + '</td>';
+                h += '<td' + (x.nm || x.ff ? ' class="cambio" title="Ese año el indicador era distinto: ' + esc(x.nm || x.ff) + '"' : '') + '>' + esc(x.mf) + '</td><td class="cu">' + (x.lf == null ? '<span class="nd">sin dato</span>' : '<b style="color:' + col(x.p) + '">' + esc(x.lf) + '</b>') + '</td>';
             });
             h += '<td class="fo-c">' + (f.fof == null ? '<span class="nd">—</span>' : esc(f.fof)) + '</td>';
             var val = ediciones[f.k] != null ? ediciones[f.k] : f.pr;
