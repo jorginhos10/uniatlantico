@@ -317,6 +317,7 @@ class FORDE144Model {
                         p.id AS proyecto_id, p.codigo AS proyecto_codigo,
                         $calc AS avance,
                         COALESCE(f.ponderacion_actividades, 0) AS ponderacion,
+                        f.nombre_indicador, f.id_indicador,
                         f.tipo_medicion, f.meta_s1, f.meta_s2, f.linea_base_meta, f.porcentaje_avance,
                         f.estado_seguimiento, f.solicitud_estado_seguimiento$extraCols
                  FROM formulacion_144 f
@@ -495,6 +496,16 @@ class FORDE144Model {
                 'reportados'          => count(array_filter($rows, $reportado)),
                 'lineas'              => $lineas,
                 'dependencias'        => $dependencias,
+                // Solo si lo piden ('indicadores' => true): cada indicador con su ubicación en el árbol y su avance
+                'indicadores'         => empty($opts['indicadores']) ? [] : array_map(function ($r) {
+                    return [
+                        'id' => (int)$r['id'], 'nombre' => (string)$r['nombre_indicador'], 'codigo' => (string)$r['id_indicador'],
+                        'linea' => $r['linea'], 'linea_codigo' => $r['linea_codigo'],
+                        'motor' => $r['motor'], 'motor_codigo' => $r['motor_codigo'],
+                        'proyecto' => $r['proyecto'], 'proyecto_codigo' => $r['proyecto_codigo'],
+                        'avance' => (float)$r['avance'], 'responsable' => (string)($r['responsable_formulacion'] ?? ''),
+                    ];
+                }, $rows),
             ];
         } catch (PDOException $e) {
             error_log("Error getInformeCompleto: " . $e->getMessage());

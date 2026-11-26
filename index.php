@@ -70,7 +70,11 @@ switch ($action) {
 
     case 'asivamos':
         require_once 'config/security.php';
-        require_once 'vista/asivamos/index.php';
+        if (($urlParts[1] ?? '') === 'ver') {
+            require_once 'vista/asivamos/ver.php';
+        } else {
+            require_once 'vista/asivamos/index.php';
+        }
         break;
 
     case 'perfil':
