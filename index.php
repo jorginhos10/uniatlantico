@@ -68,12 +68,12 @@ switch ($action) {
         require_once 'vista/dashboard/index.php';
         break;
 
-    case 'asivamos':
+    case 'proyeccion':
         require_once 'config/security.php';
         if (($urlParts[1] ?? '') === 'ver') {
-            require_once 'vista/asivamos/ver.php';
+            require_once 'vista/proyeccion/ver.php';
         } else {
-            require_once 'vista/asivamos/index.php';
+            require_once 'vista/proyeccion/index.php';
         }
         break;
 

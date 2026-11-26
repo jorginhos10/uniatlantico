@@ -1,14 +1,14 @@
 <?php
-// vista/asivamos/index.php
-// "Así vamos": crear un comparativo entre Planes de Acción y ver la lista de los ya generados.
-// El detalle de cada comparativo está en vista/asivamos/ver.php (/asivamos/ver?id=).
+// vista/proyeccion/index.php
+// "Proyección de metas": crear una proyección a partir de Planes de Acción anteriores y ver las ya generadas.
+// El detalle (tabla con el formato del FOR-DE-144) está en vista/proyeccion/ver.php (/proyeccion/ver?id=).
 require_once __DIR__ . '/../../config/security.php';
 require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../modelo/FORDE144Model.php';
-require_once __DIR__ . '/../../modelo/ComparativoModel.php';
+require_once __DIR__ . '/../../modelo/ProyeccionModel.php';
 
-$titulo       = 'Así vamos';
-$paginaActual = 'asivamos';
+$titulo       = 'Proyección de metas';
+$paginaActual = 'proyeccion';
 $basePath     = Config::getBasePath();
 $baseUrl      = Config::getBaseUrl();
 
@@ -21,9 +21,10 @@ $veTodo  = $uid === 1 || in_array($rolNorm, ['admin', 'administrador', 'sub admi
 
 $planes = $guardados = [];
 $aviso = '';
+$anioDefecto = (int)date('Y');
 if ($veTodo) {
     $forde = new FORDE144Model();
-    $cmp   = new ComparativoModel();
+    $pry   = new ProyeccionModel();
     $planes = $forde->getAllAdmin();
     usort($planes, function ($a, $b) { return ((int)$a['anio'] <=> (int)$b['anio']) ?: ((int)$a['id'] <=> (int)$b['id']); });
     $tituloPlan = [];
@@ -31,24 +32,25 @@ if ($veTodo) {
 
     $accion = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['accion'] ?? '') : '';
     if ($accion === 'crear') {
-        $validos = array_keys($tituloPlan);
-        $ids = array_values(array_intersect($validos, array_map('intval', (array)($_POST['p'] ?? []))));
+        $ids = array_values(array_intersect(array_keys($tituloPlan), array_map('intval', (array)($_POST['p'] ?? []))));
         $ids = array_slice($ids, 0, 8);
         $nombre = trim((string)($_POST['nombre'] ?? ''));
-        if (count($ids) < 2) {
-            $aviso = 'Marca al menos dos planes para comparar.';
+        $anioObj = (int)($_POST['anio'] ?? $anioDefecto);
+        if ($anioObj < 2000 || $anioObj > 2100) $anioObj = $anioDefecto;
+        if (count($ids) < 1) {
+            $aviso = 'Marca al menos un plan anterior como base.';
         } else {
-            if ($nombre === '') $nombre = 'Comparativo ' . date('d/m/Y H:i');
-            $nuevo = $cmp->crear($nombre, $ids, $uid);
-            header('Location: ' . $basePath . '/asivamos/ver?id=' . $nuevo);
+            if ($nombre === '') $nombre = 'Proyección ' . $anioObj;
+            $nuevo = $pry->crear($nombre, $ids, $anioObj, (string)($_POST['metodo'] ?? 'prom'), (float)str_replace(',', '.', (string)($_POST['ajuste'] ?? 0)), $uid);
+            header('Location: ' . $basePath . '/proyeccion/ver?id=' . $nuevo);
             exit;
         }
     } elseif ($accion === 'eliminar') {
-        $cmp->eliminar((int)($_POST['id'] ?? 0));
-        header('Location: ' . $basePath . '/asivamos');
+        $pry->eliminar((int)($_POST['id'] ?? 0));
+        header('Location: ' . $basePath . '/proyeccion');
         exit;
     }
-    $guardados = $cmp->listar();
+    $guardados = $pry->listar();
 }
 
 ob_start();
@@ -62,15 +64,15 @@ ob_start();
     .av .caja { background: #fff; border: 1px solid #d2d2d7; border-radius: 12px; padding: 1.1rem 1.25rem; box-shadow: 0 1px 6px rgba(0,0,0,.05); }
     .av .caja h2 { font-size: 1rem; margin: 0 0 .85rem; display: flex; justify-content: space-between; align-items: center; }
     .av .caja h2 small { color: #86868b; font-weight: 500; }
-    .av .campo { width: 100%; padding: .6rem .8rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .95rem; margin-bottom: .9rem; }
+    .av label.et { display: block; font-size: .8rem; font-weight: 600; color: #424245; margin: 0 0 .3rem; }
+    .av .campo { width: 100%; padding: .55rem .8rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .95rem; background: #fff; }
     .av .campo:focus { outline: 2px solid #0071e3; border-color: transparent; }
+    .av .fila2 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; margin: .9rem 0; }
     .av .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
     .av .chip input { position: absolute; opacity: 0; pointer-events: none; }
     .av .chip span { display: block; padding: .5rem .85rem; border: 1px solid #d2d2d7; border-radius: 999px; cursor: pointer; font-size: .88rem; background: #fff; user-select: none; }
     .av .chip span b { font-size: 1rem; margin-right: .3rem; }
-    .av .chip span small { color: #86868b; margin-left: .35rem; }
     .av .chip input:checked + span { background: #0071e3; border-color: #0071e3; color: #fff; }
-    .av .chip input:checked + span small { color: #d6e9ff; }
     .av .chip input:focus-visible + span { outline: 2px solid #0071e3; outline-offset: 2px; }
     .av .pie { display: flex; gap: .6rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
     .av .btn { border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .5rem 1rem; cursor: pointer; font-size: .9rem; }
@@ -83,8 +85,9 @@ ob_start();
     .av .tarjeta:last-child { border-bottom: 0; }
     .av .tarjeta .info { flex: 1; min-width: 0; }
     .av .tarjeta strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .av .tarjeta .anios { display: flex; gap: .25rem; flex-wrap: wrap; margin: .25rem 0; }
+    .av .tarjeta .anios { display: flex; gap: .25rem; flex-wrap: wrap; margin: .25rem 0; align-items: center; }
     .av .tarjeta .anios i { font-style: normal; font-size: .72rem; background: #e8f2ff; color: #0058b0; padding: .1rem .5rem; border-radius: 999px; }
+    .av .tarjeta .anios em { font-style: normal; font-size: .72rem; background: #e3f8e9; color: #1f8a3d; padding: .1rem .5rem; border-radius: 999px; font-weight: 700; }
     .av .tarjeta small { color: #86868b; }
     .av .icono { display: inline-flex; border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .4rem .55rem; cursor: pointer; color: inherit; text-decoration: none; }
     .av .icono:hover { border-color: #0071e3; color: #0071e3; }
@@ -95,30 +98,42 @@ ob_start();
 require_once __DIR__ . '/../complementos/header.php'; ?>
 
 <section class="av">
-    <h1>Así vamos</h1>
-    <p class="sub">Compara el avance de los Planes de Acción año contra año.</p>
+    <h1>Proyección de metas</h1>
+    <p class="sub">Toma lo formulado y lo logrado en años anteriores y propone la meta de cada indicador para el año que eliges.</p>
 
 <?php if (!$veTodo): ?>
-    <div class="caja">El comparativo entre planes está disponible para los administradores.</div>
+    <div class="caja">La proyección de metas está disponible para los administradores.</div>
 <?php elseif (!$planes): ?>
     <div class="caja">Todavía no hay Planes de Acción en el sistema.</div>
 <?php else: ?>
     <?php if ($aviso): ?><div class="caja error"><?php echo $h($aviso); ?></div><?php endif; ?>
     <div class="rejilla">
-        <form method="post" action="<?php echo $basePath; ?>/asivamos" class="caja" id="formNuevo">
+        <form method="post" action="<?php echo $basePath; ?>/proyeccion" class="caja" id="formNuevo">
             <input type="hidden" name="accion" value="crear">
-            <h2>Nuevo comparativo <small>Mínimo 2, máximo 8</small></h2>
-            <input class="campo" type="text" name="nombre" maxlength="150" placeholder="Nombre del comparativo (ej. Avance 2022-2026)">
+            <h2>Nueva proyección <small>Máximo 8 planes base</small></h2>
+            <label class="et" for="nombre">Nombre</label>
+            <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2026">
+            <div class="fila2">
+                <div><label class="et" for="anio">Año a proyectar</label>
+                    <input class="campo" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $anioDefecto; ?>"></div>
+                <div><label class="et" for="metodo">Cómo se calcula</label>
+                    <select class="campo" id="metodo" name="metodo">
+                        <?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>"><?php echo $h($v); ?></option><?php endforeach; ?>
+                    </select></div>
+                <div><label class="et" for="ajuste">Ajuste (%)</label>
+                    <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="0" title="Porcentaje que se suma o resta a la meta calculada"></div>
+            </div>
+            <label class="et">Planes base (años anteriores)</label>
             <div class="chips">
                 <?php foreach ($planes as $pl): ?>
                     <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
                         <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>">
-                        <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 34, '…', 'UTF-8')); ?></span>
+                        <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 30, '…', 'UTF-8')); ?></span>
                     </label>
                 <?php endforeach; ?>
             </div>
             <div class="pie">
-                <button type="submit" class="btn primario" id="btnGenerar" disabled>Generar comparativo</button>
+                <button type="submit" class="btn primario" id="btnGenerar" disabled>Generar proyección</button>
                 <button type="button" class="enlace" id="btnTodos">Marcar todos</button>
                 <button type="button" class="enlace" id="btnNinguno">Quitar todos</button>
                 <span class="contador" id="contador">0 seleccionados</span>
@@ -126,9 +141,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </form>
 
         <div class="caja">
-            <h2>Comparativos generados <small><?php echo count($guardados); ?></small></h2>
+            <h2>Proyecciones generadas <small><?php echo count($guardados); ?></small></h2>
             <?php if (!$guardados): ?>
-                <p class="vacio">Aún no has generado ninguno.</p>
+                <p class="vacio">Aún no has generado ninguna.</p>
             <?php else: foreach ($guardados as $g):
                 $anios = [];
                 foreach ((array)json_decode($g['formularios'], true) as $fid) if (isset($tituloPlan[(int)$fid])) $anios[] = $tituloPlan[(int)$fid]['anio'];
@@ -137,13 +152,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div class="tarjeta">
                     <div class="info">
                         <strong><?php echo $h($g['nombre']); ?></strong>
-                        <div class="anios"><?php foreach ($anios as $a): ?><i><?php echo (int)$a; ?></i><?php endforeach; ?></div>
-                        <small><?php echo $h(date('d/m/Y H:i', strtotime($g['fecha_creacion']))); ?></small>
+                        <div class="anios">
+                            <?php foreach ($anios as $a): ?><i><?php echo (int)$a; ?></i><?php endforeach; ?>
+                            <span>→</span><em><?php echo (int)$g['anio_objetivo']; ?></em>
+                        </div>
+                        <small><?php echo $h(ProyeccionModel::METODOS[$g['metodo']] ?? ''); ?> · <?php echo $h(date('d/m/Y H:i', strtotime($g['fecha_creacion']))); ?></small>
                     </div>
-                    <a class="icono" href="<?php echo $basePath; ?>/asivamos/ver?id=<?php echo (int)$g['id']; ?>" title="Ver" aria-label="Ver">
+                    <a class="icono" href="<?php echo $basePath; ?>/proyeccion/ver?id=<?php echo (int)$g['id']; ?>" title="Ver" aria-label="Ver">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                     </a>
-                    <form method="post" action="<?php echo $basePath; ?>/asivamos" onsubmit="return confirm('¿Eliminar este comparativo?');">
+                    <form method="post" action="<?php echo $basePath; ?>/proyeccion" onsubmit="return confirm('¿Eliminar esta proyección?');">
                         <input type="hidden" name="accion" value="eliminar">
                         <input type="hidden" name="id" value="<?php echo (int)$g['id']; ?>">
                         <button type="submit" class="icono peligro" title="Eliminar" aria-label="Eliminar">
@@ -164,9 +182,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var btn = document.getElementById('btnGenerar'), cont = document.getElementById('contador');
     function actualizar() {
         var n = 0; cajas.forEach(function (c) { if (c.checked) n++; });
-        if (n > 8) { n = 8; }
         cont.textContent = n + (n === 1 ? ' seleccionado' : ' seleccionados');
-        btn.disabled = n < 2;
+        btn.disabled = n < 1;
     }
     cajas.forEach(function (c) {
         c.addEventListener('change', function () {

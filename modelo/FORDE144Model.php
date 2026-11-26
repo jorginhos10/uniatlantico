@@ -317,7 +317,7 @@ class FORDE144Model {
                         p.id AS proyecto_id, p.codigo AS proyecto_codigo,
                         $calc AS avance,
                         COALESCE(f.ponderacion_actividades, 0) AS ponderacion,
-                        f.nombre_indicador, f.id_indicador,
+                        f.nombre_indicador, f.id_indicador, f.unidad_medida, f.formula_medicion,
                         f.tipo_medicion, f.meta_s1, f.meta_s2, f.linea_base_meta, f.porcentaje_avance,
                         f.estado_seguimiento, f.solicitud_estado_seguimiento$extraCols
                  FROM formulacion_144 f
@@ -504,6 +504,8 @@ class FORDE144Model {
                         'motor' => $r['motor'], 'motor_codigo' => $r['motor_codigo'],
                         'proyecto' => $r['proyecto'], 'proyecto_codigo' => $r['proyecto_codigo'],
                         'avance' => (float)$r['avance'], 'responsable' => (string)($r['responsable_formulacion'] ?? ''),
+                        'unidad' => (string)$r['unidad_medida'], 'formula' => (string)$r['formula_medicion'], 'tipo' => (string)$r['tipo_medicion'],
+                        'meta' => self::numero($r['meta_programada'] ?? null), 'logrado' => self::logradoAnual($r),
                     ];
                 }, $rows),
             ];
@@ -640,6 +642,31 @@ class FORDE144Model {
     // Acumulado → línea base + suma de los trimestres; Nuevo gestionado → suma; Promedio → promedio de los reportados;
     // Último valor reportado → el del último trimestre con dato; Límite (solo T3 y T4) → 100 si lo declarado no pasa el límite.
     // Solo cuentan los trimestres aprobados (tN_estado = 2) y, con $conRevision, también los que están en revisión (tN_sol = 1).
+    // Número de un valor guardado como texto ("5%", "1,5", "12.00"); null si no es numérico
+    public static function numero($v) {
+        if ($v === null) return null;
+        $v = str_replace(['%', ' '], '', (string)$v);
+        $v = str_replace(',', '.', $v);
+        return is_numeric($v) ? (float)$v : null;
+    }
+
+    // Valor logrado en el año según el tipo de medición, con los trimestres APROBADOS (null si no hay ninguno):
+    // Acumulado → línea base + suma; Promedio → promedio; Último valor reportado y Límite → el último; el resto → suma.
+    public static function logradoAnual($r) {
+        $tipo = (string)($r['tipo_medicion'] ?? '');
+        $vals = [];
+        for ($i = ($tipo === 'Límite' ? 3 : 1); $i <= 4; $i++) {
+            if ((int)($r['t' . $i . '_estado'] ?? 0) !== 2) continue;
+            $v = self::numero($r['trimestre' . $i . '_seguimiento'] ?? null);
+            if ($v !== null) $vals[] = $v;
+        }
+        if (!$vals) return null;
+        if ($tipo === 'Límite' || $tipo === 'Último valor reportado') return end($vals);
+        if ($tipo === 'Promedio') return array_sum($vals) / count($vals);
+        if ($tipo === 'Acumulado') return (self::numero($r['linea_base_meta'] ?? null) ?? 0) + array_sum($vals);
+        return array_sum($vals);
+    }
+
     public static function pctAcumTrim($r, $k, $conRevision = false) {
         $num = function ($v) {
             if ($v === null) return null;
