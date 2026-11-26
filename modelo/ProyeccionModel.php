@@ -72,10 +72,11 @@ class ProyeccionModel {
         return (int)$this->db->lastInsertId();
     }
 
-    public function actualizar($id, $metodo, $ajuste, $anio) {
+    public function actualizar($id, $metodo, $ajuste, $anio, array $ids = null) {
         if (!isset(self::METODOS[$metodo])) $metodo = 'prom';
         $anio = ($anio >= 2000 && $anio <= 2100) ? (int)$anio : (int)date('Y');
         $this->db->prepare("UPDATE proyecciones_144 SET metodo = ?, ajuste = ?, anio_objetivo = ? WHERE id = ?")->execute([$metodo, (float)$ajuste, $anio, (int)$id]);
+        if ($ids) $this->db->prepare("UPDATE proyecciones_144 SET formularios = ? WHERE id = ?")->execute([json_encode(array_values($ids)), (int)$id]);
     }
 
     public function eliminar($id) {

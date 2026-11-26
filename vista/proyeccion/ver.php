@@ -25,8 +25,14 @@ $abierto = $pry->obtener((int)($_GET['id'] ?? $_POST['id'] ?? 0));
 if (!$abierto) { header('Location: ' . $basePath . '/proyeccion'); exit; }
 
 // Guardar el método y el ajuste elegidos
+$forde = new FORDE144Model();
+$todosPlanes = $forde->getAllAdmin();
+usort($todosPlanes, function ($a, $b) { return ((int)$a['anio'] <=> (int)$b['anio']) ?: ((int)$a['id'] <=> (int)$b['id']); });
+$idsValidos = array_map('intval', array_column($todosPlanes, 'id'));
+$pedidosH = isset($_REQUEST['h']) && is_array($_REQUEST['h']) ? array_slice(array_values(array_intersect($idsValidos, array_map('intval', $_REQUEST['h']))), 0, 8) : [];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'actualizar') {
-    $pry->actualizar($abierto['id'], (string)($_POST['m'] ?? 'prom'), (float)str_replace(',', '.', (string)($_POST['a'] ?? 0)), (int)($_POST['y'] ?? 0));
+    $pry->actualizar($abierto['id'], (string)($_POST['m'] ?? 'prom'), (float)str_replace(',', '.', (string)($_POST['a'] ?? 0)), (int)($_POST['y'] ?? 0), $pedidosH);
     header('Location: ' . $basePath . '/proyeccion/ver?id=' . (int)$abierto['id']);
     exit;
 }
@@ -35,9 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'actua
 $metodo = isset($_GET['m'], ProyeccionModel::METODOS[$_GET['m']]) ? $_GET['m'] : $abierto['metodo'];
 $ajuste = isset($_GET['a']) ? (float)str_replace(',', '.', (string)$_GET['a']) : (float)$abierto['ajuste'];
 
-$forde = new FORDE144Model();
+// Años históricos: los elegidos en pantalla (sin guardar) o los de la proyección
+$idsBase = $pedidosH ?: $abierto['ids'];
 $planes = [];
-foreach ($abierto['ids'] as $fid) { $f = $forde->getById($fid); if ($f) $planes[] = $f; }
+foreach ($idsBase as $fid) { $f = $forde->getById($fid); if ($f) $planes[] = $f; }
 usort($planes, function ($a, $b) { return ((int)$a['anio'] <=> (int)$b['anio']) ?: ((int)$a['id'] <=> (int)$b['id']); });
 $anioDecidir = isset($_GET['y']) && (int)$_GET['y'] >= 2000 && (int)$_GET['y'] <= 2100 ? (int)$_GET['y'] : (int)$abierto['anio_objetivo'];
 $datos = $pry->construir($planes, $anioDecidir, $metodo, $ajuste);
@@ -144,6 +151,13 @@ ob_start();
     .pv .ctl { display: flex; gap: .4rem; align-items: flex-end; flex-wrap: wrap; }
     .pv .ctl label { font-size: .65rem; font-weight: 600; color: #6e6e73; display: block; }
     .pv .ctl select, .pv .ctl input { padding: .32rem .5rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .78rem; background: #fff; }
+    .pv .hist-sel { position: relative; }
+    .pv details.hist > summary { list-style: none; cursor: pointer; padding: .32rem .65rem; }
+    .pv details.hist > summary::-webkit-details-marker { display: none; }
+    .pv details.hist .menu { position: absolute; top: 100%; left: 0; z-index: 20; background: #fff; border: 1px solid #d2d2d7; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.15); padding: .4rem; min-width: 260px; margin-top: 4px; }
+    .pv details.hist .menu label { display: flex; gap: .45rem; align-items: center; font-size: .78rem; font-weight: 500; color: #1d1d1f; padding: .3rem .4rem; border-radius: 6px; cursor: pointer; }
+    .pv details.hist .menu label:hover { background: #f0f6ff; }
+    .pv details.hist .menu b { min-width: 2.4rem; }
     .pv .btn { border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .34rem .65rem; cursor: pointer; font-size: .78rem; color: inherit; text-decoration: none; display: inline-block; }
     .pv .btn:hover { border-color: #0071e3; color: #0071e3; }
     .pv .btn.primario { background: #0071e3; border-color: #0071e3; color: #fff; font-weight: 600; }
@@ -205,13 +219,17 @@ ob_start();
     .pv .yr.v-no { background: #ffe0dd; color: #b3001b; } .pv .yr.v-na { background: #f0f0f3; color: #a0a0a6; }
     .pv .sube { color: #1b5e20; } .pv .baja { color: #d70015; } .pv .igual { color: #86868b; }
     /* Indicadores con decisión */
-    .pv .ind { flex: none; height: 76px; border: 1px solid #ececf0; border-radius: 10px; padding: .3rem .55rem; display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; gap: .5rem; align-items: center; transition: border-color .15s; }
+    .pv .ind { flex: none; height: 76px; border: 1px solid #ececf0; border-radius: 10px; padding: .3rem .55rem; display: grid; grid-template-columns: 6px minmax(0, 1fr) 96px auto; gap: .5rem; align-items: center; transition: border-color .15s; }
     .pv .ind:hover { border-color: #0071e3; }
     .pv .ind.ap { background: #f3fbf5; border-color: #bfe3c5; } .pv .ind.re { background: #fff5f4; border-color: #f2c4bf; }
     .pv .ind .pt { width: 6px; height: 54px; border-radius: 3px; }
     .pv .ind .cen { min-width: 0; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
     .pv .ind .nom { font-size: .74rem; font-weight: 600; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .pv .ind .fil2 { display: flex; align-items: center; gap: .5rem; }
+    .pv .ind .cum { text-align: center; border-left: 1px solid #ececf0; border-right: 1px solid #ececf0; padding: 0 .3rem; line-height: 1.15; }
+    .pv .ind .cum .lab { font-size: .62rem; color: #86868b; }
+    .pv .ind .cum b { display: block; font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+    .pv .ind .cum small { display: block; font-size: .62rem; color: #6e6e73; }
     .pv .ind .der { text-align: right; min-width: 128px; }
     .pv .ind .der .lab { font-size: .62rem; color: #86868b; }
     .pv .ind .der b { display: block; font-size: 1.05rem; line-height: 1.1; color: #1b5e20; font-variant-numeric: tabular-nums; }
@@ -272,14 +290,23 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         </div>
         <form class="ctl" method="get" action="<?php echo $basePath; ?>/proyeccion/ver">
             <input type="hidden" name="id" value="<?php echo (int)$abierto['id']; ?>">
-            <div><label for="y">Año a decidir</label><input id="y" type="number" name="y" min="2000" max="2100" value="<?php echo (int)$obj; ?>" style="width:76px"></div>
+            <div class="hist-sel"><label>Años históricos</label>
+                <details class="hist"><summary class="btn"><span id="histTxt"><?php echo $h($rango); ?></span> ▾</summary>
+                    <div class="menu">
+                        <?php foreach ($todosPlanes as $tp): ?>
+                            <label><input type="checkbox" name="h[]" value="<?php echo (int)$tp['id']; ?>" <?php echo in_array((int)$tp['id'], $idsBase, true) ? 'checked' : ''; ?>>
+                                <b><?php echo (int)$tp['anio']; ?></b> <?php echo $h(mb_strimwidth($tp['titulo'], 0, 32, '…', 'UTF-8')); ?></label>
+                        <?php endforeach; ?>
+                    </div>
+                </details></div>
+            <div><label for="y">Año a proyectar</label><input id="y" type="number" name="y" min="2000" max="2100" value="<?php echo (int)$obj; ?>" style="width:76px"></div>
             <div><label for="m">Cómo se calcula</label>
                 <select id="m" name="m"><?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>" <?php echo $k === $metodo ? 'selected' : ''; ?>><?php echo $h($v); ?></option><?php endforeach; ?></select></div>
             <div><label for="a">Ajuste %</label><input id="a" type="number" step="0.5" name="a" value="<?php echo $h($ajuste); ?>" style="width:64px"></div>
             <button class="btn primario" type="submit">Recalcular</button>
             <button class="btn" type="submit" formmethod="post" name="accion" value="actualizar" title="Guarda el año, el método y el ajuste en esta proyección">Guardar</button>
             <button class="btn" type="button" id="btnTabla">Tabla completa</button>
-            <a class="btn" href="<?php echo $basePath; ?>/proyeccion/ver?id=<?php echo (int)$abierto['id']; ?>&export=1&y=<?php echo (int)$obj; ?>&m=<?php echo $h($metodo); ?>&a=<?php echo $h($ajuste); ?>">Excel</a>
+            <a class="btn" href="<?php echo $basePath; ?>/proyeccion/ver?id=<?php echo (int)$abierto['id']; ?>&export=1<?php foreach ($idsBase as $hid) echo '&h[]=' . (int)$hid; ?>&y=<?php echo (int)$obj; ?>&m=<?php echo $h($metodo); ?>&a=<?php echo $h($ajuste); ?>">Excel</a>
         </form>
     </div>
 
@@ -495,10 +522,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         if (est === 'aprobada') der = '<div class="lab">Meta aprobada ' + D.obj + '</div><b>' + val(d.v != null ? d.v : f.pr, f.u) + '</b><div class="acc"><button class="un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></div>';
         else if (est === 'rechazada') der = '<div class="lab">Propuesta rechazada</div><b class="tach">' + val(f.pr, f.u) + '</b><div class="acc"><button class="un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></div>';
         else der = '<div class="lab">Propuesta ' + D.obj + '</div><b>' + val(f.pr, f.u) + '</b>' + (f.pr == null ? '' : '<div class="acc"><button class="si" data-a="si" data-k="' + esc(f.k) + '">✓ Aprobar</button><button class="no" data-a="no" data-k="' + esc(f.k) + '">✕ Rechazar</button></div>');
+        // Meta cumplida: lo logrado en el último año con dato, frente a la meta de ese año
+        var ux = null; f.h.forEach(function (x) { if (x.lf != null) ux = x; });
+        var cum = ux ? '<div class="lab">Cumplida ' + ux.a + '</div><b style="color:' + colPct(ux.p) + '">' + esc(ux.lf) + '</b><small>de ' + (ux.mf == null ? '—' : esc(ux.mf)) + (ux.p == null ? '' : ' · ' + fmt(ux.p, 0) + '%') + '</small>'
+                     : '<div class="lab">Cumplida</div><b style="color:#aeaeb2">—</b><small>sin dato aprobado</small>';
         return '<div class="ind ' + (est === 'aprobada' ? 'ap' : (est === 'rechazada' ? 're' : '')) + '" data-i="' + f.i + '"><span class="pt" style="background:' + COL[f.e] + '" title="' + f.e + '"></span>' +
             '<div class="cen" data-i="' + f.i + '"><div class="nom" title="' + esc(f.n) + '">' + esc(f.n) + '</div><div class="fil2">' +
             chips(D.anios.map(function (a) { var x = f.h.filter(function (y) { return y.a === a; })[0]; return x ? x.p : null; })) + '</div></div>' +
-            '<div class="der">' + der + '</div></div>';
+            '<div class="cum">' + cum + '</div><div class="der">' + der + '</div></div>';
     }
 
     function pintarLista() {
@@ -579,6 +610,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.pv-modal').forEach(function (m) { m.classList.remove('abierto'); }); });
     window.addEventListener('resize', function () { pintarNodos(); pintarLista(); });
+    // Años históricos elegidos: el texto del botón se actualiza al marcar y el menú se cierra al hacer clic fuera
+    var boxes = document.querySelectorAll('details.hist input[type=checkbox]');
+    function textoHist() {
+        var a = []; boxes.forEach(function (c) { if (c.checked) a.push(+c.parentNode.querySelector('b').textContent); });
+        a = a.filter(function (v, i) { return a.indexOf(v) === i; }).sort();
+        $('histTxt').textContent = a.length ? (a.length > 1 ? a[0] + '-' + a[a.length - 1] + ' (' + a.length + ')' : a[0]) : 'Elegir';
+    }
+    boxes.forEach(function (c) { c.addEventListener('change', function () {
+        if (Array.prototype.filter.call(boxes, function (x) { return x.checked; }).length > 8) c.checked = false;
+        textoHist();
+    }); });
+    document.addEventListener('click', function (e) { var d = document.querySelector('details.hist'); if (d && !d.contains(e.target)) d.open = false; });
     pintar();
 })();
 </script>

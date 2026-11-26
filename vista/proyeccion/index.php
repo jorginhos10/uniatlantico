@@ -114,7 +114,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <label class="et" for="nombre">Nombre</label>
             <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2026">
             <div class="fila2">
-                <div><label class="et" for="anio">Año a proyectar</label>
+                <div><label class="et" for="anio">Año a proyectar (el que se decide)</label>
                     <input class="campo" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $anioDefecto; ?>"></div>
                 <div><label class="et" for="metodo">Cómo se calcula</label>
                     <select class="campo" id="metodo" name="metodo">
@@ -123,7 +123,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <div><label class="et" for="ajuste">Ajuste (%)</label>
                     <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="0" title="Porcentaje que se suma o resta a la meta calculada"></div>
             </div>
-            <label class="et">Planes base (años anteriores)</label>
+            <label class="et">Años históricos (de donde se toma lo formulado y lo logrado)</label>
             <div class="chips">
                 <?php foreach ($planes as $pl): ?>
                     <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
