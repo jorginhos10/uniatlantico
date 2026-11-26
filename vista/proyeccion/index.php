@@ -33,12 +33,14 @@ if ($veTodo) {
     $accion = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['accion'] ?? '') : '';
     if ($accion === 'crear') {
         $ids = array_values(array_intersect(array_keys($tituloPlan), array_map('intval', (array)($_POST['p'] ?? []))));
-        $ids = array_slice($ids, 0, 8);
         $nombre = trim((string)($_POST['nombre'] ?? ''));
         $anioObj = (int)($_POST['anio'] ?? $anioDefecto);
         if ($anioObj < 2000 || $anioObj > 2100) $anioObj = $anioDefecto;
+        // Solo años anteriores al que se proyecta
+        $ids = array_values(array_filter($ids, function ($i) use ($tituloPlan, $anioObj) { return $tituloPlan[$i]['anio'] < $anioObj; }));
+        $ids = array_slice($ids, 0, 8);
         if (count($ids) < 1) {
-            $aviso = 'Marca al menos un plan anterior como base.';
+            $aviso = 'Marca al menos un año histórico anterior al año a proyectar.';
         } else {
             if ($nombre === '') $nombre = 'Proyección ' . $anioObj;
             $nuevo = $pry->crear($nombre, $ids, $anioObj, (string)($_POST['metodo'] ?? 'prom'), (float)str_replace(',', '.', (string)($_POST['ajuste'] ?? 0)), $uid);
@@ -73,6 +75,7 @@ ob_start();
     .av .chip span { display: block; padding: .5rem .85rem; border: 1px solid #d2d2d7; border-radius: 999px; cursor: pointer; font-size: .88rem; background: #fff; user-select: none; }
     .av .chip span b { font-size: 1rem; margin-right: .3rem; }
     .av .chip input:checked + span { background: #0071e3; border-color: #0071e3; color: #fff; }
+    .av .chip input:disabled + span { opacity: .3; cursor: not-allowed; text-decoration: line-through; }
     .av .chip input:focus-visible + span { outline: 2px solid #0071e3; outline-offset: 2px; }
     .av .pie { display: flex; gap: .6rem; align-items: center; margin-top: 1rem; flex-wrap: wrap; }
     .av .btn { border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .5rem 1rem; cursor: pointer; font-size: .9rem; }
@@ -127,7 +130,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <div class="chips">
                 <?php foreach ($planes as $pl): ?>
                     <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
-                        <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>">
+                        <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>" data-anio="<?php echo (int)$pl['anio']; ?>">
                         <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 30, '…', 'UTF-8')); ?></span>
                     </label>
                 <?php endforeach; ?>
@@ -185,6 +188,18 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         cont.textContent = n + (n === 1 ? ' seleccionado' : ' seleccionados');
         btn.disabled = n < 1;
     }
+    // El año a proyectar no puede ser histórico: se bloquean los planes de ese año o posteriores
+    var anioIn = document.getElementById('anio');
+    function bloquear() {
+        var y = parseInt(anioIn.value, 10);
+        cajas.forEach(function (c) {
+            var malo = !isNaN(y) && +c.dataset.anio >= y;
+            c.disabled = malo;
+            if (malo) c.checked = false;
+        });
+        actualizar();
+    }
+    anioIn.addEventListener('input', bloquear);
     cajas.forEach(function (c) {
         c.addEventListener('change', function () {
             var marcados = Array.prototype.filter.call(cajas, function (x) { return x.checked; });
@@ -192,9 +207,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             actualizar();
         });
     });
-    document.getElementById('btnTodos').addEventListener('click', function () { cajas.forEach(function (c, i) { c.checked = i < 8; }); actualizar(); });
+    document.getElementById('btnTodos').addEventListener('click', function () { var n = 0; cajas.forEach(function (c) { c.checked = !c.disabled && n < 8; if (c.checked) n++; }); actualizar(); });
     document.getElementById('btnNinguno').addEventListener('click', function () { cajas.forEach(function (c) { c.checked = false; }); actualizar(); });
-    actualizar();
+    bloquear();
 })();
 </script>
 

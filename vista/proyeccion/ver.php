@@ -158,6 +158,7 @@ ob_start();
     .pv details.hist .menu label { display: flex; gap: .45rem; align-items: center; font-size: .78rem; font-weight: 500; color: #1d1d1f; padding: .3rem .4rem; border-radius: 6px; cursor: pointer; }
     .pv details.hist .menu label:hover { background: #f0f6ff; }
     .pv details.hist .menu b { min-width: 2.4rem; }
+    .pv details.hist .menu label:has(input:disabled) { opacity: .35; cursor: not-allowed; }
     .pv .btn { border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; padding: .34rem .65rem; cursor: pointer; font-size: .78rem; color: inherit; text-decoration: none; display: inline-block; }
     .pv .btn:hover { border-color: #0071e3; color: #0071e3; }
     .pv .btn.primario { background: #0071e3; border-color: #0071e3; color: #fff; font-weight: 600; }
@@ -294,7 +295,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 <details class="hist"><summary class="btn"><span id="histTxt"><?php echo $h($rango); ?></span> ▾</summary>
                     <div class="menu">
                         <?php foreach ($todosPlanes as $tp): ?>
-                            <label><input type="checkbox" name="h[]" value="<?php echo (int)$tp['id']; ?>" <?php echo in_array((int)$tp['id'], $idsBase, true) ? 'checked' : ''; ?>>
+                            <label><input type="checkbox" name="h[]" value="<?php echo (int)$tp['id']; ?>" data-anio="<?php echo (int)$tp['anio']; ?>" <?php echo ((int)$tp['anio'] >= $obj) ? 'disabled' : (in_array((int)$tp['id'], $idsBase, true) ? 'checked' : ''); ?>>
                                 <b><?php echo (int)$tp['anio']; ?></b> <?php echo $h(mb_strimwidth($tp['titulo'], 0, 32, '…', 'UTF-8')); ?></label>
                         <?php endforeach; ?>
                     </div>
@@ -617,6 +618,13 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         a = a.filter(function (v, i) { return a.indexOf(v) === i; }).sort();
         $('histTxt').textContent = a.length ? (a.length > 1 ? a[0] + '-' + a[a.length - 1] + ' (' + a.length + ')' : a[0]) : 'Elegir';
     }
+    var yIn = document.getElementById('y');
+    function bloquearHist() {
+        var y = parseInt(yIn.value, 10);
+        boxes.forEach(function (c) { var malo = !isNaN(y) && +c.dataset.anio >= y; c.disabled = malo; if (malo) c.checked = false; });
+        textoHist();
+    }
+    yIn.addEventListener('input', bloquearHist);
     boxes.forEach(function (c) { c.addEventListener('change', function () {
         if (Array.prototype.filter.call(boxes, function (x) { return x.checked; }).length > 8) c.checked = false;
         textoHist();

@@ -140,6 +140,7 @@ class ProyeccionModel {
         $filas = [];
         $n = count($planes);
         foreach ($planes as $idx => $pl) {
+            if ((int)$pl['anio'] >= (int)$anioObjetivo) continue; // el año a proyectar no tiene indicadores ni porcentajes: solo hay propuesta
             $anios[$idx] = (int)$pl['anio'];
             $inf = $modelo->getInformeCompleto((int)$pl['id'], ['indicadores' => true]);
             $vistos = [];
