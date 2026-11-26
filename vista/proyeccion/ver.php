@@ -102,11 +102,11 @@ if (isset($_GET['export'])) {
     echo "\xEF\xBB\xBF";
     $o = fopen('php://output', 'w');
     fputcsv($o, ['Línea estratégica', 'Motor de desarrollo', 'Proyecto', 'Responsable', 'Nombre del indicador', 'Fórmula del indicador', 'Unidad', 'Tipo de medición',
-                 'Metas ' . $rango, 'Cumplimiento ' . $rango, 'Estado', 'Meta propuesta ' . $obj, 'Descripción ' . $obj, 'ID indicador', 'Decisión', 'Meta final ' . $obj], ';');
+                 'Metas ' . $rango, 'Cumplimiento ' . $rango, 'Estado', 'Meta formulada ' . $obj, 'Meta propuesta ' . $obj, 'Descripción ' . $obj, 'ID indicador', 'Decisión', 'Meta final ' . $obj], ';');
     foreach ($datos['filas'] as $f) {
         fputcsv($o, [$f['linea'], $f['motor'], $f['proyecto'], $f['responsable'], $f['nombre'], $f['formula'], $f['unidad'], $f['tipo'],
                      implode("\n", $metasTxt($f)), implode("\n", $cumplTxt($f)), $f['estado'],
-                     $f['propuesta'] === null ? '' : $num($f['propuesta'], $f['unidad']), $f['descripcion'], $f['codigo'],
+                     $f['formulada'] === null ? '' : $num($f['formulada'], $f['unidad']), $f['propuesta'] === null ? '' : $num($f['propuesta'], $f['unidad']), $f['descripcion'], $f['codigo'],
                      isset($decisiones[$f['clave']]) ? ucfirst($decisiones[$f['clave']]['e']) : 'Pendiente',
                      (isset($decisiones[$f['clave']]) && $decisiones[$f['clave']]['e'] === 'aprobada' && $decisiones[$f['clave']]['v'] !== null) ? $num($decisiones[$f['clave']]['v'], $f['unidad']) : ''], ';');
     }
@@ -123,15 +123,15 @@ foreach ($datos['filas'] as $i => $f) {
         if ($hh['meta'] !== null && $hh['logrado'] !== null) {
             $p = $f['tipo'] === 'Límite' ? ($hh['logrado'] <= $hh['meta'] ? 100 : 0) : ($hh['meta'] > 0 ? $hh['logrado'] / $hh['meta'] * 100 : null);
         }
-        $hist[] = ['a' => $hh['anio'], 'p' => $p === null ? null : round($p, 1),
+        $hist[] = ['a' => $hh['anio'], 'p' => $p === null ? null : round($p, 1), 'nm' => $hh['nm'], 'ff' => $hh['ff'],
                    'mf' => $hh['meta'] === null ? null : $num($hh['meta'], $f['unidad']), 'lf' => $hh['logrado'] === null ? null : $num($hh['logrado'], $f['unidad'])];
     }
     $ultMeta = null;
     foreach ($f['hist'] as $hh) if ($hh['meta'] !== null) $ultMeta = $hh['meta'];
     $js[] = ['i' => $i, 'k' => $f['clave'], 'n' => $f['nombre'], 'l' => $f['linea'], 'm' => $f['motor'], 'p' => $f['proyecto'], 'r' => $f['responsable'],
-             'u' => $f['unidad'], 'c' => $f['codigo'], 'pr' => $f['propuesta'], 'um' => $ultMeta, 'd' => $f['descripcion'], 'h' => $hist];
+             'u' => $f['unidad'], 'c' => $f['codigo'], 'pr' => $f['propuesta'], 'fo' => $f['formulada'], 'fof' => $f['formulada'] === null ? null : $num($f['formulada'], $f['unidad']), 'st' => $f['st'], 'um' => $ultMeta, 'd' => $f['descripcion'], 'h' => $hist];
 }
-$jsonDatos = json_encode(['filas' => $js, 'anios' => $anios, 'obj' => $obj, 'dec' => (object)$decisiones, 'url' => $basePath . '/proyeccion/ver?id=' . (int)$abierto['id']],
+$jsonDatos = json_encode(['filas' => $js, 'anios' => $anios, 'obj' => $obj, 'dec' => (object)$decisiones, 'planObj' => $datos['plan_objetivo'], 'url' => $basePath . '/proyeccion/ver?id=' . (int)$abierto['id']],
                          JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
 
 ob_start();
@@ -215,6 +215,12 @@ ob_start();
     .pv .bd.no { color: #d70015; border-color: #f2c4bf; } .pv .bd.no:hover { background: #ffe5e3; }
     .pv .bd.un { color: #6e6e73; font-weight: 600; }
     .pv .est-ap { color: #1f8a3d; font-weight: 700; } .pv .est-re { color: #d70015; font-weight: 700; }
+    .pv .alias { margin-top: 4px; font-size: .68rem; color: #b25e00; background: #fff4e0; border-left: 3px solid #f0a020; border-radius: 4px; padding: 2px 6px; line-height: 1.25; }
+    .pv .alias b { font-weight: 700; }
+    .pv .etq { display: inline-block; font-size: .64rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: .35rem; vertical-align: middle; }
+    .pv .etq.nuevo { background: #e3f8e9; color: #1b5e20; } .pv .etq.sinf { background: #f0f0f3; color: #6e6e73; } .pv .etq.camb { background: #fff4e0; color: #b25e00; }
+    .pv td.cambio { background: #fff8ec; box-shadow: inset 3px 0 0 #f0a020; }
+    .pv td.fo-c { background: #f4fbf5; font-weight: 700; color: #424245; }
     .pv .vacio { color: #86868b; text-align: center; padding: 3rem 1rem; }
     @media print { .pv .acc-top, .pv a.volver, .pv .bd { display: none; } .pv { height: auto; overflow: visible; } .pv .marco, .pv .arbol { overflow: visible; } }
 </style>
@@ -228,6 +234,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <h1><?php echo $h($abierto['nombre']); ?></h1>
             <div class="resumen">
                 <span class="tag verde">Año a proyectar <b><?php echo (int)$obj; ?></b></span>
+                <span class="tag <?php echo $datos['plan_objetivo'] ? 'verde' : ''; ?>" title="De este plan se toman los indicadores y las metas ya formuladas para el año a proyectar"><?php echo $datos['plan_objetivo'] ? 'Formulación ' . (int)$obj . ': <b>' . $h($datos['plan_objetivo']) . '</b>' : 'Sin formulación en ' . (int)$obj . ' · la propuesta sale del histórico'; ?></span>
                 <span class="tag">Años históricos <b><?php echo $anios ? $h(implode(' · ', $anios)) : '—'; ?></b></span>
                 <span class="tag"><?php echo $h(ProyeccionModel::METODOS[$metodo]); ?><?php echo $ajuste != 0 ? ' · ajuste ' . ($ajuste > 0 ? '+' : '') . $h($ajuste) . ' %' : ''; ?></span>
                 <span id="contDec" style="color:#6e6e73"></span>
@@ -351,24 +358,33 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         h += '<div class="marco"><table><thead><tr><th class="ind-col" rowspan="2">Indicador</th>';
         D.anios.forEach(function (a) { h += '<th colspan="2">' + a + '</th>'; });
-        h += '<th colspan="2" class="prop">Proyección ' + D.obj + '</th></tr><tr>';
+        h += '<th colspan="3" class="prop">Proyección ' + D.obj + '</th></tr><tr>';
         D.anios.forEach(function () { h += '<th>Meta</th><th>Cumplido</th>'; });
-        h += '<th class="prop">Meta propuesta</th><th class="prop">Decisión</th></tr></thead><tbody>';
+        h += '<th class="prop" title="' + esc(D.planObj ? 'Lo formulado en: ' + D.planObj : 'El año a proyectar no tiene formulación') + '">Formulada</th><th class="prop">Meta propuesta</th><th class="prop">Decisión</th></tr></thead><tbody>';
 
-        var ultimoP = null, ncols = D.anios.length * 2 + 3;
+        var ultimoP = null, ncols = D.anios.length * 2 + 4;
         fs.forEach(function (f) {
             if (sel.length < 3 && f.p !== ultimoP) { h += '<tr><td class="gr" colspan="' + ncols + '">' + esc(f.p) + '</td></tr>'; ultimoP = f.p; }
             var e = estDe(f), dc = D.dec[f.k];
-            h += '<tr><td class="ind-col"><div class="nom">' + esc(f.n) + '</div><small>' + esc(f.r) + (f.c ? ' · ' + esc(f.c) : '') + ' · ' + esc(f.u) + '</small></td>';
+            // Años en que el indicador se llamaba o se medía distinto: se avisa debajo del nombre
+            var cambios = f.h.filter(function (x) { return x.nm || x.ff; });
+            var etq = (f.st === 'nuevo' ? '<span class="etq nuevo">Nuevo en ' + D.obj + '</span>' : '') +
+                      (f.st === 'sinformular' ? '<span class="etq sinf">No formulado en ' + D.obj + '</span>' : '') +
+                      (cambios.length ? '<span class="etq camb" title="No fue exactamente el mismo indicador en todos los años">≈ cambió</span>' : '');
+            var alias = cambios.map(function (x) {
+                return '<div class="alias"><b>' + x.a + '</b> ' + (x.nm ? 'se llamaba «' + esc(x.nm) + '»' : '') + (x.nm && x.ff ? ' · ' : '') + (x.ff ? 'otra fórmula: ' + esc(x.ff) : '') + '</div>';
+            }).join('');
+            h += '<tr><td class="ind-col"><div class="nom">' + esc(f.n) + etq + '</div><small>' + esc(f.r) + (f.c ? ' · ' + esc(f.c) : '') + ' · ' + esc(f.u) + '</small>' + alias + '</td>';
             D.anios.forEach(function (a) {
                 var x = f.h.filter(function (y) { return y.a === a; })[0];
-                if (!x || x.mf == null) { h += '<td class="nd">—</td><td class="nd">—</td>'; return; }
-                h += '<td>' + esc(x.mf) + '</td><td class="cu">' + (x.lf == null ? '<span class="nd">sin dato</span>' : '<b>' + esc(x.lf) + '</b>' + (x.p == null ? '' : '<span class="' + cls(x.p) + '">' + fmt(x.p, 0) + '%</span>')) + '</td>';
+                if (!x || x.mf == null) { h += '<td class="nd' + (x && (x.nm || x.ff) ? ' cambio' : '') + '">—</td><td class="nd">—</td>'; return; }
+                h += '<td' + (x.nm || x.ff ? ' class="cambio" title="Ese año el indicador era distinto: ' + esc(x.nm || x.ff) + '"' : '') + '>' + esc(x.mf) + '</td><td class="cu">' + (x.lf == null ? '<span class="nd">sin dato</span>' : '<b>' + esc(x.lf) + '</b>' + (x.p == null ? '' : '<span class="' + cls(x.p) + '">' + fmt(x.p, 0) + '%</span>')) + '</td>';
             });
+            h += '<td class="fo-c">' + (f.fof == null ? '<span class="nd">—</span>' : esc(f.fof)) + '</td>';
             var val = ediciones[f.k] != null ? ediciones[f.k] : f.pr;
             if (e === 'aprobada') h += '<td class="prop-c"><span class="fin">' + fmt(dc.v != null ? dc.v : f.pr, 2) + unidad(f.u) + '</span></td><td class="dec-c"><span class="est-ap">✓ Aprobada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
             else if (e === 'rechazada') h += '<td class="prop-c"><span class="fin tach">' + (f.pr == null ? '—' : fmt(f.pr, 2) + unidad(f.u)) + '</span></td><td class="dec-c"><span class="est-re">✕ Rechazada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
-            else if (f.pr == null) h += '<td class="prop-c nd">sin histórico</td><td class="dec-c nd">—</td>';
+            else if (f.pr == null) h += '<td class="prop-c nd">sin propuesta</td><td class="dec-c nd">—</td>';
             else h += '<td class="prop-c"><input type="number" step="any" value="' + esc(val) + '" data-k="' + esc(f.k) + '" title="' + esc(f.d) + '">' + (unidad(f.u) ? ' %' : '') + '</td>' +
                 '<td class="dec-c"><button class="bd si" data-a="si" data-k="' + esc(f.k) + '">✓ Aprobar</button> <button class="bd no" data-a="no" data-k="' + esc(f.k) + '">✕ Rechazar</button></td>';
             h += '</tr>';

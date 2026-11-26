@@ -9,6 +9,7 @@ class ProyeccionModel {
     private $db;
 
     const METODOS = [
+        'form'   => 'Lo formulado en el año a proyectar',
         'prom'   => 'Promedio de lo logrado',
         'ultimo' => 'Último logrado',
         'mejor'  => 'Mejor logrado',
@@ -94,7 +95,7 @@ class ProyeccionModel {
 
     // Meta propuesta a partir del histórico. $hist: [idx => ['meta' => ?float, 'logrado' => ?float, 'anio' => int]] en orden de año.
     // Devuelve [valor|null, texto que explica de dónde sale].
-    public static function proponer(array $hist, $metodo, $ajuste, $tipo, $unidad) {
+    public static function proponer(array $hist, $metodo, $ajuste, $tipo, $unidad, $metaForm = null) {
         $logrados = []; $metas = [];
         foreach ($hist as $h) {
             if ($h['logrado'] !== null) $logrados[$h['anio']] = $h['logrado'];
@@ -103,7 +104,9 @@ class ProyeccionModel {
         $ultMeta = $metas ? end($metas) : null;
         $txt = '';
         $v = null;
-        if ($tipo === 'Límite') { // en un límite menos es mejor: no se "sube", se mantiene el último límite
+        if ($metodo === 'form' && $metaForm !== null) { // lo ya formulado en el año a proyectar
+            $v = $metaForm; $txt = 'Meta formulada en el año a proyectar: ' . self::f($v) . '.';
+        } elseif ($tipo === 'Límite') { // en un límite menos es mejor: no se "sube", se mantiene el último límite
             $v = $ultMeta; $txt = $v === null ? '' : 'Se mantiene el último límite (' . self::f($v) . ').';
         } elseif ($metodo === 'meta') {
             $v = $ultMeta; $txt = $v === null ? '' : 'Repite la última meta formulada (' . self::f($v) . ').';
@@ -133,41 +136,122 @@ class ProyeccionModel {
         return rtrim(rtrim(number_format((float)$n, 2, ',', '.'), '0'), ',');
     }
 
-    // $planes: filas de formularios (id, titulo, anio) en el orden de las columnas. Una fila por indicador (mismo nombre en distintos años = mismo indicador).
+    // Palabras significativas de un nombre normalizado (para reconocer el mismo indicador aunque haya cambiado de redacción)
+    private static function palabras($norm) {
+        static $vacias = ['de','la','el','en','los','las','por','con','para','del','que','una','uno','al','y','a','o','un','se','su','sus','como','entre'];
+        $p = [];
+        foreach (explode(' ', $norm) as $w) if (mb_strlen($w) >= 3 && !in_array($w, $vacias, true)) $p[$w] = true;
+        return array_keys($p);
+    }
+    private static function similitud(array $a, array $b) {
+        if (!$a || !$b) return 0.0;
+        $i = count(array_intersect($a, $b));
+        $u = count($a) + count($b) - $i;
+        return $u ? $i / $u : 0.0;
+    }
+
+    // Plan del año a proyectar con más indicadores formulados (puede haber varios formularios del mismo año)
+    private function planFormulado($anio) {
+        $s = $this->db->prepare("SELECT fo.id, fo.titulo, fo.anio, COUNT(f.id) c FROM formularios fo JOIN formulacion_144 f ON f.formulario_id = fo.id
+                                 WHERE fo.anio = ? AND f.estado_formulacion != 1 GROUP BY fo.id, fo.titulo, fo.anio ORDER BY c DESC, fo.id DESC LIMIT 1");
+        $s->execute([(int)$anio]);
+        return $s->fetch() ?: null;
+    }
+
+    // $planes: filas de formularios (id, titulo, anio) históricos, en el orden de las columnas.
+    // Una fila por indicador: se reconoce el mismo indicador entre años por su nombre y, si cambió de redacción,
+    // por su parecido dentro del mismo proyecto/línea (se marca en cada año donde el nombre es distinto).
+    // Si el año a proyectar ya tiene formulación, esas son las filas base y su meta se muestra como "formulada".
     public function construir(array $planes, $anioObjetivo, $metodo, $ajuste) {
         $modelo = new FORDE144Model();
         $anios = [];
-        $filas = [];
-        $n = count($planes);
-        foreach ($planes as $idx => $pl) {
-            if ((int)$pl['anio'] >= (int)$anioObjetivo) continue; // el año a proyectar no tiene indicadores ni porcentajes: solo hay propuesta
-            $anios[$idx] = (int)$pl['anio'];
-            $inf = $modelo->getInformeCompleto((int)$pl['id'], ['indicadores' => true]);
+        $series = [];      // id => ['pal' => palabras, 'ub' => ubicación, idx => entrada, 'obj' => entrada del año a proyectar]
+        $claves = [];      // clave de nombre (nk#n) => id de serie (también las de nombres anteriores)
+
+        $ubic = function ($r) {
+            return ['l' => ($r['linea_codigo'] ?: $r['linea']), 'm' => ($r['motor_codigo'] ?: $r['motor']), 'p' => ($r['proyecto_codigo'] ?: $r['proyecto'])];
+        };
+        // Casa un indicador con una serie: exacto por nombre o, si no, el más parecido que aún no tenga ese año
+        $casar = function ($r, $nk, $occ, $slot) use (&$series, &$claves, $ubic) {
+            $gk = $nk . '#' . $occ;
+            if (isset($claves[$gk]) && !isset($series[$claves[$gk]][$slot])) return [$claves[$gk], false];
+            $pal = self::palabras($nk);
+            $u = $ubic($r);
+            $mejor = null; $mejorS = 0;
+            foreach ($series as $sid => $s) {
+                if (isset($s[$slot])) continue;
+                $mismoProy = $s['ub']['p'] === $u['p'] && $s['ub']['m'] === $u['m'] && $s['ub']['l'] === $u['l'];
+                if (!$mismoProy && $s['ub']['l'] !== $u['l']) continue;
+                $sc = self::similitud($pal, $s['pal']);
+                if ($sc < ($mismoProy ? 0.5 : 0.75)) continue;
+                if ($mismoProy) $sc += 0.1;
+                if ($sc > $mejorS) { $mejorS = $sc; $mejor = $sid; }
+            }
+            return $mejor !== null ? [$mejor, true] : [null, false];
+        };
+
+        $recorrer = function ($inf, $slot, $pl) use (&$series, &$claves, $casar, $ubic) {
             $vistos = [];
             foreach (($inf['indicadores'] ?? []) as $r) {
                 $nk = self::norm($r['nombre']);
                 if ($nk === '') continue;
                 $vistos[$nk] = ($vistos[$nk] ?? 0) + 1;
-                $k = $nk . '#' . $vistos[$nk];
-                if (!isset($filas[$k])) $filas[$k] = ['hist' => []];
-                // Los datos descriptivos son los del plan más reciente en que aparece
-                $filas[$k] = array_merge($filas[$k], [
-                    'nombre' => $r['nombre'], 'codigo' => $r['codigo'], 'responsable' => $r['responsable'], 'formula' => $r['formula'],
-                    'unidad' => $r['unidad'], 'tipo' => $r['tipo'],
+                $gk = $nk . '#' . $vistos[$nk];
+                [$sid, $aprox] = $casar($r, $nk, $vistos[$nk], $slot);
+                if ($sid === null) {
+                    $sid = $gk;
+                    $series[$sid] = ['pal' => self::palabras($nk), 'ub' => $ubic($r)];
+                }
+                $claves[$gk] = $claves[$gk] ?? $sid;
+                $series[$sid]['pal'] = self::palabras($nk); // la redacción más reciente es la de referencia
+                $series[$sid]['ub'] = $ubic($r);
+                $series[$sid][$slot] = [
+                    'anio' => (int)$pl['anio'], 'nombre' => $r['nombre'], 'nk' => $nk, 'formula' => $r['formula'], 'meta' => $r['meta'], 'logrado' => $r['logrado'], 'aprox' => $aprox,
+                    'codigo' => $r['codigo'], 'resp' => $r['responsable'], 'unidad' => $r['unidad'], 'tipo' => $r['tipo'],
                     'linea' => ($r['linea_codigo'] ? $r['linea_codigo'] . ' - ' : '') . $r['linea'],
                     'motor' => ($r['motor_codigo'] ? $r['motor_codigo'] . ' - ' : '') . $r['motor'],
                     'proyecto' => ($r['proyecto_codigo'] ? $r['proyecto_codigo'] . ' - ' : '') . $r['proyecto'],
-                ]);
-                $filas[$k]['hist'][$idx] = ['anio' => (int)$pl['anio'], 'meta' => $r['meta'], 'logrado' => $r['logrado']];
+                ];
             }
+        };
+
+        foreach ($planes as $idx => $pl) {
+            if ((int)$pl['anio'] >= (int)$anioObjetivo) continue; // el año a proyectar no entra como histórico
+            $anios[$idx] = (int)$pl['anio'];
+            $recorrer($modelo->getInformeCompleto((int)$pl['id'], ['indicadores' => true]), $idx, $pl);
         }
+
+        // Formulación del año a proyectar (si existe): sus indicadores son las filas base
+        $planObj = $this->planFormulado($anioObjetivo);
+        if ($planObj) {
+            $recorrer($modelo->getInformeCompleto((int)$planObj['id'], ['indicadores' => true, 'soloAprobadas' => false]), 'obj', ['anio' => $anioObjetivo]);
+        }
+
         $res = [];
-        foreach ($filas as $clave => $f) {
-            ksort($f['hist']);
-            [$prop, $txt] = self::proponer($f['hist'], $metodo, $ajuste, $f['tipo'], $f['unidad']);
-            // Estado según el cumplimiento del último año con meta y logrado
+        foreach ($series as $sid => $s) {
+            $hist = [];
+            foreach ($s as $k => $e) if (is_int($k)) $hist[$k] = $e;
+            ksort($hist);
+            $form = $s['obj'] ?? null;
+            $ref = $form ?: ($hist ? end($hist) : null);
+            if (!$ref) continue;
+            // Estado del indicador frente a la formulación del año a proyectar
+            $st = '';
+            if ($planObj) $st = $form ? ($hist ? '' : 'nuevo') : 'sinformular';
+            // Nombre o fórmula distintos al de referencia en cada año histórico
+            $h2 = [];
+            foreach ($hist as $e) {
+                $h2[] = ['anio' => $e['anio'], 'meta' => $e['meta'], 'logrado' => $e['logrado'],
+                         'nm' => $e['nk'] !== $ref['nk'] ? $e['nombre'] : null,
+                         'ff' => (trim($e['formula']) !== '' && self::norm($e['formula']) !== self::norm($ref['formula'])) ? $e['formula'] : null];
+            }
+            $f = ['hist' => $h2, 'nombre' => $ref['nombre'], 'codigo' => $ref['codigo'], 'responsable' => $ref['resp'], 'formula' => $ref['formula'],
+                  'unidad' => $ref['unidad'], 'tipo' => $ref['tipo'], 'linea' => $ref['linea'], 'motor' => $ref['motor'], 'proyecto' => $ref['proyecto'],
+                  'formulada' => $form ? $form['meta'] : null, 'st' => $st];
+            [$prop, $txt] = self::proponer($h2, $metodo, $ajuste, $f['tipo'], $f['unidad'], $f['formulada']);
+            // Estado según el cumplimiento del último año histórico con meta y logrado
             $pct = null;
-            foreach (array_reverse($f['hist'], true) as $h) {
+            foreach (array_reverse($h2) as $h) {
                 if ($h['meta'] !== null && $h['logrado'] !== null) {
                     $pct = $f['tipo'] === 'Límite' ? ($h['logrado'] <= $h['meta'] ? 100 : 0) : ($h['meta'] > 0 ? $h['logrado'] / $h['meta'] * 100 : null);
                     break;
@@ -177,13 +261,13 @@ class ProyeccionModel {
             $f['estado'] = $pct === null ? 'Sin dato' : ($pct >= 100 ? 'Cumplido' : ($pct >= 60 ? 'Parcial' : 'No cumplido'));
             $f['propuesta'] = $prop;
             $f['descripcion'] = $txt;
-            $f['presentes'] = count($f['hist']);
-            $f['clave'] = $clave;
+            $f['presentes'] = count($h2);
+            $f['clave'] = (string)$sid;
             $res[] = $f;
         }
         usort($res, function ($a, $b) {
             return strnatcasecmp($a['linea'], $b['linea']) ?: strnatcasecmp($a['motor'], $b['motor']) ?: strnatcasecmp($a['proyecto'], $b['proyecto']) ?: strcasecmp($a['nombre'], $b['nombre']);
         });
-        return ['anios' => $anios, 'filas' => $res, 'anio_objetivo' => (int)$anioObjetivo];
+        return ['anios' => array_values(array_unique($anios)), 'filas' => $res, 'anio_objetivo' => (int)$anioObjetivo, 'plan_objetivo' => $planObj ? $planObj['titulo'] : null];
     }
 }
