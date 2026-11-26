@@ -28,9 +28,46 @@ if ($veTodo) {
     usort($planes, function ($a, $b) { return ((int)$a['anio'] <=> (int)$b['anio']) ?: ((int)$a['id'] <=> (int)$b['id']); });
 
     $validos = array_map('intval', array_column($planes, 'id'));
-    $pedidos = isset($_GET['p']) && is_array($_GET['p']) ? array_map('intval', $_GET['p']) : [];
-    $seleccion = array_values(array_intersect($validos, $pedidos));
-    $seleccion = array_slice($seleccion, 0, 8);
+    $tituloPlan = [];
+    foreach ($planes as $pl) $tituloPlan[(int)$pl['id']] = $pl['titulo'];
+
+    // Comparativos guardados (la selección y el nombre; las cifras se calculan al abrirlos, siempre al día)
+    $pdoAv = new PDO("mysql:host=" . Config::DB_HOST . ";dbname=" . Config::DB_NAME . ";charset=" . Config::DB_CHARSET, Config::DB_USER, Config::DB_PASS);
+    $pdoAv->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdoAv->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdoAv->exec("CREATE TABLE IF NOT EXISTS comparativos_144 (
+        id INT AUTO_INCREMENT PRIMARY KEY, nombre VARCHAR(150) NOT NULL, formularios TEXT NOT NULL,
+        creado_por INT NULL, fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $aviso = '';
+    $accion = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['accion'] ?? '') : '';
+    if ($accion === 'crear') {
+        $ids = array_values(array_intersect($validos, array_map('intval', (array)($_POST['p'] ?? []))));
+        $ids = array_slice($ids, 0, 8);
+        $nombre = trim((string)($_POST['nombre'] ?? ''));
+        if (count($ids) < 2) {
+            $aviso = 'Marca al menos dos planes para comparar.';
+        } else {
+            if ($nombre === '') $nombre = 'Comparativo ' . date('d/m/Y H:i');
+            $pdoAv->prepare("INSERT INTO comparativos_144 (nombre, formularios, creado_por) VALUES (?, ?, ?)")
+                  ->execute([mb_substr($nombre, 0, 150), json_encode($ids), $uid]);
+            header('Location: ' . $basePath . '/asivamos?ver=' . (int)$pdoAv->lastInsertId());
+            exit;
+        }
+    } elseif ($accion === 'eliminar') {
+        $pdoAv->prepare("DELETE FROM comparativos_144 WHERE id = ?")->execute([(int)($_POST['id'] ?? 0)]);
+        header('Location: ' . $basePath . '/asivamos');
+        exit;
+    }
+
+    $guardados = $pdoAv->query("SELECT * FROM comparativos_144 ORDER BY fecha_creacion DESC")->fetchAll();
+    $verId = (int)($_GET['ver'] ?? 0);
+    $abierto = null;
+    foreach ($guardados as $g) if ((int)$g['id'] === $verId) $abierto = $g;
+    if ($abierto) {
+        $seleccion = array_values(array_intersect($validos, array_map('intval', (array)json_decode($abierto['formularios'], true))));
+    }
 
     foreach ($planes as $pl) {
         if (!in_array((int)$pl['id'], $seleccion, true)) continue;
@@ -94,30 +131,68 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 <?php elseif (!$planes): ?>
     <div class="caja">Todavía no hay Planes de Acción en el sistema.</div>
 <?php else: ?>
-    <form method="get" action="<?php echo $basePath; ?>/asivamos" class="caja filtro">
+    <?php if ($aviso): ?><div class="caja" style="border-color:#d70015;color:#d70015;"><?php echo $h($aviso); ?></div><?php endif; ?>
+    <form method="post" action="<?php echo $basePath; ?>/asivamos" class="caja filtro">
+        <input type="hidden" name="accion" value="crear">
         <h2>Planes de Acción (<?php echo count($planes); ?>)</h2>
         <ul class="lista">
             <?php foreach ($planes as $pl): ?>
                 <li>
                     <label>
-                        <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>" <?php echo in_array((int)$pl['id'], $seleccion, true) ? 'checked' : ''; ?>>
+                        <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>">
                         <span><?php echo $h($pl['titulo']); ?><small>Año <?php echo (int)$pl['anio']; ?></small></span>
                     </label>
                 </li>
             <?php endforeach; ?>
         </ul>
         <div class="acciones">
+            <input type="text" name="nombre" maxlength="150" placeholder="Nombre del comparativo" class="btn" style="min-width:260px;cursor:text;">
             <button type="submit" class="btn primario">Generar comparativo</button>
             <button type="button" class="btn" onclick="document.querySelectorAll('.asi-vamos .lista input').forEach(function(c){c.checked=true;})">Marcar todos</button>
             <button type="button" class="btn" onclick="document.querySelectorAll('.asi-vamos .lista input').forEach(function(c){c.checked=false;})">Quitar todos</button>
-            <?php if ($comparativo): ?><button type="button" class="btn" onclick="window.print()">Imprimir</button><?php endif; ?>
         </div>
-        <small style="color:#86868b;display:block;margin-top:.5rem;">Máximo 8 planes a la vez.</small>
+        <small style="color:#86868b;display:block;margin-top:.5rem;">Mínimo 2 y máximo 8 planes. El comparativo queda guardado en la lista de abajo.</small>
     </form>
+
+    <div class="caja filtro">
+        <h2>Comparativos generados (<?php echo count($guardados); ?>)</h2>
+        <?php if (!$guardados): ?>
+            <p style="color:#86868b;margin:0;">Aún no has generado ninguno.</p>
+        <?php else: ?>
+        <table>
+            <thead><tr><th>Nombre</th><th>Planes</th><th>Fecha</th><th style="width:110px;">Acciones</th></tr></thead>
+            <tbody>
+            <?php foreach ($guardados as $g):
+                $nombresPl = [];
+                foreach ((array)json_decode($g['formularios'], true) as $fid) if (isset($tituloPlan[(int)$fid])) $nombresPl[] = $tituloPlan[(int)$fid];
+            ?>
+                <tr<?php echo $abierto && (int)$abierto['id'] === (int)$g['id'] ? ' style="background:#f5faff"' : ''; ?>>
+                    <td><strong><?php echo $h($g['nombre']); ?></strong></td>
+                    <td style="font-size:.8rem;color:#424245;"><?php echo $h(implode(' · ', $nombresPl)); ?></td>
+                    <td style="white-space:nowrap;"><?php echo $h(date('d/m/Y H:i', strtotime($g['fecha_creacion']))); ?></td>
+                    <td style="white-space:nowrap;">
+                        <a href="<?php echo $basePath; ?>/asivamos?ver=<?php echo (int)$g['id']; ?>" class="btn" title="Ver" aria-label="Ver" style="display:inline-block;padding:.35rem .6rem;text-decoration:none;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        </a>
+                        <form method="post" action="<?php echo $basePath; ?>/asivamos" style="display:inline;" onsubmit="return confirm('¿Eliminar este comparativo?');">
+                            <input type="hidden" name="accion" value="eliminar">
+                            <input type="hidden" name="id" value="<?php echo (int)$g['id']; ?>">
+                            <button type="submit" class="btn" title="Eliminar" aria-label="Eliminar" style="padding:.35rem .6rem;color:#d70015;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php endif; ?>
+    </div>
 
     <?php if ($comparativo): ?>
     <div class="caja">
-        <h2>Comparativo</h2>
+        <h2><?php echo $h($abierto['nombre'] ?? 'Comparativo'); ?>
+            <button type="button" class="btn acciones" style="float:right;" onclick="window.print()">Imprimir</button></h2>
         <div class="tabla-scroll">
         <table>
             <thead>
