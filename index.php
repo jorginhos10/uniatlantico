@@ -68,6 +68,11 @@ switch ($action) {
         require_once 'vista/dashboard/index.php';
         break;
 
+    case 'asivamos':
+        require_once 'config/security.php';
+        require_once 'vista/asivamos/index.php';
+        break;
+
     case 'perfil':
         require_once 'config/security.php';
         require_once 'controlador/perfilController.php';

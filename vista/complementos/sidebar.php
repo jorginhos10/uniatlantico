@@ -88,6 +88,14 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </li>
             <?php endif; ?>
             
+            <!-- Así vamos (landing, disponible para todos los usuarios logueados) -->
+            <li class="navItem <?php echo ($paginaActual ?? '') === 'asivamos' ? 'active' : ''; ?>">
+                <a href="<?php echo $basePath; ?>/asivamos" class="navLink" data-tooltip="Así vamos">
+                    <?php echo icono('asivamos'); ?>
+                    <span>Así vamos</span>
+                </a>
+            </li>
+
             <!-- Mensajes (disponible para todos los usuarios logueados) -->
             <li class="navItem <?php echo ($paginaActual ?? '') === 'mensajes' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/mensajes" class="navLink" data-tooltip="Mensajes">
