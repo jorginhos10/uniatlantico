@@ -25,6 +25,32 @@ class ProyeccionModel {
             anio_objetivo INT NOT NULL, metodo VARCHAR(10) NOT NULL DEFAULT 'prom', ajuste DECIMAL(6,2) NOT NULL DEFAULT 0,
             creado_por INT NULL, fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $this->db->exec("CREATE TABLE IF NOT EXISTS proyeccion_decisiones_144 (
+            id INT AUTO_INCREMENT PRIMARY KEY, proyeccion_id INT NOT NULL, clave VARCHAR(220) NOT NULL,
+            estado VARCHAR(10) NOT NULL, valor DECIMAL(18,4) NULL, decidido_por INT NULL, fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_proy_clave (proyeccion_id, clave)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    }
+
+    // Decisiones sobre las metas propuestas: [clave => ['e' => 'aprobada'|'rechazada', 'v' => meta final|null]]
+    public function decisiones($proyeccionId) {
+        $s = $this->db->prepare("SELECT clave, estado, valor FROM proyeccion_decisiones_144 WHERE proyeccion_id = ?");
+        $s->execute([(int)$proyeccionId]);
+        $out = [];
+        foreach ($s->fetchAll() as $r) $out[$r['clave']] = ['e' => $r['estado'], 'v' => $r['valor'] === null ? null : (float)$r['valor']];
+        return $out;
+    }
+
+    // estado: 'aprobada', 'rechazada' o '' (vuelve a pendiente)
+    public function decidir($proyeccionId, $clave, $estado, $valor, $uid) {
+        if ($estado === '') {
+            $this->db->prepare("DELETE FROM proyeccion_decisiones_144 WHERE proyeccion_id = ? AND clave = ?")->execute([(int)$proyeccionId, $clave]);
+            return;
+        }
+        if (!in_array($estado, ['aprobada', 'rechazada'], true)) return;
+        $this->db->prepare("INSERT INTO proyeccion_decisiones_144 (proyeccion_id, clave, estado, valor, decidido_por) VALUES (?, ?, ?, ?, ?)
+                            ON DUPLICATE KEY UPDATE estado = VALUES(estado), valor = VALUES(valor), decidido_por = VALUES(decidido_por), fecha = NOW()")
+                 ->execute([(int)$proyeccionId, $clave, $estado, $valor, $uid]);
     }
 
     public function listar() {
@@ -46,12 +72,14 @@ class ProyeccionModel {
         return (int)$this->db->lastInsertId();
     }
 
-    public function actualizar($id, $metodo, $ajuste) {
+    public function actualizar($id, $metodo, $ajuste, $anio) {
         if (!isset(self::METODOS[$metodo])) $metodo = 'prom';
-        $this->db->prepare("UPDATE proyecciones_144 SET metodo = ?, ajuste = ? WHERE id = ?")->execute([$metodo, (float)$ajuste, (int)$id]);
+        $anio = ($anio >= 2000 && $anio <= 2100) ? (int)$anio : (int)date('Y');
+        $this->db->prepare("UPDATE proyecciones_144 SET metodo = ?, ajuste = ?, anio_objetivo = ? WHERE id = ?")->execute([$metodo, (float)$ajuste, $anio, (int)$id]);
     }
 
     public function eliminar($id) {
+        $this->db->prepare("DELETE FROM proyeccion_decisiones_144 WHERE proyeccion_id = ?")->execute([(int)$id]);
         $this->db->prepare("DELETE FROM proyecciones_144 WHERE id = ?")->execute([(int)$id]);
     }
 
@@ -132,7 +160,7 @@ class ProyeccionModel {
             }
         }
         $res = [];
-        foreach ($filas as $f) {
+        foreach ($filas as $clave => $f) {
             ksort($f['hist']);
             [$prop, $txt] = self::proponer($f['hist'], $metodo, $ajuste, $f['tipo'], $f['unidad']);
             // Estado según el cumplimiento del último año con meta y logrado
@@ -148,6 +176,7 @@ class ProyeccionModel {
             $f['propuesta'] = $prop;
             $f['descripcion'] = $txt;
             $f['presentes'] = count($f['hist']);
+            $f['clave'] = $clave;
             $res[] = $f;
         }
         usort($res, function ($a, $b) {
