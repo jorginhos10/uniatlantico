@@ -418,9 +418,9 @@ class Plantilla144Controller {
 
             $datos = [];
             $errores = [];
-            // Semestres bloqueados en Editar formulario → Campos (T1 y T2 son del semestre 1; T3 y T4, del semestre 2)
-            $bloqueo = $this->model->getBloqueosSemestres((int)($actual['formulario_id'] ?? 0));
-            if ($bloqueo['excepto_admin'] && $this->esAdmin()) $bloqueo = ['sem1' => false, 'sem2' => false];
+            // Trimestres bloqueados en Editar formulario → Campos
+            $bloqueo = $this->model->getBloqueos((int)($actual['formulario_id'] ?? 0));
+            if ($bloqueo['excepto_admin'] && $this->esAdmin()) $bloqueo = array_fill_keys(array_keys($bloqueo), false);
             $esLimite = ($actual['tipo_medicion'] ?? '') === 'Límite';
             foreach ($editables as $k) {
                 if (!isset($mapa[$k])) continue;
@@ -429,7 +429,7 @@ class Plantilla144Controller {
                     $t = (int)substr($k, 9, 1);
                     // En "Límite" el semestre 1 (T1 y T2) no se registra (igual que en la pantalla)
                     if ($esLimite && $t <= 2) continue;
-                    if ($bloqueo[$t <= 2 ? 'sem1' : 'sem2']) continue;
+                    if ($bloqueo['t' . $t]) continue;
                     $n = $this->numero($v);
                     if ($v !== '' && $n === null) { $errores[] = "\"" . $this->colsSeguimiento[$k][0] . "\" debe ser un número."; continue; }
                     $nuevo = $n === null ? '' : (string)$n;
@@ -444,7 +444,8 @@ class Plantilla144Controller {
                         continue;
                     }
                     $datos[$k] = $nuevo;
-                } else {
+                } elseif (!$bloqueo['sem1']) {
+                    // Logros, límites, observación y acciones de la plantilla son los del semestre 1
                     $datos[$k] = $v;
                 }
             }

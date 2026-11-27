@@ -31,27 +31,39 @@ class ProyeccionModel {
             estado VARCHAR(10) NOT NULL, valor DECIMAL(18,4) NULL, decidido_por INT NULL, fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_proy_clave (proyeccion_id, clave)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        if ($this->db->query("SHOW COLUMNS FROM proyeccion_decisiones_144 LIKE 'comentario'")->rowCount() === 0) {
+            $this->db->exec("ALTER TABLE proyeccion_decisiones_144 ADD COLUMN comentario TEXT NULL");
+        }
     }
 
-    // Decisiones sobre las metas propuestas: [clave => ['e' => 'aprobada'|'rechazada', 'v' => meta final|null]]
+    // Decisiones sobre las metas propuestas: [clave => ['e' => 'aprobada'|'rechazada'|'', 'v' => meta final|null, 'c' => comentario]]
     public function decisiones($proyeccionId) {
-        $s = $this->db->prepare("SELECT clave, estado, valor FROM proyeccion_decisiones_144 WHERE proyeccion_id = ?");
+        $s = $this->db->prepare("SELECT clave, estado, valor, comentario FROM proyeccion_decisiones_144 WHERE proyeccion_id = ?");
         $s->execute([(int)$proyeccionId]);
         $out = [];
-        foreach ($s->fetchAll() as $r) $out[$r['clave']] = ['e' => $r['estado'], 'v' => $r['valor'] === null ? null : (float)$r['valor']];
+        foreach ($s->fetchAll() as $r) $out[$r['clave']] = ['e' => $r['estado'], 'v' => $r['valor'] === null ? null : (float)$r['valor'], 'c' => (string)$r['comentario']];
         return $out;
     }
 
     // estado: 'aprobada', 'rechazada' o '' (vuelve a pendiente)
     public function decidir($proyeccionId, $clave, $estado, $valor, $uid) {
         if ($estado === '') {
-            $this->db->prepare("DELETE FROM proyeccion_decisiones_144 WHERE proyeccion_id = ? AND clave = ?")->execute([(int)$proyeccionId, $clave]);
+            // No se borra la fila: el comentario del indicador se conserva
+            $this->db->prepare("UPDATE proyeccion_decisiones_144 SET estado = '', valor = NULL, decidido_por = ?, fecha = NOW() WHERE proyeccion_id = ? AND clave = ?")
+                     ->execute([$uid, (int)$proyeccionId, $clave]);
             return;
         }
         if (!in_array($estado, ['aprobada', 'rechazada'], true)) return;
         $this->db->prepare("INSERT INTO proyeccion_decisiones_144 (proyeccion_id, clave, estado, valor, decidido_por) VALUES (?, ?, ?, ?, ?)
                             ON DUPLICATE KEY UPDATE estado = VALUES(estado), valor = VALUES(valor), decidido_por = VALUES(decidido_por), fecha = NOW()")
                  ->execute([(int)$proyeccionId, $clave, $estado, $valor, $uid]);
+    }
+
+    // Comentario sobre la meta de un indicador; se guarda esté aprobada o pendiente
+    public function comentar($proyeccionId, $clave, $texto) {
+        $this->db->prepare("INSERT INTO proyeccion_decisiones_144 (proyeccion_id, clave, estado, comentario) VALUES (?, ?, '', ?)
+                            ON DUPLICATE KEY UPDATE comentario = VALUES(comentario)")
+                 ->execute([(int)$proyeccionId, $clave, mb_substr(trim((string)$texto), 0, 1000)]);
     }
 
     public function listar() {

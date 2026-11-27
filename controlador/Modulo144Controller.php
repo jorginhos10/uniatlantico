@@ -374,13 +374,17 @@ class Modulo144Controller {
                 }
             }
 
-            // Semestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
+            // Trimestres bloqueados desde Editar formulario → Campos: sus casillas de seguimiento no se modifican
             if ($modulo === 'seguimiento' && $itemActual) {
                 // En "Límite" el semestre 1 no se registra: nunca se guarda un valor ahí
                 if (($itemActual['tipo_medicion'] ?? '') === 'Límite') unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento']);
-                $bl = $this->semestresBloqueados($itemActual);
-                if ($bl['sem1']) unset($_POST['semestre1_seguimiento'], $_POST['trimestre1_seguimiento'], $_POST['trimestre2_seguimiento'], $_POST['descripcion_sem1'],
-                    $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
+                $bl = $this->bloqueosSeguimiento($itemActual);
+                foreach ([1, 2, 3, 4] as $tNum) {
+                    // El valor del semestre se calcula con sus trimestres: si alguno está bloqueado tampoco se envía a mano
+                    if ($bl['t' . $tNum]) unset($_POST['trimestre' . $tNum . '_seguimiento'], $_POST['semestre' . (int)ceil($tNum / 2) . '_seguimiento']);
+                }
+                // Lo que se registra por semestre se cierra cuando sus dos trimestres están bloqueados
+                if ($bl['sem1']) unset($_POST['descripcion_sem1'], $_POST['logros'], $_POST['limites'], $_POST['observacion_estado'], $_POST['acciones_fortalecimiento']);
                 // Los semestres, la meta ejecutada y el % de avance se DERIVAN de los trimestres (el modelo los recalcula al guardar un
                 // trimestre): no se aceptan enviados a mano. Los trimestres sí los registra quien gestiona el indicador, con las reglas de
                 // abajo (aprobado o en revisión no se tocan); el superadministrador puede editar cualquiera.
@@ -393,8 +397,7 @@ class Modulo144Controller {
                 foreach ($this->model->getFlujoTrimestres($id) as $tNum => $tFlujo) {
                     if ($this->trimestreBloqueado($tFlujo, $nivelCreadorG)) unset($_POST['trimestre' . $tNum . '_seguimiento']);
                 }
-                if ($bl['sem2']) unset($_POST['semestre2_seguimiento'], $_POST['trimestre3_seguimiento'], $_POST['trimestre4_seguimiento'], $_POST['descripcion_sem2'],
-                    $_POST['logros_sem2'], $_POST['limites_sem2'], $_POST['observacion_estado_sem2'], $_POST['acciones_fortalecimiento_sem2']);
+                if ($bl['sem2']) unset($_POST['descripcion_sem2'], $_POST['logros_sem2'], $_POST['limites_sem2'], $_POST['observacion_estado_sem2'], $_POST['acciones_fortalecimiento_sem2']);
             }
 
             $resultado = $this->model->actualizar($modulo, $id, $_POST);
@@ -1463,9 +1466,11 @@ class Modulo144Controller {
     // Quién puede cargar/quitar: evidencias del indicador → administradores, creador y dependencia responsable;
     // evidencias de una facultad → quien puede registrar el seguimiento de esa facultad.
     private function puedeEditarEvidencias(array $item, $facultadId, $semestre = 1, $trimestre = 0) {
-        // Un semestre bloqueado (Editar formulario → Campos) tampoco admite cambios en sus evidencias
-        $bl = $this->semestresBloqueados($item);
-        if (!empty($bl[(int)$semestre === 2 ? 'sem2' : 'sem1'])) return false;
+        // Un trimestre bloqueado (Editar formulario → Campos) tampoco admite cambios en sus evidencias;
+        // las que son por semestre (facultades y concertación) se cierran con sus dos trimestres bloqueados
+        $bl = $this->bloqueosSeguimiento($item);
+        $porTrimestre = (int)$facultadId === 0 && (int)$trimestre >= 1 && (int)$trimestre <= 4;
+        if (!empty($bl[$porTrimestre ? 't' . (int)$trimestre : ((int)$semestre === 2 ? 'sem2' : 'sem1')])) return false;
         // Las evidencias de un trimestre aprobado (o en revisión, salvo para quien decide) tampoco se tocan
         if ((int)$facultadId === 0 && (int)$trimestre >= 1 && (int)$trimestre <= 4) {
             $flujoT = $this->model->getFlujoTrimestres((int)$item['id'])[(int)$trimestre] ?? null;
@@ -1638,10 +1643,10 @@ class Modulo144Controller {
         readfile($ruta);
     }
 
-    // Semestres cuyas casillas de seguimiento están bloqueadas (aplica a todos; se desbloquean en Editar formulario → Campos)
-    private function semestresBloqueados(array $item) {
-        $b = $this->model->getBloqueosSemestres((int)($item['formulario_id'] ?? 0));
-        if ($b['excepto_admin'] && $this->esAdminSeguimiento()) return ['sem1' => false, 'sem2' => false, 'excepto_admin' => true];
+    // Trimestres (t1..t4) y semestres cerrados (sem1, sem2) del seguimiento; se configuran en Editar formulario → Campos
+    private function bloqueosSeguimiento(array $item) {
+        $b = $this->model->getBloqueos((int)($item['formulario_id'] ?? 0));
+        if ($b['excepto_admin'] && $this->esAdminSeguimiento()) return array_fill_keys(array_keys($b), false);
         return $b;
     }
 
@@ -1650,7 +1655,7 @@ class Modulo144Controller {
     // Responde el error y devuelve true si está cerrado.
     private function concertacionCerrada($item, $sem) {
         if (!$item || !in_array((int)$sem, [1, 2], true)) return false;
-        $bl = $this->semestresBloqueados($item);
+        $bl = $this->bloqueosSeguimiento($item);
         if (empty($bl['sem' . (int)$sem])) return false;
         echo json_encode(['success' => false, 'cerrado' => true, 'message' => 'El semestre ' . (int)$sem . ' está cerrado en el Plan de acción: la concertación también está cerrada']);
         return true;
@@ -1751,7 +1756,7 @@ class Modulo144Controller {
         $verTodas = $this->esSuperadminConcertacion() || $this->esResponsableDelItem($item);
 
         $evid = $this->model->getResumenEvidencias($id)['facultades'];
-        $blq = $this->semestresBloqueados($item); // semestres cerrados en el Plan de acción
+        $blq = $this->bloqueosSeguimiento($item); // semestres cerrados en el Plan de acción
         $propiasUsuario = $this->esSuperadminConcertacion() ? [] : $this->model->getFacultadesDelUsuario($_SESSION['usuario_id'] ?? 0, $_SESSION['usuario_cargo_id'] ?? 0);
 
         $filas = [];

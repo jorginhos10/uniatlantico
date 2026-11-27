@@ -4609,7 +4609,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     const metaInd = segFacNum(response.meta_indicador);
                     $('#segFacMetaInd').text(metaInd > 0 ? 'Meta del indicador: ' + metaInd.toFixed(2) : '');
                     actualizarTotalesSeguimientoFacultades();
-                    aplicarBloqueoSemestres();
+                    aplicarBloqueoTrimestres();
                 }
             });
         }
@@ -6061,7 +6061,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                             seguimientoSnap = null; // se fija tras cargar todo (abajo)
                             $('#modalSeguimiento input, #modalSeguimiento select, #modalSeguimiento textarea').prop('disabled', false);
                             $('#seguimiento_semestre1, #seguimiento_trimestre1, #seguimiento_trimestre2').prop('disabled', b.tipo_medicion === 'Límite');
-                            aplicarBloqueoSemestres();
+                            aplicarBloqueoTrimestres();
                             cargarSeguimientoFacultades(b.id, String(b.gestionado_facultades) === '1');
                             cargarResumenEvidencias(b.id);
                             cargarEstadoTrimestres(b.id);
@@ -6108,7 +6108,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     VIEWER_FACULTADES.forEach(function(facId) {
                         $('#tablaSeguimientoFacultades tbody tr[data-facultad-id="' + facId + '"] input').prop('disabled', false);
                     });
-                    aplicarBloqueoSemestres();
+                    aplicarBloqueoTrimestres();
                 }
             }, 900);
         }
@@ -6242,7 +6242,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         // ═══ PUBLICAR BORRADORES (solo administrador) ═══
         const ES_ADMIN_PLAN = <?php echo !empty($esAdminPlan) ? 'true' : 'false'; ?>;
-        // Semestres bloqueados en Editar formulario → Campos (aplica a todos los usuarios)
+        // Trimestres bloqueados en Editar formulario → Campos (aplica a todos los usuarios)
         <?php
             // "Excepto administradores": superadmin, administrador y sub administrador no quedan bloqueados
             $exceptoAdminBloqueo = !empty($formulario['bloqueo_excepto_admin']) && (
@@ -6250,8 +6250,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 || in_array(m144_normalizarRol($_SESSION['usuario_rol'] ?? ''), ['admin', 'administrador', 'sub administrador'], true)
             );
         ?>
-        const BLOQUEO_SEM1 = <?php echo (!empty($formulario['bloqueo_sem1']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
-        const BLOQUEO_SEM2 = <?php echo (!empty($formulario['bloqueo_sem2']) && !$exceptoAdminBloqueo) ? 'true' : 'false'; ?>;
+        const BLOQUEO_TRIM = {<?php foreach ([1, 2, 3, 4] as $t) echo $t . ': ' . ((!empty($formulario['bloqueo_t' . $t]) && !$exceptoAdminBloqueo) ? 'true' : 'false') . ', '; ?>};
 
         // Cambia el trimestre que muestra la lista de Borradores del seguimiento (?trim=1..4; vacío = el que espera acción)
         function cambiarTrimestreLista(t) {
@@ -6261,14 +6260,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             window.location.href = url.toString();
         }
 
-        function aplicarBloqueoSemestres() {
-            if (BLOQUEO_SEM1) $('#seguimiento_logros, #seguimiento_limites, #seguimiento_observacion_estado, #seguimiento_acciones_fortalecimiento').prop('disabled', true);
-            if (BLOQUEO_SEM2) $('#seguimiento_logros_sem2, #seguimiento_limites_sem2, #seguimiento_observacion_estado_sem2, #seguimiento_acciones_fortalecimiento_sem2').prop('disabled', true);
-            if (BLOQUEO_SEM1) $('#seguimiento_semestre1, #seguimiento_trimestre1, #seguimiento_trimestre2, #tablaSeguimientoFacultades .seg-fac-s1, #tablaSeguimientoFacultades .seg-fac-desc1').prop('disabled', true);
-            if (BLOQUEO_SEM2) $('#seguimiento_semestre2, #seguimiento_trimestre3, #seguimiento_trimestre4, #tablaSeguimientoFacultades .seg-fac-s2, #tablaSeguimientoFacultades .seg-fac-desc2').prop('disabled', true);
-            const bloqueados = [BLOQUEO_SEM1 ? 'Semestre 1' : '', BLOQUEO_SEM2 ? 'Semestre 2' : ''].filter(Boolean);
+        function aplicarBloqueoTrimestres() {
+            const bloqueados = [1, 2, 3, 4].filter(function(t) { return BLOQUEO_TRIM[t]; });
+            bloqueados.forEach(function(t) {
+                $('#seguimiento_trimestre' + t + ', #seguimiento_semestre' + Math.ceil(t / 2)).prop('disabled', true);
+            });
+            // Lo que se registra por semestre se cierra cuando sus dos trimestres están bloqueados
+            [1, 2].forEach(function(s) {
+                if (!BLOQUEO_TRIM[2 * s - 1] || !BLOQUEO_TRIM[2 * s]) return;
+                const suf = s === 2 ? '_sem2' : '';
+                $(['logros', 'limites', 'observacion_estado', 'acciones_fortalecimiento'].map(function(c) { return '#seguimiento_' + c + suf; }).join(', ')).prop('disabled', true);
+                $('#tablaSeguimientoFacultades .seg-fac-s' + s + ', #tablaSeguimientoFacultades .seg-fac-desc' + s).prop('disabled', true);
+            });
+            const nombres = bloqueados.map(function(t) { return 'T' + t; }).join(', ');
             $('#segBloqueoAviso').toggle(bloqueados.length > 0)
-                .find('span').text(bloqueados.join(' y ') + (bloqueados.length > 1 ? ' están bloqueados' : ' está bloqueado') + ' por el administrador de este formulario.');
+                .find('span').text((bloqueados.length > 1 ? 'Los trimestres ' + nombres + ' están bloqueados' : 'El trimestre ' + nombres + ' está bloqueado') + ' por el administrador de este formulario.');
         }
 
         // ids vacío = todos los borradores completos del formulario

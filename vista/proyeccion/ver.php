@@ -68,6 +68,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'decid
     echo json_encode(['ok' => true, 'n' => $hechos]);
     exit;
 }
+// Guardar el comentario de un indicador; responde JSON
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'comentar') {
+    header('Content-Type: application/json; charset=UTF-8');
+    $k = (string)($_POST['k'] ?? '');
+    $ok = in_array($k, array_column($datos['filas'], 'clave'), true);
+    if ($ok) $pry->comentar($abierto['id'], $k, (string)($_POST['c'] ?? ''));
+    echo json_encode(['ok' => $ok]);
+    exit;
+}
 $decisiones = $pry->decisiones($abierto['id']);
 $anios = array_values(array_unique($datos['anios']));
 $obj = $datos['anio_objetivo'];
@@ -102,13 +111,13 @@ if (isset($_GET['export'])) {
     echo "\xEF\xBB\xBF";
     $o = fopen('php://output', 'w');
     fputcsv($o, ['Línea estratégica', 'Motor de desarrollo', 'Proyecto', 'Responsable', 'Nombre del indicador', 'Fórmula del indicador', 'Unidad', 'Tipo de medición',
-                 'Metas ' . $rango, 'Cumplimiento ' . $rango, 'Estado', 'Meta formulada ' . $obj, 'Meta propuesta ' . $obj, 'Descripción ' . $obj, 'ID indicador', 'Decisión', 'Meta final ' . $obj], ';');
+                 'Metas ' . $rango, 'Cumplimiento ' . $rango, 'Estado', 'Meta formulada ' . $obj, 'Meta propuesta ' . $obj, 'Descripción ' . $obj, 'ID indicador', 'Decisión', 'Meta final ' . $obj, 'Comentario'], ';');
     foreach ($datos['filas'] as $f) {
         fputcsv($o, [$f['linea'], $f['motor'], $f['proyecto'], $f['responsable'], $f['nombre'], $f['formula'], $f['unidad'], $f['tipo'],
                      implode("\n", $metasTxt($f)), implode("\n", $cumplTxt($f)), $f['estado'],
                      $f['formulada'] === null ? '' : $num($f['formulada'], $f['unidad']), $f['propuesta'] === null ? '' : $num($f['propuesta'], $f['unidad']), $f['descripcion'], $f['codigo'],
                      ($decisiones[$f['clave']]['e'] ?? '') === 'aprobada' ? 'Aprobada' : 'Pendiente',
-                     (isset($decisiones[$f['clave']]) && $decisiones[$f['clave']]['e'] === 'aprobada' && $decisiones[$f['clave']]['v'] !== null) ? $num($decisiones[$f['clave']]['v'], $f['unidad']) : ''], ';');
+                     (isset($decisiones[$f['clave']]) && $decisiones[$f['clave']]['e'] === 'aprobada' && $decisiones[$f['clave']]['v'] !== null) ? $num($decisiones[$f['clave']]['v'], $f['unidad']) : '', $decisiones[$f['clave']]['c'] ?? ''], ';');
     }
     fclose($o);
     exit;
@@ -238,6 +247,11 @@ ob_start();
     .pv td.prop-c .fin { font-weight: 800; font-size: .95rem; color: #1b5e20; }
     .pv td.prop-c .fin.tach { color: #b3001b; text-decoration: line-through; font-size: .8rem; }
     .pv td.dec-c { background: #f4fbf5; white-space: nowrap; }
+    .pv td.com-c { background: #f4fbf5; }
+    .pv td.com-c textarea { display: block; width: 210px; min-height: 42px; resize: vertical; padding: .3rem .45rem; border: 1px solid #b9e0c3; border-radius: 6px; font-family: inherit; font-size: .74rem; line-height: 1.3; background: #fff; color: #1d1d1f; }
+    .pv td.com-c textarea:focus { outline: 0; border-color: #1f8a3d; box-shadow: 0 0 0 2px #e3f8e9; }
+    .pv td.com-c small { display: block; min-height: .9rem; font-size: .64rem; color: #1f8a3d; text-align: right; }
+    .pv td.com-c small.error { color: #d70015; }
     .pv .bd { border: 1px solid #d2d2d7; background: #fff; border-radius: 7px; padding: .25rem .6rem; font-size: .74rem; font-weight: 700; cursor: pointer; }
     .pv .bd.si { color: #1f8a3d; border-color: #b9e0c3; } .pv .bd.si:hover { background: #e3f8e9; }
     .pv .bd.no { color: #d70015; border-color: #f2c4bf; } .pv .bd.no:hover { background: #ffe5e3; }
@@ -337,6 +351,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var abiertos = {};          // nodos del árbol desplegados
     var ediciones = {};         // meta propuesta editada por el usuario (aún sin decidir)
     var nombresAbiertos = {};   // históricos de nombres desplegados (se conservan al redibujar la tabla)
+    var comentarios = {};       // comentario de cada indicador
+    Object.keys(D.dec).forEach(function (k) { if (D.dec[k].c) comentarios[k] = D.dec[k].c; });
     var F = D.filas;            // indicadores que pasan los filtros de línea, dependencia y facultad
 
     function cumplido(fs) {
@@ -404,11 +420,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         h += '<div class="marco"><table><thead><tr><th class="ind-col" rowspan="2">Indicador</th>';
         D.anios.forEach(function (a) { h += '<th colspan="2">' + a + '</th>'; });
-        h += '<th colspan="3" class="prop">Proyección ' + D.obj + '</th></tr><tr>';
+        h += '<th colspan="4" class="prop">Proyección ' + D.obj + '</th></tr><tr>';
         D.anios.forEach(function () { h += '<th>Meta</th><th>Cumplido</th>'; });
-        h += '<th class="prop" title="' + esc(D.planObj ? 'Lo formulado en: ' + D.planObj : 'El año a proyectar no tiene formulación') + '">Formulada</th><th class="prop">Meta propuesta</th><th class="prop">Aprobación</th></tr></thead><tbody>';
+        h += '<th class="prop" title="' + esc(D.planObj ? 'Lo formulado en: ' + D.planObj : 'El año a proyectar no tiene formulación') + '">Formulada</th><th class="prop">Meta propuesta</th><th class="prop">Comentario</th><th class="prop">Aprobación</th></tr></thead><tbody>';
 
-        var ultimoP = null, ncols = D.anios.length * 2 + 4;
+        var ultimoP = null, ncols = D.anios.length * 2 + 5;
         fs.forEach(function (f) {
             if (sel.length < 3 && f.p !== ultimoP) { h += '<tr><td class="gr" colspan="' + ncols + '">' + esc(f.p) + '</td></tr>'; ultimoP = f.p; }
             var e = estDe(f), dc = D.dec[f.k];
@@ -433,9 +449,10 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
             h += '<td class="fo-c">' + (f.fof == null ? '<span class="nd">—</span>' : esc(f.fof)) + '</td>';
             var val = ediciones[f.k] != null ? ediciones[f.k] : f.pr;
-            if (e === 'aprobada') h += '<td class="prop-c"><span class="fin">' + fmt(dc.v != null ? dc.v : f.pr, 2) + unidad(f.u) + '</span></td><td class="dec-c"><span class="est-ap">✓ Aprobada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
-            else if (f.pr == null) h += '<td class="prop-c nd">sin propuesta</td><td class="dec-c nd">—</td>';
-            else h += '<td class="prop-c"><input type="number" step="any" value="' + esc(val) + '" data-k="' + esc(f.k) + '" title="' + esc(f.d) + '">' + (unidad(f.u) ? ' %' : '') + '</td>' +
+            var com = '<td class="com-c"><textarea rows="2" maxlength="1000" placeholder="Escribe un comentario…" aria-label="Comentario" data-c="' + esc(f.k) + '">' + esc(comentarios[f.k] || '') + '</textarea><small></small></td>';
+            if (e === 'aprobada') h += '<td class="prop-c"><span class="fin">' + fmt(dc.v != null ? dc.v : f.pr, 2) + unidad(f.u) + '</span></td>' + com + '<td class="dec-c"><span class="est-ap">✓ Aprobada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
+            else if (f.pr == null) h += '<td class="prop-c nd">sin propuesta</td>' + com + '<td class="dec-c nd">—</td>';
+            else h += '<td class="prop-c"><input type="number" step="any" value="' + esc(val) + '" data-k="' + esc(f.k) + '" title="' + esc(f.d) + '">' + (unidad(f.u) ? ' %' : '') + '</td>' + com +
                 '<td class="dec-c"><button class="bd si" data-a="si" data-k="' + esc(f.k) + '">✓ Aprobar meta</button></td>';
             h += '</tr>';
         });
@@ -443,6 +460,11 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
         d.querySelectorAll('details.hn').forEach(function (x) { x.addEventListener('toggle', function () { nombresAbiertos[x.dataset.k] = x.open; }); });
         d.querySelectorAll('input[data-k]').forEach(function (i) { i.addEventListener('input', function () { ediciones[i.dataset.k] = i.value === '' ? null : parseFloat(i.value); }); });
+        // El comentario se guarda solo al salir de la casilla
+        d.querySelectorAll('textarea[data-c]').forEach(function (t) {
+            t.addEventListener('input', function () { comentarios[t.dataset.c] = t.value; t.nextElementSibling.textContent = ''; });
+            t.addEventListener('change', function () { comentar(t); });
+        });
         d.querySelectorAll('button[data-a]').forEach(function (b) {
             b.addEventListener('click', function () {
                 var f = D.filas.filter(function (x) { return x.k === b.dataset.k; })[0], v = {};
@@ -458,6 +480,15 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                 var v = {}; pend.forEach(function (f) { v[f.k] = ediciones[f.k] != null ? ediciones[f.k] : f.pr; }); decidir(pend, 'aprobada', v);
             }
         });
+    }
+
+    function comentar(t) {
+        var aviso = t.nextElementSibling, fd = new FormData();
+        fd.append('accion', 'comentar'); fd.append('k', t.dataset.c); fd.append('c', t.value);
+        fetch(D.url, { method: 'POST', body: fd, credentials: 'same-origin' }).then(function (r) { return r.json(); }).then(function (r) {
+            if (!r.ok) throw new Error();
+            aviso.className = ''; aviso.textContent = '✓ Guardado';
+        }).catch(function () { aviso.className = 'error'; aviso.textContent = 'No se pudo guardar'; });
     }
 
     // Guarda la decisión en el servidor y refresca la pantalla

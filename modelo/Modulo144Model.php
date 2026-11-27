@@ -135,7 +135,7 @@ class Modulo144Model {
     }
 
     public function verificarFormulario($id) {
-        $this->asegurarColumnasBloqueoSemestres();
+        self::asegurarColumnasBloqueoTrimestres($this->db);
         $this->asegurarColumnasDescripcionSemestres();
         try {
             $stmt = $this->db->prepare("SELECT *, 
@@ -2170,33 +2170,49 @@ class Modulo144Model {
         }
     }
 
-    // Bloqueo de casillas de seguimiento por semestre (se configura en Editar formulario → Campos)
-    public function asegurarColumnasBloqueoSemestres() {
+    // Bloqueo de las casillas de seguimiento por trimestre (se configura en Editar formulario → Campos).
+    // bloqueo_t1..t4: 1 = trimestre bloqueado. Las columnas se crean solas y heredan el bloqueo que tenía su semestre.
+    public static function asegurarColumnasBloqueoTrimestres(PDO $db) {
         static $listo = false;
         if ($listo) return;
         try {
-            foreach (['bloqueo_sem1', 'bloqueo_sem2', 'bloqueo_excepto_admin'] as $col) {
-                if ($this->db->query("SHOW COLUMNS FROM formularios LIKE '" . $col . "'")->rowCount() === 0) {
-                    $this->db->exec("ALTER TABLE formularios ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
-                }
+            $existe = function ($col) use ($db) { return $db->query("SHOW COLUMNS FROM formularios LIKE '" . $col . "'")->rowCount() > 0; };
+            foreach ([1, 2, 3, 4] as $t) {
+                $col = 'bloqueo_t' . $t;
+                if ($existe($col)) continue;
+                $db->exec("ALTER TABLE formularios ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
+                $anterior = $t <= 2 ? 'bloqueo_sem1' : 'bloqueo_sem2';
+                if ($existe($anterior)) $db->exec("UPDATE formularios SET " . $col . " = " . $anterior);
             }
+            if (!$existe('bloqueo_excepto_admin')) $db->exec("ALTER TABLE formularios ADD COLUMN bloqueo_excepto_admin TINYINT(1) NOT NULL DEFAULT 0");
             $listo = true;
         } catch (PDOException $e) {
-            error_log('Error asegurarColumnasBloqueoSemestres: ' . $e->getMessage());
+            error_log('Error asegurarColumnasBloqueoTrimestres: ' . $e->getMessage());
         }
     }
 
-    public function getBloqueosSemestres($formularioId) {
-        $this->asegurarColumnasBloqueoSemestres();
+    // t1..t4 = trimestre bloqueado. sem1 / sem2 = semestre cerrado (sus dos trimestres bloqueados): aplica a lo que se
+    // registra por semestre (estado de proyectos, facultades y concertación)
+    public static function leerBloqueos(PDO $db, $formularioId) {
+        self::asegurarColumnasBloqueoTrimestres($db);
+        $r = [];
         try {
-            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2, bloqueo_excepto_admin FROM formularios WHERE id = :id");
+            $stmt = $db->prepare("SELECT bloqueo_t1, bloqueo_t2, bloqueo_t3, bloqueo_t4, bloqueo_excepto_admin FROM formularios WHERE id = :id");
             $stmt->execute([':id' => (int)$formularioId]);
-            $r = $stmt->fetch();
-            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1,
-                    'excepto_admin' => (int)($r['bloqueo_excepto_admin'] ?? 0) === 1];
+            $r = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
         } catch (PDOException $e) {
-            return ['sem1' => false, 'sem2' => false, 'excepto_admin' => false];
+            error_log('Error leerBloqueos: ' . $e->getMessage());
         }
+        $b = [];
+        foreach ([1, 2, 3, 4] as $t) $b['t' . $t] = (int)($r['bloqueo_t' . $t] ?? 0) === 1;
+        $b['sem1'] = $b['t1'] && $b['t2'];
+        $b['sem2'] = $b['t3'] && $b['t4'];
+        $b['excepto_admin'] = (int)($r['bloqueo_excepto_admin'] ?? 0) === 1;
+        return $b;
+    }
+
+    public function getBloqueos($formularioId) {
+        return self::leerBloqueos($this->db, $formularioId);
     }
 
     // Descripción por semestre: del indicador (formulacion_144) y de cada facultad (distribución). Las columnas se crean solas.

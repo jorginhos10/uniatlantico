@@ -947,28 +947,22 @@ $fl_etiquetas = [
                     <div class="modal-body">
                         <label class="form-label">Casillas de seguimiento</label>
                         <p style="font-size:13px;color:var(--ios-label2);margin-top:-4px;">
-                            Bloquea o desbloquea las casillas de seguimiento y de seguimiento por facultades de cada semestre.
+                            Bloquea o desbloquea las casillas de seguimiento de cada trimestre. Al bloquear los dos trimestres de un semestre
+                            también se cierran su seguimiento por facultades, el estado de proyectos y la concertación.
                             El bloqueo aplica a todos los usuarios; activa "Excepto administradores" para que ellos sigan editando.
                         </p>
                         <div class="campos-toggle-lista">
+                            <?php foreach ([1, 2, 3, 4] as $t): ?>
                             <div class="campos-toggle">
                                 <div>
-                                    <div class="campos-toggle-titulo">Semestre 1</div>
-                                    <div class="campos-toggle-ayuda" id="bloqueoSem1Ayuda">Cargando…</div>
+                                    <div class="campos-toggle-titulo">Trimestre <?php echo $t; ?></div>
+                                    <div class="campos-toggle-ayuda" id="bloqueoT<?php echo $t; ?>Ayuda">Cargando…</div>
                                 </div>
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input bloqueo-semestre" type="checkbox" role="switch" id="bloqueoSem1" data-semestre="1" checked aria-label="Semestre 1 desbloqueado">
+                                    <input class="form-check-input bloqueo-trimestre" type="checkbox" role="switch" id="bloqueoT<?php echo $t; ?>" data-trimestre="<?php echo $t; ?>" checked aria-label="Trimestre <?php echo $t; ?> desbloqueado">
                                 </div>
                             </div>
-                            <div class="campos-toggle">
-                                <div>
-                                    <div class="campos-toggle-titulo">Semestre 2</div>
-                                    <div class="campos-toggle-ayuda" id="bloqueoSem2Ayuda">Cargando…</div>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input bloqueo-semestre" type="checkbox" role="switch" id="bloqueoSem2" data-semestre="2" checked aria-label="Semestre 2 desbloqueado">
-                                </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
                         <div class="campos-toggle" style="margin-top:10px;">
                             <div>
@@ -1430,58 +1424,58 @@ $fl_etiquetas = [
         });
     }
 
-    /* ══════════════ CAMPOS (pestaña Campos): bloqueo de casillas por semestre ══════════════ */
+    /* ══════════════ CAMPOS (pestaña Campos): bloqueo de casillas por trimestre ══════════════ */
 
-    function pintarBloqueo(semestre, bloqueado) {
-        $('#bloqueoSem' + semestre).prop('checked', !bloqueado).prop('disabled', false);
-        $('#bloqueoSem' + semestre + 'Ayuda').text(bloqueado
-            ? 'Bloqueado: las casillas de seguimiento de este semestre no se pueden editar.'
-            : 'Desbloqueado: las casillas de seguimiento de este semestre se pueden editar.');
+    function pintarBloqueo(trimestre, bloqueado) {
+        $('#bloqueoT' + trimestre).prop('checked', !bloqueado).prop('disabled', false);
+        $('#bloqueoT' + trimestre + 'Ayuda').text(bloqueado
+            ? 'Bloqueado: las casillas de seguimiento de este trimestre no se pueden editar.'
+            : 'Desbloqueado: las casillas de seguimiento de este trimestre se pueden editar.');
     }
 
     function pintarExceptoAdmin(activo) {
         $('#bloqueoExceptoAdmin').prop('checked', !!activo).prop('disabled', false);
         $('#bloqueoExceptoAyuda').text(activo
-            ? 'Activado: los administradores pueden editar aunque el semestre esté bloqueado.'
+            ? 'Activado: los administradores pueden editar aunque el trimestre esté bloqueado.'
             : 'Desactivado: el bloqueo también aplica a los administradores.');
     }
 
     function cargarBloqueos(formularioId) {
-        $('.bloqueo-semestre, #bloqueoExceptoAdmin').prop('disabled', true);
+        $('.bloqueo-trimestre, #bloqueoExceptoAdmin').prop('disabled', true);
         $('#bloqueoMsg').text('');
         $.ajax({
             url: basePath + '/FOR-DE-144?action=getBloqueos&formulario_id=' + formularioId,
             type: 'GET',
             dataType: 'json',
             success: function (r) {
-                if (r.success) { pintarBloqueo(1, !!r.sem1); pintarBloqueo(2, !!r.sem2); pintarExceptoAdmin(!!r.excepto_admin); }
+                if (r.success) { [1, 2, 3, 4].forEach(function (t) { pintarBloqueo(t, !!r['t' + t]); }); pintarExceptoAdmin(!!r.excepto_admin); }
                 else { $('#bloqueoMsg').text(r.message || 'No se pudo cargar el estado').css('color', 'var(--ios-red)'); }
             },
             error: function () { $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)'); }
         });
     }
 
-    $(document).on('change', '.bloqueo-semestre', function () {
+    $(document).on('change', '.bloqueo-trimestre', function () {
         const caja = $(this);
-        const semestre = parseInt(caja.data('semestre'), 10);
+        const trimestre = parseInt(caja.data('trimestre'), 10);
         const bloqueado = !caja.is(':checked');
         caja.prop('disabled', true);
         $.ajax({
             url: basePath + '/FOR-DE-144?action=guardarBloqueo',
             type: 'POST',
-            data: { formulario_id: $('#formularioIdEditar').val(), semestre: semestre, bloqueado: bloqueado ? 1 : 0 },
+            data: { formulario_id: $('#formularioIdEditar').val(), trimestre: trimestre, bloqueado: bloqueado ? 1 : 0 },
             dataType: 'json',
             success: function (r) {
                 if (r.success) {
-                    pintarBloqueo(semestre, bloqueado);
-                    $('#bloqueoMsg').text('Semestre ' + semestre + (bloqueado ? ' bloqueado' : ' desbloqueado')).css('color', 'var(--ios-green)');
+                    pintarBloqueo(trimestre, bloqueado);
+                    $('#bloqueoMsg').text('Trimestre ' + trimestre + (bloqueado ? ' bloqueado' : ' desbloqueado')).css('color', 'var(--ios-green)');
                 } else {
-                    pintarBloqueo(semestre, !bloqueado);
+                    pintarBloqueo(trimestre, !bloqueado);
                     $('#bloqueoMsg').text(r.message || 'No se pudo guardar').css('color', 'var(--ios-red)');
                 }
             },
             error: function () {
-                pintarBloqueo(semestre, !bloqueado);
+                pintarBloqueo(trimestre, !bloqueado);
                 $('#bloqueoMsg').text('No se pudo conectar con el servidor').css('color', 'var(--ios-red)');
             }
         });
@@ -1494,7 +1488,7 @@ $fl_etiquetas = [
         $.ajax({
             url: basePath + '/FOR-DE-144?action=guardarBloqueo',
             type: 'POST',
-            data: { formulario_id: $('#formularioIdEditar').val(), semestre: 0, bloqueado: activo ? 1 : 0 },
+            data: { formulario_id: $('#formularioIdEditar').val(), trimestre: 0, bloqueado: activo ? 1 : 0 },
             dataType: 'json',
             success: function (r) {
                 if (r.success) {

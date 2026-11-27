@@ -593,47 +593,24 @@ class FORDE144Model {
         }
     }
 
-    // ───────── Bloqueo de las casillas de seguimiento por semestre (pestaña "Campos") ─────────
-    // bloqueo_sem1 / bloqueo_sem2: 1 = casillas de ese semestre bloqueadas; 0 = desbloqueadas. Las columnas se crean solas.
-    public function asegurarColumnasBloqueo() {
-        static $listo = false;
-        if ($listo) return;
-        try {
-            foreach (['bloqueo_sem1', 'bloqueo_sem2', 'bloqueo_excepto_admin'] as $col) {
-                $q = $this->db->query("SHOW COLUMNS FROM " . $this->table . " LIKE '" . $col . "'");
-                if ($q->rowCount() === 0) {
-                    $this->db->exec("ALTER TABLE " . $this->table . " ADD COLUMN " . $col . " TINYINT(1) NOT NULL DEFAULT 0");
-                }
-            }
-            $listo = true;
-        } catch (PDOException $e) {
-            error_log('Error asegurarColumnasBloqueo: ' . $e->getMessage());
-        }
+    // ───────── Bloqueo de las casillas de seguimiento por trimestre (pestaña "Campos") ─────────
+    public function getBloqueos($formulario_id) {
+        require_once __DIR__ . '/Modulo144Model.php';
+        return Modulo144Model::leerBloqueos($this->db, $formulario_id);
     }
 
-    public function getBloqueosSemestres($formulario_id) {
-        $this->asegurarColumnasBloqueo();
-        try {
-            $stmt = $this->db->prepare("SELECT bloqueo_sem1, bloqueo_sem2, bloqueo_excepto_admin FROM " . $this->table . " WHERE id = :id");
-            $stmt->execute([':id' => (int)$formulario_id]);
-            $r = $stmt->fetch();
-            return ['sem1' => (int)($r['bloqueo_sem1'] ?? 0) === 1, 'sem2' => (int)($r['bloqueo_sem2'] ?? 0) === 1,
-                    'excepto_admin' => (int)($r['bloqueo_excepto_admin'] ?? 0) === 1];
-        } catch (PDOException $e) {
-            error_log('Error getBloqueosSemestres: ' . $e->getMessage());
-            return ['sem1' => false, 'sem2' => false, 'excepto_admin' => false];
-        }
-    }
-
-    public function setBloqueoSemestre($formulario_id, $semestre, $bloqueado) {
-        $this->asegurarColumnasBloqueo();
-        // semestre 0 = opción "Excepto administradores"
-        $col = (int)$semestre === 0 ? 'bloqueo_excepto_admin' : ((int)$semestre === 2 ? 'bloqueo_sem2' : 'bloqueo_sem1');
+    // trimestre 1 a 4; 0 = opción "Excepto administradores"
+    public function setBloqueoTrimestre($formulario_id, $trimestre, $bloqueado) {
+        require_once __DIR__ . '/Modulo144Model.php';
+        Modulo144Model::asegurarColumnasBloqueoTrimestres($this->db);
+        $t = (int)$trimestre;
+        if ($t < 0 || $t > 4) return false;
+        $col = $t === 0 ? 'bloqueo_excepto_admin' : 'bloqueo_t' . $t;
         try {
             $stmt = $this->db->prepare("UPDATE " . $this->table . " SET {$col} = :v WHERE id = :id");
             return $stmt->execute([':v' => $bloqueado ? 1 : 0, ':id' => (int)$formulario_id]);
         } catch (PDOException $e) {
-            error_log('Error setBloqueoSemestre: ' . $e->getMessage());
+            error_log('Error setBloqueoTrimestre: ' . $e->getMessage());
             return false;
         }
     }

@@ -388,7 +388,7 @@ class FORDE144Controller {
     }
 
     /**
-     * Estado del bloqueo de las casillas de seguimiento por semestre (pestaña Campos)
+     * Estado del bloqueo de las casillas de seguimiento por trimestre (pestaña Campos)
      */
     public function getBloqueos() {
         header('Content-Type: application/json');
@@ -401,12 +401,11 @@ class FORDE144Controller {
             echo json_encode(['success' => false, 'message' => 'ID no válido']);
             return;
         }
-        $b = $this->model->getBloqueosSemestres($formulario_id);
-        echo json_encode(['success' => true, 'sem1' => $b['sem1'], 'sem2' => $b['sem2'], 'excepto_admin' => $b['excepto_admin']]);
+        echo json_encode(['success' => true] + $this->model->getBloqueos($formulario_id));
     }
 
     /**
-     * Bloquea o desbloquea las casillas de seguimiento (y de seguimiento por facultades) de un semestre
+     * Bloquea o desbloquea las casillas de seguimiento de un trimestre
      */
     public function guardarBloqueo() {
         header('Content-Type: application/json');
@@ -419,13 +418,13 @@ class FORDE144Controller {
             return;
         }
         $formulario_id = intval($_POST['formulario_id'] ?? 0);
-        $semestre = intval($_POST['semestre'] ?? 0);
+        $trimestre = intval($_POST['trimestre'] ?? -1);
         $bloqueado = !empty($_POST['bloqueado']) && $_POST['bloqueado'] !== '0';
-        if ($formulario_id <= 0 || !in_array($semestre, [0, 1, 2], true)) {
+        if ($formulario_id <= 0 || !in_array($trimestre, [0, 1, 2, 3, 4], true)) {
             echo json_encode(['success' => false, 'message' => 'Datos no válidos']);
             return;
         }
-        $ok = $this->model->setBloqueoSemestre($formulario_id, $semestre, $bloqueado);
+        $ok = $this->model->setBloqueoTrimestre($formulario_id, $trimestre, $bloqueado);
         echo json_encode(['success' => $ok, 'message' => $ok ? 'Guardado' : 'No se pudo guardar']);
     }
 }
