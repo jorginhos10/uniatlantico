@@ -159,8 +159,16 @@ ob_start();
     .pv .conf-box .campo { padding: .45rem .6rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .9rem; background: #fff; }
     .pv .conf-box .fila { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: .9rem; }
     .pv .conf-box .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+    .pv .conf-box .chip { position: relative; }
+    .pv .conf-box .chip .tip { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 50; width: max-content; max-width: 280px; white-space: normal; text-align: left;
+        background: #1d1d1f; color: #fff; border: 0; border-radius: 10px; padding: .55rem .75rem; font-size: .76rem; font-weight: 400; line-height: 1.35; text-transform: none; letter-spacing: 0;
+        box-shadow: 0 8px 24px rgba(0,0,0,.25); opacity: 0; visibility: hidden; transform: translateY(4px); transition: opacity .15s ease, transform .15s ease, visibility 0s linear .15s; pointer-events: none; }
+    .pv .conf-box .chip .tip strong { display: block; font-size: .8rem; margin-bottom: .2rem; }
+    .pv .conf-box .chip .tip em { display: block; font-style: normal; color: #a1a1a6; margin-top: .25rem; font-size: .7rem; }
+    .pv .conf-box .chip .tip::after { content: ''; position: absolute; top: 100%; left: 18px; border: 6px solid transparent; border-top-color: #1d1d1f; }
+    .pv .conf-box .chip:hover .tip, .pv .conf-box .chip:focus-within .tip { opacity: 1; visibility: visible; transform: translateY(0); transition: opacity .15s ease .1s, transform .15s ease .1s; }
     .pv .conf-box .chip input { position: absolute; opacity: 0; pointer-events: none; }
-    .pv .conf-box .chip span { display: block; padding: .3rem .7rem; border: 1px solid #d2d2d7; border-radius: 999px; cursor: pointer; font-size: .8rem; user-select: none; }
+    .pv .conf-box .chip input + span { display: block; padding: .3rem .7rem; border: 1px solid #d2d2d7; border-radius: 999px; cursor: pointer; font-size: .8rem; user-select: none; }
     .pv .conf-box .chip input:checked + span { background: #0071e3; border-color: #0071e3; color: #fff; }
     .pv .conf-box small { color: #86868b; display: block; margin: -.5rem 0 .9rem; font-size: .72rem; }
     /* Cuerpo: árbol a la izquierda, tabla del proyecto a la derecha */
@@ -270,8 +278,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <h4>2 · Años históricos (base)</h4>
                     <div class="chips">
                         <?php foreach ($todosPlanes as $tp): ?>
-                            <label class="chip" title="<?php echo $h($tp['titulo']); ?>"><input type="checkbox" name="h[]" value="<?php echo (int)$tp['id']; ?>" <?php echo in_array((int)$tp['id'], $idsBase, true) ? 'checked' : ''; ?>>
-                                <span><b><?php echo (int)$tp['anio']; ?></b> <?php echo $h(mb_strimwidth($tp['titulo'], 0, 20, '…', 'UTF-8')); ?></span></label>
+                            <label class="chip"><input type="checkbox" name="h[]" value="<?php echo (int)$tp['id']; ?>" <?php echo in_array((int)$tp['id'], $idsBase, true) ? 'checked' : ''; ?>>
+                                <span><b><?php echo (int)$tp['anio']; ?></b> <?php echo $h(mb_strimwidth($tp['titulo'], 0, 20, '…', 'UTF-8')); ?></span>
+                                <span class="tip" role="tooltip"><strong><?php echo $h($tp['titulo']); ?></strong><?php echo $h(trim((string)($tp['descripcion'] ?? '')) ?: 'Sin descripción.'); ?><em>Año <?php echo (int)$tp['anio']; ?></em></span></label>
                         <?php endforeach; ?>
                     </div>
                     <small>Solo se usan años anteriores al que proyectas.</small>
