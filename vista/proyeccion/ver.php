@@ -107,7 +107,7 @@ if (isset($_GET['export'])) {
         fputcsv($o, [$f['linea'], $f['motor'], $f['proyecto'], $f['responsable'], $f['nombre'], $f['formula'], $f['unidad'], $f['tipo'],
                      implode("\n", $metasTxt($f)), implode("\n", $cumplTxt($f)), $f['estado'],
                      $f['formulada'] === null ? '' : $num($f['formulada'], $f['unidad']), $f['propuesta'] === null ? '' : $num($f['propuesta'], $f['unidad']), $f['descripcion'], $f['codigo'],
-                     isset($decisiones[$f['clave']]) ? ucfirst($decisiones[$f['clave']]['e']) : 'Pendiente',
+                     ($decisiones[$f['clave']]['e'] ?? '') === 'aprobada' ? 'Aprobada' : 'Pendiente',
                      (isset($decisiones[$f['clave']]) && $decisiones[$f['clave']]['e'] === 'aprobada' && $decisiones[$f['clave']]['v'] !== null) ? $num($decisiones[$f['clave']]['v'], $f['unidad']) : ''], ';');
     }
     fclose($o);
@@ -298,7 +298,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var col = function (p) { return p == null ? '#aeaeb2' : (p >= 100 ? '#1f8a3d' : (p >= 60 ? '#c58a00' : '#d70015')); };
     var cls = function (p) { return p >= 100 ? 'v-ok' : (p >= 60 ? 'v-md' : 'v-no'); };
     var unidad = function (u) { return /porcentaje/i.test(u || '') ? '%' : ''; };
-    var estDe = function (f) { var d = D.dec[f.k]; return d ? d.e : 'pendiente'; };
+    var estDe = function (f) { var d = D.dec[f.k]; return d && d.e === 'aprobada' ? d.e : 'pendiente'; };
     var ULT = function (f) { var u = null; f.h.forEach(function (x) { if (x.p != null) u = x.p; }); return u; };
     var sel = [];               // selección: [línea], [línea, motor] o [línea, motor, proyecto]
     var abiertos = {};          // nodos del árbol desplegados
@@ -327,7 +327,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             var id = ruta.join('||'), n = nombreCorto(nombre), c = cumplido(fs), dec = fs.filter(function (f) { return estDe(f) !== 'pendiente'; }).length;
             var esSel = sel.length === ruta.length && sel.every(function (x, i) { return x === ruta[i]; });
             var h = '<div class="tn n' + nivel + (esSel ? ' sel' : '') + (abiertos[id] ? ' abierto' : '') + '" data-r=\'' + esc(JSON.stringify(ruta)) + '\' title="' + esc(nombre) + '">' +
-                '<span class="car ' + (hijos ? '' : 'sin') + '">▶</span><span class="nm">' + esc(n.t) + '<small>' + (n.c ? n.c + ' · ' : '') + fs.length + ' ind. · ' + dec + ' decididas</small></span>' +
+                '<span class="car ' + (hijos ? '' : 'sin') + '">▶</span><span class="nm">' + esc(n.t) + '<small>' + (n.c ? n.c + ' · ' : '') + fs.length + ' ind. · ' + dec + ' aprobadas</small></span>' +
                 '<span class="pc" style="color:' + col(c) + '">' + (c == null ? '—' : fmt(c, 0) + '%') + '</span>' +
                 '<div class="brr"><i style="width:' + (c || 0) + '%;background:' + col(c) + '"></i></div></div>';
             return h + (hijos && abiertos[id] ? hijos : '');
@@ -358,21 +358,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         var d = $('derecha');
         if (!sel.length) { d.innerHTML = '<div class="vacio">Elige una línea, un motor o un proyecto de la izquierda para ver sus indicadores.</div>'; return; }
         var fs = F.filter(enSel).sort(function (a, b) { return a.p.localeCompare(b.p, 'es', { numeric: true }) || a.n.localeCompare(b.n, 'es'); });
-        var c = cumplido(fs), ap = fs.filter(function (f) { return estDe(f) === 'aprobada'; }).length, re = fs.filter(function (f) { return estDe(f) === 'rechazada'; }).length;
+        var c = cumplido(fs), ap = fs.filter(function (f) { return estDe(f) === 'aprobada'; }).length;
         var pend = fs.filter(function (f) { return estDe(f) === 'pendiente' && f.pr != null; });
         var ruta = sel.map(function (x) { var n = nombreCorto(x); return n.c || n.t; }).join(' › ');
         var tit = nombreCorto(sel[sel.length - 1]).t;
 
         var h = '<div class="cab-tabla"><div><div class="ruta">' + esc(ruta) + '</div><h3>' + esc(tit) + '</h3></div><div class="nums">' +
             '<div><b>' + fs.length + '</b>indicadores</div><div><b style="color:' + col(c) + '">' + (c == null ? '—' : fmt(c, 0) + ' %') + '</b>de la meta cumplida</div>' +
-            '<div><b>' + (ap + re) + ' / ' + fs.length + '</b>decididas</div>' +
+            '<div><b>' + ap + ' / ' + fs.length + '</b>aprobadas</div>' +
             (pend.length ? '<div><button class="bd si" id="apTodas">✓ Aprobar las ' + pend.length + ' pendientes</button></div>' : '') + '</div></div>';
 
         h += '<div class="marco"><table><thead><tr><th class="ind-col" rowspan="2">Indicador</th>';
         D.anios.forEach(function (a) { h += '<th colspan="2">' + a + '</th>'; });
         h += '<th colspan="3" class="prop">Proyección ' + D.obj + '</th></tr><tr>';
         D.anios.forEach(function () { h += '<th>Meta</th><th>Cumplido</th>'; });
-        h += '<th class="prop" title="' + esc(D.planObj ? 'Lo formulado en: ' + D.planObj : 'El año a proyectar no tiene formulación') + '">Formulada</th><th class="prop">Meta propuesta</th><th class="prop">Decisión</th></tr></thead><tbody>';
+        h += '<th class="prop" title="' + esc(D.planObj ? 'Lo formulado en: ' + D.planObj : 'El año a proyectar no tiene formulación') + '">Formulada</th><th class="prop">Meta propuesta</th><th class="prop">Aprobación</th></tr></thead><tbody>';
 
         var ultimoP = null, ncols = D.anios.length * 2 + 4;
         fs.forEach(function (f) {
@@ -395,10 +395,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             h += '<td class="fo-c">' + (f.fof == null ? '<span class="nd">—</span>' : esc(f.fof)) + '</td>';
             var val = ediciones[f.k] != null ? ediciones[f.k] : f.pr;
             if (e === 'aprobada') h += '<td class="prop-c"><span class="fin">' + fmt(dc.v != null ? dc.v : f.pr, 2) + unidad(f.u) + '</span></td><td class="dec-c"><span class="est-ap">✓ Aprobada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
-            else if (e === 'rechazada') h += '<td class="prop-c"><span class="fin tach">' + (f.pr == null ? '—' : fmt(f.pr, 2) + unidad(f.u)) + '</span></td><td class="dec-c"><span class="est-re">✕ Rechazada</span> <button class="bd un" data-a="un" data-k="' + esc(f.k) + '">Deshacer</button></td>';
             else if (f.pr == null) h += '<td class="prop-c nd">sin propuesta</td><td class="dec-c nd">—</td>';
             else h += '<td class="prop-c"><input type="number" step="any" value="' + esc(val) + '" data-k="' + esc(f.k) + '" title="' + esc(f.d) + '">' + (unidad(f.u) ? ' %' : '') + '</td>' +
-                '<td class="dec-c"><button class="bd si" data-a="si" data-k="' + esc(f.k) + '">✓ Aprobar</button> <button class="bd no" data-a="no" data-k="' + esc(f.k) + '">✕ Rechazar</button></td>';
+                '<td class="dec-c"><button class="bd si" data-a="si" data-k="' + esc(f.k) + '">✓ Aprobar meta</button></td>';
             h += '</tr>';
         });
         d.innerHTML = h + '</tbody></table></div>';
@@ -433,8 +432,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
 
     function pintar() {
-        var ap = 0, re = 0; D.filas.forEach(function (f) { var e = estDe(f); if (e === 'aprobada') ap++; else if (e === 'rechazada') re++; });
-        $('contDec').textContent = D.filas.length + ' indicadores · ' + ap + ' aprobadas · ' + re + ' rechazadas · ' + (D.filas.length - ap - re) + ' pendientes';
+        var ap = 0; D.filas.forEach(function (f) { if (estDe(f) === 'aprobada') ap++; });
+        $('contDec').textContent = D.filas.length + ' indicadores · ' + ap + ' aprobadas · ' + (D.filas.length - ap) + ' pendientes';
         arbol(); tabla();
     }
 
