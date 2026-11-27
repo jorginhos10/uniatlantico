@@ -243,8 +243,16 @@ ob_start();
     .pv .bd.no { color: #d70015; border-color: #f2c4bf; } .pv .bd.no:hover { background: #ffe5e3; }
     .pv .bd.un { color: #6e6e73; font-weight: 600; }
     .pv .est-ap { color: #1f8a3d; font-weight: 700; } .pv .est-re { color: #d70015; font-weight: 700; }
-    .pv .alias { margin-top: 4px; font-size: .68rem; color: #b25e00; background: #fff4e0; border-left: 3px solid #f0a020; border-radius: 4px; padding: 2px 6px; line-height: 1.25; }
-    .pv .alias b { font-weight: 700; }
+    .pv details.hn { margin-top: 5px; font-size: .7rem; }
+    .pv details.hn > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; color: #b25e00; font-weight: 600; user-select: none; }
+    .pv details.hn > summary::-webkit-details-marker { display: none; }
+    .pv details.hn > summary::before { content: '+'; display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border: 1px solid #f0a020; border-radius: 5px; background: #fff4e0; font-size: .85rem; line-height: 1; }
+    .pv details.hn[open] > summary::before { content: '−'; }
+    .pv details.hn ul { list-style: none; margin: 5px 0 0; padding: 0; border-left: 3px solid #ececf0; }
+    .pv details.hn li { display: flex; gap: .5rem; padding: 3px 6px; line-height: 1.3; color: #86868b; }
+    .pv details.hn li > b { flex: none; width: 2.3rem; }
+    .pv details.hn li.dif { color: #8a4b00; background: #fff4e0; }
+    .pv details.hn li em { display: block; font-style: normal; opacity: .85; margin-top: 1px; }
     .pv .etq { display: inline-block; font-size: .64rem; font-weight: 700; padding: 1px 7px; border-radius: 999px; margin-left: .35rem; vertical-align: middle; }
     .pv .etq.nuevo { background: #e3f8e9; color: #1b5e20; } .pv .etq.sinf { background: #f0f0f3; color: #6e6e73; } .pv .etq.camb { background: #fff4e0; color: #b25e00; }
     .pv td.cambio { background: #fff8ec; box-shadow: inset 3px 0 0 #f0a020; }
@@ -328,6 +336,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var sel = [];               // selección: [línea], [línea, motor] o [línea, motor, proyecto]
     var abiertos = {};          // nodos del árbol desplegados
     var ediciones = {};         // meta propuesta editada por el usuario (aún sin decidir)
+    var nombresAbiertos = {};   // históricos de nombres desplegados (se conservan al redibujar la tabla)
     var F = D.filas;            // indicadores que pasan los filtros de línea, dependencia y facultad
 
     function cumplido(fs) {
@@ -408,9 +417,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             var etq = (f.st === 'nuevo' ? '<span class="etq nuevo">Nuevo en ' + D.obj + '</span>' : '') +
                       (f.st === 'sinformular' ? '<span class="etq sinf">No formulado en ' + D.obj + '</span>' : '') +
                       (cambios.length ? '<span class="etq camb" title="No fue exactamente el mismo indicador en todos los años">≈ cambió</span>' : '');
-            var alias = cambios.map(function (x) {
-                return '<div class="alias"><b>' + x.a + '</b> ' + (x.nm ? 'se llamaba «' + esc(x.nm) + '»' : '') + (x.nm && x.ff ? ' · ' : '') + (x.ff ? 'otra fórmula: ' + esc(x.ff) : '') + '</div>';
-            }).join('');
+            var alias = '';
+            if (cambios.length) {
+                alias = '<details class="hn" data-k="' + esc(f.k) + '"' + (nombresAbiertos[f.k] ? ' open' : '') + '><summary>Histórico de nombres</summary><ul>' +
+                    f.h.map(function (x) {
+                        return '<li class="' + (x.nm || x.ff ? 'dif' : '') + '"><b>' + x.a + '</b><span>' + (x.nm ? '«' + esc(x.nm) + '»' : 'Mismo nombre actual') +
+                            (x.ff ? '<em>Otra fórmula: ' + esc(x.ff) + '</em>' : '') + '</span></li>';
+                    }).join('') + '</ul></details>';
+            }
             h += '<tr><td class="ind-col"><div class="nom">' + esc(f.n) + etq + '</div><small>' + esc(f.r) + (f.c ? ' · ' + esc(f.c) : '') + ' · ' + esc(f.u) + '</small>' + alias + '</td>';
             D.anios.forEach(function (a) {
                 var x = f.h.filter(function (y) { return y.a === a; })[0];
@@ -427,6 +441,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         });
         d.innerHTML = h + '</tbody></table></div>';
 
+        d.querySelectorAll('details.hn').forEach(function (x) { x.addEventListener('toggle', function () { nombresAbiertos[x.dataset.k] = x.open; }); });
         d.querySelectorAll('input[data-k]').forEach(function (i) { i.addEventListener('input', function () { ediciones[i.dataset.k] = i.value === '' ? null : parseFloat(i.value); }); });
         d.querySelectorAll('button[data-a]').forEach(function (b) {
             b.addEventListener('click', function () {
