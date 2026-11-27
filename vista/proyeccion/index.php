@@ -20,6 +20,7 @@ $rolNorm = strtr(mb_strtolower(trim((string)($_SESSION['usuario_rol'] ?? '')), '
 $veTodo  = $uid === 1 || in_array($rolNorm, ['admin', 'administrador', 'sub administrador'], true);
 
 $planes = $guardados = [];
+$edit = null;
 $aviso = '';
 $anioDefecto = (int)date('Y');
 if ($veTodo) {
@@ -31,7 +32,8 @@ if ($veTodo) {
     foreach ($planes as $pl) $tituloPlan[(int)$pl['id']] = ['titulo' => $pl['titulo'], 'anio' => (int)$pl['anio']];
 
     $accion = $_SERVER['REQUEST_METHOD'] === 'POST' ? ($_POST['accion'] ?? '') : '';
-    if ($accion === 'crear') {
+    if ($accion === 'crear' || $accion === 'editar') {
+        $editId = $accion === 'editar' ? (int)($_POST['id'] ?? 0) : 0;
         $ids = array_values(array_intersect(array_keys($tituloPlan), array_map('intval', (array)($_POST['p'] ?? []))));
         $nombre = trim((string)($_POST['nombre'] ?? ''));
         $anioObj = (int)($_POST['anio'] ?? $anioDefecto);
@@ -43,8 +45,15 @@ if ($veTodo) {
             $aviso = 'Marca al menos un año histórico anterior al año a proyectar.';
         } else {
             if ($nombre === '') $nombre = 'Proyección ' . $anioObj;
-            $nuevo = $pry->crear($nombre, $ids, $anioObj, (string)($_POST['metodo'] ?? 'prom'), (float)str_replace(',', '.', (string)($_POST['ajuste'] ?? 0)), $uid);
-            header('Location: ' . $basePath . '/proyeccion/ver?id=' . $nuevo);
+            $metodo = (string)($_POST['metodo'] ?? 'prom');
+            $ajuste = (float)str_replace(',', '.', (string)($_POST['ajuste'] ?? 0));
+            if ($editId) {
+                $pry->editar($editId, $nombre, $ids, $anioObj, $metodo, $ajuste);
+                header('Location: ' . $basePath . '/proyeccion');
+            } else {
+                $nuevo = $pry->crear($nombre, $ids, $anioObj, $metodo, $ajuste, $uid);
+                header('Location: ' . $basePath . '/proyeccion/ver?id=' . $nuevo);
+            }
             exit;
         }
     } elseif ($accion === 'eliminar') {
@@ -53,6 +62,9 @@ if ($veTodo) {
         exit;
     }
     $guardados = $pry->listar();
+    // Proyección que se está editando (si el guardado falló, se conserva la que venía en el formulario)
+    $idEdit = (int)($_GET['editar'] ?? (($_POST['accion'] ?? '') === 'editar' ? ($_POST['id'] ?? 0) : 0));
+    if ($idEdit) $edit = $pry->obtener($idEdit);
 }
 
 ob_start();
@@ -119,13 +131,14 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <?php if ($aviso): ?><div class="caja error"><?php echo $h($aviso); ?></div><?php endif; ?>
     <div class="rejilla">
         <form method="post" action="<?php echo $basePath; ?>/proyeccion" class="caja" id="formNuevo">
-            <input type="hidden" name="accion" value="crear">
-            <h2>Nueva proyección</h2>
+            <input type="hidden" name="accion" value="<?php echo $edit ? 'editar' : 'crear'; ?>">
+            <?php if ($edit): ?><input type="hidden" name="id" value="<?php echo (int)$edit['id']; ?>"><?php endif; ?>
+            <h2><?php echo $edit ? 'Editar proyección' : 'Nueva proyección'; ?></h2>
 
             <div class="paso"><span class="num">1</span>
                 <div class="cont">
                     <label class="et" for="anio">¿Qué año quieres proyectar?</label>
-                    <input class="campo grande" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $anioDefecto; ?>" required>
+                    <input class="campo grande" id="anio" type="number" name="anio" min="2000" max="2100" value="<?php echo $edit ? (int)$edit['anio_objetivo'] : $anioDefecto; ?>" required>
                     <small class="ayuda">Es el año para el que se van a proponer y decidir las metas.</small>
                 </div>
             </div>
@@ -136,7 +149,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     <div class="chips">
                         <?php foreach ($planes as $pl): ?>
                             <label class="chip" title="<?php echo $h($pl['titulo']); ?>">
-                                <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>">
+                                <input type="checkbox" name="p[]" value="<?php echo (int)$pl['id']; ?>" <?php echo $edit && in_array((int)$pl['id'], $edit['ids'], true) ? 'checked' : ''; ?>>
                                 <span><b><?php echo (int)$pl['anio']; ?></b><?php echo $h(mb_strimwidth($pl['titulo'], 0, 22, '…', 'UTF-8')); ?></span>
                             </label>
                         <?php endforeach; ?>
@@ -148,20 +161,21 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             <div class="paso"><span class="num">3</span>
                 <div class="cont">
                     <label class="et" for="nombre">Nombre <span style="font-weight:400;color:#86868b">(opcional)</span></label>
-                    <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2025">
-                    <details class="avanz"><summary>Cómo se calcula la propuesta</summary>
+                    <input class="campo" id="nombre" type="text" name="nombre" maxlength="150" placeholder="Ej. Metas 2027 con base 2022-2025" value="<?php echo $edit ? $h($edit['nombre']) : ''; ?>">
+                    <details class="avanz" <?php echo $edit ? 'open' : ''; ?>><summary>Cómo se calcula la propuesta</summary>
                         <div class="fila2">
                             <div><label class="et" for="metodo">Método</label>
-                                <select class="campo" id="metodo" name="metodo"><?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>"><?php echo $h($v); ?></option><?php endforeach; ?></select></div>
+                                <select class="campo" id="metodo" name="metodo"><?php foreach (ProyeccionModel::METODOS as $k => $v): ?><option value="<?php echo $k; ?>" <?php echo $edit && $edit['metodo'] === $k ? 'selected' : ''; ?>><?php echo $h($v); ?></option><?php endforeach; ?></select></div>
                             <div><label class="et" for="ajuste">Ajuste (%)</label>
-                                <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="0"></div>
+                                <input class="campo" id="ajuste" type="number" step="0.5" name="ajuste" value="<?php echo $edit ? (float)$edit['ajuste'] : 0; ?>"></div>
                         </div>
                     </details>
                 </div>
             </div>
 
             <div class="pie">
-                <button type="submit" class="btn primario" id="btnGenerar" disabled>Generar proyección</button>
+                <button type="submit" class="btn primario" id="btnGenerar" disabled><?php echo $edit ? 'Guardar cambios' : 'Generar proyección'; ?></button>
+                <?php if ($edit): ?><a class="btn" href="<?php echo $basePath; ?>/proyeccion" style="text-decoration:none;color:inherit;">Cancelar</a><?php endif; ?>
                 <button type="button" class="enlace" id="btnTodos">Marcar todos</button>
                 <button type="button" class="enlace" id="btnNinguno">Quitar todos</button>
                 <span class="contador" id="contador">0 años seleccionados</span>
@@ -188,6 +202,9 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
                     </div>
                     <a class="icono" href="<?php echo $basePath; ?>/proyeccion/ver?id=<?php echo (int)$g['id']; ?>" title="Ver" aria-label="Ver">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </a>
+                    <a class="icono" href="<?php echo $basePath; ?>/proyeccion?editar=<?php echo (int)$g['id']; ?>" title="Editar" aria-label="Editar">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"></path></svg>
                     </a>
                     <form method="post" action="<?php echo $basePath; ?>/proyeccion" onsubmit="return confirm('¿Eliminar esta proyección?');">
                         <input type="hidden" name="accion" value="eliminar">

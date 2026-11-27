@@ -80,6 +80,13 @@ class ProyeccionModel {
         if ($ids) $this->db->prepare("UPDATE proyecciones_144 SET formularios = ? WHERE id = ?")->execute([json_encode(array_values($ids)), (int)$id]);
     }
 
+    // Cambia todos los datos de una proyección; las metas ya aprobadas se conservan
+    public function editar($id, $nombre, array $ids, $anio, $metodo, $ajuste) {
+        if (!isset(self::METODOS[$metodo])) $metodo = 'prom';
+        $this->db->prepare("UPDATE proyecciones_144 SET nombre = ?, formularios = ?, anio_objetivo = ?, metodo = ?, ajuste = ? WHERE id = ?")
+                 ->execute([mb_substr($nombre, 0, 150), json_encode(array_values($ids)), (int)$anio, $metodo, (float)$ajuste, (int)$id]);
+    }
+
     public function eliminar($id) {
         $this->db->prepare("DELETE FROM proyeccion_decisiones_144 WHERE proyeccion_id = ?")->execute([(int)$id]);
         $this->db->prepare("DELETE FROM proyecciones_144 WHERE id = ?")->execute([(int)$id]);
