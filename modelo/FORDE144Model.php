@@ -34,8 +34,8 @@ class FORDE144Model {
                         ELSE 0
                     END as disponible
                     FROM " . $this->table . " 
-                    WHERE estado = 1 
-                    ORDER BY fecha_creacion DESC";
+                    WHERE estado = 1
+                    ORDER BY anio DESC, fecha_creacion DESC";
             
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
