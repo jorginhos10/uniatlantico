@@ -168,6 +168,13 @@ ob_start();
     @media (max-width: 1000px) { .pv .cuerpo { grid-template-columns: 1fr; } .pv .izq { max-height: 220px; } }
     .pv .panel { background: #fff; border: 1px solid #e0e0e5; border-radius: 12px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
     .pv .panel > h2 { font-size: .74rem; margin: 0; padding: .75rem 1rem .5rem; text-transform: uppercase; letter-spacing: .05em; color: #6e6e73; }
+    .pv .izq > h2 { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+    .pv .b-panel { flex: none; width: 28px; height: 28px; border: 1px solid #d2d2d7; background: #fff; border-radius: 8px; cursor: pointer; font-size: 1rem; line-height: 1; color: #424245; }
+    .pv .b-panel:hover { border-color: #0071e3; color: #0071e3; }
+    .pv .cuerpo.sin-izq { grid-template-columns: 46px minmax(0, 1fr); }
+    .pv .cuerpo.sin-izq .izq > h2 { padding: .6rem 0; justify-content: center; }
+    .pv .cuerpo.sin-izq .izq > h2 span, .pv .cuerpo.sin-izq .filtros, .pv .cuerpo.sin-izq .arbol { display: none; }
+    @media (max-width: 1000px) { .pv .cuerpo.sin-izq { grid-template-columns: 1fr; } }
     .pv .filtros { padding: 0 .8rem .6rem; display: flex; flex-direction: column; gap: .35rem; border-bottom: 1px solid #ececf0; margin-bottom: .35rem; }
     .pv .filtros select { width: 100%; padding: .38rem .5rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .78rem; background: #fff; color: #1d1d1f; }
     .pv .filtros select.on { border-color: #0071e3; background: #e8f2ff; font-weight: 600; }
@@ -276,7 +283,8 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
 
     <div class="cuerpo">
         <div class="panel izq">
-            <h2>Línea › Motor › Proyecto</h2>
+            <h2><span>Línea › Motor › Proyecto</span>
+                <button type="button" id="bPanel" class="b-panel" title="Esconder el panel" aria-label="Esconder el panel" aria-expanded="true">«</button></h2>
             <div class="filtros">
                 <select id="fLinea" aria-label="Filtrar por línea"></select>
                 <select id="fDep" aria-label="Filtrar por dependencia"></select>
@@ -464,6 +472,16 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     }
     [selL, selD, selF].forEach(function (s) { s.addEventListener('change', function () { filtrar(); abrirPrimero(); pintar(); }); });
     $('fLimpiar').addEventListener('click', function () { selL.value = selD.value = selF.value = ''; filtrar(); abrirPrimero(); pintar(); });
+    // Esconder o mostrar el panel izquierdo (se recuerda en este navegador)
+    function panel(oculto) {
+        var b = $('bPanel'), texto = oculto ? 'Mostrar el panel' : 'Esconder el panel';
+        document.querySelector('.pv .cuerpo').classList.toggle('sin-izq', oculto);
+        b.textContent = oculto ? '»' : '«';
+        b.title = texto; b.setAttribute('aria-label', texto); b.setAttribute('aria-expanded', oculto ? 'false' : 'true');
+        try { localStorage.setItem('proyeccionPanelOculto', oculto ? '1' : '0'); } catch (e) {}
+    }
+    $('bPanel').addEventListener('click', function () { panel(!document.querySelector('.pv .cuerpo').classList.contains('sin-izq')); });
+    try { if (localStorage.getItem('proyeccionPanelOculto') === '1') panel(true); } catch (e) {}
     filtrar();
     abrirPrimero();
     document.addEventListener('click', function (e) { var d = document.querySelector('details.conf'); if (d && !d.contains(e.target)) d.open = false; });
