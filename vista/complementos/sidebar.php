@@ -96,6 +96,14 @@ define('PERMISO_PERMISOS_ID',  7);   // gestionar_permisos
                 </a>
             </li>
 
+            <!-- Plan indicativo (disponible para todos los usuarios logueados) -->
+            <li class="navItem <?php echo ($paginaActual ?? '') === 'plan-indicativo' ? 'active' : ''; ?>">
+                <a href="<?php echo $basePath; ?>/plan-indicativo" class="navLink" data-tooltip="Plan indicativo">
+                    <?php echo icono('plan_indicativo'); ?>
+                    <span>Plan indicativo</span>
+                </a>
+            </li>
+
             <!-- Mensajes (disponible para todos los usuarios logueados) -->
             <li class="navItem <?php echo ($paginaActual ?? '') === 'mensajes' ? 'active' : ''; ?>">
                 <a href="<?php echo $basePath; ?>/mensajes" class="navLink" data-tooltip="Mensajes">

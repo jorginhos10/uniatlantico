@@ -68,6 +68,11 @@ switch ($action) {
         require_once 'vista/dashboard/index.php';
         break;
 
+    case 'plan-indicativo':
+        require_once 'config/security.php';
+        require_once 'vista/plan_indicativo/index.php';
+        break;
+
     case 'proyeccion':
         require_once 'config/security.php';
         if (($urlParts[1] ?? '') === 'ver') {
