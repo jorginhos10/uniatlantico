@@ -158,6 +158,22 @@ class ProyeccionModel {
         return $s->fetch() ?: null;
     }
 
+    // [id de indicador => [nombres de facultad con distribución mayor que cero]]
+    private function facultadesPorIndicador(array $ids) {
+        $out = [];
+        try {
+            foreach (array_chunk(array_values(array_unique($ids)), 1000) as $grupo) {
+                $s = $this->db->query("SELECT d.formulacion_id AS id, fa.nombre FROM formulacion_distribucion_facultad_144 d
+                                       JOIN facultades fa ON fa.id = d.facultad_id
+                                       WHERE d.formulacion_id IN (" . implode(',', array_map('intval', $grupo)) . ") AND d.distribucion > 0");
+                foreach ($s->fetchAll() as $r) $out[(int)$r['id']][] = $r['nombre'];
+            }
+        } catch (PDOException $e) {
+            error_log('Proyección, facultades: ' . $e->getMessage());
+        }
+        return $out;
+    }
+
     // $planes: filas de formularios (id, titulo, anio) históricos, en el orden de las columnas.
     // Una fila por indicador: se reconoce el mismo indicador entre años por su nombre y, si cambió de redacción,
     // por su parecido dentro del mismo proyecto/línea (se marca en cada año donde el nombre es distinto).
@@ -206,7 +222,7 @@ class ProyeccionModel {
                 $series[$sid]['pal'] = self::palabras($nk); // la redacción más reciente es la de referencia
                 $series[$sid]['ub'] = $ubic($r);
                 $series[$sid][$slot] = [
-                    'anio' => (int)$pl['anio'], 'nombre' => $r['nombre'], 'nk' => $nk, 'formula' => $r['formula'], 'meta' => $r['meta'], 'logrado' => $r['logrado'], 'aprox' => $aprox,
+                    'id' => $r['id'], 'facultad' => $r['facultad'], 'anio' => (int)$pl['anio'], 'nombre' => $r['nombre'], 'nk' => $nk, 'formula' => $r['formula'], 'meta' => $r['meta'], 'logrado' => $r['logrado'], 'aprox' => $aprox,
                     'codigo' => $r['codigo'], 'resp' => $r['responsable'], 'unidad' => $r['unidad'], 'tipo' => $r['tipo'],
                     'linea' => ($r['linea_codigo'] ? $r['linea_codigo'] . ' - ' : '') . $r['linea'],
                     'motor' => ($r['motor_codigo'] ? $r['motor_codigo'] . ' - ' : '') . $r['motor'],
@@ -226,6 +242,11 @@ class ProyeccionModel {
         if ($planObj) {
             $recorrer($modelo->getInformeCompleto((int)$planObj['id'], ['indicadores' => true, 'soloAprobadas' => false]), 'obj', ['anio' => $anioObjetivo]);
         }
+
+        // Facultades de cada indicador (para el filtro): las que tienen distribución y la facultad del registro
+        $ids = [];
+        foreach ($series as $s) foreach ($s as $k => $e) if (is_int($k) || $k === 'obj') $ids[] = (int)$e['id'];
+        $facPorId = $this->facultadesPorIndicador($ids);
 
         $res = [];
         foreach ($series as $sid => $s) {
@@ -263,6 +284,13 @@ class ProyeccionModel {
             $f['descripcion'] = $txt;
             $f['presentes'] = count($h2);
             $f['clave'] = (string)$sid;
+            $facs = [];
+            foreach ($s as $k => $e) {
+                if (!is_int($k) && $k !== 'obj') continue;
+                foreach ($facPorId[(int)$e['id']] ?? [] as $n) $facs[$n] = true;
+                if ($e['facultad'] !== '') $facs[$e['facultad']] = true;
+            }
+            $f['facultades'] = array_keys($facs);
             $res[] = $f;
         }
         usort($res, function ($a, $b) {

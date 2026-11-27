@@ -129,7 +129,7 @@ foreach ($datos['filas'] as $i => $f) {
     $ultMeta = null;
     foreach ($f['hist'] as $hh) if ($hh['meta'] !== null) $ultMeta = $hh['meta'];
     $js[] = ['i' => $i, 'k' => $f['clave'], 'n' => $f['nombre'], 'l' => $f['linea'], 'm' => $f['motor'], 'p' => $f['proyecto'], 'r' => $f['responsable'],
-             'u' => $f['unidad'], 'c' => $f['codigo'], 'pr' => $f['propuesta'], 'fo' => $f['formulada'], 'fof' => $f['formulada'] === null ? null : $num($f['formulada'], $f['unidad']), 'st' => $f['st'], 'um' => $ultMeta, 'd' => $f['descripcion'], 'h' => $hist];
+             'u' => $f['unidad'], 'c' => $f['codigo'], 'pr' => $f['propuesta'], 'fo' => $f['formulada'], 'fof' => $f['formulada'] === null ? null : $num($f['formulada'], $f['unidad']), 'st' => $f['st'], 'um' => $ultMeta, 'd' => $f['descripcion'], 'h' => $hist, 'fac' => $f['facultades']];
 }
 $jsonDatos = json_encode(['filas' => $js, 'anios' => $anios, 'obj' => $obj, 'dec' => (object)$decisiones, 'planObj' => $datos['plan_objetivo'], 'url' => $basePath . '/proyeccion/ver?id=' . (int)$abierto['id']],
                          JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
@@ -168,6 +168,11 @@ ob_start();
     @media (max-width: 1000px) { .pv .cuerpo { grid-template-columns: 1fr; } .pv .izq { max-height: 220px; } }
     .pv .panel { background: #fff; border: 1px solid #e0e0e5; border-radius: 12px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
     .pv .panel > h2 { font-size: .74rem; margin: 0; padding: .75rem 1rem .5rem; text-transform: uppercase; letter-spacing: .05em; color: #6e6e73; }
+    .pv .filtros { padding: 0 .8rem .6rem; display: flex; flex-direction: column; gap: .35rem; border-bottom: 1px solid #ececf0; margin-bottom: .35rem; }
+    .pv .filtros select { width: 100%; padding: .38rem .5rem; border: 1px solid #d2d2d7; border-radius: 8px; font-size: .78rem; background: #fff; color: #1d1d1f; }
+    .pv .filtros select.on { border-color: #0071e3; background: #e8f2ff; font-weight: 600; }
+    .pv .pie-f { display: flex; justify-content: space-between; align-items: center; font-size: .7rem; color: #86868b; }
+    .pv .pie-f button { border: 0; background: none; color: #0071e3; cursor: pointer; font-size: .72rem; padding: 0; visibility: hidden; }
     .pv .arbol { flex: 1; min-height: 0; overflow: auto; padding: 0 .5rem .7rem; }
     .pv .tn { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: .3rem; padding: .42rem .5rem; border-radius: 8px; cursor: pointer; font-size: .8rem; }
     .pv .tn:hover { background: #f5f5f7; }
@@ -272,6 +277,12 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     <div class="cuerpo">
         <div class="panel izq">
             <h2>Línea › Motor › Proyecto</h2>
+            <div class="filtros">
+                <select id="fLinea" aria-label="Filtrar por línea"></select>
+                <select id="fDep" aria-label="Filtrar por dependencia"></select>
+                <select id="fFac" aria-label="Filtrar por facultad"></select>
+                <div class="pie-f"><span id="fConteo"></span><button type="button" id="fLimpiar">Limpiar filtros</button></div>
+            </div>
             <div class="arbol" id="arbol"></div>
         </div>
         <div class="panel der" id="derecha"></div>
@@ -292,6 +303,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     var sel = [];               // selección: [línea], [línea, motor] o [línea, motor, proyecto]
     var abiertos = {};          // nodos del árbol desplegados
     var ediciones = {};         // meta propuesta editada por el usuario (aún sin decidir)
+    var F = D.filas;            // indicadores que pasan los filtros de línea, dependencia y facultad
 
     function cumplido(fs) {
         var v = [];
@@ -304,7 +316,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     // ── Árbol ──
     function arbol() {
         var L = {}, ordL = [];
-        D.filas.forEach(function (f) {
+        F.forEach(function (f) {
             if (!L[f.l]) { L[f.l] = {}; ordL.push(f.l); }
             if (!L[f.l][f.m]) L[f.l][f.m] = {};
             if (!L[f.l][f.m][f.p]) L[f.l][f.m][f.p] = [];
@@ -322,7 +334,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         }
         var out = '';
         ordL.sort(cmp).forEach(function (l) {
-            var fL = D.filas.filter(function (f) { return f.l === l; });
+            var fL = F.filter(function (f) { return f.l === l; });
             var hm = '';
             Object.keys(L[l]).sort(cmp).forEach(function (m) {
                 var fM = fL.filter(function (f) { return f.m === m; }), hp = '';
@@ -331,7 +343,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
             });
             out += nodo(1, [l], l, fL, hm);
         });
-        $('arbol').innerHTML = out;
+        $('arbol').innerHTML = out || '<div class="vacio">Sin indicadores con estos filtros.</div>';
         document.querySelectorAll('#arbol .tn').forEach(function (el) {
             el.addEventListener('click', function () {
                 var r = JSON.parse(el.dataset.r), id = r.join('||'), igual = sel.length === r.length && sel.every(function (x, i) { return x === r[i]; });
@@ -345,7 +357,7 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
     function tabla() {
         var d = $('derecha');
         if (!sel.length) { d.innerHTML = '<div class="vacio">Elige una línea, un motor o un proyecto de la izquierda para ver sus indicadores.</div>'; return; }
-        var fs = D.filas.filter(enSel).sort(function (a, b) { return a.p.localeCompare(b.p, 'es', { numeric: true }) || a.n.localeCompare(b.n, 'es'); });
+        var fs = F.filter(enSel).sort(function (a, b) { return a.p.localeCompare(b.p, 'es', { numeric: true }) || a.n.localeCompare(b.n, 'es'); });
         var c = cumplido(fs), ap = fs.filter(function (f) { return estDe(f) === 'aprobada'; }).length, re = fs.filter(function (f) { return estDe(f) === 'rechazada'; }).length;
         var pend = fs.filter(function (f) { return estDe(f) === 'pendiente' && f.pr != null; });
         var ruta = sel.map(function (x) { var n = nombreCorto(x); return n.c || n.t; }).join(' › ');
@@ -426,12 +438,35 @@ require_once __DIR__ . '/../complementos/header.php'; ?>
         arbol(); tabla();
     }
 
-    // Abre de entrada el primer proyecto para que la pantalla no quede vacía
-    (function () {
-        if (!D.filas.length) return;
-        var f = D.filas.slice().sort(function (a, b) { return a.l.localeCompare(b.l, 'es', { numeric: true }) || a.m.localeCompare(b.m, 'es', { numeric: true }) || a.p.localeCompare(b.p, 'es', { numeric: true }); })[0];
+    // Filtros: línea, dependencia (responsable) y facultad
+    var selL = $('fLinea'), selD = $('fDep'), selF = $('fFac');
+    function opciones(select, todas, valores) {
+        valores = valores.filter(function (v, i) { return v && valores.indexOf(v) === i; }).sort(function (a, b) { return a.localeCompare(b, 'es', { numeric: true }); });
+        select.innerHTML = '<option value="">' + todas + '</option>' + valores.map(function (v) { return '<option value="' + esc(v) + '">' + esc(v) + '</option>'; }).join('');
+    }
+    opciones(selL, 'Todas las líneas', D.filas.map(function (f) { return f.l; }));
+    opciones(selD, 'Todas las dependencias', D.filas.map(function (f) { return f.r; }));
+    opciones(selF, 'Todas las facultades', [].concat.apply([], D.filas.map(function (f) { return f.fac; })));
+
+    function filtrar() {
+        F = D.filas.filter(function (f) {
+            return (!selL.value || f.l === selL.value) && (!selD.value || f.r === selD.value) && (!selF.value || f.fac.indexOf(selF.value) !== -1);
+        });
+        [selL, selD, selF].forEach(function (s) { s.classList.toggle('on', !!s.value); });
+        $('fConteo').textContent = F.length + ' de ' + D.filas.length + ' indicadores';
+        $('fLimpiar').style.visibility = (selL.value || selD.value || selF.value) ? 'visible' : 'hidden';
+    }
+    // Abre el primer proyecto disponible para que la pantalla no quede vacía
+    function abrirPrimero() {
+        sel = [];
+        if (!F.length) return;
+        var f = F.slice().sort(function (a, b) { return a.l.localeCompare(b.l, 'es', { numeric: true }) || a.m.localeCompare(b.m, 'es', { numeric: true }) || a.p.localeCompare(b.p, 'es', { numeric: true }); })[0];
         abiertos[f.l] = true; abiertos[f.l + '||' + f.m] = true; sel = [f.l, f.m, f.p];
-    })();
+    }
+    [selL, selD, selF].forEach(function (s) { s.addEventListener('change', function () { filtrar(); abrirPrimero(); pintar(); }); });
+    $('fLimpiar').addEventListener('click', function () { selL.value = selD.value = selF.value = ''; filtrar(); abrirPrimero(); pintar(); });
+    filtrar();
+    abrirPrimero();
     document.addEventListener('click', function (e) { var d = document.querySelector('details.conf'); if (d && !d.contains(e.target)) d.open = false; });
     pintar();
 })();

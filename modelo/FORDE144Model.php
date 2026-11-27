@@ -500,6 +500,7 @@ class FORDE144Model {
                 'indicadores'         => empty($opts['indicadores']) ? [] : array_map(function ($r) {
                     return [
                         'id' => (int)$r['id'], 'nombre' => (string)$r['nombre_indicador'], 'codigo' => (string)$r['id_indicador'],
+                        'facultad' => (string)($r['fac_nombre'] ?? ''),
                         'linea' => $r['linea'], 'linea_codigo' => $r['linea_codigo'],
                         'motor' => $r['motor'], 'motor_codigo' => $r['motor_codigo'],
                         'proyecto' => $r['proyecto'], 'proyecto_codigo' => $r['proyecto_codigo'],
